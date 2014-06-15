@@ -1,0 +1,5 @@
+*.so
+quick_test
+*.sublime-workspace
+*.pyc
+*.o

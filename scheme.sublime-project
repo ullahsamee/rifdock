@@ -1,0 +1,17 @@
+{
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "."
+		}
+	],
+	"build_systems":
+    [
+        {
+            "name": "quick_test",
+            "working_dir": "/Users/sheffler/Dropbox/project/scheme/scheme",
+            "shell_cmd": "clang++ -Isrc -I/usr/local/include/eigen3 -o quick_test src/util/quick_test.cc && ./quick_test"
+        }
+    ]
+}
