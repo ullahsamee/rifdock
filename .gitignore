@@ -3,3 +3,6 @@ quick_test
 *.sublime-workspace
 *.pyc
 *.o
+doc/_build
+dox/html
+dox/xml
