@@ -9,9 +9,11 @@
 #define INCLUDED_util_dilated_int_HH
 
 #include <util/template_math.hh>
-#include <iostream>
+// #include <iostream>
+#ifdef DEBUG
 #include <stdexcept>
 #include <cstddef>
+#endif
 
 namespace util {
 
@@ -143,31 +145,6 @@ template<> inline uint64_t undilate<1>(uint64_t val) {
 
 
 
-template<uint64_t D> bool testDilation() {
-	uint64_t maxval = util::impl::MAX_DILATABLE<D>::VAL;
-	maxval = std::min(maxval, uint64_t(2097151));
-	for (uint64_t i(0); i < maxval; ++i){
-		uint64_t dilated = util::dilate<D>(i);
-		uint64_t undilated = util::undilate<D>(dilated);
-		if(undilated != i) return false;
-    }
-    return true;
-}
-
-bool test_dilated_int(){
-	if( ! util::testDilation<2>() ) return false;
-	if( ! util::testDilation<3>() ) return false;
-	if( ! util::testDilation<4>() ) return false;
-	if( ! util::testDilation<5>() ) return false;
-	if( ! util::testDilation<6>() ) return false;
-	if( ! util::testDilation<7>() ) return false;
-	if( ! util::testDilation<8>() ) return false;
-	if( ! util::testDilation<9>() ) return false;
-	if( ! util::testDilation<10>() ) return false;
-	if( ! util::testDilation<11>() ) return false;
-	std::cout << "dilated int tests pass" << std::endl;
-	return true;
-}
 
 }
 

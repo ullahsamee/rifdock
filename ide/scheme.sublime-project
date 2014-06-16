@@ -1,0 +1,22 @@
+{
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "../"
+		}
+	],
+	"build_systems":
+    [
+        {
+            "name": "quick_test",
+            "working_dir": "$project_path/..",
+            "shell_cmd": "time ninja -j8 quick_test && ./quick_test &> tmp/sublime_output.txt",
+        },
+        {
+            "name": "main_test",
+            "working_dir": "$project_path/..",
+            "shell_cmd": "time ninja -j8 main_test && ./main_test &> tmp/sublime_output.txt",
+        }
+    ]
+}
