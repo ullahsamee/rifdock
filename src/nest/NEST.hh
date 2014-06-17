@@ -84,7 +84,7 @@ namespace nest {
 
 	/// @brief Parameter to Value Map Policy Class
 	template< int DIM, class Value, class Index, class Float >
-	struct IdentityMap {
+	struct UnitMap {
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 		///@brief sets value to parameters without change
 		///@return false iff invalid parameters
@@ -108,30 +108,40 @@ namespace nest {
 			return true;
 		}
 	protected:
-		~IdentityMap(){}
+		~UnitMap(){}
 	};
 	
 	/// @brief Parameter Mapping Policy for cartesian grids
-	/// @note NEST cell_size MUST agree with cell_sizes
+	/// @note NEST cell_size MUST agree with cell_sizes_
 	template< int DIM, class Value, class Index, class Float >
 	struct ScaleMap {
 		typedef Eigen::Matrix<Index,DIM,1> Indices;
 		typedef Eigen::Matrix<Float,DIM,1> Params;		
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
+	private:
 		///@brief lower bound on value space		
-		Params lower_bound;
+		Params lower_bound_;
 		///@brief upper bound on value space base size 1
-		Params upper_bound;
+		Params upper_bound_;
 		///@brief distributes cell_index accross dimensions
-		Indices cell_sizes;
+		Indices cell_sizes_;
+		Indices cell_sizes_pref_sum_;
+	public:
 		///@brief construct with default lb, ub, bs
-		ScaleMap(){	cell_sizes.fill(1);	lower_bound.fill(0); upper_bound.fill(1); }
+		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default lb, ub
-		ScaleMap(Indices const & bs) : cell_sizes(bs) { lower_bound.fill(0); upper_bound.fill(1); }
+		ScaleMap(Indices const & bs) : cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default bs
-		ScaleMap(Params const & lb, Params const & ub) : lower_bound(lb), upper_bound(ub) { cell_sizes.fill(1); }
+		ScaleMap(Params const & lb, Params const & ub) : lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
 		///@brief construct with specified lb, ub and bs
-		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : lower_bound(lb), upper_bound(ub), cell_sizes(bs) {}
+		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
+
+		///@brief sets up cell_size_pref_sum
+		void init(){
+			for(size_t i = 0; i < DIM; ++i) 
+				cell_sizes_pref_sum_[i] = cell_sizes_.head(i).prod();
+		}
+
 		///@brief sets value based on cell_index and parameters using geometric bounds
 		///@return false iff invalid parameters
 		bool params_to_value(
@@ -140,12 +150,12 @@ namespace nest {
 			Value & value
 		) const {
 			for(size_t i = 0; i < DIM; ++i){
-				assert(cell_sizes[i] > 0);
-				assert(cell_sizes[i] < 100000);
-				assert(lower_bound[i] < upper_bound[i]);
-				Float bi = ( cell_index / cell_sizes.head(i).prod() ) % cell_sizes[i];
-				Float width = (upper_bound[i]-lower_bound[i])/(Float)cell_sizes[i];
-				value[i] = lower_bound[i] + width * (bi + params[i]);
+				assert(cell_sizes_[i] > 0);
+				assert(cell_sizes_[i] < 100000);
+				assert(lower_bound_[i] < upper_bound_[i]);
+				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
+				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
+				value[i] = lower_bound_[i] + width * (bi + params[i]);
 			}
 			return true;
 		}
@@ -156,15 +166,15 @@ namespace nest {
 		) const {
 			cell_index = 0;
 			for(size_t i = 0; i < DIM; ++i){
-				assert(cell_sizes[i] > 0);
-				assert(cell_sizes[i] < 100000);
-				assert(lower_bound[i] < upper_bound[i]);
-				Index cell_size_pref_sum = cell_sizes.head(i).prod();
-				Float bi = ( cell_index / cell_size_pref_sum ) % cell_sizes[i];
-				Float width = (upper_bound[i]-lower_bound[i])/(Float)cell_sizes[i];
-				params[i] = ( value[i] - lower_bound[i] ) / width - bi;
+				assert(cell_sizes_[i] > 0);
+				assert(cell_sizes_[i] < 100000);
+				assert(lower_bound_[i] < upper_bound_[i]);
+				// Index cell_size_pref_sum = cell_sizes_.head(i).prod();
+				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
+				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
+				params[i] = ( value[i] - lower_bound_[i] ) / width - bi;
 				Float ci = (Index)params[i];
-				cell_index += cell_size_pref_sum * ci;
+				cell_index += cell_sizes_pref_sum_[i] * ci;
 				params[i] -= (Float)ci;
 				// std::cout << i << " " << params[i] << " " << bi << " " << width << std::endl;
 				assert( 0.0 < params[i] && params[i] < 1.0);
@@ -207,7 +217,7 @@ namespace nest {
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
 		class Value = Eigen::Matrix<float,DIM,1>,
-		template<int,class,class,class> class ParamMap = IdentityMap,
+		template<int,class,class,class> class ParamMap = UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class Index = size_t,
 		class Float = float
@@ -230,7 +240,8 @@ namespace nest {
 		///@brief for supporting ParamMaps, construct with default bs
 		NEST(Params const & lb, Params const & ub) : ParamMap<DIM,Value,Index,Float>(lb,ub) {}
 		///@brief for supporting ParamMaps, construct with specified lb, ub and bs
-		NEST(Params const & lb, Params const & ub, Indices const & bs) : NestBase<Index>(bs.prod()), ParamMap<DIM,Value,Index,Float>(lb,ub,bs) {}
+		NEST(Params const & lb, Params const & ub, Indices const & bs) : 
+			NestBase<Index>(bs.prod()), ParamMap<DIM,Value,Index,Float>(lb,ub,bs) {}
 
 		///@brief get size of NEST at depth resl
 		///@return size of NEST at resolution depth resl
