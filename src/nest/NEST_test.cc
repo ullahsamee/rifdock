@@ -16,59 +16,6 @@ using std::endl;
 
 using scheme::util::StorePointer;
 
-TEST(NEST,neighbor_lookup_single_cell){
-	{
-		NEST<2> nest;
-		std::vector<size_t> neighbors;
-	 	NEST<2>::ValueType val;
-	 	val << 0.85,0.15;
-	 	size_t r = 1;
-	 	std::back_insert_iterator< std::vector<size_t> > back_it(neighbors);
-	 	nest.get_neighbors( val, r, back_it );
-	 	ASSERT_EQ(neighbors.size(),4);
-	 	ASSERT_EQ(neighbors[0],0);
-	 	ASSERT_EQ(neighbors[1],1);
-	 	ASSERT_EQ(neighbors[2],2);
-	 	ASSERT_EQ(neighbors[3],3);
-	}
-	{
-		NEST<3> nest;
-		std::vector<size_t> neighbors;
-	 	NEST<3>::ValueType val;
-	 	val << 0.85,0.15,0.5;
-	 	size_t r = 3;
-	 	std::back_insert_iterator< std::vector<size_t> > back_it(neighbors);
-	 	nest.get_neighbors( val, r, back_it );
-	 	ASSERT_EQ(neighbors.size(),27);
-		ASSERT_EQ(neighbors[0],101);
-		ASSERT_EQ(neighbors[1],108);
-		ASSERT_EQ(neighbors[2],109);
-		ASSERT_EQ(neighbors[3],103);
-		ASSERT_EQ(neighbors[4],110);
-		ASSERT_EQ(neighbors[5],111);
-		ASSERT_EQ(neighbors[6],117);
-		ASSERT_EQ(neighbors[7],124);
-		ASSERT_EQ(neighbors[8],125);
-		ASSERT_EQ(neighbors[9],321);
-		ASSERT_EQ(neighbors[10],328);
-		ASSERT_EQ(neighbors[11],329);
-		ASSERT_EQ(neighbors[12],323);
-		ASSERT_EQ(neighbors[13],330);
-		ASSERT_EQ(neighbors[14],331);
-		ASSERT_EQ(neighbors[15],337);
-		ASSERT_EQ(neighbors[16],344);
-		ASSERT_EQ(neighbors[17],345);
-		ASSERT_EQ(neighbors[18],325);
-		ASSERT_EQ(neighbors[19],332);
-		ASSERT_EQ(neighbors[20],333);
-		ASSERT_EQ(neighbors[21],327);
-		ASSERT_EQ(neighbors[22],334);
-		ASSERT_EQ(neighbors[23],335);
-		ASSERT_EQ(neighbors[24],341);
-		ASSERT_EQ(neighbors[25],348);
-		ASSERT_EQ(neighbors[26],349);
-	}
-}
 
 TEST(NEST,particular_cases){
 	NEST<1>	nest;
@@ -80,11 +27,11 @@ TEST(NEST,particular_cases){
 	ASSERT_EQ( nest.set_and_get(2,2)[0], 0.625 );
 	ASSERT_EQ( nest.set_and_get(3,2)[0], 0.875 );
 	NEST<2>	nest2;
-	ASSERT_EQ( nest2.set_and_get(0,0), Vector2f(0.5,0.5)   );
-	ASSERT_EQ( nest2.set_and_get(0,1), Vector2f(0.25,0.25)   );
-	ASSERT_EQ( nest2.set_and_get(1,1), Vector2f(0.75,0.25)   );
-	ASSERT_EQ( nest2.set_and_get(2,1), Vector2f(0.25,0.75)   );
-	ASSERT_EQ( nest2.set_and_get(3,1), Vector2f(0.75,0.75)   );
+	ASSERT_EQ( nest2.set_and_get(0,0), NEST<2>::ValueType(0.5,0.5)   );
+	ASSERT_EQ( nest2.set_and_get(0,1), NEST<2>::ValueType(0.25,0.25)   );
+	ASSERT_EQ( nest2.set_and_get(1,1), NEST<2>::ValueType(0.75,0.25)   );
+	ASSERT_EQ( nest2.set_and_get(2,1), NEST<2>::ValueType(0.25,0.75)   );
+	ASSERT_EQ( nest2.set_and_get(3,1), NEST<2>::ValueType(0.75,0.75)   );
 }
 
 TEST(NEST,map_discrete) {
@@ -112,39 +59,41 @@ TEST(NEST,map_discrete) {
 
 
 template<int DIM>
-void test_coverage_cube(){
-	boost::random::mt19937 rng; 
+void test_coverage_unit1cell(){
+	boost::random::mt19937 rng(time(0)); 
 	boost::uniform_real<> uniform;
 	NEST<DIM> nest;
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
-		float cellradius = sqrt(DIM) * 0.5 / (1<<r);
+		double cellradius = sqrt(DIM) * 0.5 / (1<<r);
 		for(size_t iter = 0; iter < 10000/DIM; ++iter){
-			Matrix<float,DIM,1> tgt;
+			Matrix<double,DIM,1> tgt;
 			for(size_t i = 0; i < DIM; ++i) tgt[i] = uniform(rng);
 			size_t index = nest.get_index(tgt,r);
-			Matrix<float,DIM,1> val = nest.set_and_get(index,r);
+			Matrix<double,DIM,1> val = nest.set_and_get(index,r);
 			ASSERT_LE( (tgt-val).norm(), cellradius );
 		}
-		Matrix<float,DIM,1> zeros; zeros.fill(0);
+		Matrix<double,DIM,1> zeros; zeros.fill(0);
 		ASSERT_LE( (zeros-nest.set_and_get(nest.get_index(zeros,r),r)).norm(), cellradius );
-		Matrix<float,DIM,1> ones; ones.fill(0.999999);
+		Matrix<double,DIM,1> ones; ones.fill(0.999999);
 		ASSERT_LE( (ones-nest.set_and_get(nest.get_index(ones,r),r)).norm(), cellradius );
 	}
 }
 
-TEST(NEST,coverage_cube_DIM1){ test_coverage_cube<1>();    // }
-/*TEST(NEST,coverage_cube_DIM2){*/ test_coverage_cube<2>();// }
-/*TEST(NEST,coverage_cube_DIM3){*/ test_coverage_cube<3>();// }
-/*TEST(NEST,coverage_cube_DIM4){*/ test_coverage_cube<4>();// }
-/*TEST(NEST,coverage_cube_DIM5){*/ test_coverage_cube<5>();// }
-/*TEST(NEST,coverage_cube_DIM6){*/ test_coverage_cube<6>(); }
+TEST(NEST,coverage_cube){
+	test_coverage_unit1cell<1>();
+	test_coverage_unit1cell<2>();
+	test_coverage_unit1cell<3>();
+	test_coverage_unit1cell<4>();
+	test_coverage_unit1cell<5>();
+	test_coverage_unit1cell<6>();
+}
 
 
 
 template<int DIM>
 void test_index_nesting(){
-	typedef Matrix<float,DIM,1> VAL;
+	typedef Matrix<double,DIM,1> VAL;
 	NEST<DIM> nest(2);
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
@@ -160,17 +109,19 @@ void test_index_nesting(){
 		}
 	}
 }
-TEST(NEST,index_nesting_DIM1){ test_index_nesting<1>();     //}
-/*TEST(NEST,index_nesting_DIM2){*/ test_index_nesting<2>(); //}
-/*TEST(NEST,index_nesting_DIM3){*/ test_index_nesting<3>(); //}
-/*TEST(NEST,index_nesting_DIM4){*/ test_index_nesting<4>(); //}
-/*TEST(NEST,index_nesting_DIM5){*/ test_index_nesting<5>(); //}
-/*TEST(NEST,index_nesting_DIM6){*/ test_index_nesting<6>(); }
+TEST(NEST,index_nesting){
+	test_index_nesting<1>();
+	test_index_nesting<2>();
+	test_index_nesting<3>();
+	test_index_nesting<4>();
+	test_index_nesting<5>();
+	test_index_nesting<6>();
+}
 
 
 template<int DIM>
 void test_store_pointer_generic(){
-	typedef Matrix<float,DIM,1> VAL;
+	typedef Matrix<double,DIM,1> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest_val(2);
 	NEST<DIM,VAL,UnitMap,StorePointer> nest_ptr(2);
 	NestBase<> * nest_val_generic = &nest_val;
@@ -190,20 +141,22 @@ void test_store_pointer_generic(){
 		}
 	}
 }
-TEST(NEST,store_pointer_generic_DIM1){ test_store_pointer_generic<1>();     //}
-/*TEST(NEST,store_pointer_generic_DIM2){*/ test_store_pointer_generic<2>(); //}
-/*TEST(NEST,store_pointer_generic_DIM3){*/ test_store_pointer_generic<3>(); //}
-/*TEST(NEST,store_pointer_generic_DIM4){*/ test_store_pointer_generic<4>(); //}
-/*TEST(NEST,store_pointer_generic_DIM5){*/ test_store_pointer_generic<5>(); //}
-/*TEST(NEST,store_pointer_generic_DIM6){*/ test_store_pointer_generic<6>(); }
+TEST(NEST,store_pointer_generic){
+	test_store_pointer_generic<1>();
+	test_store_pointer_generic<2>();
+	test_store_pointer_generic<3>();
+	test_store_pointer_generic<4>();
+	test_store_pointer_generic<5>();
+	test_store_pointer_generic<6>();
+}
 
 template<int DIM>
 void test_uniformity(){
-	typedef Matrix<float,DIM,1> VAL;
+	typedef Matrix<double,DIM,1> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest(1);
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
-		float scale = 1<<r;
+		double scale = 1<<r;
 		ArrayXi counts(1<<r); counts.fill(0);
 		for(size_t i = 0; i < nest.size(r); ++i){
 			ASSERT_TRUE( nest.set_state(i,r) );
@@ -216,12 +169,14 @@ void test_uniformity(){
 	}
 }
 
-TEST(NEST,uniformity_DIM1){ test_uniformity<1>();    //}
-/*TEST(NEST,uniformity_DIM2){*/ test_uniformity<2>(); //}
-/*TEST(NEST,uniformity_DIM3){*/ test_uniformity<3>(); //}
-/*TEST(NEST,uniformity_DIM4){*/ test_uniformity<4>(); //}
-/*TEST(NEST,uniformity_DIM5){*/ test_uniformity<5>(); //}
-/*TEST(NEST,uniformity_DIM6){*/ test_uniformity<6>(); }
+TEST(NEST,uniformity){
+	test_uniformity<1>();
+	test_uniformity<2>();
+	test_uniformity<3>();
+	test_uniformity<4>();
+	test_uniformity<5>();
+	test_uniformity<6>();
+}
 
 
 

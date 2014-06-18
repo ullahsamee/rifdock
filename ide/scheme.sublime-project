@@ -3,8 +3,10 @@
 	[
 		{
 			"follow_symlinks": true,
-			"path": "../"
-		}
+			"path": "../",
+            "folder_exclude_patterns": ["doc","dox","build","CMakeFiles","external"],
+            "file_exclude_patterns": ["*.ninja","CMakeCache*","Makefile","main_test","quick_test","*.cmake",".ninja*"],
+		},
 	],
 	"build_systems":
     [

@@ -130,7 +130,7 @@ namespace nest {
 		}
 		Float neighbor_radius(Index resl) const {
 			Params width = (upper_bound_-lower_bound_) / cell_sizes_.template cast<Float>();
-			return 1.5/(Float)(1<<resl) * sqrt((width*width).sum()); // norm
+			return 1.5/(Float)(1<<resl) * width.minCoeff(); // norm
 		}
 
 	 protected:

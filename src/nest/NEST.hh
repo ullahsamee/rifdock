@@ -74,14 +74,14 @@ namespace nest {
 	///@tparam ParamMap structure mapping from parameter space into Value space
 	///@tparam StoragePolicy defines storage of Values, possibly allowing Nests to wrap pointers
 	///@tparam Index index type, default size_t
-	///@tparam Float floating point type for internal parameters, default float
+	///@tparam Float floating point type for internal parameters, default double
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
-		class Value = Eigen::Matrix<float,DIM,1>,
+		class Value = Eigen::Matrix<double,DIM,1>,
 		template<int,class,class,class> class ParamMap = UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class Index = size_t,
-		class Float = float
+		class Float = double
 	>
 	struct NEST : 
 	    public NestBase<Index>,
@@ -118,9 +118,9 @@ namespace nest {
 			return this->cell_size() * ONE<<(DIM*resl);
 		}
 
-		///@brief set the state of this NEST to Value for index at depth resl
+		///@brief set the input Value value for index at depth resl
 		///@return false iff invalid index
-		bool set_state(Index index, Index resl){
+		bool set_value(Index index, Index resl, Value & value) const {
 			if(index >= size(resl)) return false;
 			Index cell_index = index >> (DIM*resl);
 			Index hier_index = index & ((ONE<<(DIM*resl))-1);
@@ -130,14 +130,24 @@ namespace nest {
 				Index undilated = util::undilate<DIM>(hier_index>>i);
 				params[i] = (static_cast<Float>(undilated) + 0.5 ) * scale;
 			}
-			return this->params_to_value( params, cell_index, this->nonconst_value() );
+			return this->params_to_value( params, cell_index, value );
 		}
-
+		///@brief set the state of this NEST to Value for index at depth resl
+		///@return false iff invalid index
+		bool set_state(Index index, Index resl){
+			return set_value(index,resl,this->nonconst_value());
+		}
 		///@brief calls set_state(index,resl) then returns value()
 		///@return value of set state
 		Value const & set_and_get(Index index, Index resl){
 			assert( set_state(index,resl) );
 			return this->value();
+		}
+
+		bool check_state(Index index, Index resl) const {
+			if(index >= size(resl)) return false;
+			Value dummy;
+			return set_value(index,resl,dummy);
 		}
 
 		bool get_indicies(Value const & v, Index resl, Indices & indices_out, Index & cell_index_out) const {
@@ -154,7 +164,6 @@ namespace nest {
 			index = index | (cell_index << (DIM*resl));
 			return index;
 		}
-
 
 		Index get_index(Value const & v, Index resl) const {
 			Index cell_index;
