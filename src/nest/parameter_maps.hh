@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
+#include <vector>
 
 namespace scheme {
 namespace nest {
@@ -20,11 +21,13 @@ namespace nest {
 	///        the first dimension will incremented by cell_index
 	template< int DIM, class Value, class Index, class Float >
 	struct UnitMap {
+		typedef Eigen::Array<Index,DIM,1> Indices;
+		typedef Eigen::Array<Float,DIM,1> Params;		
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 		///@brief sets value to parameters without change
 		///@return false iff invalid parameters
 		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & params,
+			Params const & params,
 			Index cell_index,
 			Value & value
 		) const {
@@ -34,7 +37,7 @@ namespace nest {
 		}
 		bool value_to_params(
 			Value const & value,
-			Eigen::Matrix<Float,DIM,1> & params,
+			Params & params,
 			Index & cell_index
 		) const {
 			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
@@ -42,6 +45,8 @@ namespace nest {
 			params[0] -= (Float)cell_index;
 			return true;
 		}
+		Float covering_radius(Index resl) const { return 0.5/(Float)(1<<resl) * sqrt(DIM); }
+		Float neighbor_radius(Index resl) const { return 1.5/(Float)(1<<resl); }
 	 protected:
 		~UnitMap(){}
 	};
@@ -52,8 +57,8 @@ namespace nest {
 	/// @note NEST cell_size MUST agree with cell_sizes_
 	template< int DIM, class Value, class Index, class Float >
 	struct ScaleMap {
-		typedef Eigen::Matrix<Index,DIM,1> Indices;
-		typedef Eigen::Matrix<Float,DIM,1> Params;		
+		typedef Eigen::Array<Index,DIM,1> Indices;
+		typedef Eigen::Array<Float,DIM,1> Params;		
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 	 private:
 		///@brief lower bound on value space		
@@ -82,7 +87,7 @@ namespace nest {
 		///@brief sets value based on cell_index and parameters using geometric bounds
 		///@return false iff invalid parameters
 		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & params,
+			Params const & params,
 			Index cell_index,
 			Value & value
 		) const {
@@ -98,7 +103,7 @@ namespace nest {
 		}
 		bool value_to_params(
 			Value const & value,
-			Eigen::Matrix<Float,DIM,1> & params,
+			Params & params,
 			Index & cell_index
 		) const {
 			cell_index = 0;
@@ -119,6 +124,15 @@ namespace nest {
 			return true;
 		}
 
+		Float covering_radius(Index resl) const {
+			Params width = (upper_bound_-lower_bound_) / cell_sizes_.template cast<Float>();
+			return 0.5/(Float)(1<<resl) * sqrt((width*width).sum()); // norm2
+		}
+		Float neighbor_radius(Index resl) const {
+			Params width = (upper_bound_-lower_bound_) / cell_sizes_.template cast<Float>();
+			return 1.5/(Float)(1<<resl) * sqrt((width*width).sum()); // norm
+		}
+
 	 protected:
 		~ScaleMap(){}
 	};
@@ -127,6 +141,7 @@ namespace nest {
 	/// @note NEST cell_size MUST agree with choices.size()
 	template< int DIM, class Value, class Index, class Float >
 	struct DiscreteChoiceMap {
+		typedef Eigen::Array<Float,DIM,1> Params;		
 		BOOST_STATIC_ASSERT_MSG(DIM==0,"DiscreteChoiceMap DIM must be == 0");
 		std::vector<Value> choices;
 		DiscreteChoiceMap(std::vector<Value> const & _choices) : choices(_choices){}
@@ -134,7 +149,7 @@ namespace nest {
 		///@note params has no meaning for zero-dimensional nests, only cell_index
 		///@return false iff invalid parameters
 		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & /*params*/,
+			Params const & /*params*/,
 			Index cell_index,
 			Value & value
 		) const {

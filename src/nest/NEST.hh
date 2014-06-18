@@ -6,6 +6,8 @@
 #include <vector>
 #include <util/storage_policy.hh>
 #include <util/template_loop.hh>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 namespace scheme {
 namespace nest {
@@ -27,7 +29,7 @@ namespace nest {
 	template<class Index=size_t>
 	struct NestBase {
 		///@brief all nests must know their cell_size
-		NestBase(Index cell_size) : cell_size_(cell_size) {}
+		NestBase(Index cell_size=1) : cell_size_(cell_size) {}
 		///@brief need virtual destructor
 		virtual ~NestBase(){}
 		///@brief get the cell_size of this NEST
@@ -86,9 +88,17 @@ namespace nest {
 		public ParamMap<DIM,Value,Index,Float>, 
 	    public StoragePolicy<Value>
 	{
-		typedef Eigen::Matrix<Index,DIM,1> Indices;
-		typedef Eigen::Matrix<Float,DIM,1> Params;		
+		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float> ThisType;
+		typedef Eigen::Array<Index,DIM,1> Indices;
+		typedef Eigen::Array<Float,DIM,1> Params;		
+		typedef Value ValueType;
+		typedef Index IndexType;
+		typedef Float FloatType;
+		typedef StoragePolicy<Value> StorageType;
+		typedef ParamMap<DIM,Value,Index,Float> ParamMapType;
+
 		static Index const ONE = 1;
+		static int const DIMENSION = DIM;
 
 		///@brief default ctor
 		NEST() : NestBase<Index>(1) {}
@@ -145,6 +155,7 @@ namespace nest {
 			return index;
 		}
 
+
 		Index get_index(Value const & v, Index resl) const {
 			Index cell_index;
 			Indices indices;
@@ -152,12 +163,27 @@ namespace nest {
 			return get_index(indices,cell_index,resl);
 		}
 
-		bool get_neighbors(Value const & v, Index resl, std::vector<Index> & out) const {
+		template<class OutIter>
+		void push_index(Indices const & indices, Index cell_index, Index resl, OutIter out) const {
+			Index index = 0;
+			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
+			index = index | (cell_index << (DIM*resl));
+			*out = index;
+			++out;
+		}
+
+		template<class OutIter>
+		bool get_neighbors(Value const & v, Index resl, OutIter out)  {
 			Index nside = 1<<resl;
 			Indices indices;
 			Index cell_index;
 			if( !get_indicies(v,resl,indices,cell_index) ) return false;
-
+			Indices lb = ((indices.template cast<int>()-1).max(0)).template cast<Index>(); // easiest to convert to signed and back
+			Indices ub = (indices+(Index)1).min((1<<resl)-1);
+			// std::cout << "lb " << lb.transpose() << std::endl;
+			// std::cout << "ub " << ub.transpose() << std::endl;
+			boost::function<void(Indices)> functor = boost::bind( &ThisType::push_index<OutIter>, this, _1, cell_index, resl, out );
+			util::NESTED_FOR<DIM>(lb,ub,functor);
 			return true;
 		};
 
@@ -203,7 +229,7 @@ namespace nest {
 	              public ParamMap<0,Value,Index,Float>, 
 	              public StoragePolicy<Value>
 	{
-		typedef Eigen::Matrix<Float,0,1> Params;		
+		typedef Eigen::Array<Float,0,1> Params;		
 		NEST(Index cell_size=1) : NestBase<Index>(cell_size) {}
 		NEST(std::vector<Value> const & _choices) : NestBase<Index>(_choices.size()), ParamMap<0,Value,Index,Float>(_choices) {}
 		///@brief get num states at depth resl

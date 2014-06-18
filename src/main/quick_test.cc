@@ -1,8 +1,7 @@
 #include <main/gtest_util.hh>
 
 // include desired tests here:
-// #include <nest/NEST_test.hh>
-#include <util/template_loop_test.hh>
+#include <nest/parameter_maps_test.cc>
 
 int main(int argc, char **argv)
 {
