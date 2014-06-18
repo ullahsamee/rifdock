@@ -3,12 +3,15 @@
 
 #include <Eigen/Dense>
 #include <util/dilated_int.hh>
-#include <iostream>
 #include <vector>
-#include <boost/static_assert.hpp>
+#include <util/storage_policy.hh>
+#include <util/template_loop.hh>
 
 namespace scheme {
 namespace nest {
+
+	using util::StoreValue;
+	using util::StorePointer;	
 
 	using namespace Eigen;
 	typedef Eigen::Matrix<size_t,1,1> Vector1s;
@@ -29,6 +32,11 @@ namespace nest {
 		virtual ~NestBase(){}
 		///@brief get the cell_size of this NEST
 		Index cell_size() const { return cell_size_; }
+
+		///@brief generic virtual function to set the state of this nest
+		///@returns false if invalid index
+		virtual bool generic_set_state(Index index, Index resl) = 0;
+
 		///@brief generic virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
@@ -52,160 +60,11 @@ namespace nest {
 
 
 
-	/// @brief Storage Policy Class, store by value
-	/// @tparam Value ValueType stored
-	template< class Value >
-	struct StoreValue {
-		///@return const reference to stored Value
-		Value const & value() const { return value_; }
-	protected:
-		///@return nonconst reference to stored Value
-		Value & nonconst_value() { return value_; }
-		Value value_;
-		~StoreValue(){}
-	};
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	/// Main NEST template
+	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	/// @brief Store-by-pointer policy
-	/// @tparam Value ValueType stored
-	/// @note addes the ability to set the pointer
-	template< class Value >
-	struct StorePointer {
-		///@return const reference to stored Value
-		Value const & value() const { return *value_; }
-		/// @brief switch the pointer the this policy manages
-		/// @param new_pointer 
-		void set_pointer(Value * new_pointer) { value_ = new_pointer; }
-	protected:
-		///@return nonconst reference to stored Value
-		Value & nonconst_value() { return *value_; }
-		Value * value_;
-		~StorePointer(){}
-	};
-
-	/// @brief Parameter to Value Map Policy Class
-	template< int DIM, class Value, class Index, class Float >
-	struct UnitMap {
-		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
-		///@brief sets value to parameters without change
-		///@return false iff invalid parameters
-		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & params,
-			Index cell_index,
-			Value & value
-		) const {
-			for(size_t i = 0; i < DIM; ++i) value[i] = params[i];
-			value[0] += (Float)cell_index;
-			return true;
-		}
-		bool value_to_params(
-			Value const & value,
-			Eigen::Matrix<Float,DIM,1> & params,
-			Index & cell_index
-		) const {
-			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
-			cell_index = (Index)value[0];
-			params[0] -= (Float)cell_index;
-			return true;
-		}
-	protected:
-		~UnitMap(){}
-	};
-	
-	/// @brief Parameter Mapping Policy for cartesian grids
-	/// @note NEST cell_size MUST agree with cell_sizes_
-	template< int DIM, class Value, class Index, class Float >
-	struct ScaleMap {
-		typedef Eigen::Matrix<Index,DIM,1> Indices;
-		typedef Eigen::Matrix<Float,DIM,1> Params;		
-		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
-	private:
-		///@brief lower bound on value space		
-		Params lower_bound_;
-		///@brief upper bound on value space base size 1
-		Params upper_bound_;
-		///@brief distributes cell_index accross dimensions
-		Indices cell_sizes_;
-		Indices cell_sizes_pref_sum_;
-	public:
-		///@brief construct with default lb, ub, bs
-		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
-		///@brief construct with default lb, ub
-		ScaleMap(Indices const & bs) : cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
-		///@brief construct with default bs
-		ScaleMap(Params const & lb, Params const & ub) : lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
-		///@brief construct with specified lb, ub and bs
-		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
-
-		///@brief sets up cell_size_pref_sum
-		void init(){
-			for(size_t i = 0; i < DIM; ++i) 
-				cell_sizes_pref_sum_[i] = cell_sizes_.head(i).prod();
-		}
-
-		///@brief sets value based on cell_index and parameters using geometric bounds
-		///@return false iff invalid parameters
-		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & params,
-			Index cell_index,
-			Value & value
-		) const {
-			for(size_t i = 0; i < DIM; ++i){
-				assert(cell_sizes_[i] > 0);
-				assert(cell_sizes_[i] < 100000);
-				assert(lower_bound_[i] < upper_bound_[i]);
-				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
-				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
-				value[i] = lower_bound_[i] + width * (bi + params[i]);
-			}
-			return true;
-		}
-		bool value_to_params(
-			Value const & value,
-			Eigen::Matrix<Float,DIM,1> & params,
-			Index & cell_index
-		) const {
-			cell_index = 0;
-			for(size_t i = 0; i < DIM; ++i){
-				assert(cell_sizes_[i] > 0);
-				assert(cell_sizes_[i] < 100000);
-				assert(lower_bound_[i] < upper_bound_[i]);
-				// Index cell_size_pref_sum = cell_sizes_.head(i).prod();
-				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
-				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
-				params[i] = ( value[i] - lower_bound_[i] ) / width - bi;
-				Float ci = (Index)params[i];
-				cell_index += cell_sizes_pref_sum_[i] * ci;
-				params[i] -= (Float)ci;
-				// std::cout << i << " " << params[i] << " " << bi << " " << width << std::endl;
-				assert( 0.0 < params[i] && params[i] < 1.0);
-			}
-			return true;
-		}
-
-	protected:
-		~ScaleMap(){}
-	};
-
-	/// @brief Parameter Mapping Policy class which represents a discrete set of choices for 0 dimensional Nests
-	/// @note NEST cell_size MUST agree with choices.size()
-	template< int DIM, class Value, class Index, class Float >
-	struct DiscreteChoiceMap {
-		BOOST_STATIC_ASSERT_MSG(DIM==0,"DiscreteChoiceMap DIM must be == 0");
-		std::vector<Value> choices;
-		DiscreteChoiceMap(std::vector<Value> const & _choices) : choices(_choices){}
-		///@brief sets value based only on cell_index
-		///@note params has no meaning for zero-dimensional nests, only cell_index
-		///@return false iff invalid parameters
-		bool params_to_value(
-			Eigen::Matrix<Float,DIM,1> const & /*params*/,
-			Index cell_index,
-			Value & value
-		) const {
-			if( cell_index >= choices.size() ) return false;
-			value = choices[cell_index];
-			return true;
-		}
-	};
+	template< int DIM, class Value, class Index, class Float > struct UnitMap;
 
 	///@brief templated nesting grids
 	///@tparam DIM dimension of the grid
@@ -271,27 +130,44 @@ namespace nest {
 			return this->value();
 		}
 
-		Index get_index(Value const & v, Index resl) const{
-			Index cell_index;
+		bool get_indicies(Value const & v, Index resl, Indices & indices_out, Index & cell_index_out) const {
 			Params params;
-			if( ! this->value_to_params( v, params, cell_index ) ) return std::numeric_limits<Index>::max();
-			Indices indices;
+			if( ! this->value_to_params( v, params, cell_index_out ) ) return false;
 			Float scale = Float(ONE<<resl);
+			for(size_t i = 0; i < DIM; ++i)	indices_out[i] = static_cast<Index>(params[i]*scale);
+			return true;
+		}
+
+		Index get_index(Indices const & indices, Index cell_index, Index resl) const {
 			Index index = 0;
-			for(size_t i = 0; i < DIM; ++i){
-				Index undilated = static_cast<Index>(params[i]*scale);
-				index |= util::dilate<DIM>(undilated) << i;
-			}
-			// std::cout << v[0] <<"v "<< resl <<"r " << cell_index << "bi " << index << "i " << (cell_index << (DIM*resl)) <<  std::endl;
+			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
 			index = index | (cell_index << (DIM*resl));
 			return index;
-
 		}
+
+		Index get_index(Value const & v, Index resl) const {
+			Index cell_index;
+			Indices indices;
+			if( !get_indicies(v,resl,indices,cell_index) ) return std::numeric_limits<Index>::max();
+			return get_index(indices,cell_index,resl);
+		}
+
+		bool get_neighbors(Value const & v, Index resl, std::vector<Index> & out) const {
+			Index nside = 1<<resl;
+			Indices indices;
+			Index cell_index;
+			if( !get_indicies(v,resl,indices,cell_index) ) return false;
+
+			return true;
+		};
 
 		///////////////////////////////////////
 		//// generic interface functions
 		///////////////////////////////////////
 
+		///@brief generic virtual function to set the state of this nest
+		///@returns false if invalid index
+		virtual bool generic_set_state(Index index, Index resl) { return set_state(index,resl); }
 		///@brief generic virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
@@ -351,6 +227,10 @@ namespace nest {
 		///////////////////////////////////////
 		//// generic interface functions
 		///////////////////////////////////////
+
+		///@brief generic virtual function to set the state of this nest
+		///@returns false if invalid index
+		virtual bool generic_set_state(Index index, Index resl) { return set_state(index,resl); }
 
 		///@brief generic virtual function to set the state of this nest
 		///@detail will consume no indices from hindices vector, using only cell_index

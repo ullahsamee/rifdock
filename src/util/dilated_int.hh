@@ -15,6 +15,7 @@
 #include <cstddef>
 #endif
 
+namespace scheme {
 namespace util {
 
 namespace impl {
@@ -146,6 +147,7 @@ template<> inline uint64_t undilate<1>(uint64_t val) {
 
 
 
+}
 }
 
 #endif 

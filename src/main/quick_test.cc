@@ -1,7 +1,8 @@
 #include <main/gtest_util.hh>
 
 // include desired tests here:
-#include <nest/NEST_test.hh>
+// #include <nest/NEST_test.hh>
+#include <util/template_loop_test.hh>
 
 int main(int argc, char **argv)
 {

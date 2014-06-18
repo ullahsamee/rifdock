@@ -3,6 +3,7 @@
 // must include all tests here:
 #include <nest/NEST_test.hh>
 #include <util/dilated_int_test.hh>
+#include <util/template_loop_test.hh>
 
 int main(int argc, char **argv)
 {

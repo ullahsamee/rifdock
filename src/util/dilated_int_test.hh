@@ -11,6 +11,7 @@
 #include <util/dilated_int.hh>
 #include <gtest/gtest.h>
 
+namespace scheme {
 namespace util {
 
 template<uint64_t D> bool test_dilated_int() {
@@ -61,6 +62,7 @@ TEST(DILATED_INT,test_64bit){
 }
 
 
+}
 }
 
 #endif 

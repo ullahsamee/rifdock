@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+namespace scheme {
 namespace util {
 
     template<int X, int Y> struct POW      { static const int VAL = X * POW<X, Y-1>::VAL; };
@@ -38,6 +39,7 @@ namespace util {
     template<class T, T val, uint64_t shift> struct SAFE_LSHIFT { static const T VAL = (shift >= (sizeof(T) * 8)) ?  0 : (val << shift); };
     template<class T, T val, uint64_t shift> struct SAFE_RSHIFT { static const T VAL = (shift >= (sizeof(T) * 8)) ?  0 : (val >> shift); };
 
+}
 }
 
 #endif // INCLUDED_util_template_math_HH

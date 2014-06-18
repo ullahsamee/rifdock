@@ -6,12 +6,15 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
+#include <nest/parameter_maps.hh>
 
 namespace scheme {
 namespace nest {
 
 using std::cout;
 using std::endl;
+
+using scheme::util::StorePointer;
 
 TEST(NEST,particular_cases){
 	NEST<1>	nest;
@@ -76,14 +79,13 @@ void test_coverage_cube(){
 	}
 }
 
-TEST(NEST,coverage_cube){
-	test_coverage_cube<1>();
-	test_coverage_cube<2>();
-	test_coverage_cube<3>();
-	test_coverage_cube<4>();
-	test_coverage_cube<5>();
-	test_coverage_cube<6>();
-}
+TEST(NEST,coverage_cube_DIM1){ test_coverage_cube<1>(); }
+TEST(NEST,coverage_cube_DIM2){ test_coverage_cube<2>(); }
+TEST(NEST,coverage_cube_DIM3){ test_coverage_cube<3>(); }
+TEST(NEST,coverage_cube_DIM4){ test_coverage_cube<4>(); }
+TEST(NEST,coverage_cube_DIM5){ test_coverage_cube<5>(); }
+TEST(NEST,coverage_cube_DIM6){ test_coverage_cube<6>(); }
+
 
 
 template<int DIM>
@@ -104,39 +106,42 @@ void test_index_nesting(){
 		}
 	}
 }
-TEST(NEST,index_nesting){
-	test_index_nesting<1>();
-	test_index_nesting<2>();
-	test_index_nesting<3>();
-	test_index_nesting<4>();
-	test_index_nesting<5>();
-	test_index_nesting<6>();
-}
+TEST(NEST,index_nesting_DIM1){ test_index_nesting<1>(); }
+TEST(NEST,index_nesting_DIM2){ test_index_nesting<2>(); }
+TEST(NEST,index_nesting_DIM3){ test_index_nesting<3>(); }
+TEST(NEST,index_nesting_DIM4){ test_index_nesting<4>(); }
+TEST(NEST,index_nesting_DIM5){ test_index_nesting<5>(); }
+TEST(NEST,index_nesting_DIM6){ test_index_nesting<6>(); }
+
 
 template<int DIM>
-void test_store_pointer(){
+void test_store_pointer_generic(){
 	typedef Matrix<float,DIM,1> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest_val(2);
 	NEST<DIM,VAL,UnitMap,StorePointer> nest_ptr(2);
-	VAL val;
-	nest_ptr.set_pointer(&val);
+	NestBase<> * nest_val_generic = &nest_val;
+	NestBase<> * nest_ptr_generic = &nest_ptr;	
+	StorePointer<VAL> * ptr_store      = dynamic_cast< StorePointer<VAL>* >(nest_ptr_generic);
+	StorePointer<VAL> * ptr_store_fail = dynamic_cast< StorePointer<VAL>* >(nest_val_generic);
+	ASSERT_TRUE(ptr_store);
+	ASSERT_FALSE(ptr_store_fail);
+	VAL val_pointed_to;
+	ptr_store->set_pointer(&val_pointed_to);
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		for(size_t i = 0; i < nest_val.size(r); ++i){
-			ASSERT_TRUE( nest_val.set_state(i,r) );
-			ASSERT_TRUE( nest_ptr.set_state(i,r) );			
-			ASSERT_EQ( nest_val.value(), val );
+			ASSERT_TRUE( nest_val_generic->generic_set_state(i,r) );
+			ASSERT_TRUE( nest_ptr_generic->generic_set_state(i,r) );			
+			ASSERT_EQ( nest_val.value(), val_pointed_to );
 		}
 	}
 }
-TEST(NEST,store_pointer){
-	test_store_pointer<1>();
-	test_store_pointer<2>();
-	test_store_pointer<3>();
-	test_store_pointer<4>();
-	test_store_pointer<5>();
-	test_store_pointer<6>();
-}
+TEST(NEST,store_pointer_generic_DIM1){ test_store_pointer_generic<1>(); }
+TEST(NEST,store_pointer_generic_DIM2){ test_store_pointer_generic<2>(); }
+TEST(NEST,store_pointer_generic_DIM3){ test_store_pointer_generic<3>(); }
+TEST(NEST,store_pointer_generic_DIM4){ test_store_pointer_generic<4>(); }
+TEST(NEST,store_pointer_generic_DIM5){ test_store_pointer_generic<5>(); }
+TEST(NEST,store_pointer_generic_DIM6){ test_store_pointer_generic<6>(); }
 
 template<int DIM>
 void test_uniformity(){
@@ -156,14 +161,14 @@ void test_uniformity(){
 		ASSERT_EQ( (1<<((DIM-1)*r))*DIM, counts.maxCoeff() );				
 	}
 }
-TEST(NEST,uniformity){
-	test_uniformity<1>();
-	test_uniformity<2>();
-	test_uniformity<3>();
-	test_uniformity<4>();
-	test_uniformity<5>();
-	test_uniformity<6>();
-}
+
+TEST(NEST,uniformity_DIM1){ test_uniformity<1>(); }
+TEST(NEST,uniformity_DIM2){ test_uniformity<2>(); }
+TEST(NEST,uniformity_DIM3){ test_uniformity<3>(); }
+TEST(NEST,uniformity_DIM4){ test_uniformity<4>(); }
+TEST(NEST,uniformity_DIM5){ test_uniformity<5>(); }
+TEST(NEST,uniformity_DIM6){ test_uniformity<6>(); }
+
 
 template<int DIM>
 void test_index_lookup_scaled(){
@@ -195,14 +200,13 @@ void test_index_lookup_scaled(){
 		}
 	}
 }
-TEST(NEST,index_lookup_scaled){
-	test_index_lookup_scaled<1>();
-	test_index_lookup_scaled<2>();
-	test_index_lookup_scaled<3>();
-	test_index_lookup_scaled<4>();
-	test_index_lookup_scaled<5>();
-	test_index_lookup_scaled<6>();
-}
+
+TEST(NEST,index_lookup_scaled_DIM1){ test_index_lookup_scaled<1>(); }
+TEST(NEST,index_lookup_scaled_DIM2){ test_index_lookup_scaled<2>(); }
+TEST(NEST,index_lookup_scaled_DIM3){ test_index_lookup_scaled<3>(); }
+TEST(NEST,index_lookup_scaled_DIM4){ test_index_lookup_scaled<4>(); }
+TEST(NEST,index_lookup_scaled_DIM5){ test_index_lookup_scaled<5>(); }
+TEST(NEST,index_lookup_scaled_DIM6){ test_index_lookup_scaled<6>(); }
 
 
 template<int DIM>
@@ -222,7 +226,7 @@ void test_map_scale_bounds(){
 	}
 	NEST<DIM,VAL,ScaleMap,StoreValue> nest(lb,ub,bs);
 
-	size_t resl = 6/DIM+1;
+	size_t resl = 8/DIM;
 	for(size_t i = 0; i < nest.size(resl); ++i){
 		ASSERT_TRUE( nest.set_state(i,resl) );
 		for(size_t j = 0; j < DIM; ++j){ 
@@ -235,14 +239,13 @@ void test_map_scale_bounds(){
 	}
 
 }
-TEST(NEST,map_scale){
-	test_map_scale_bounds<1>();
-	test_map_scale_bounds<2>();
-	test_map_scale_bounds<3>();
-	test_map_scale_bounds<4>();
-	// test_map_scale_bounds<5>();
-	// test_map_scale_bounds<6>();
-}
+
+TEST(NEST,map_scale_DIM1){ test_map_scale_bounds<1>(); }
+TEST(NEST,map_scale_DIM2){ test_map_scale_bounds<2>(); }
+TEST(NEST,map_scale_DIM3){ test_map_scale_bounds<3>(); }
+TEST(NEST,map_scale_DIM4){ test_map_scale_bounds<4>(); }
+TEST(NEST,map_scale_DIM5){ test_map_scale_bounds<5>(); }
+TEST(NEST,map_scale_DIM6){ test_map_scale_bounds<6>(); }
 
 
 
