@@ -12,6 +12,7 @@
 namespace scheme {
 namespace nest {
 
+	
 	using util::StoreValue;
 	using util::StorePointer;	
 
@@ -25,7 +26,7 @@ namespace nest {
 
 	///@brief Base class for NEST
 	///@tparam Index index type
-	///@detail Base class for NEST, generic NEST interface
+	///@detail Base class for NEST, virtual NEST interface
 	template<class Index=size_t>
 	struct NestBase {
 		///@brief all nests must know their cell_size
@@ -35,15 +36,15 @@ namespace nest {
 		///@brief get the cell_size of this NEST
 		Index cell_size() const { return cell_size_; }
 
-		///@brief generic virtual function to set the state of this nest
+		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool generic_set_state(Index index, Index resl) = 0;
+		virtual bool virtual_set_state(Index index, Index resl) = 0;
 
-		///@brief generic virtual function to set the state of this nest
+		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@returns false if invalid index
-		virtual	bool generic_set_state(
+		virtual	bool virtual_set_state(
 			std::vector<size_t> const & indices,
 			Index cell_index,
 			size_t & iindex,
@@ -51,10 +52,10 @@ namespace nest {
 		) = 0;
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
-		virtual Index generic_size(Index resl) const = 0;
+		virtual Index virtual_size(Index resl) const = 0;
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
-		virtual size_t generic_dim() const = 0;
+		virtual size_t virtual_dim() const = 0;
 	protected:
 		size_t cell_size_;
 		void cell_size(Index cell_size) { cell_size_ = cell_size; }
@@ -90,6 +91,7 @@ namespace nest {
 	{
 		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float> ThisType;
 		typedef Eigen::Array<Index,DIM,1> Indices;
+		typedef Eigen::Array<int,DIM,1> SignedIndices;
 		typedef Eigen::Array<Float,DIM,1> Params;		
 		typedef Value ValueType;
 		typedef Index IndexType;
@@ -140,7 +142,8 @@ namespace nest {
 		///@brief calls set_state(index,resl) then returns value()
 		///@return value of set state
 		Value const & set_and_get(Index index, Index resl){
-			assert( set_state(index,resl) );
+			bool tf = set_state(index,resl);
+			assert( tf );
 			return this->value();
 		}
 
@@ -158,6 +161,16 @@ namespace nest {
 			return true;
 		}
 
+		void get_indicies_unitcell(Value const & v, Index resl, Indices & indices_out) const {
+			Params params;
+			this->value_to_params_unitcell( v, params );
+			Float scale = Float(ONE<<resl);
+			for(size_t i = 0; i < DIM; ++i){
+				// this crazy add/subtract avoids round towards 0 so params < 0 behave correctly
+				indices_out[i] = static_cast<Index>(params[i]*scale+65536) - 65536;
+			}
+		}
+
 		Index get_index(Indices const & indices, Index cell_index, Index resl) const {
 			Index index = 0;
 			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
@@ -173,7 +186,7 @@ namespace nest {
 		}
 
 		template<class OutIter>
-		void push_index(Indices const & indices, Index cell_index, Index resl, OutIter out) const {
+		void push_index(SignedIndices const & indices, Index cell_index, Index resl, OutIter out) const {
 			Index index = 0;
 			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
 			index = index | (cell_index << (DIM*resl));
@@ -182,40 +195,50 @@ namespace nest {
 		}
 
 		template<class OutIter>
+		void get_neighbors(Indices const & indices, Index cell_index, Index resl, OutIter out)  {
+			// std::cout << indices.transpose() << std::endl;
+			SignedIndices lb = ((indices.template cast<int>()-1).max(     0     ));
+			SignedIndices ub = ((indices.template cast<int>()+1).min((1<<resl)-1));
+			// std::cout << "LB " << lb.transpose() << std::endl;
+			// std::cout << "UB " << ub.transpose() << std::endl;			
+			boost::function<void(SignedIndices)> functor;
+			functor = boost::bind( & ThisType::template push_index<OutIter>, this, _1, cell_index, resl, out );
+			util::NESTED_FOR<DIM>(lb,ub,functor);
+		};
+
+		template<class OutIter>
 		bool get_neighbors(Value const & v, Index resl, OutIter out)  {
-			Index nside = 1<<resl;
 			Indices indices;
 			Index cell_index;
 			if( !get_indicies(v,resl,indices,cell_index) ) return false;
-			Indices lb = ((indices.template cast<int>()-1).max(0)).template cast<Index>(); // easiest to convert to signed and back
-			Indices ub = (indices+(Index)1).min((1<<resl)-1);
-			// std::cout << "lb " << lb.transpose() << std::endl;
-			// std::cout << "ub " << ub.transpose() << std::endl;
-			boost::function<void(Indices)> functor;
-			functor = boost::bind( 
-				& ThisType::template push_index<OutIter>, 
-				this, 
-				_1, 
-				cell_index, 
-				resl, 
-				out
-			);
-			util::NESTED_FOR<DIM>(lb,ub,functor);
+			get_neighbors(indices,cell_index,resl,out);
 			return true;
 		};
 
+		template<class OutIter>
+		void get_neighbors_unitcell(Value const & v, Index resl, OutIter out)  {
+			Indices indices;
+			get_indicies_unitcell(v,resl,indices);
+			get_neighbors(indices,0,resl,out);
+		};
+
 		///////////////////////////////////////
-		//// generic interface functions
+		//// virtual interface functions
 		///////////////////////////////////////
 
-		///@brief generic virtual function to set the state of this nest
+		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool generic_set_state(Index index, Index resl) { return set_state(index,resl); }
-		///@brief generic virtual function to set the state of this nest
+		virtual bool virtual_set_state(Index index, Index resl) { return set_state(index,resl); }
+		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@return false iff invalid index
-		virtual bool generic_set_state(std::vector<size_t> const & hindices, Index cell_index, size_t & iindex, Index resl) {
+		virtual bool virtual_set_state(
+			std::vector<size_t> const & hindices,
+			Index cell_index,
+			size_t & iindex,
+			Index resl
+		) {
 			Float scale = 1.0 / Float(ONE<<resl);
 			Params params;
 			for(size_t i = 0; i < DIM; ++i) params[i] = (static_cast<Float>(hindices[iindex]) + 0.5 ) * scale;
@@ -224,10 +247,10 @@ namespace nest {
 		}
 		///@brief virtual function returning size(resl)
 		///@return size at depth resl
-		virtual Index generic_size(Index resl) const { return size(resl); }
+		virtual Index virtual_size(Index resl) const { return size(resl); }
 		///@brief virtual runction returning DIM
 		///@return dimension of NEST
-		virtual size_t generic_dim() const { return DIM; }
+		virtual size_t virtual_dim() const { return DIM; }
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +271,10 @@ namespace nest {
 	{
 		typedef Eigen::Array<Float,0,1> Params;		
 		NEST(Index cell_size=1) : NestBase<Index>(cell_size) {}
-		NEST(std::vector<Value> const & _choices) : NestBase<Index>(_choices.size()), ParamMap<0,Value,Index,Float>(_choices) {}
+		NEST(std::vector<Value> const & _choices) : 
+			NestBase<Index>(_choices.size()),
+			ParamMap<0,Value,Index,Float>(_choices)
+		{}
 		///@brief get num states at depth resl
 		///@return number of status at depth resl
 		Index size(Index /*resl*/=0) const { return this->cell_size(); }
@@ -268,26 +294,33 @@ namespace nest {
 		}
 
 		///////////////////////////////////////
-		//// generic interface functions
+		//// virtual interface functions
 		///////////////////////////////////////
 
-		///@brief generic virtual function to set the state of this nest
+		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool generic_set_state(Index index, Index resl) { return set_state(index,resl); }
+		virtual bool virtual_set_state(Index index, Index resl) { return set_state(index,resl); }
 
-		///@brief generic virtual function to set the state of this nest
+		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume no indices from hindices vector, using only cell_index
 		///        for use in composite data structures containing NestBases
-		virtual bool generic_set_state(std::vector<size_t> const & /*hindices*/, Index cell_index, size_t & /*iindex*/, Index /*resl*/) {
+		virtual
+		bool
+		virtual_set_state(
+			std::vector<size_t> const & /*hindices*/,
+			Index cell_index,
+			size_t & /*iindex*/,
+			Index /*resl*/
+		) {
 			Params params;
 			return this->params_to_value( params, cell_index, this->nonconst_value() );
 		}
 		///@brief return size(resl)
 		///@return cell_size for these type
-		virtual Index generic_size(Index /*resl*/) const { return this->cell_size(); }
+		virtual Index virtual_size(Index /*resl*/) const { return this->cell_size(); }
 		///@brief get dimension of this nest
 		///@return always 0 for these types
-		virtual size_t generic_dim() const { return 0; }
+		virtual size_t virtual_dim() const { return 0; }
 	};
 
 

@@ -35,15 +35,23 @@ namespace nest {
 			value[0] += (Float)cell_index;
 			return true;
 		}
+		///@brief sets params/cell_index from value
 		bool value_to_params(
 			Value const & value,
 			Params & params,
 			Index & cell_index
 		) const {
-			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
+			value_to_params_unitcell(value,params);
 			cell_index = (Index)value[0];
 			params[0] -= (Float)cell_index;
 			return true;
+		}
+		///@brief for unit cell
+		void value_to_params_unitcell(
+			Value const & value,
+			Params & params
+		) const {
+			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
 		}
 		Float covering_radius(Index resl) const { return 0.5/(Float)(1<<resl) * sqrt(DIM); }
 		Float neighbor_radius(Index resl) const { return 1.5/(Float)(1<<resl); }
@@ -72,11 +80,14 @@ namespace nest {
 		///@brief construct with default lb, ub, bs
 		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default lb, ub
-		ScaleMap(Indices const & bs) : cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
+		ScaleMap(Indices const & bs) : 
+			cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default bs
-		ScaleMap(Params const & lb, Params const & ub) : lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
+		ScaleMap(Params const & lb, Params const & ub) : 
+			lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
 		///@brief construct with specified lb, ub and bs
-		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
+		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : 
+			lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
 
 		///@brief sets up cell_size_pref_sum
 		void init(){
@@ -101,20 +112,19 @@ namespace nest {
 			}
 			return true;
 		}
+		///@brief sets params/cell_index from value
 		bool value_to_params(
 			Value const & value,
 			Params & params,
 			Index & cell_index
 		) const {
+			value_to_params_unitcell(value,params);
 			cell_index = 0;
 			for(size_t i = 0; i < DIM; ++i){
 				assert(cell_sizes_[i] > 0);
 				assert(cell_sizes_[i] < 100000);
 				assert(lower_bound_[i] < upper_bound_[i]);
 				// Index cell_size_pref_sum = cell_sizes_.head(i).prod();
-				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
-				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
-				params[i] = ( value[i] - lower_bound_[i] ) / width - bi;
 				Float ci = (Index)params[i];
 				cell_index += cell_sizes_pref_sum_[i] * ci;
 				params[i] -= (Float)ci;
@@ -122,6 +132,20 @@ namespace nest {
 				assert( 0.0 < params[i] && params[i] < 1.0);
 			}
 			return true;
+		}
+		///@brief sets params/cell_index from value
+		void value_to_params_unitcell(
+			Value const & value,
+			Params & params
+		) const {
+			for(size_t i = 0; i < DIM; ++i){
+				assert(cell_sizes_[i] > 0);
+				assert(cell_sizes_[i] < 100000);
+				assert(lower_bound_[i] < upper_bound_[i]);
+				// Index cell_size_pref_sum = cell_sizes_.head(i).prod();
+				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
+				params[i] = ( value[i] - lower_bound_[i] ) / width;
+			}
 		}
 
 		Float covering_radius(Index resl) const {

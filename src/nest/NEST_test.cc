@@ -66,7 +66,7 @@ void test_coverage_unit1cell(){
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		double cellradius = sqrt(DIM) * 0.5 / (1<<r);
-		for(size_t iter = 0; iter < 10000/DIM; ++iter){
+		for(size_t iter = 0; iter < 100000/DIM; ++iter){
 			Matrix<double,DIM,1> tgt;
 			for(size_t i = 0; i < DIM; ++i) tgt[i] = uniform(rng);
 			size_t index = nest.get_index(tgt,r);
@@ -120,14 +120,14 @@ TEST(NEST,index_nesting){
 
 
 template<int DIM>
-void test_store_pointer_generic(){
+void test_store_pointer_virtual(){
 	typedef Matrix<double,DIM,1> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest_val(2);
 	NEST<DIM,VAL,UnitMap,StorePointer> nest_ptr(2);
-	NestBase<> * nest_val_generic = &nest_val;
-	NestBase<> * nest_ptr_generic = &nest_ptr;	
-	StorePointer<VAL> * ptr_store      = dynamic_cast< StorePointer<VAL>* >(nest_ptr_generic);
-	StorePointer<VAL> * ptr_store_fail = dynamic_cast< StorePointer<VAL>* >(nest_val_generic);
+	NestBase<> * nest_val_virtual = &nest_val;
+	NestBase<> * nest_ptr_virtual = &nest_ptr;	
+	StorePointer<VAL> * ptr_store      = dynamic_cast< StorePointer<VAL>* >(nest_ptr_virtual);
+	StorePointer<VAL> * ptr_store_fail = dynamic_cast< StorePointer<VAL>* >(nest_val_virtual);
 	ASSERT_TRUE(ptr_store);
 	ASSERT_FALSE(ptr_store_fail);
 	VAL val_pointed_to;
@@ -135,19 +135,19 @@ void test_store_pointer_generic(){
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		for(size_t i = 0; i < nest_val.size(r); ++i){
-			ASSERT_TRUE( nest_val_generic->generic_set_state(i,r) );
-			ASSERT_TRUE( nest_ptr_generic->generic_set_state(i,r) );			
+			ASSERT_TRUE( nest_val_virtual->virtual_set_state(i,r) );
+			ASSERT_TRUE( nest_ptr_virtual->virtual_set_state(i,r) );			
 			ASSERT_EQ( nest_val.value(), val_pointed_to );
 		}
 	}
 }
-TEST(NEST,store_pointer_generic){
-	test_store_pointer_generic<1>();
-	test_store_pointer_generic<2>();
-	test_store_pointer_generic<3>();
-	test_store_pointer_generic<4>();
-	test_store_pointer_generic<5>();
-	test_store_pointer_generic<6>();
+TEST(NEST,store_pointer_virtual){
+	test_store_pointer_virtual<1>();
+	test_store_pointer_virtual<2>();
+	test_store_pointer_virtual<3>();
+	test_store_pointer_virtual<4>();
+	test_store_pointer_virtual<5>();
+	test_store_pointer_virtual<6>();
 }
 
 template<int DIM>
@@ -182,7 +182,9 @@ TEST(NEST,bounds){
 	NEST<1> nest;
 	ASSERT_TRUE (nest.set_state(0,0));
 	ASSERT_FALSE(nest.set_state(1,0));
-	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion failed:.*set_state.*index,resl.*set_and_get.*" );
+	#ifndef NDEBUG
+	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion failed:.*set_and_get.*NEST.hh.*" );
+	#endif
 }
 
 

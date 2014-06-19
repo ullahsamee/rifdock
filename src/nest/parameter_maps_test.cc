@@ -5,6 +5,8 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <nest/parameter_maps.hh>
+#include <array>
+
 
 namespace scheme {
 namespace nest {
@@ -13,6 +15,74 @@ using std::cout;
 using std::endl;
 
 using scheme::util::StorePointer;
+
+
+void PrintTo(const RowVector2d & v, ::std::ostream* os) {
+  *os << v[0] << " " << v[1] ;
+}
+
+TEST(NEST_scalemap,particular_values){
+	{
+		typedef Matrix<double,1,1> VAL;
+		VAL lb, ub;
+		Matrix<size_t,1,1> bs;
+		lb << -16.0;
+		ub <<  16.0;
+		bs << 1;
+		NEST<1,VAL,ScaleMap> nest1(lb,ub,bs);
+		bs << 2;
+		NEST<1,VAL,ScaleMap> nest2(lb,ub,bs);
+		ASSERT_EQ( nest1.set_and_get(0,0)[0],  0.0 );
+		ASSERT_EQ( nest1.set_and_get(0,1)[0], -8.0 );
+		ASSERT_EQ( nest1.set_and_get(1,1)[0],  8.0 );
+
+		EXPECT_EQ( nest2.set_and_get(0,0)[0], -8.0 );
+		EXPECT_EQ( nest2.set_and_get(1,0)[0],  8.0 );	
+		EXPECT_EQ( nest2.set_and_get(0,1)[0],-12.0 );
+		EXPECT_EQ( nest2.set_and_get(1,1)[0], -4.0 );	
+		EXPECT_EQ( nest2.set_and_get(2,1)[0],  4.0 );
+		EXPECT_EQ( nest2.set_and_get(3,1)[0], 12.0 );	
+	}
+	{
+		typedef Vector2d VAL;
+		Matrix<double,2,1> lb, ub;
+		Matrix<size_t,2,1> bs;
+		lb << -16.0,-24;
+		ub <<  16.0, 24;
+		bs << 2,3;
+		NEST<2,VAL,ScaleMap> nest(lb,ub,bs);
+		EXPECT_EQ( nest.set_and_get(0,0), Vector2d(-8,-16) );
+		EXPECT_EQ( nest.set_and_get(1,0), Vector2d( 8,-16) );	
+		EXPECT_EQ( nest.set_and_get(2,0), Vector2d(-8,  0) );
+		EXPECT_EQ( nest.set_and_get(3,0), Vector2d( 8,  0) );	
+		EXPECT_EQ( nest.set_and_get(4,0), Vector2d(-8, 16) );
+		EXPECT_EQ( nest.set_and_get(5,0), Vector2d( 8, 16) );
+		EXPECT_EQ( nest.set_and_get(0,1), Vector2d(-12,-20) );
+		EXPECT_EQ( nest.set_and_get(1,1), Vector2d( -4,-20) );
+		EXPECT_EQ( nest.set_and_get(2,1), Vector2d(-12,-12) );
+		EXPECT_EQ( nest.set_and_get(3,1), Vector2d( -4,-12) );
+		EXPECT_EQ( nest.set_and_get(0,2), Vector2d(-14,-22) );
+		EXPECT_EQ( nest.set_and_get(1,2), Vector2d(-10,-22) );
+		EXPECT_EQ( nest.set_and_get(2,2), Vector2d(-14,-18) );
+		EXPECT_EQ( nest.set_and_get(3,2), Vector2d(-10,-18) );
+		EXPECT_EQ( nest.set_and_get(0,3), Vector2d(-15,-23) );
+		EXPECT_EQ( nest.set_and_get(1,3), Vector2d(-13,-23) );
+		EXPECT_EQ( nest.set_and_get(2,3), Vector2d(-15,-21) );
+		EXPECT_EQ( nest.set_and_get(3,3), Vector2d(-13,-21) );
+		EXPECT_EQ( nest.set_and_get(5*64+60,3), Vector2d(13,21) );
+		EXPECT_EQ( nest.set_and_get(5*64+61,3), Vector2d(15,21) );
+		EXPECT_EQ( nest.set_and_get(5*64+62,3), Vector2d(13,23) );
+		EXPECT_EQ( nest.set_and_get(5*64+63,3), Vector2d(15,23) );
+		// cout << VAL(0,0) << endl;
+	}
+}
+
+
+
+
+
+
+
 
 template<int DIM>
 void test_index_lookup_scaled(){
@@ -106,7 +176,7 @@ void test_covering_radius(
 	typename NEST::ValueType randpt;
 	for(size_t r = 0; r <= 10; ++r){
 		double maxdis = 0;
-		for(size_t iter=0; iter < 10000/NEST::DIMENSION; ++iter){
+		for(size_t iter=0; iter < 100000/NEST::DIMENSION; ++iter){
 			for(size_t i = 0; i < NEST::DIMENSION; ++i) 
 				randpt[i] = uniform(rng)*(ub[i]-lb[i])+lb[i];
 			nest.set_state( nest.get_index(randpt,r) ,r);
