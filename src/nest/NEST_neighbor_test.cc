@@ -1,4 +1,3 @@
-
 #include <nest/NEST.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'

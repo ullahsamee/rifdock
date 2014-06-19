@@ -191,7 +191,15 @@ namespace nest {
 			Indices ub = (indices+(Index)1).min((1<<resl)-1);
 			// std::cout << "lb " << lb.transpose() << std::endl;
 			// std::cout << "ub " << ub.transpose() << std::endl;
-			boost::function<void(Indices)> functor = boost::bind( &ThisType::push_index<OutIter>, this, _1, cell_index, resl, out );
+			boost::function<void(Indices)> functor;
+			functor = boost::bind( 
+				& ThisType::template push_index<OutIter>, 
+				this, 
+				_1, 
+				cell_index, 
+				resl, 
+				out
+			);
 			util::NESTED_FOR<DIM>(lb,ub,functor);
 			return true;
 		};

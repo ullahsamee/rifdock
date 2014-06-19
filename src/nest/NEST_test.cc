@@ -178,6 +178,12 @@ TEST(NEST,uniformity){
 	test_uniformity<6>();
 }
 
+TEST(NEST,bounds){
+	NEST<1> nest;
+	ASSERT_TRUE (nest.set_state(0,0));
+	ASSERT_FALSE(nest.set_state(1,0));
+	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion failed:.*set_state.*index,resl.*set_and_get.*" );
+}
 
 
 
