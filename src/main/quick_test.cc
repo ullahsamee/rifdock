@@ -2,8 +2,8 @@
 
 // include desired tests here:
 // #include <nest/NEST_test.cc>
-#include <nest/NEST_neighbor_test.cc>
-// #include <nest/parameter_maps_test.cc>
+// #include <nest/NEST_neighbor_test.cc>
+#include <nest/parameter_maps_test.cc>
 
 int main(int argc, char **argv)
 {

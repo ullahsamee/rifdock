@@ -29,17 +29,11 @@ namespace nest {
 	///@detail Base class for NEST, virtual NEST interface
 	template<class Index=size_t>
 	struct NestBase {
-		///@brief all nests must know their cell_size
-		NestBase(Index cell_size=1) : cell_size_(cell_size) {}
 		///@brief need virtual destructor
 		virtual ~NestBase(){}
-		///@brief get the cell_size of this NEST
-		Index cell_size() const { return cell_size_; }
-
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
 		virtual bool virtual_set_state(Index index, Index resl) = 0;
-
 		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
@@ -56,9 +50,6 @@ namespace nest {
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
 		virtual size_t virtual_dim() const = 0;
-	protected:
-		size_t cell_size_;
-		void cell_size(Index cell_size) { cell_size_ = cell_size; }
 	};
 
 
@@ -103,16 +94,15 @@ namespace nest {
 		static int const DIMENSION = DIM;
 
 		///@brief default ctor
-		NEST() : NestBase<Index>(1) {}
+		NEST() : ParamMapType(1) {}
 		///@brief general constructor
-		NEST(Index cell_size) : NestBase<Index>(cell_size) {}
+		NEST(Index cell_size) : ParamMapType(cell_size) {}
 		///@brief for supporting ParamMaps, construct with bs
-		NEST(Indices const & bs) : NestBase<Index>(bs.prod()), ParamMap<DIM,Value,Index,Float>(bs) {}
+		NEST(Indices const & bs) : ParamMapType(bs) {}
 		///@brief for supporting ParamMaps, construct with default bs
-		NEST(Params const & lb, Params const & ub) : ParamMap<DIM,Value,Index,Float>(lb,ub) {}
+		NEST(Params const & lb, Params const & ub) : ParamMapType(lb,ub) {}
 		///@brief for supporting ParamMaps, construct with specified lb, ub and bs
-		NEST(Params const & lb, Params const & ub, Indices const & bs) : 
-			NestBase<Index>(bs.prod()), ParamMap<DIM,Value,Index,Float>(lb,ub,bs) {}
+		NEST(Params const & lb, Params const & ub, Indices const & bs) : ParamMapType(lb,ub,bs) {}
 
 		///@brief get size of NEST at depth resl
 		///@return size of NEST at resolution depth resl
@@ -167,7 +157,8 @@ namespace nest {
 			Float scale = Float(ONE<<resl);
 			for(size_t i = 0; i < DIM; ++i){
 				// this crazy add/subtract avoids round towards 0 so params < 0 behave correctly
-				indices_out[i] = static_cast<Index>(params[i]*scale+65536) - 65536;
+				Index const BIG = 12345678; //std::numeric_limits<Index>::max()/2;
+				indices_out[i] = static_cast<Index>(params[i]*scale+BIG) - BIG;
 			}
 		}
 
@@ -190,8 +181,7 @@ namespace nest {
 			Index index = 0;
 			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
 			index = index | (cell_index << (DIM*resl));
-			*out = index;
-			++out;
+			*(out++) = index;
 		}
 
 		template<class OutIter>
@@ -199,12 +189,13 @@ namespace nest {
 			// std::cout << indices.transpose() << std::endl;
 			SignedIndices lb = ((indices.template cast<int>()-1).max(     0     ));
 			SignedIndices ub = ((indices.template cast<int>()+1).min((1<<resl)-1));
+			// std::cout << "IX " << indices.transpose() << " cell " << cell_index << std::endl;
 			// std::cout << "LB " << lb.transpose() << std::endl;
 			// std::cout << "UB " << ub.transpose() << std::endl;			
 			boost::function<void(SignedIndices)> functor;
 			functor = boost::bind( & ThisType::template push_index<OutIter>, this, _1, cell_index, resl, out );
 			util::NESTED_FOR<DIM>(lb,ub,functor);
-		};
+		}
 
 		template<class OutIter>
 		bool get_neighbors(Value const & v, Index resl, OutIter out)  {
@@ -213,14 +204,14 @@ namespace nest {
 			if( !get_indicies(v,resl,indices,cell_index) ) return false;
 			get_neighbors(indices,cell_index,resl,out);
 			return true;
-		};
+		}
 
 		template<class OutIter>
 		void get_neighbors_unitcell(Value const & v, Index resl, OutIter out)  {
 			Indices indices;
 			get_indicies_unitcell(v,resl,indices);
 			get_neighbors(indices,0,resl,out);
-		};
+		}
 
 		///////////////////////////////////////
 		//// virtual interface functions
@@ -269,12 +260,9 @@ namespace nest {
 	              public ParamMap<0,Value,Index,Float>, 
 	              public StoragePolicy<Value>
 	{
-		typedef Eigen::Array<Float,0,1> Params;		
-		NEST(Index cell_size=1) : NestBase<Index>(cell_size) {}
-		NEST(std::vector<Value> const & _choices) : 
-			NestBase<Index>(_choices.size()),
-			ParamMap<0,Value,Index,Float>(_choices)
-		{}
+		typedef Eigen::Array<Float,0,1> Params;
+		///@brief choices vector constructor
+		NEST(std::vector<Value> const & _choices) : ParamMap<0,Value,Index,Float>(_choices){}
 		///@brief get num states at depth resl
 		///@return number of status at depth resl
 		Index size(Index /*resl*/=0) const { return this->cell_size(); }

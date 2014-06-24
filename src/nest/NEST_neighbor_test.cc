@@ -6,8 +6,6 @@
 #include <nest/parameter_maps.hh>
 #include <boost/foreach.hpp>
 #include <iterator>
-#include <array>
-
 
 namespace scheme {
 namespace nest {
@@ -71,7 +69,7 @@ TEST(NEST_NEIGHBOR,dim3_test_case){
 }
 
 
-TEST(NEST_NEIGHBOR,unit_1d_boundary){
+TEST(NEST_NEIGHBOR,unit_1d_boundary_1cell){
 	NEST<1> nest;
 	std::vector<size_t> neighbors;
  	std::back_insert_iterator< std::vector<size_t> > back_it(neighbors);
@@ -101,40 +99,42 @@ TEST(NEST_NEIGHBOR,unit_1d_boundary){
  	ASSERT_EQ( neighbors[2], 3 );
 }
 
-TEST(NEST_NEIGHBOR,unit_2d_boundary){
-	NEST<2,RowVector2d> nest;
+TEST(NEST_NEIGHBOR,unit_2d_boundary_1cell){
+	typedef NEST<2,RowVector2d> NestType;
+
+	NestType nest;
 	std::vector<size_t> neighbors;
  	std::back_insert_iterator< std::vector<size_t> > back_it(neighbors);
  	size_t r = 2;
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(1.5,1.5), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(1.5,1.5), r, back_it );
  	ASSERT_EQ( neighbors.size(), 0 );
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(-1.5,1.5), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(-1.5,1.5), r, back_it );
  	ASSERT_EQ( neighbors.size(), 0 );
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(1.5,-1.5), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(1.5,-1.5), r, back_it );
  	ASSERT_EQ( neighbors.size(), 0 );
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(-1.5,-1.5), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(-1.5,-1.5), r, back_it );
  	ASSERT_EQ( neighbors.size(), 0 );
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(1.1,1.1), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(1.1,1.1), r, back_it );
  	// BOOST_FOREACH(size_t i,neighbors){ cout << i << "(" << nest.set_and_get(i,r)<<") "; } cout << endl;
  	ASSERT_EQ( neighbors.size(), 1 );
  	ASSERT_EQ( nest.set_and_get(neighbors[0],r), RowVector2d(0.875,0.875) );
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(0.9,1.1), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(0.9,1.1), r, back_it );
  	// BOOST_FOREACH(size_t i,neighbors){ cout << i << "(" << nest.set_and_get(i,r)<<") "; } cout << endl;
  	ASSERT_EQ( neighbors.size(), 2 );
  	ASSERT_EQ( nest.set_and_get(neighbors[0],r), RowVector2d(0.625,0.875) );
  	ASSERT_EQ( nest.set_and_get(neighbors[1],r), RowVector2d(0.875,0.875) );
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(1.1,0.6), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(1.1,0.6), r, back_it );
  	// BOOST_FOREACH(size_t i,neighbors){ cout << i << "(" << nest.set_and_get(i,r)<<") "; } cout << endl;
  	ASSERT_EQ( neighbors.size(), 3 );
  	ASSERT_EQ( nest.set_and_get(neighbors[0],r), RowVector2d(0.875,0.375) );
@@ -142,15 +142,33 @@ TEST(NEST_NEIGHBOR,unit_2d_boundary){
  	ASSERT_EQ( nest.set_and_get(neighbors[2],r), RowVector2d(0.875,0.875) );
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(-0.249,-0.249), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(-0.249,-0.249), r, back_it );
  	// BOOST_FOREACH(size_t i,neighbors){ cout << i << "(" << nest.set_and_get(i,r)<<") "; } cout << endl;
  	ASSERT_EQ( neighbors.size(), 1 );
  	ASSERT_EQ( nest.set_and_get(neighbors[0],r), RowVector2d(0.125,0.125) );
 
  	neighbors.clear();
- 	nest.get_neighbors_unitcell( NEST<2>::ValueType(-0.251,-0.251), r, back_it );
+ 	nest.get_neighbors_unitcell( NestType::ValueType(-0.251,-0.251), r, back_it );
  	// BOOST_FOREACH(size_t i,neighbors){ cout << i << "(" << nest.set_and_get(i,r)<<") "; } cout << endl;
  	ASSERT_EQ( neighbors.size(), 0 );
+
+}
+
+TEST(NEST_NEIGHBOR,neighbors_2d_boundary_2cell){
+	typedef NEST<2,RowVector2d> NestType;
+	NestType nest(2);
+	std::vector<size_t> neighbors;
+ 	std::back_insert_iterator< std::vector<size_t> > back_it(neighbors);
+ 	size_t r = 2;
+
+ 	neighbors.clear();
+ 	nest.get_neighbors( NestType::ValueType(0.999,0.499), r, back_it );
+
+ 	BOOST_FOREACH(size_t i,neighbors){
+ 		cout << i << " " << nest.set_and_get(i,r) << endl;
+ 	}
+
+ 	neighbors.clear();
 
 }
 
@@ -185,11 +203,11 @@ void generic_test_neighbors(
 			// double dist = (randpt-nest.value()).norm();
 			// // cout << randpt.transpose() << " " << nest.value().transpose() << endl;
 			// maxdis = fmax(maxdis,dist);
-			// ASSERT_LE( dist, nest.covering_radius(r) );
+			// ASSERT_LE( dist, nest.bin_circumradius(r) );
 		}
 		// covering radius should be reasonably tigth
-		// EXPECT_LT( nest.covering_radius(r)*0.75 , maxdis );
-		// cout << DIM << " " << maxdis << " " << nest.covering_radius(r) << std::endl;
+		// EXPECT_LT( nest.bin_circumradius(r)*0.75 , maxdis );
+		// cout << DIM << " " << maxdis << " " << nest.bin_circumradius(r) << std::endl;
 	}
 
 }
@@ -204,7 +222,7 @@ void generic_test_neighbors_unit(){
 }
 
 
-TEST(NEST_NEIGHBOR,neighbor_radius_unit){
+TEST(NEST_NEIGHBOR,bin_inradius_unit){
 	generic_test_neighbors_unit<2>();
 }
 */

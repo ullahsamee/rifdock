@@ -30,3 +30,5 @@ Makefile
 *.a
 
 /build/
+
+/.DS_Store

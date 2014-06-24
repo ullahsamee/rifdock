@@ -5,8 +5,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <nest/parameter_maps.hh>
-#include <array>
-
+#include <boost/foreach.hpp>
 
 namespace scheme {
 namespace nest {
@@ -166,7 +165,7 @@ TEST(NEST_scalemap,map_scale){
 }
 
 template<class NEST>
-void test_covering_radius(
+void test_bin_circumradius(
 	NEST nest,
 	typename NEST::Params lb,
 	typename NEST::Params ub
@@ -183,30 +182,30 @@ void test_covering_radius(
 			double dist = (randpt-nest.value()).norm();
 			// cout << randpt.transpose() << " " << nest.value().transpose() << endl;
 			maxdis = fmax(maxdis,dist);
-			ASSERT_LE( dist, nest.covering_radius(r) );
+			ASSERT_LE( dist, nest.bin_circumradius(r) );
 		}
 		// covering radius should be reasonably tigth
-		// cout << NEST::DIMENSION << " " << r << " " << nest.covering_radius(r) << " " << maxdis << endl;
-		if( nest.covering_radius(r)*(1.0-(double)NEST::DIMENSION/20.0) > maxdis ){
+		// cout << NEST::DIMENSION << " " << r << " " << nest.bin_circumradius(r) << " " << maxdis << endl;
+		if( nest.bin_circumradius(r)*(1.0-(double)NEST::DIMENSION/20.0) > maxdis ){
 			cout << "WARNING(PROBABILISTIC): covering radius may be too loose DIM=" << NEST::DIMENSION << " resl=" << r << endl;
-			cout << "                        covering radius " << nest.covering_radius(r) << " max observerd: " << maxdis << endl;
+			cout << "                        covering radius " << nest.bin_circumradius(r) << " max observerd: " << maxdis << endl;
 			cout << "                        if you see a handful of these, don't worry. if you see lots, then worry" << endl;
 		}
-		// cout << DIM << " " << maxdis << " " << nest.covering_radius(r) << std::endl;
+		// cout << DIM << " " << maxdis << " " << nest.bin_circumradius(r) << std::endl;
 	}
 }
 
-TEST(NEST_unitmap,NEST_covering_radius_unitmap){
-	{ NEST<1>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<1>(), lb, ub ); }
-	{ NEST<2>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<2>(), lb, ub ); }
-	{ NEST<3>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<3>(), lb, ub ); }
-	{ NEST<4>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<4>(), lb, ub ); }
-	{ NEST<5>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<5>(), lb, ub ); }
-	{ NEST<6>::Params lb,ub; lb.fill(0); ub.fill(1); test_covering_radius( NEST<6>(), lb, ub ); }
+TEST(NEST_unitmap,NEST_bin_circumradius_unitmap){
+	{ NEST<1>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<1>(), lb, ub ); }
+	{ NEST<2>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<2>(), lb, ub ); }
+	{ NEST<3>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<3>(), lb, ub ); }
+	{ NEST<4>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<4>(), lb, ub ); }
+	{ NEST<5>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<5>(), lb, ub ); }
+	{ NEST<6>::Params lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<6>(), lb, ub ); }
 }
 
 template<int DIM>
-void test_covering_radius_scalemap(){
+void test_bin_circumradius_scalemap(){
 	typedef NEST<DIM,Eigen::Matrix<double,DIM,1>,ScaleMap> NestType;
 	Eigen::Array<double ,DIM,1> lb, ub;
 	for(size_t i = 0; i < DIM; ++i){
@@ -214,17 +213,88 @@ void test_covering_radius_scalemap(){
 		ub[i] = 1+2*i;
 	}
 	NestType nest(lb,ub);
-	test_covering_radius< NestType >( nest, lb, ub );
+	test_bin_circumradius< NestType >( nest, lb, ub );
 }
 
-TEST(NEST_scalemap,NEST_covering_radius_scalemap){
-	test_covering_radius_scalemap<1>();
-	test_covering_radius_scalemap<2>();
-	test_covering_radius_scalemap<3>();
-	test_covering_radius_scalemap<4>();
-	test_covering_radius_scalemap<5>();
-	test_covering_radius_scalemap<6>();
+TEST(NEST_scalemap,NEST_bin_circumradius_scalemap){
+	test_bin_circumradius_scalemap<1>();
+	test_bin_circumradius_scalemap<2>();
+	test_bin_circumradius_scalemap<3>();
+	test_bin_circumradius_scalemap<4>();
+	test_bin_circumradius_scalemap<5>();
+	test_bin_circumradius_scalemap<6>();
 }
+
+
+TEST(ParamMap,UnitMap_get_neighboring_cells){
+	typedef UnitMap<2,Eigen::Vector2d> MapType;
+	MapType umap(99);
+	std::vector<size_t> cnb;
+	std::back_insert_iterator<std::vector<size_t> > biter(cnb);
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0], 1 );	
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(10.5,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0], 10 );	
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(10.3,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 2 );
+	ASSERT_EQ( cnb[0],  9 );	
+	ASSERT_EQ( cnb[1], 10 );
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(0.3,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0],  0 );	
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(0.3,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0],  0 );	
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(101.0,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 0 );
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(100.3,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0],  99 );
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(-0.5,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 0 );
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(-0.3,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0], 0 );	
+
+}
+
+TEST(ScaleMap,ScaleMap_get_neighboring_cells){
+	typedef ScaleMap<2,Eigen::Vector2d> MapType;
+	MapType umap(MapType::Indices(4,4));
+	std::vector<size_t> cnb;
+	std::back_insert_iterator<std::vector<size_t> > biter(cnb);
+
+	cnb.clear();
+	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[0], 1 );	
+
+
+
+	cout << cnb.size() << endl;
+	BOOST_FOREACH(size_t i,cnb) cout << i << endl;
+}
+
 
 }
 }

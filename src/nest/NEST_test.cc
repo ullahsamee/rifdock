@@ -183,7 +183,7 @@ TEST(NEST,bounds){
 	ASSERT_TRUE (nest.set_state(0,0));
 	ASSERT_FALSE(nest.set_state(1,0));
 	#ifndef NDEBUG
-	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion failed:.*set_and_get.*NEST.hh.*" );
+	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion.*failed" );
 	#endif
 }
 
