@@ -10,6 +10,7 @@ include_directories("src")
 
 FILE(GLOB UTIL_CC "src/util/*.cc")
 FILE(GLOB NEST_CC "src/nest/*.cc")
+FILE(GLOB NEST_MAP_CC "src/nest/maps/*.cc")
 
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
@@ -21,7 +22,7 @@ SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 " )
 
 project (main_test)
-add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC})
+add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC} ${NEST_MAP_CC} )
 target_link_libraries(main_test ${EXTRA_LIBS} )
 
 

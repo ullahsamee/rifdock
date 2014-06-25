@@ -1,19 +1,32 @@
-#ifndef INCLUDED_scheme_util_storage_policy_HH
-#define INCLUDED_scheme_util_storage_policy_HH
+#ifndef INCLUDED_scheme_nest_storage_policy_HH
+#define INCLUDED_scheme_nest_storage_policy_HH
 
 
 namespace scheme {
-namespace util {
+namespace nest {
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	/// storage policies
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
+	///@brief Storage Policy Class, store by value
+	///@detail this is a sortof DUMMY baseclass to define the StoragePolicy concept
+	///  also a placeholder for doxygen 
+	///@tparam Value type of value that is stored
+	template< class Value >
+	class StoragePolicy {
+		///@return reference to the stored value
+		Value const & value() const;
+	protected:
+		///@return nonconst reference to stored Value
+		Value & nonconst_value();
+	};
+
 	/// @brief Storage Policy Class, store by value
 	/// @tparam Value ValueType stored
 	template< class Value >
-	struct StoreValue {
+	struct StoreValue : public StoragePolicy<Value> {
 		///@return const reference to stored Value
 		Value const & value() const { return value_; }
 	protected:
@@ -27,7 +40,7 @@ namespace util {
 	/// @tparam Value ValueType stored
 	/// @note addes the ability to set the pointer
 	template< class Value >
-	struct StorePointer {
+	struct StorePointer : public StoragePolicy<Value> {
 		///@return const reference to stored Value
 		Value const & value() const { return *value_; }
 		/// @brief switch the pointer the this policy manages

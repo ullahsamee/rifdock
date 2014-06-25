@@ -4,7 +4,7 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <nest/parameter_maps.hh>
+#include <nest/maps/parameter_maps.hh>
 #include <boost/foreach.hpp>
 #include <iterator>
 
@@ -14,7 +14,7 @@ namespace nest {
 using std::cout;
 using std::endl;
 
-using scheme::util::StorePointer;
+using namespace maps;
 
 
 TEST(NEST,particular_cases){
@@ -41,7 +41,7 @@ TEST(NEST,map_discrete) {
 	using namespace boost::assign;
 	std::vector<double> choices;
 	choices += 42.0,152.345,8049782.83402;
-	NEST<0,double,DiscreteChoiceMap,StoreValue> nest0(choices);
+	NEST<0,double,maps::DiscreteChoiceMap,StoreValue> nest0(choices);
 	ASSERT_EQ(choices.size(),nest0.size());
 	ASSERT_EQ(choices.size(),nest0.size(0));	
 	ASSERT_EQ(choices.size(),nest0.size(3));

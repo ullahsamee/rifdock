@@ -1,19 +1,20 @@
-
+#include <nest/maps/parameter_maps.hh>
 #include <nest/NEST.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <nest/parameter_maps.hh>
 #include <boost/foreach.hpp>
 
 namespace scheme {
 namespace nest {
+namespace maps {
+
 
 using std::cout;
 using std::endl;
 
-using scheme::util::StorePointer;
+using scheme::nest::StorePointer;
 
 
 void PrintTo(const RowVector2d & v, ::std::ostream* os) {
@@ -278,24 +279,86 @@ TEST(ParamMap,UnitMap_get_neighboring_cells){
 
 }
 
-TEST(ScaleMap,ScaleMap_get_neighboring_cells){
-	typedef ScaleMap<2,Eigen::Vector2d> MapType;
-	MapType umap(MapType::Indices(4,4));
-	std::vector<size_t> cnb;
-	std::back_insert_iterator<std::vector<size_t> > biter(cnb);
-
-	cnb.clear();
-	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5), 0.4, biter );
-	ASSERT_EQ( cnb.size(), 1 );
-	ASSERT_EQ( cnb[0], 1 );	
-
-
-
-	cout << cnb.size() << endl;
-	BOOST_FOREACH(size_t i,cnb) cout << i << endl;
+TEST(ScaleMap,ScaleMap_cellindices){
+	Eigen::Array<size_t,1,1> bs; bs<<3;	ScaleMap<1> m1(bs);
+	for(size_t i = 0; i < 3; ++i) ASSERT_EQ( i, m1.indices_to_cellindex(m1.cellindex_to_indices(i)) );
+	ScaleMap<2> m2(Eigen::Array<size_t,2,1>(3,4));
+	for(size_t i = 0; i < 3*4; ++i) ASSERT_EQ( i, m2.indices_to_cellindex(m2.cellindex_to_indices(i)) );
+	ScaleMap<3> m3(Eigen::Array<size_t,3,1>(3,4,8));
+	for(size_t i = 0; i < 3*4*8; ++i) ASSERT_EQ( i, m3.indices_to_cellindex(m3.cellindex_to_indices(i)) );
+	ScaleMap<4> m4(Eigen::Array<size_t,4,1>(3,4,8,17));
+	for(size_t i = 0; i < 3*4*8*17; ++i) ASSERT_EQ( i, m4.indices_to_cellindex(m4.cellindex_to_indices(i)) );
 }
 
+TEST(ScaleMap,ScaleMap_get_neighboring_cells_244){
+	typedef ScaleMap<2,Eigen::Vector2d> MapType;
+	MapType umap(
+		MapType::Params(0,0),
+		MapType::Params(4,4),
+		MapType::Indices(4,4)
+	);
+	std::vector<size_t> cnb;
+	std::back_insert_iterator<std::vector<size_t> > biter(cnb);
+	int i;
 
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5), 0.4, biter );
+	ASSERT_EQ( cnb.size(), 1 );
+	ASSERT_EQ( cnb[i++], 1 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5), 0.6, biter );
+	ASSERT_EQ( cnb.size(), 6 );
+	EXPECT_EQ( cnb[i++], 0 );	
+	EXPECT_EQ( cnb[i++], 1 );	
+	EXPECT_EQ( cnb[i++], 2 );	
+	EXPECT_EQ( cnb[i++], 4 );	
+	EXPECT_EQ( cnb[i++], 5 );	
+	EXPECT_EQ( cnb[i++], 6 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(1.5,1.5), 0.6, biter );
+	ASSERT_EQ( cnb.size(), 9 );
+	EXPECT_EQ( cnb[i++], 0 );	
+	EXPECT_EQ( cnb[i++], 1 );	
+	EXPECT_EQ( cnb[i++], 2 );	
+	EXPECT_EQ( cnb[i++], 4 );	
+	EXPECT_EQ( cnb[i++], 5 );	
+	EXPECT_EQ( cnb[i++], 6 );	
+	EXPECT_EQ( cnb[i++], 8 );	
+	EXPECT_EQ( cnb[i++], 9 );	
+	EXPECT_EQ( cnb[i++], 10 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(4.5,4.5), 0.6, biter );
+	EXPECT_EQ( cnb.size(), 1 );
+	EXPECT_EQ( cnb[i++], 15 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(2.5,1.5), 0.2, biter );
+	EXPECT_EQ( cnb.size(), 1 );
+	EXPECT_EQ( cnb[i++], 6 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(2.1,1.5), 0.2, biter );
+	EXPECT_EQ( cnb.size(), 2 );
+	EXPECT_EQ( cnb[i++], 5 );	
+	EXPECT_EQ( cnb[i++], 6 );	
+
+	cnb.clear(); i = 0;
+	umap.get_neighboring_cells( MapType::ValueType(2.1,1.9), 0.2, biter );
+	EXPECT_EQ( cnb.size(), 4 );
+	EXPECT_EQ( cnb[i++], 5 );	
+	EXPECT_EQ( cnb[i++], 6 );	
+	EXPECT_EQ( cnb[i++], 9 );	
+	EXPECT_EQ( cnb[i++], 10 );	
+
+
+	cout << "size: "<< cnb.size() << endl;
+	BOOST_FOREACH(size_t i,cnb) cout << "val " << i << " : " << umap.cellindex_to_indices(i).transpose() << std::endl;
+}
+
+}
 }
 }
 

@@ -3,18 +3,14 @@
 
 #include <Eigen/Dense>
 #include <util/dilated_int.hh>
-#include <vector>
-#include <util/storage_policy.hh>
+#include <nest/storage_policy.hh>
 #include <util/template_loop.hh>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <vector>
 
 namespace scheme {
 namespace nest {
-
-	
-	using util::StoreValue;
-	using util::StorePointer;	
 
 	using namespace Eigen;
 	typedef Eigen::Matrix<size_t,1,1> Vector1s;
@@ -58,7 +54,7 @@ namespace nest {
 	/// Main NEST template
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	template< int DIM, class Value, class Index, class Float > struct UnitMap;
+	namespace maps { template< int DIM, class Value, class Index, class Float > struct UnitMap; }
 
 	///@brief templated nesting grids
 	///@tparam DIM dimension of the grid
@@ -70,7 +66,7 @@ namespace nest {
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
 		class Value = Eigen::Matrix<double,DIM,1>,
-		template<int,class,class,class> class ParamMap = UnitMap,
+		template<int,class,class,class> class ParamMap = maps::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class Index = size_t,
 		class Float = double

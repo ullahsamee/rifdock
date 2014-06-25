@@ -3,7 +3,7 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <nest/parameter_maps.hh>
+#include <nest/maps/parameter_maps.hh>
 #include <boost/foreach.hpp>
 #include <iterator>
 
@@ -13,7 +13,7 @@ namespace nest {
 using std::cout;
 using std::endl;
 
-using scheme::util::StorePointer;
+using namespace maps;
 
 TEST(NEST_NEIGHBOR,dim2_test_case){
 	NEST<2> nest;
