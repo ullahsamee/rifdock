@@ -308,8 +308,8 @@ namespace maps {
 			int const BIG = 12345678;
 			SignedIndices lb = (params-delta+(Float)BIG).max((Float)BIG).template cast<int>() - BIG ;
 			SignedIndices ub = (params+delta).template cast<Index>().min(cell_sizes_-1).template cast<int>();
-			// std::cout << "LB " << lb.transpose() << std::endl;
-			// std::cout << "UB " << ub.transpose() << std::endl;
+			std::cout << "LB " << lb.transpose() << std::endl;
+			std::cout << "UB " << ub.transpose() << std::endl;
 			boost::function<void(SignedIndices)> functor;
 			functor = boost::bind( & ThisType::template push_cell_index<OutIter>, this, _1, out );
 			util::NESTED_FOR<DIM>(lb,ub,functor);
