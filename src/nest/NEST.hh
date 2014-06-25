@@ -7,6 +7,7 @@
 #include <util/template_loop.hh>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <vector>
 
 namespace scheme {
@@ -132,13 +133,14 @@ namespace nest {
 			assert( tf );
 			return this->value();
 		}
-
+		///@brief return true iff index/resl is a valid bin
 		bool check_state(Index index, Index resl) const {
 			if(index >= size(resl)) return false;
 			Value dummy;
 			return set_value(index,resl,dummy);
 		}
-
+		///@brief get the index vector and cell index of the bin the Value is within
+		///@returns true iff Value v is in a valid bin
 		bool get_indicies(Value const & v, Index resl, Indices & indices_out, Index & cell_index_out) const {
 			Params params;
 			if( ! this->value_to_params( v, params, cell_index_out ) ) return false;
@@ -146,10 +148,12 @@ namespace nest {
 			for(size_t i = 0; i < DIM; ++i)	indices_out[i] = static_cast<Index>(params[i]*scale);
 			return true;
 		}
-
-		void get_indicies_unitcell(Value const & v, Index resl, Indices & indices_out) const {
+		///@brief get the index vector of a value WRT a particular cell, may be out of the cell bounds!
+		///@detail this is used mainly for neighbor lookups -- some neighbors may be within the cell even if the value isn't
+		///@returns nothing because the index vector isn't checked for validity
+		void get_indicies_for_cell(Value const & v, Index resl, Index cell_index, Indices & indices_out) const {
 			Params params;
-			this->value_to_params_unitcell( v, params );
+			this->value_to_params_for_cell( v, params, cell_index );
 			Float scale = Float(ONE<<resl);
 			for(size_t i = 0; i < DIM; ++i){
 				// this crazy add/subtract avoids round towards 0 so params < 0 behave correctly
@@ -157,14 +161,14 @@ namespace nest {
 				indices_out[i] = static_cast<Index>(params[i]*scale+BIG) - BIG;
 			}
 		}
-
+		///@brief get the zorder index corresponding to and index vector and cell_index at resolution resl
 		Index get_index(Indices const & indices, Index cell_index, Index resl) const {
 			Index index = 0;
 			for(size_t i = 0; i < DIM; ++i)	index |= util::dilate<DIM>(indices[i]) << i;
 			index = index | (cell_index << (DIM*resl));
 			return index;
 		}
-
+		///@brief get the zorder index for a Value v at resolution resl
 		Index get_index(Value const & v, Index resl) const {
 			Index cell_index;
 			Indices indices;
@@ -172,6 +176,7 @@ namespace nest {
 			return get_index(indices,cell_index,resl);
 		}
 
+		///@brief helper function for looping over neighbors and accumulating their indices
 		template<class OutIter>
 		void push_index(SignedIndices const & indices, Index cell_index, Index resl, OutIter out) const {
 			Index index = 0;
@@ -179,9 +184,9 @@ namespace nest {
 			index = index | (cell_index << (DIM*resl));
 			*(out++) = index;
 		}
-
+		///@brief put the zorder indices of all neighbors of bin at (indices,cell_index) for resolution resl into OutIter out
 		template<class OutIter>
-		void get_neighbors(Indices const & indices, Index cell_index, Index resl, OutIter out)  {
+		void get_neighbors(Indices const & indices, Index cell_index, Index resl, OutIter out) const {
 			// std::cout << indices.transpose() << std::endl;
 			SignedIndices lb = ((indices.template cast<int>()-1).max(     0     ));
 			SignedIndices ub = ((indices.template cast<int>()+1).min((1<<resl)-1));
@@ -192,21 +197,32 @@ namespace nest {
 			functor = boost::bind( & ThisType::template push_index<OutIter>, this, _1, cell_index, resl, out );
 			util::NESTED_FOR<DIM>(lb,ub,functor);
 		}
-
+		///@brief put the zorder indices of all neighbors of bin for Value v at resolution resl into OutIter out
+		///@return false iff Value v itself dosen't have a valid index in this NEST
 		template<class OutIter>
-		bool get_neighbors(Value const & v, Index resl, OutIter out)  {
-			Indices indices;
-			Index cell_index;
-			if( !get_indicies(v,resl,indices,cell_index) ) return false;
-			get_neighbors(indices,cell_index,resl,out);
+		bool get_neighbors(Value const & v, Index resl, OutIter out) const {
+			// get neighboring cells
+			// get neighbors for each neighboring cell
+			if( get_index(v,resl) == std::numeric_limits<Index>::max() ) return false;
+			std::vector<Index> nbr_cells;
+			std::back_insert_iterator<std::vector<Index> > inserter(nbr_cells);
+			Float param_delta = 1.0 / (Float)(1<<resl);
+			// std::cout << "DELTA " << param_delta << std::endl;
+			this->get_neighboring_cells(v,param_delta,inserter);
+			BOOST_FOREACH( Index cell_index, nbr_cells ){
+				// std::cout << "NBR_CELL " << cell_index << std::endl;
+				Indices indices;
+				this->get_indicies_for_cell(v,resl,cell_index,indices);
+				this->get_neighbors(indices,cell_index,resl,out);
+			}
 			return true;
 		}
-
+		///@brief put the zorder indices of all neighbor bins within a particular cell for Value v at resolution resl into OutIter out
 		template<class OutIter>
-		void get_neighbors_unitcell(Value const & v, Index resl, OutIter out)  {
+		void get_neighbors_for_cell(Value const & v, Index resl, Index cell_index, OutIter out) const {
 			Indices indices;
-			get_indicies_unitcell(v,resl,indices);
-			get_neighbors(indices,0,resl,out);
+			get_indicies_for_cell(v,resl,cell_index,indices);
+			get_neighbors(indices,cell_index,resl,out);
 		}
 
 		///////////////////////////////////////

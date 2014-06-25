@@ -55,16 +55,17 @@ namespace maps {
 			Index & cell_index
 		) const ;
 
-		///@brief for unit cell
+		///@brief get parameter space repr of Value for particular cell
 		///@note necessary only for neighbor lookup		
-		void value_to_params_unitcell(
+		void value_to_params_for_cell(
 			Value const & value,
 			Params & params
 		) const ;
 
 		///@brief return the cell_index of neighboring cells within radius of value
+		///@note delta parameter is in "Parameter Space"
 		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float radius, OutIter out) ;
+		void get_neighboring_cells(Value const & value, Float radius, OutIter out) const;
 
 		///@brief aka covering radius max distance from bin center to any value within bin
 		Float bin_circumradius(Index resl) const ;
@@ -119,26 +120,29 @@ namespace maps {
 			Params & params,
 			Index & cell_index
 		) const {
-			value_to_params_unitcell(value,params);
+			value_to_params_for_cell(value,params,0);
 			cell_index = (Index)value[0];
 			params[0] -= (Float)cell_index;
 			return true;
 		}
-		///@brief for unit cell
+		///@brief get params repr of Value wrt cell cell_index
 		///@note necessary only for neighbor lookup		
-		void value_to_params_unitcell(
+		void value_to_params_for_cell(
 			Value const & value,
-			Params & params
+			Params & params,
+			Index cell_index
 		) const {
 			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
+			params[0] -= (Float)cell_index;
 		}
 		///@brief return the cell_index of neighboring cells within delta of value
+		///@note delta parameter is in "Parameter Space"
 		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float delta, OutIter out) {
+		void get_neighboring_cells(Value const & value, Float param_delta, OutIter out) const {
 			// this BIG thing is to ensure rounding goes down
-			Index const BIG = 12345678;
-			int lb = static_cast<int>( fmax(     0.0      ,value[0]-delta) + BIG ) - BIG;
-			int ub = static_cast<int>( fmin(cell_size_+0.5,value[0]+delta) + BIG ) - BIG;
+			int const BIG = 12345678;
+			int lb = std::max(                0, static_cast<int>( value[0]-param_delta + BIG ) - BIG );
+			int ub = std::min((int)cell_size_-1, static_cast<int>( value[0]+param_delta + BIG ) - BIG );
 			// std::cout << "lb " << lb << " ub "  << ub << std::endl;
 			// assert(lb<=ub);
 			for(int i = lb; i <= ub; ++i) *(out++) = i;
@@ -163,6 +167,7 @@ namespace maps {
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	///@note NEST cell_size MUST agree with cell_sizes_
+	///@note bounds and cell indices are represented as Eigen Arrays (like params) NOT Value Types
 	template<
 		int DIM,
 		class Value=Eigen::Matrix<double,DIM,1>,
@@ -185,6 +190,7 @@ namespace maps {
 		///@brief upper bound on value space base size 1
 		Params upper_bound_;
 		///@brief distributes cell_index accross dimensions
+		Params cell_width_;
 		Indices cell_sizes_;
 		Indices cell_sizes_pref_sum_;
 		Index cell_size_;
@@ -204,8 +210,11 @@ namespace maps {
 		///@brief sets up cell_size_pref_sum
 		void init(){
 			cell_size_ = cell_sizes_.prod();
-			for(size_t i = 0; i < DIM; ++i) 
+			for(size_t i = 0; i < DIM; ++i){
 				cell_sizes_pref_sum_[i] = cell_sizes_.head(i).prod();
+				cell_width_[i] = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
+				assert(upper_bound_[i] > lower_bound_[i]);
+			}
 		}
 
 		///@brief sets value based on cell_index and parameters using geometric bounds
@@ -220,8 +229,7 @@ namespace maps {
 				assert(cell_sizes_[i] < 100000);
 				assert(lower_bound_[i] < upper_bound_[i]);
 				Float bi = ( cell_index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
-				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
-				value[i] = lower_bound_[i] + width * (bi + params[i]);
+				value[i] = lower_bound_[i] + cell_width_[i] * (bi + params[i]);
 			}
 			return true;
 		}
@@ -232,7 +240,7 @@ namespace maps {
 			Params & params,
 			Index & cell_index
 		) const {
-			value_to_params_unitcell(value,params);
+			value_to_params_for_cell(value,params,0);
 			cell_index = 0;
 			for(size_t i = 0; i < DIM; ++i){
 				assert( params[i] >= 0.0 );
@@ -244,30 +252,33 @@ namespace maps {
 				Float ci = (Index)params[i];
 				cell_index += cell_sizes_pref_sum_[i] * ci;
 				params[i] -= (Float)ci;
-				// std::cout << i << " " << params[i] << " " << bi << " " << width << std::endl;
-				assert( 0.0 < params[i] && params[i] < 1.0);
+				assert( 0.0 <= params[i] && params[i] < 1.0);
 			}
 			return true;
 		}
 
 		///@brief sets params/cell_index from value
-		void value_to_params_unitcell(
+		void value_to_params_for_cell(
 			Value const & value,
-			Params & params
+			Params & params,
+			Index cell_index
 		) const {
+			Indices cell_indices = cellindex_to_indices(cell_index);
+			// std::cout << "CIDX " << cell_indices.transpose() << std::endl;
 			for(size_t i = 0; i < DIM; ++i){
 				assert(cell_sizes_[i] > 0);
 				assert(cell_sizes_[i] < 100000);
 				assert(lower_bound_[i] < upper_bound_[i]);
 				// Index cell_size_pref_sum = cell_sizes_.head(i).prod();
-				Float width = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
-				params[i] = ( value[i] - lower_bound_[i] ) / width;
+				params[i] = ( value[i] - lower_bound_[i] ) / cell_width_[i];
+				params[i] -= (Float)cell_indices[i];
 			}
 		}
 
 		Index indices_to_cellindex(Indices const & indices) const {
 			Index index = 0;
 			for(size_t i = 0; i < DIM; ++i){
+				assert(indices[i] < cell_sizes_[i]);
 				index += indices[i]*cell_sizes_pref_sum_[i];
 			}
 			return index;
@@ -277,6 +288,7 @@ namespace maps {
 			Indices indices;						
 			for(size_t i = 0; i < DIM; ++i){
 				indices[i] = ( index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
+				assert(indices[i] < cell_sizes_[i]);
 			}
 			return indices;
 		}
@@ -300,16 +312,22 @@ namespace maps {
 		// }
 
 		///@brief return the cell_index of neighboring cells within delta of value
+		///@note delta parameter is in "Parameter Space"
 		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float delta, OutIter out) {
-			assert( delta > 0);
+		void get_neighboring_cells(Value const & value, Float param_delta, OutIter out) const {
+			assert( param_delta > 0);
+			// convert to value space, decided against this
+			// Params delta_param;
+			// for(size_t i = 0; i < DIM; ++i) delta_param[i] = delta / cell_width_[i];
 			Params params;
-			value_to_params_unitcell(value,params);
+			value_to_params_for_cell(value,params,0);
 			int const BIG = 12345678;
-			SignedIndices lb = (params-delta+(Float)BIG).max((Float)BIG).template cast<int>() - BIG ;
-			SignedIndices ub = (params+delta).template cast<Index>().min(cell_sizes_-1).template cast<int>();
-			std::cout << "LB " << lb.transpose() << std::endl;
-			std::cout << "UB " << ub.transpose() << std::endl;
+			SignedIndices lb = (params-param_delta+(Float)BIG).max((Float)BIG).template cast<int>() - BIG ;
+			SignedIndices ub = (params+param_delta).template cast<Index>().min(cell_sizes_-1).template cast<int>();
+			// std::cout << "PM " << params.transpose() << std::endl;
+			// std::cout << "DL " << delta_param.transpose() << std::endl;
+			// std::cout << "LB " << lb.transpose() << std::endl;
+			// std::cout << "UB " << ub.transpose() << std::endl;
 			boost::function<void(SignedIndices)> functor;
 			functor = boost::bind( & ThisType::template push_cell_index<OutIter>, this, _1, out );
 			util::NESTED_FOR<DIM>(lb,ub,functor);
