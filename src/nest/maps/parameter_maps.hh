@@ -1,5 +1,5 @@
-#ifndef INCLUDED_scheme_nest_parameter_maps_HH
-#define INCLUDED_scheme_nest_parameter_maps_HH
+#ifndef INCLUDED_scheme_nest_maps_parameter_maps_HH
+#define INCLUDED_scheme_nest_maps_parameter_maps_HH
 
 #include <util/template_loop.hh>
 #include <boost/function.hpp>
