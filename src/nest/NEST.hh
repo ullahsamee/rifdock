@@ -91,7 +91,7 @@ namespace nest {
 		static int const DIMENSION = DIM;
 
 		///@brief default ctor
-		NEST() : ParamMapType(1) {}
+		NEST() {}
 		///@brief general constructor
 		NEST(Index cell_size) : ParamMapType(cell_size) {}
 		///@brief for supporting ParamMaps, construct with bs
@@ -129,8 +129,8 @@ namespace nest {
 		///@brief calls set_state(index,resl) then returns value()
 		///@return value of set state
 		Value const & set_and_get(Index index, Index resl){
-			bool tf = set_state(index,resl);
-			assert( tf );
+			bool set_state_returns_true = set_state(index,resl);
+			assert( set_state_returns_true );
 			return this->value();
 		}
 		///@brief return true iff index/resl is a valid bin

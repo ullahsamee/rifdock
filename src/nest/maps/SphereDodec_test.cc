@@ -6,7 +6,7 @@ namespace scheme {
 namespace nest {
 namespace maps {
 
-TEST( SphereDodec, cell_centers ){
+TEST( SphereDodec, DISABLED_cell_centers ){
 	typedef SphereDodec<2> MapType;
 	MapType sd;
 	MapType::ValueType val;

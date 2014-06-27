@@ -1,5 +1,6 @@
 #include <nest/maps/parameter_maps.hh>
 #include <nest/NEST.hh>
+#include <nest/NEST_test_util.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
@@ -313,6 +314,21 @@ TEST(NEST_scalemap,NEST_bin_circumradius_scalemap){
 	test_bin_circumradius_scalemap<4>();
 	test_bin_circumradius_scalemap<5>();
 	test_bin_circumradius_scalemap<6>();
+}
+
+TEST(NEST_scalemap,test_coverage){
+	boost::random::mt19937 rng(time(0));
+	boost::uniform_real<> uniform;
+
+	typedef NEST<2,RowVector2d,ScaleMap> NestType;
+	NestType nest;
+	std::vector<double> largest_d2_for_r(20,0.0);
+	for(size_t i = 0; i < 10000; ++i){
+		NestType::ValueType val;
+		for(size_t j = 0; j < NestType::DIMENSION; ++j) val[j] = uniform(rng);
+		generic_test_coverage_of_value( nest, val, largest_d2_for_r, 10 );
+	}
+	for(size_t r = 0; r <= 10; ++r) ASSERT_LT(  nest.bin_circumradius(r), 1.1*sqrt(largest_d2_for_r[r]) );
 }
 
 

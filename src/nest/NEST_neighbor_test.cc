@@ -398,6 +398,7 @@ TEST(NEST_NEIGHBOR,scalemap_neighbors_2d_boundary){
  	nest.get_neighbors( NestType::ValueType(4.4999,2.9), r, back_it );
  	ASSERT_EQ(neighbors.size(),3);
 
+
 	r = 3;
 	neighbors.clear(); i = 0;
  	nest.get_neighbors( NestType::ValueType(4.124999,2.9), r, back_it );

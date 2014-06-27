@@ -1,5 +1,7 @@
 
 #include <nest/NEST.hh>
+#include <nest/NEST_concepts.hh>
+#include <nest/NEST_test_util.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
@@ -16,6 +18,16 @@ using std::endl;
 
 using namespace maps;
 
+TEST(NEST,concpets){
+	NEST< 1, concept::ValueArchitype, concept::ParamMapArchitype >().set_state(1,0);
+	// NEST< 1, double, concept::ParamMapArchitype >().get_index(1.0,0); // this should not compile!
+	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().set_state(1,0);	
+	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().get_index(concept::ValueArchitype(),0);		
+	// NEST< 1, concept::ValueArchitype, UnitMap >().set_state(1,0);	
+	NEST< 1, concept::ArrayValueArchitype<1>, UnitMap >().set_state(1,0);		
+	NEST< 1, concept::ArrayValueArchitype<1>, UnitMap >().get_index(concept::ArrayValueArchitype<1>(),0);
+	SUCCEED();
+}
 
 TEST(NEST,particular_cases){
 	NEST<1>	nest;
@@ -70,6 +82,7 @@ void test_coverage_unit1cell(){
 			Matrix<double,DIM,1> tgt;
 			for(size_t i = 0; i < DIM; ++i) tgt[i] = uniform(rng);
 			size_t index = nest.get_index(tgt,r);
+			ASSERT_LT( index , nest.size(r) );
 			Matrix<double,DIM,1> val = nest.set_and_get(index,r);
 			ASSERT_LE( (tgt-val).norm(), cellradius );
 		}
@@ -91,31 +104,15 @@ TEST(NEST,coverage_cube){
 
 
 
-template<int DIM>
-void test_index_nesting(){
-	typedef Matrix<double,DIM,1> VAL;
-	NEST<DIM> nest(2);
-	size_t rmax = 9/DIM+1;
-	for(size_t r = 0; r <= rmax; ++r){
-		for(size_t i = 0; i < nest.size(r); ++i){
-			ASSERT_TRUE( nest.set_state(i,r) );
-			VAL value = nest.value();
-			size_t index = nest.get_index(value,r);
-			ASSERT_EQ( i, index );
-			for(size_t r2 = 0; r2 <= r; ++r2){
-				size_t index2 = nest.get_index(value,r2);
-				ASSERT_EQ( i>>(DIM*(r-r2)), index2 );
-			}
-		}
-	}
-}
+
+
 TEST(NEST,index_nesting){
-	test_index_nesting<1>();
-	test_index_nesting<2>();
-	test_index_nesting<3>();
-	test_index_nesting<4>();
-	test_index_nesting<5>();
-	test_index_nesting<6>();
+	generic_test_index_nesting_of_bincenters( NEST<1>() );
+	generic_test_index_nesting_of_bincenters( NEST<2>() );
+	generic_test_index_nesting_of_bincenters( NEST<3>() );
+	generic_test_index_nesting_of_bincenters( NEST<4>() );
+	generic_test_index_nesting_of_bincenters( NEST<5>() );
+	generic_test_index_nesting_of_bincenters( NEST<6>() );
 }
 
 

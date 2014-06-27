@@ -19,63 +19,6 @@ namespace maps {
 	///	Parameter Mappings
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	///@brief Parameter to Value Map Policy Class Concept
-	///@detail JUST A DEFINITION OF THE CONCEPT AND PLACEHOLDER!
-	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
-	///@tparam Index index type, default size_t
-	///@tparam Float float type, default double
-	template<
-		int DIM,
-		class Value=Eigen::Matrix<double,DIM,1>,
-		class Index=size_t,
-		class Float=double
-	>
-	struct ParamMap {
-		static int const DIMENSION = DIM;
-		typedef Value ValueType ;
-		typedef Float FloatType ;		
-		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
-
-		///@brief sets value to parameters without change
-		///@return false iff invalid parameters
-		bool params_to_value(
-			Params const & params,
-			Index cell_index,
-			Value & value
-		) const ;
-
-		///@brief sets params/cell_index from value
-		///@note necessary for value lookup and neighbor lookup
-		bool value_to_params(
-			Value const & value,
-			Params & params,
-			Index & cell_index
-		) const ;
-
-		///@brief get parameter space repr of Value for particular cell
-		///@note necessary only for neighbor lookup		
-		void value_to_params_for_cell(
-			Value const & value,
-			Params & params
-		) const ;
-
-		///@brief return the cell_index of neighboring cells within radius of value
-		///@note delta parameter is in "Parameter Space"
-		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float radius, OutIter out) const;
-
-		///@brief aka covering radius max distance from bin center to any value within bin
-		Float bin_circumradius(Index resl) const ;
-
-		///@brief maximum distance from the bin center which must be within the bin
-		Float bin_inradius(Index resl) const ;
-
-		///@brief cell size
-		Index cell_size() const ;
-	};
 
 
 	///@brief Parameter to Value Map Policy Class
@@ -91,7 +34,7 @@ namespace maps {
 		class Index=size_t,
 		class Float=double
 	>
-	struct UnitMap : public ParamMap<DIM,Value,Index,Float> {
+	struct UnitMap {
 		static int const DIMENSION = DIM;
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
@@ -109,6 +52,9 @@ namespace maps {
 			Index cell_index,
 			Value & value
 		) const {
+			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
+			assert( params[0] <= (Float)cell_size_ );
+			for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
 			for(size_t i = 0; i < DIM; ++i) value[i] = params[i];
 			value[0] += (Float)cell_index;
 			return true;
@@ -120,9 +66,13 @@ namespace maps {
 			Params & params,
 			Index & cell_index
 		) const {
+			///@note neighbor lookups require out of bounds mappings to be valid
 			value_to_params_for_cell(value,params,0);
 			cell_index = (Index)value[0];
 			params[0] -= (Float)cell_index;
+			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
+			assert( params[0] <= (Float)cell_size_ );
+			for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
 			return true;
 		}
 		///@brief get params repr of Value wrt cell cell_index
@@ -174,7 +124,7 @@ namespace maps {
 		class Index=size_t,
 		class Float=double
 	>
-	struct ScaleMap : ParamMap<DIM,Value,Index,Float> {
+	struct ScaleMap {
 		static int const DIMENSION = DIM;
 		typedef ScaleMap<DIM,Value,Index,Float> ThisType;
 		typedef Value ValueType ;
@@ -243,8 +193,6 @@ namespace maps {
 			value_to_params_for_cell(value,params,0);
 			cell_index = 0;
 			for(size_t i = 0; i < DIM; ++i){
-				assert( params[i] >= 0.0 );
-				assert( params[i] < cell_sizes_[i]+1);
 				assert(cell_sizes_[i] > 0);
 				assert(cell_sizes_[i] < 100000);
 				assert(lower_bound_[i] < upper_bound_[i]);
@@ -252,7 +200,7 @@ namespace maps {
 				Float ci = (Index)params[i];
 				cell_index += cell_sizes_pref_sum_[i] * ci;
 				params[i] -= (Float)ci;
-				assert( 0.0 <= params[i] && params[i] < 1.0);
+				assert( 0.0 <= params[i] && params[i] <= 1.0);
 			}
 			return true;
 		}

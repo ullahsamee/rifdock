@@ -15,33 +15,35 @@ namespace maps {
 	using std::cout;
 	using std::endl;
 
-	namespace sphere_quad_data {
-		static double p = (1.0+sqrt(5.0)) / 2.0;
-		static double const sphere_quad_cells[9*6] = {
-			 1, 0, 0,
- 			 0, 1, 0,
- 			 0, 0, 1,
+	namespace quadsphere_data {
+		double * get_quadsphere_cells(){
+			static double quadsphere_cells[9*6] = {
+				 1, 0, 0,
+	 			 0, 1, 0,
+	 			 0, 0, 1,
 
-			 1, 0, 0,
-			 0, 0,-1,
-			 0, 1, 0,
+				 1, 0, 0,
+				 0, 0,-1,
+				 0, 1, 0,
 
-			 0, 0, 1,
-			 0, 1, 0,
-			-1, 0, 0,
-			 
-			 1, 0, 0,
-			 0, 0, 1,
-			 0,-1, 0,
-			 
-			 0, 0,-1,
-			 0, 1, 0,
-			 1, 0, 0,
-			 
-			 1, 0, 0,
-			 0,-1,-0,
-			 0, 0,-1,
-		};
+				 0, 0, 1,
+				 0, 1, 0,
+				-1, 0, 0,
+				 
+				 1, 0, 0,
+				 0, 0, 1,
+				 0,-1, 0,
+				 
+				 0, 0,-1,
+				 0, 1, 0,
+				 1, 0, 0,
+				 
+				 1, 0, 0,
+				 0,-1, 0,
+				 0, 0,-1,
+			};
+			return quadsphere_cells;
+		}
 	}
 
 
@@ -51,7 +53,7 @@ namespace maps {
 		class Index=size_t,
 		class Float=double
 	>
-	struct SphereQuad : public ParamMap<DIM,Value,Index,Float> {
+	struct SphereQuad {
 		BOOST_STATIC_ASSERT_MSG(DIM==2,"SphereQuad DIM must be == 2");
 
 		static int const DIMENSION = DIM;
@@ -59,9 +61,7 @@ namespace maps {
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
 		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
-
-		
+		typedef Eigen::Array<Float,DIM,1> Params;		
 
 		///@brief sets value to parameters without change
 		///@return false iff invalid parameters
@@ -71,7 +71,7 @@ namespace maps {
 			Value & value
 		) const {
 			Map< Matrix<double,3,3> > const rot_to_cell(
-				const_cast<double*>( sphere_quad_data::sphere_quad_cells + 9*cell_index ));
+				const_cast<double*>( quadsphere_data::get_quadsphere_cells() + 9*cell_index ));
 			Vector3d vec( params[0]*2-1 , params[1]*2-1 , 1 );
 			vec = rot_to_cell * vec;
 			vec = vec / vec.norm();
@@ -88,24 +88,30 @@ namespace maps {
 			Params & params,
 			Index & cell_index
 		) const {
-			cell_index = 1;
-			Map< Matrix<double,3,3> > const rot_to_cell(
-				const_cast<double*>( sphere_quad_data::sphere_quad_cells + 9*cell_index ));
+			Matrix<double,3,1> tmpval( value[0], value[1], value[2] );
+			tmpval = tmpval / tmpval.norm();
+			// cout << tmpval.transpose() << endl;
 
-			double test[18] = {
-				1,2,3,
-				4,5,6,
-				7,8,9,
-				10,11,12,
-				13,14,15,
-				16,17,18
-			};
-			Map< Matrix<double,3,2>, 0, OuterStride<9> > const centers(
-				const_cast<double*>( test ));
+			Map< Matrix<double,3,6>, 0, OuterStride<9> > const 
+				centers( quadsphere_data::get_quadsphere_cells()+6 );
+			// cout << centers << endl;
+			Matrix<double,1,6> dotprods = centers.transpose() * tmpval;
 
-			cout << "centers" << endl;
-			cout << centers << endl;
-
+			double highest = -9e9;
+			for(size_t i = 0; i < 6; ++i){
+				if( dotprods[i] > highest ){
+					highest = dotprods[i];
+					cell_index = i;
+				}
+			}
+			Map< Matrix<double,3,3> > const rot_to_cell( 
+				quadsphere_data::get_quadsphere_cells() + 9*cell_index );
+			tmpval = rot_to_cell.transpose() * tmpval;
+			params[0] = (tmpval[0]/highest+1.0)/2.0;
+			params[1] = (tmpval[1]/highest+1.0)/2.0;
+			// cout << "PRM " << params.transpose() << " " << highest << endl;
+			assert( 0.0 <= params[0] && params[0] <= 1.0);
+			assert( 0.0 <= params[1] && params[1] <= 1.0);			
 			return true;
 		}
 
@@ -122,13 +128,29 @@ namespace maps {
 		void get_neighboring_cells(Value const & value, Float radius, OutIter out) const;
 
 		///@brief aka covering radius max distance from bin center to any value within bin
-		Float bin_circumradius(Index resl) const ;
+		Float bin_circumradius(Index resl) const {
+			double const delta = 1.0/(double)(1ul<<resl);
+			Vector3d pworst = Vector3d(1,1,1) - delta*Vector3d(2.0,0,0);
+			Vector3d pNest0 = Vector3d(1,1,1) - delta*Vector3d(1.0,1.0,0);
+			pworst = pworst / pworst.norm();
+			pNest0 = pNest0 / pNest0.norm();
+			return (pworst-pNest0).norm() * 1.001; // fudge factor
+		}
 
 		///@brief maximum distance from the bin center which must be within the bin
-		Float bin_inradius(Index resl) const ;
+		Float bin_inradius(Index resl) const {
+			// double const delta = 1.0/(double)(1ul<<resl);
+			// Vec pworst = Vec(1,1,1);// - delta*Vec(2.0,0,0);
+			// Vec pNest0 = Vec(1,1,1) - delta*Vec(1.0,1.0,0);
+			// cube_to_sphere(pworst);
+			// cube_to_sphere(pNest0);
+			// pworst.normalize();
+			// pNest0.normalize();
+			// return pworst.distance(pNest0) * 0.5999; // should be half of curcumradius based on geometry
+		}
 
 		///@brief cell size
-		Index cell_size() const ;
+		Index cell_size() const { return 6; }
 	};
 
 

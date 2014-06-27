@@ -13,22 +13,25 @@ namespace maps {
 
 	using namespace Eigen;
 
-	namespace sphere_dodec_data {
-		static double p = (1.0+sqrt(5.0)) / 2.0;
-		static double const sphece_dodec_cell_centers[12*3] = {
-			+1,+p, 0,
-			+1,-p, 0,
-			-1,+p, 0,
-			-1,-p, 0,
-			+p, 0,+1,
-			-p, 0,+1,
-			+p, 0,-1,
-			-p, 0,-1,
-			 0,+1,+p,
-			 0,+1,-p,
-			 0,-1,+p,
-			 0,-1,-p,
-		};
+	namespace dodec_data {
+		double * get_dodec_cell_centers(){
+			static double p = (1.0+sqrt(5.0)) / 2.0;
+			static double dodec_cell_centers[12*3] = {
+				+1,+p, 0,
+				+1,-p, 0,
+				-1,+p, 0,
+				-1,-p, 0,
+				+p, 0,+1,
+				-p, 0,+1,
+				+p, 0,-1,
+				-p, 0,-1,
+				 0,+1,+p,
+				 0,+1,-p,
+				 0,-1,+p,
+				 0,-1,-p,
+			};
+			return dodec_cell_centers;
+		}
 	}
 
 
@@ -38,7 +41,7 @@ namespace maps {
 		class Index=size_t,
 		class Float=double
 	>
-	struct SphereDodec : public ParamMap<DIM,Value,Index,Float> {
+	struct SphereDodec {
 		BOOST_STATIC_ASSERT_MSG(DIM==2,"SphereDodec DIM must be == 2");
 
 		static int const DIMENSION = DIM;
@@ -57,8 +60,9 @@ namespace maps {
 			Index cell_index,
 			Value & value
 		) const {
-			Map< Matrix<double,3,12> > const cell_centers(const_cast<double*>( sphere_dodec_data::sphece_dodec_cell_centers ));
+			Map< Matrix<double,3,12> > const cell_centers( dodec_data::get_dodec_cell_centers() );
 			std::cout << cell_centers << std::endl;
+			return false;
 		}
 
 		///@brief sets params/cell_index from value
