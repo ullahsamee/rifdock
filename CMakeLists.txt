@@ -9,6 +9,7 @@ set (EXTRA_LIBS ${EXTRA_LIBS} gmock)
 include_directories("src")
 
 FILE(GLOB UTIL_CC "src/util/*.cc")
+FILE(GLOB UTIL_MPL_CC "src/util/mpl/*.cc")
 FILE(GLOB NEST_CC "src/nest/*.cc")
 FILE(GLOB NEST_MAP_CC "src/nest/maps/*.cc")
 
@@ -22,7 +23,7 @@ SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 " )
 
 project (main_test)
-add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC} ${NEST_MAP_CC} )
+add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC} ${NEST_MAP_CC} ${UTIL_MPL_CC})
 target_link_libraries(main_test ${EXTRA_LIBS} )
 
 
