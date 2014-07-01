@@ -1,7 +1,6 @@
 #ifndef INCLUDED_scheme_nest_maps_SphereDodec_HH
 #define INCLUDED_scheme_nest_maps_SphereDodec_HH
 
-#include <nest/maps/parameter_maps.hh>
 #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
@@ -92,7 +91,7 @@ namespace maps {
 		Float bin_inradius(Index resl) const ;
 
 		///@brief cell size
-		Index cell_size() const ;
+		Index num_cells() const ;
 	};
 
 

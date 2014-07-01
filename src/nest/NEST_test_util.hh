@@ -52,13 +52,17 @@ void generic_test_coverage_of_value(
 	Nest nest,
 	typename Nest::ValueType value,
 	std::vector<double> & largest_d2_for_r,
-	typename Nest::IndexType rmax = 12
+	typename Nest::IndexType rmax = Nest::MAX_RESL_ONE_CELL-2
 ){
 	typedef typename Nest::ValueType Value;
 	typedef typename Nest::IndexType Index;
 	int const DIM = Nest::DIMENSION;
 	for(Index r = 0; r <= rmax; ++r){
 		Index index = nest.get_index(value,r);
+		if(index >= nest.size(r)){
+			std::cout << value.transpose() << " " << index << " " << r << std::endl;
+		}
+		assert(index < nest.size(r));
 		Value bincen = nest.set_and_get(index,r);
 		double d2 = 0.0;
 		for(size_t i = 0; i < DIM; ++i) d2 += (bincen[i]-value[i])*(bincen[i]-value[i]);

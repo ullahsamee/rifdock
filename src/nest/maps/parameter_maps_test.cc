@@ -1,4 +1,6 @@
-#include <nest/maps/parameter_maps.hh>
+#include <nest/maps/UnitMap.hh>
+#include <nest/maps/ScaleMap.hh>
+#include <nest/maps/DiscreteChoiceMap.hh>
 #include <nest/NEST.hh>
 #include <nest/NEST_test_util.hh>
 #include <gtest/gtest.h>
@@ -18,7 +20,7 @@ using std::endl;
 using scheme::nest::StorePointer;
 
 
-TEST(NEST_scalemap,particular_values){
+TEST(NEST_ScaleMap,particular_values){
 	{
 		typedef Matrix<double,1,1> VAL;
 		VAL lb, ub;
@@ -205,7 +207,7 @@ void test_index_lookup_scaled(){
 	}
 }
 
-TEST(NEST_scalemap,index_lookup_scaled){
+TEST(NEST_ScaleMap,index_lookup_scaled){
 	test_index_lookup_scaled<1>();
 	test_index_lookup_scaled<2>();
 	test_index_lookup_scaled<3>();
@@ -246,7 +248,7 @@ void test_map_scale_bounds(){
 
 }
 
-TEST(NEST_scalemap,map_scale){ 
+TEST(NEST_ScaleMap,map_scale){ 
 	test_map_scale_bounds<1>();
 	test_map_scale_bounds<2>();
 	test_map_scale_bounds<3>();
@@ -264,7 +266,7 @@ void test_bin_circumradius(
 	boost::random::mt19937 rng(time(0));
 	boost::uniform_real<> uniform;
 	typename NEST::ValueType randpt;
-	for(size_t r = 0; r <= 10; ++r){
+	for(size_t r = 0; r <= std::min((size_t)10,(size_t)NEST::MAX_RESL_ONE_CELL); ++r){
 		double maxdis = 0;
 		for(size_t iter=0; iter < 100000/NEST::DIMENSION; ++iter){
 			for(size_t i = 0; i < NEST::DIMENSION; ++i) 
@@ -286,7 +288,7 @@ void test_bin_circumradius(
 	}
 }
 
-TEST(NEST_unitmap,NEST_bin_circumradius_unitmap){
+TEST(NEST_UnitMap,NEST_bin_circumradius_unitmap){
 	{ NEST<1>::ValueType lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<1>(), lb, ub ); }
 	{ NEST<2>::ValueType lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<2>(), lb, ub ); }
 	{ NEST<3>::ValueType lb,ub; lb.fill(0); ub.fill(1); test_bin_circumradius( NEST<3>(), lb, ub ); }
@@ -307,7 +309,7 @@ void test_bin_circumradius_scalemap(){
 	test_bin_circumradius< NestType >( nest, lb, ub );
 }
 
-TEST(NEST_scalemap,NEST_bin_circumradius_scalemap){
+TEST(NEST_ScaleMap,NEST_bin_circumradius_scalemap){
 	test_bin_circumradius_scalemap<1>();
 	test_bin_circumradius_scalemap<2>();
 	test_bin_circumradius_scalemap<3>();
@@ -316,19 +318,64 @@ TEST(NEST_scalemap,NEST_bin_circumradius_scalemap){
 	test_bin_circumradius_scalemap<6>();
 }
 
-TEST(NEST_scalemap,test_coverage){
+template<class NestType>
+void test_coverage_random_ScaleMap(){
 	boost::random::mt19937 rng(time(0));
 	boost::uniform_real<> uniform;
-
-	typedef NEST<2,RowVector2d,ScaleMap> NestType;
-	NestType nest;
-	std::vector<double> largest_d2_for_r(20,0.0);
-	for(size_t i = 0; i < 10000; ++i){
-		NestType::ValueType val;
-		for(size_t j = 0; j < NestType::DIMENSION; ++j) val[j] = uniform(rng);
-		generic_test_coverage_of_value( nest, val, largest_d2_for_r, 10 );
+	
+	// set up random bounds
+	typename NestType::Params lb,ub;
+	typename NestType::Indices cs;
+	for(size_t i = 0; i < NestType::DIMENSION; ++i){
+		double b1 = uniform(rng)*20.0 - 10.0;
+		double b2 = uniform(rng)*20.0 - 10.0;
+		lb[i] = std::min(b1,b2);
+		ub[i] = std::max(b1,b2);
+		cs[i] = (typename NestType::IndexType)(uniform(rng)*3.999) + 1;
+		assert(lb[i] < ub[i]);
+		assert(cs[i] > 0);
 	}
-	for(size_t r = 0; r <= 10; ++r) ASSERT_LT(  nest.bin_circumradius(r), 1.1*sqrt(largest_d2_for_r[r]) );
+	// cout << "LB " << lb.transpose() << endl;
+	// cout << "UB " << ub.transpose() << endl;	
+	// cout << "CS " << cs.transpose() << endl;		
+
+	NestType nest(lb,ub,cs);
+	size_t max_resl = std::min((size_t)10,(size_t)NestType::MAX_RESL_ONE_CELL-2); // -2 because we set cs up to 4 per dimension
+	std::vector<double> largest_d2_for_r(max_resl+1,0.0);
+	for(size_t i = 0; i < 10000; ++i){
+
+		// set up random value within bounds
+		typename NestType::ValueType val;
+		for(size_t j = 0; j < NestType::DIMENSION; ++j){
+			val[j] = (ub[j]-lb[j])*uniform(rng) + lb[j];
+			assert(lb[j] <= val[j]);
+			assert(ub[j] >= val[j]);
+		}
+
+
+		// run generic coverage test
+		generic_test_coverage_of_value( nest, val, largest_d2_for_r, max_resl );
+
+	}
+	for(size_t r = 0; r <= max_resl; ++r){
+		// cout << r << " " << largest_d2_for_r[r] << endl;
+		// factor of 1.0+0.03*DIM is a *TOTAL* hack, errer does not scale this way by dimension
+		// but it's enough to make sure the curcumradius is reasonably tight
+		ASSERT_LT(  nest.bin_circumradius(r), (1.0+0.03*(double)NestType::DIMENSION)*sqrt(largest_d2_for_r[r]) );
+	}
+
+}
+
+TEST(NEST_ScaleMap,test_coverage_DIM_1_to_9){
+	test_coverage_random_ScaleMap<  NEST<1,Eigen::Matrix<double,1,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<2,Eigen::Matrix<double,2,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<3,Eigen::Matrix<double,3,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<4,Eigen::Matrix<double,4,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<5,Eigen::Matrix<double,5,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<6,Eigen::Matrix<double,6,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<7,Eigen::Matrix<double,7,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<8,Eigen::Matrix<double,8,1>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<9,Eigen::Matrix<double,9,1>,ScaleMap>  >();			
 }
 
 

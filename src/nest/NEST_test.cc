@@ -6,7 +6,8 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <nest/maps/parameter_maps.hh>
+#include <nest/maps/UnitMap.hh>
+#include <nest/maps/DiscreteChoiceMap.hh>
 #include <boost/foreach.hpp>
 #include <iterator>
 

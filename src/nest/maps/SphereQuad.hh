@@ -1,7 +1,6 @@
 #ifndef INCLUDED_scheme_nest_maps_SphereQuad_HH
 #define INCLUDED_scheme_nest_maps_SphereQuad_HH
 
-#include <nest/maps/parameter_maps.hh>
 #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
@@ -72,7 +71,7 @@ namespace maps {
 		) const {
 			Map< Matrix<double,3,3> > const rot_to_cell(
 				const_cast<double*>( quadsphere_data::get_quadsphere_cells() + 9*cell_index ));
-			Vector3d vec( params[0]*2-1 , params[1]*2-1 , 1 );
+			Vector3d vec( params[0]*2.0-1.0 , params[1]*2.0-1.0 , 1.0 );
 			vec = rot_to_cell * vec;
 			vec = vec / vec.norm();
 			value[0] = vec[0];
@@ -104,11 +103,15 @@ namespace maps {
 					cell_index = i;
 				}
 			}
+			// cout << "DOTS " << dotprods << " " << cell_index << " val: " << tmpval.transpose() << endl;
 			Map< Matrix<double,3,3> > const rot_to_cell( 
 				quadsphere_data::get_quadsphere_cells() + 9*cell_index );
 			tmpval = rot_to_cell.transpose() * tmpval;
+			// cout << "unit cell val: " << tmpval.transpose() << endl;
+
 			params[0] = (tmpval[0]/highest+1.0)/2.0;
 			params[1] = (tmpval[1]/highest+1.0)/2.0;
+			// cout << "parm: " << params.transpose() << endl;
 			// cout << "PRM " << params.transpose() << " " << highest << endl;
 			assert( 0.0 <= params[0] && params[0] <= 1.0);
 			assert( 0.0 <= params[1] && params[1] <= 1.0);			
@@ -130,8 +133,13 @@ namespace maps {
 		///@brief aka covering radius max distance from bin center to any value within bin
 		Float bin_circumradius(Index resl) const {
 			double const delta = 1.0/(double)(1ul<<resl);
-			Vector3d pworst = Vector3d(1,1,1) - delta*Vector3d(2.0,0,0);
-			Vector3d pNest0 = Vector3d(1,1,1) - delta*Vector3d(1.0,1.0,0);
+			/// these are correct with a mapping spreading out the corners
+			// Vector3d pworst = Vector3d(1,1,1) - delta*Vector3d(2.0,0,0);
+			// Vector3d pNest0 = Vector3d(1,1,1) - delta*Vector3d(1.0,1.0,0);
+			/// with no mapping, the center is probably the worst
+			// cout << resl << " " << delta << endl;
+			Vector3d pworst = Vector3d(1,0,0) - delta*Vector3d(0,1,1);
+			Vector3d pNest0 = Vector3d(1,0,0);
 			pworst = pworst / pworst.norm();
 			pNest0 = pNest0 / pNest0.norm();
 			return (pworst-pNest0).norm() * 1.001; // fudge factor
@@ -150,7 +158,7 @@ namespace maps {
 		}
 
 		///@brief cell size
-		Index cell_size() const { return 6; }
+		Index num_cells() const { return 6; }
 	};
 
 

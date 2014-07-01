@@ -1,4 +1,5 @@
-#include <nest/maps/parameter_maps.hh>
+#include <nest/maps/UnitMap.hh>
+#include <nest/maps/ScaleMap.hh>
 #include <nest/NEST.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
