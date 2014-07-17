@@ -89,18 +89,18 @@ TEST(ObjectiveFunction,basic_tests){
 	typedef ObjFun::Results Results;
 	typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > PetalSource;
 	PetalSource petal_source;
-	ASSERT_EQ( Results(0,0,0,0), score(petal_source) );
+	EXPECT_EQ( Results(0,0,0,0), score(petal_source) );
 	petal_source.get<int>().push_back(1);
-	ASSERT_EQ( Results(1,2,0,0), score(petal_source) );
+	EXPECT_EQ( Results(1,2,0,0), score(petal_source) );
 	petal_source.get<double>().push_back(1.234);
 	petal_source.get<double>().push_back(2);	
 	petal_source.get<double>().push_back(-2);
-	ASSERT_EQ( Results(1,2,1.234,0), score(petal_source) );
+	EXPECT_EQ( Results(1,2,1.234,0), score(petal_source) );
 	petal_source.get<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
-	ASSERT_EQ( Results(1,2,1.234,1.5), score(petal_source) );
+	EXPECT_EQ( Results(1,2,1.234,1.5), score(petal_source) );
 
 	score.config_.scale = 2.0;
-	ASSERT_EQ( Results(2,4,2.468,3.0), score(petal_source) );
+	EXPECT_EQ( Results(2,4,2.468,3.0), score(petal_source) );
 
 	// cout << score << endl;
 }
@@ -117,13 +117,13 @@ TEST(ObjectiveFunction,test_results){
 	ObjFun::Results weights(2.0);
 	ObjFun::Results results = score(petal_source);
 	float tot = results;
-	ASSERT_EQ( 9.2345f, tot );
-	ASSERT_EQ( 9.2345, results );		
-	ASSERT_EQ( 18.469, (double)(results*weights) );
-	ASSERT_EQ( 18.469, (double)(results+results) );
-	ASSERT_EQ( 27.7035, (double)(results*weights + results) );
-	ASSERT_EQ( 9.2345, (double)(results*weights - results) );
-	ASSERT_EQ( 9.2345, (double)(results*weights/weights) );
+	EXPECT_FLOAT_EQ( 9.2345f, tot );
+	EXPECT_DOUBLE_EQ( 9.2345, results );		
+	EXPECT_DOUBLE_EQ( 18.469, (double)(results*weights) );
+	EXPECT_DOUBLE_EQ( 18.469, (double)(results+results) );
+	EXPECT_DOUBLE_EQ( 27.7035, (double)(results*weights + results) );
+	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights - results) );
+	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights/weights) );
 }
 
 }
