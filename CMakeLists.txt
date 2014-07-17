@@ -9,8 +9,9 @@ set (EXTRA_LIBS ${EXTRA_LIBS} gmock)
 include_directories("src")
 
 FILE(GLOB UTIL_CC "src/util/*.cc")
-FILE(GLOB UTIL_MPL_CC "src/util/mpl/*.cc")
+FILE(GLOB UTIL_MPL_CC "src/util/meta/*.cc")
 FILE(GLOB NEST_CC "src/nest/*.cc")
+FILE(GLOB NEST_CC "src/objective/*.cc")
 FILE(GLOB NEST_MAP_CC "src/nest/maps/*.cc")
 
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
