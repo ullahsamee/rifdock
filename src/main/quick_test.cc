@@ -6,8 +6,8 @@
 // #include <nest/maps/parameter_maps_test.cc>
 // #include <nest/maps/parameter_maps_test_nbrcell.cc>
 // #include <nest/maps/SphereDodec_test.cc>
-#include <nest/maps/SphereQuad_test.cc>
-// #include <util/mpl/TypesHolders_test.cc>
+// #include <nest/maps/SphereQuad_test.cc>
+#include <util/meta/InstanceMap_test.cc>
 
 int main(int argc, char **argv)
 {
