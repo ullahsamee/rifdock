@@ -11,6 +11,7 @@
 
 namespace scheme {
 namespace objective {
+namespace test {
 
 namespace mpl = boost::mpl;
 namespace bf = boost::fusion;
@@ -97,7 +98,7 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	petal_source.get<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
 	EXPECT_EQ( Results(1,2,1.234,1.5), score(petal_source) );
 
-	score.config_.scale = 2.0;
+	score.default_config_.scale = 2.0;
 	EXPECT_EQ( Results(2,4,2.468,3.0), score(petal_source) );
 
 	score.get_objective<ScoreInt>().local_scale = 2.0;
@@ -126,6 +127,7 @@ TEST(ObjectiveFunction,test_results){
 	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights/weights) );
 }
 
+}
 }
 }
 
