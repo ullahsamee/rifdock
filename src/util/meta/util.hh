@@ -42,6 +42,14 @@ struct PrintBFMapofVec {
 	}
 };
 
+	// utility to get ResultType if it exists, else double
+	// template<typename T> struct tovoid { typedef void type; };
+	// template<typename T, typename Enable = void>
+	// struct result_type_impl { typedef double type; };
+	// template<typename T> 
+	// struct result_type_impl< T, typename tovoid<typename T::ResultType>::type > {
+	//     typedef typename T::ResultType  type; 
+	// };
 
 
 }

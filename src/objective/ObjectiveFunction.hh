@@ -37,59 +37,9 @@ namespace bf = boost::fusion;
 
 
 namespace traits {
-	// utility to get ResultType if it exists, else double
-	// template<typename T> struct tovoid { typedef void type; };
-	// template<typename T, typename Enable = void>
-	// struct result_type_impl { typedef double type; };
-	// template<typename T> 
-	// struct result_type_impl< T, typename tovoid<typename T::ResultType>::type > {
-	//     typedef typename T::ResultType  type; 
-	// };
 	struct result_type { template<class T> struct apply { typedef typename T::Result type; }; };
 	struct petals_type { template<class T> struct apply { typedef typename T::Petals type; }; };
 }
-
-// these wrappers aren't really necessary
-// template<
-// 	class _Functor,
-// 	class _Petal1 = typename _Functor::Petal1
-// >
-// struct Objective1B {
-// 	static int const arity = 1;
-// 	typedef _Petal1 Petals;
-// 	typedef _Functor Functor;
-// 	typedef typename Functor::Result Result;
-// 	Functor functor;
-// 	template<class Config>
-// 	void operator()(Petals const & arg, Result & result, Config const & config) const {
-// 		functor(arg,result,config);
-// 	}
-// };
-// template<class A,class B>
-// std::ostream & operator<<(std::ostream & out, Objective1B<A,B> const & obj){
-// 	return out << "Objective1B: " << obj.functor;
-// }
-
-// template<
-// 	class _Functor,
-// 	class _Petal1 = typename _Functor::Petal1,
-// 	class _Petal2 = typename _Functor::Petal2
-// >
-// struct Objective2B {
-// 	static int const arity = 2;
-// 	typedef std::pair<_Petal1,_Petal2> Petals;
-// 	typedef _Functor Functor;
-// 	typedef typename Functor::Result Result;
-// 	Functor functor;
-// 	template<class Config>
-// 	void operator()(Petals const & arg, Result & result, Config const & config) const {
-// 		functor(arg.first,arg.second,result,config);
-// 	}
-// };
-// template<class A,class B,class C>
-// std::ostream & operator<<(std::ostream & out, Objective2B<A,B,C> const & obj){
-// 	return out << "Objective2B: " << obj.functor;
-// }
 
 template<class Petals>
 struct objective_petals_equal {
@@ -101,7 +51,7 @@ struct objective_petals_equal {
 template<class Objectives>
 struct copy_objective_if_petals_equal {
 	template<class Petals>
-	struct apply : mpl::copy_if<Objectives,objective_petals_equal<Petals> > {};
+	struct apply : mpl::copy_if<Objectives,objective_petals_equal<Petals>, mpl::back_inserter<bf::vector<> > > {};
 };
 
 template<class T> struct wrap {};
@@ -110,7 +60,6 @@ template<class T> struct wrap {};
 template<
 	class Petals,
 	class PetalsSource,
-	class ObjectiveMap,
 	class Results,
 	class Config
 >
@@ -118,11 +67,13 @@ struct EvalObjective {
 	PetalsSource const & petal_source;
 	Results & results;
 	Config const & config;
+
 	EvalObjective(
 		PetalsSource const & p,
 		Results & r,
 		Config const & c
-		) : petal_source(p),results(r),config(c) {}
+	) : petal_source(p),results(r),config(c) {}
+
 	template<class Objective> void operator()(Objective const & objective) const {
 		BOOST_STATIC_ASSERT( bf::result_of::has_key<Results,Objective>::value );
 		// std::cout << "    EvalObjective source: " << typeid(petal_source.template get<Petals>()).name() << std::endl;
@@ -150,12 +101,14 @@ struct EvalObjectives {
 	ObjectiveMap const & objective_map;
 	Results & results;
 	Config const & config;
+	
 	EvalObjectives(
 		PetalsSource const & p,
 		ObjectiveMap const & f,
 		Results & r,
 		Config const & c
-		) : petal_source(p),objective_map(f),results(r),config(c) {}
+	) : petal_source(p),objective_map(f),results(r),config(c) {}
+	
 	template<class Petals> void operator()(wrap<Petals>) const {
 		BOOST_STATIC_ASSERT( bf::result_of::has_key<PetalsSource,Petals>::value );
 		// std::cout << "EvalObjectives Petals: " << typeid(Petals).name() << std::endl;
@@ -164,11 +117,9 @@ struct EvalObjectives {
 			EvalObjective<
 				Petals,
 				PetalsSource,
-				ObjectiveMap,
 				Results,
 				Config
-				>
-				(petal_source,results,config) 
+			>(petal_source,results,config) 
 		);
 	}
 };
@@ -202,6 +153,11 @@ struct ObjectiveFunctionImpl {
 	ObjectiveMap objective_map_;
 	Config config_;
 
+	template<class Objective>
+	Objective & get_objective(){
+		BOOST_STATIC_ASSERT( true ); // shold check that objective is actuall in Objectives...
+		return bf::deref(bf::find<Objective>( objective_map_.template get<typename Objective::Petals>() ));
+	}
 	// Results weights_;
 	// ObjectiveFunctionImpl(){
 	// 	weights_.setall(1.0);

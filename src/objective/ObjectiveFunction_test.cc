@@ -19,19 +19,19 @@ using std::endl;
 
 struct ScoreInt {
 	typedef double Result;
-	typedef int Petal1;
 	typedef int Petals;
+	double local_scale;
+	ScoreInt():local_scale(1.0){}
 	static std::string name(){ return "ScoreInt"; }
 	template<class Config>
 	void operator()(int a, Result & result, Config const& c) const {
-		result += a*c.scale;
+		result += a*c.scale * local_scale;
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreInt const& si){ return out << si.name(); }
 
 struct ScoreInt2 {
 	typedef double Result;
-	typedef int Petal1;
 	typedef int Petals;
 	static std::string name(){ return "ScoreInt2"; }	
 	template<class Config>
@@ -43,7 +43,6 @@ std::ostream & operator<<(std::ostream & out,ScoreInt2 const& si){ return out <<
 
 struct ScoreDouble {
 	typedef double Result;
-	typedef double Petal1;
 	typedef double Petals;
 	static std::string name(){ return "ScoreDouble"; }	
 	template<class Config>
@@ -55,8 +54,6 @@ std::ostream & operator<<(std::ostream & out,ScoreDouble const& si){ return out 
 
 struct ScoreIntDouble {
 	typedef double Result;
-	typedef int Petal1;
-	typedef double Petal2;
 	typedef std::pair<int,double> Petals;
 	static std::string name(){ return "ScoreIntDouble"; }	
 	template<class Config>
@@ -75,7 +72,7 @@ struct ConfigTest {
 	ConfigTest():scale(1){}
 };
 
-TEST(ObjectiveFunction,basic_tests){
+TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	typedef	ObjectiveFunction<
 		mpl::list<
 			ScoreInt,
@@ -86,6 +83,7 @@ TEST(ObjectiveFunction,basic_tests){
 		ConfigTest
 	> ObjFun;
 	ObjFun score;
+
 	typedef ObjFun::Results Results;
 	typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > PetalSource;
 	PetalSource petal_source;
@@ -102,6 +100,8 @@ TEST(ObjectiveFunction,basic_tests){
 	score.config_.scale = 2.0;
 	EXPECT_EQ( Results(2,4,2.468,3.0), score(petal_source) );
 
+	score.get_objective<ScoreInt>().local_scale = 2.0;
+	EXPECT_EQ( Results(4,4,2.468,3.0), score(petal_source) );
 	// cout << score << endl;
 }
 
