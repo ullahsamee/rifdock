@@ -20,12 +20,12 @@ using std::endl;
 
 struct ScoreInt {
 	typedef double Result;
-	typedef int Petals;
+	typedef int Interaction;
 	double local_scale;
 	ScoreInt():local_scale(1.0){}
 	static std::string name(){ return "ScoreInt"; }
 	template<class Config>
-	void operator()(int a, Result & result, Config const& c) const {
+	void operator()(Interaction a, Result & result, Config const& c) const {
 		result += a*c.scale * local_scale;
 	}
 };
@@ -33,10 +33,10 @@ std::ostream & operator<<(std::ostream & out,ScoreInt const& si){ return out << 
 
 struct ScoreInt2 {
 	typedef double Result;
-	typedef int Petals;
+	typedef int Interaction;
 	static std::string name(){ return "ScoreInt2"; }	
 	template<class Config>
-	void operator()(int a, Result & result, Config const& c) const {
+	void operator()(Interaction const & a, Result & result, Config const& c) const {
 		result += 2*a*c.scale;
 	}
 };
@@ -44,10 +44,10 @@ std::ostream & operator<<(std::ostream & out,ScoreInt2 const& si){ return out <<
 
 struct ScoreDouble {
 	typedef double Result;
-	typedef double Petals;
+	typedef double Interaction;
 	static std::string name(){ return "ScoreDouble"; }	
 	template<class Config>
-	void operator()(double a, Result & result, Config const& c) const {
+	void operator()(Interaction const & a, Result & result, Config const& c) const {
 		result += a*c.scale;
 	}
 };
@@ -55,14 +55,14 @@ std::ostream & operator<<(std::ostream & out,ScoreDouble const& si){ return out 
 
 struct ScoreIntDouble {
 	typedef double Result;
-	typedef std::pair<int,double> Petals;
+	typedef std::pair<int,double> Interaction;
 	static std::string name(){ return "ScoreIntDouble"; }	
 	template<class Config>
 	void operator()(int i,double a, Result & result, Config const& c) const {
 		result += i*a*c.scale;
 	}
 	template<class Config>
-	void operator()(Petals const & p, Result & result, Config const& c) const {
+	void operator()(Interaction const & p, Result & result, Config const& c) const {
 		this->operator()(p.first,p.second,result,c);
 	}
 };
@@ -86,23 +86,23 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	ObjFun score;
 
 	typedef ObjFun::Results Results;
-	typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > PetalSource;
-	PetalSource petal_source;
-	EXPECT_EQ( Results(0,0,0,0), score(petal_source) );
-	petal_source.get<int>().push_back(1);
-	EXPECT_EQ( Results(1,2,0,0), score(petal_source) );
-	petal_source.get<double>().push_back(1.234);
-	petal_source.get<double>().push_back(2);	
-	petal_source.get<double>().push_back(-2);
-	EXPECT_EQ( Results(1,2,1.234,0), score(petal_source) );
-	petal_source.get<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
-	EXPECT_EQ( Results(1,2,1.234,1.5), score(petal_source) );
+	typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > InteractionSource;
+	InteractionSource interaction_source;
+	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
+	interaction_source.get<int>().push_back(1);
+	EXPECT_EQ( Results(1,2,0,0), score(interaction_source) );
+	interaction_source.get<double>().push_back(1.234);
+	interaction_source.get<double>().push_back(2);	
+	interaction_source.get<double>().push_back(-2);
+	EXPECT_EQ( Results(1,2,1.234,0), score(interaction_source) );
+	interaction_source.get<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
+	EXPECT_EQ( Results(1,2,1.234,1.5), score(interaction_source) );
 
 	score.default_config_.scale = 2.0;
-	EXPECT_EQ( Results(2,4,2.468,3.0), score(petal_source) );
+	EXPECT_EQ( Results(2,4,2.468,3.0), score(interaction_source) );
 
 	score.get_objective<ScoreInt>().local_scale = 2.0;
-	EXPECT_EQ( Results(4,4,2.468,3.0), score(petal_source) );
+	EXPECT_EQ( Results(4,4,2.468,3.0), score(interaction_source) );
 	// cout << score << endl;
 }
 
@@ -110,13 +110,13 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 TEST(ObjectiveFunction,test_results){
 	typedef	ObjectiveFunction< mpl::vector< ScoreDouble, ScoreInt >, ConfigTest	> ObjFun;
 	ObjFun score;
-	typedef util::meta::InstanceMap< mpl::vector<int,double>, std::vector<mpl::_1> > PetalSource;
-	PetalSource petal_source;
-	petal_source.get<int>().push_back(1);
-	petal_source.get<int>().push_back(7);	
-	petal_source.get<double>().push_back(1.2345);	
+	typedef util::meta::InstanceMap< mpl::vector<int,double>, std::vector<mpl::_1> > InteractionSource;
+	InteractionSource interaction_source;
+	interaction_source.get<int>().push_back(1);
+	interaction_source.get<int>().push_back(7);	
+	interaction_source.get<double>().push_back(1.2345);	
 	ObjFun::Results weights(2.0);
-	ObjFun::Results results = score(petal_source);
+	ObjFun::Results results = score(interaction_source);
 	float tot = results;
 	EXPECT_FLOAT_EQ( 9.2345f, tot );
 	EXPECT_DOUBLE_EQ( 9.2345, results );		

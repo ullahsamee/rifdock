@@ -7,24 +7,14 @@
 #include <boost/foreach.hpp>
 
 #include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/set.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/sort.hpp>
-#include <boost/mpl/unique.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/inserter.hpp>
+// #include <boost/mpl/set.hpp>
+// #include <boost/mpl/inserter.hpp>
+// #include <boost/mpl/insert.hpp>
 #include <boost/mpl/for_each.hpp>
-#include <boost/mpl/filter_view.hpp>
-#include <boost/mpl/insert.hpp>
-#include <boost/mpl/inserter.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/copy_if.hpp>
+// #include <boost/mpl/copy.hpp>
+// #include <boost/mpl/copy_if.hpp>
 #include <boost/mpl/transform.hpp>
-#include <boost/mpl/equal.hpp>
-#include <boost/mpl/is_sequence.hpp>
-#include <boost/mpl/quote.hpp>
-#include <boost/mpl/int.hpp>
+// #include <boost/mpl/int.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/mpl.hpp>
@@ -32,55 +22,54 @@
 namespace scheme {
 namespace objective {
 
-namespace mpl = boost::mpl;
-namespace bf = boost::fusion;
-
+namespace m = boost::mpl;
+namespace f = boost::fusion;
 
 namespace traits {
 	struct result_type { template<class T> struct apply { typedef typename T::Result type; }; };
-	struct petals_type { template<class T> struct apply { typedef typename T::Petals type; }; };
+	struct interaction_type { template<class T> struct apply { typedef typename T::Interaction type; }; };
 }
 
 namespace impl {
-	template<class Petals>
-	struct objective_petals_equal {
+
+	///@brief helper class tests Objective::Interaction == Interaction
+	template<class Interaction>
+	struct objective_interactions_equal {
 		template<class Objective>
-		struct apply : mpl::bool_< boost::is_same<Petals,typename Objective::Petals>::value > {};
+		struct apply : m::bool_< boost::is_same<Interaction,typename Objective::Interaction>::value > {};
 	};
 
-
+	///@brief helper class builds mpl::vector of Objectives with Objective::Interaction == Interaction
 	template<class Objectives>
-	struct copy_objective_if_petals_equal {
-		template<class Petals>
-		struct apply : mpl::copy_if<Objectives,objective_petals_equal<Petals>, mpl::back_inserter<bf::vector<> > > {};
+	struct copy_objective_if_interaction_equal {
+		template<class Interaction>
+		struct apply : m::copy_if<Objectives,objective_interactions_equal<Interaction>, m::back_inserter<f::vector<> > > {};
 	};
 
-	template<class T> struct wrap {};
-
-
+	///@brief helper functor to call objective for all Interaction instances in InteractionSource
 	template<
-		class Petals,
-		class PetalsSource,
+		class Interaction,
+		class InteractionSource,
 		class Results,
 		class Config
 	>
 	struct EvalObjective {
-		PetalsSource const & petal_source;
+		InteractionSource const & interaction_source;
 		Results & results;
 		Config const & config;
 
 		EvalObjective(
-			PetalsSource const & p,
+			InteractionSource const & p,
 			Results & r,
 			Config const & c
-		) : petal_source(p),results(r),config(c) {}
+		) : interaction_source(p),results(r),config(c) {}
 
 		template<class Objective> void operator()(Objective const & objective) const {
-			BOOST_STATIC_ASSERT( bf::result_of::has_key<Results,Objective>::value );
-			// std::cout << "    EvalObjective source: " << typeid(petal_source.template get<Petals>()).name() << std::endl;
+			BOOST_STATIC_ASSERT( f::result_of::has_key<Results,Objective>::value );
+			// std::cout << "    EvalObjective source: " << typeid(interaction_source.template get<Interaction>()).name() << std::endl;
 			// std::cout << "               objective: " << typeid(objective).name() << std::endl;
-			BOOST_FOREACH( Petals const & petals, petal_source.template get<Petals>() ){
-				// std::cout << "        Petals: " << petals <<
+			BOOST_FOREACH( Interaction const & petals, interaction_source.template get<Interaction>() ){
+				// std::cout << "        Interaction: " << petals <<
 									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
 				objective(
 					petals,
@@ -91,37 +80,37 @@ namespace impl {
 		}
 	};
 
-
+	///@brief helper functor to call each objective for Interaction
 	template<
-		class PetalsSource,
+		class InteractionSource,
 		class ObjectiveMap,
 		class Results,
 		class Config
 	>
 	struct EvalObjectives {
-		PetalsSource const & petal_source;
+		InteractionSource const & interaction_source;
 		ObjectiveMap const & objective_map;
 		Results & results;
 		Config const & config;
 		
 		EvalObjectives(
-			PetalsSource const & p,
+			InteractionSource const & p,
 			ObjectiveMap const & f,
 			Results & r,
 			Config const & c
-		) : petal_source(p),objective_map(f),results(r),config(c) {}
+		) : interaction_source(p),objective_map(f),results(r),config(c) {}
 		
-		template<class Petals> void operator()(wrap<Petals>) const {
-			BOOST_STATIC_ASSERT( bf::result_of::has_key<PetalsSource,Petals>::value );
-			// std::cout << "EvalObjectives Petals: " << typeid(Petals).name() << std::endl;
-			bf::for_each(
-				objective_map.template get<Petals>(), 
+		template<class Interaction> void operator()(util::meta::type2type<Interaction>) const {
+			BOOST_STATIC_ASSERT( f::result_of::has_key<InteractionSource,Interaction>::value );
+			// std::cout << "EvalObjectives Interaction: " << typeid(Interaction).name() << std::endl;
+			f::for_each(
+				objective_map.template get<Interaction>(), 
 				EvalObjective<
-					Petals,
-					PetalsSource,
+					Interaction,
+					InteractionSource,
 					Results,
 					Config
-				>(petal_source,results,config) 
+				>(interaction_source,results,config) 
 			);
 		}
 	};
@@ -134,14 +123,14 @@ struct ObjectiveConcept {
 	///@note must be convertable to double but could have extra data
 	typedef double Result;
 	///@typedef required type of input evaluatable data, could be a pair of tuple
-	typedef int Petals;
+	typedef int Interaction;
 	///@brief return name of Objective
 	static std::string name(){ return "ObjectiveConcept"; }
 	///@brief evaluate the Objective
-	///@param Petals main body or interaction to evaluate
+	///@param Interaction main body or interaction to evaluate
 	///@param Result result should be stored here
 	template<class Config>
-	void operator()( Petals const& a, Result & result, Config const& ) const { result += a; }
+	void operator()( Interaction const& a, Result & result, Config const& ) const { result += a; }
 };
 
 ///@brief a generic objective function for interacting bodies
@@ -156,44 +145,43 @@ struct ObjectiveFunction {
 	typedef _Objectives Objectives;
 	typedef _Config Config;
 
+	///@typedef only for error checking, make sure Objectives are non-redundant
 	typedef typename
-	mpl::copy<
-		Objectives,
-		mpl::inserter<mpl::set<>, mpl::insert<mpl::_1,mpl::_2> >
-	>::type SET_Objectives;
-
-	BOOST_STATIC_ASSERT( mpl::size<SET_Objectives>::value == mpl::size<Objectives>::value );
-
-	typedef typename
-		mpl::transform<
+		m::copy<
 			Objectives,
-			traits::petals_type
-		>::type AllPetals;
+			m::inserter<m::set<>, m::insert<m::_1,m::_2> >
+		>::type
+	UniqueObjectives;
 
-	typedef typename
-		mpl::copy<
-			AllPetals,
-			mpl::inserter<mpl::set<>,mpl::insert<mpl::_1,mpl::_2> >
-		>::type SET_Petals;
+	BOOST_STATIC_ASSERT( m::size<UniqueObjectives>::value == m::size<Objectives>::value );
 
+	///@typedef unique InteractionTypes types
 	typedef typename 
-		mpl::copy< 
-			SET_Petals,
-			mpl::back_inserter<mpl::vector<> >
-		>::type Petals;
+		m::copy< typename // copy back into mpl::vector;
+			m::copy< typename // copy to mpl::set so unique
+				m::transform< // all InteractionTypes Type from Obectives
+					Objectives,
+					traits::interaction_type
+					>::type,
+				m::inserter<m::set<>,m::insert<m::_1,m::_2> >
+				>::type,
+			m::back_inserter<m::vector<> >
+		>::type
+	InteractionTypes;
 
-	typedef typename mpl::transform< 
-		Petals, 
-		impl::copy_objective_if_petals_equal<Objectives>,
-		mpl::back_inserter<mpl::vector<> >
-	>::type UniquePetalsObjectives;
-
-	BOOST_STATIC_ASSERT( mpl::size<UniquePetalsObjectives>::value == mpl::size<Petals>::value );
+	///@typedef mpl::vector of Objectives for each unique PetalsType
+	typedef typename
+		m::transform< 
+			InteractionTypes, 
+			impl::copy_objective_if_interaction_equal<Objectives>,
+			m::back_inserter<m::vector<> >
+		>::type
+	InteractionObjectives;
 
 	///@typedef ObjectiveMap
 	typedef util::meta::InstanceMap<
-		Petals,
-		UniquePetalsObjectives
+		InteractionTypes,
+		InteractionObjectives
 	> ObjectiveMap;
 
 	///@typedef Results
@@ -214,24 +202,32 @@ struct ObjectiveFunction {
 	Objective &
 	get_objective(){
 		BOOST_STATIC_ASSERT( true ); // shold check that objective is actuall in Objectives...
-		return bf::deref(bf::find<Objective>( objective_map_.template get<typename Objective::Petals>() ));
+		return f::deref( f::find<Objective>( 
+			objective_map_.template get<typename Objective::Interaction>() 
+		));
 	}
 
-	///@brief evaluate a PetalsSource with specified Config
-	///@param PetalSource must implement the PetalsSource concept
+	///@brief evaluate a InteractionSource with specified Config
+	///@param InteractionSource must implement the InteractionSource concept
 	///@param Config override default Config
 	///@return a NumericInstanceMap of ResultTypes defined by Objectives
-	template<class PetalsSource>
+	template<class InteractionSource>
 	Results 
 	operator()(
-		PetalsSource const & source,
+		InteractionSource const & source,
 		Config const & config
 	) const {
+		// make sure we only operate on interactions contained in source
+		typedef typename util::meta::intersect<
+				InteractionTypes,
+				typename InteractionSource::Keys
+			>::type  
+			MutualInteractionTypes;
 		Results results;
-		BOOST_STATIC_ASSERT( util::meta::is_InstanceMap<PetalsSource>::value );
-		mpl::for_each< Petals, impl::wrap<mpl::_1> >( 
+		BOOST_STATIC_ASSERT( util::meta::is_InstanceMap<InteractionSource>::value );
+		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
 			impl::EvalObjectives<
-				PetalsSource,
+				InteractionSource,
 				ObjectiveMap,
 				Results,
 				Config
@@ -240,15 +236,15 @@ struct ObjectiveFunction {
 		return results * weights_;
 	}
 
-	///@brief evaluate a PetalsSource with default Config
-	///@param PetalSource must implement the PetalsSource concept
+	///@brief evaluate a InteractionSource with default Config
+	///@param InteractionSource must implement the InteractionSource concept
 	///@return a NumericInstanceMap of ResultTypes defined by Objectives
-	template<class PetalsSource>
+	template<class InteractionSource>
 	Results 
 	operator()(
-		PetalsSource const & source
+		InteractionSource const & source
 	) const {
-		return this->operator()<PetalsSource>(source,default_config_);
+		return this->operator()<InteractionSource>(source,default_config_);
 	}
 
 };
@@ -258,12 +254,12 @@ template<typename O,typename C>
 std::ostream & operator<<(std::ostream & out, ObjectiveFunction<O,C> const & obj){
 	typedef ObjectiveFunction<O,C> OBJ;
 	out << "ObjectiveFunction" << std::endl;
-	out << "    Petals Combos:" << std::endl;
-		mpl::for_each<typename OBJ::Petals>(util::meta::PrintType(out,"        "));
+	out << "    Interactions:" << std::endl;
+		m::for_each<typename OBJ::Interaction>(util::meta::PrintType(out,"        "));
 	out << "    Objectives:" << std::endl;		
-	bf::for_each( obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
+	f::for_each( obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
 	out << "    RAW:" << std::endl;
-		mpl::for_each<typename OBJ::Objectives>(util::meta::PrintType(out,"        "));
+		m::for_each<typename OBJ::Objectives>(util::meta::PrintType(out,"        "));
 	return out;
 }
 

@@ -14,67 +14,74 @@ namespace scheme {
 namespace util {
 namespace meta {
 
-///@brief meta-container holding instances for any sequence of types
-///@tparam Keys sequence of Key types
-///@tparam Arg2 sequence of Value types OR metafunction class OR placeholder expression
-///@detail if Arg2 is a metafunction class, the values that func applied to the Keys
-template< typename Keys, typename Arg2 = Keys >
-struct InstanceMap :
- boost::fusion::result_of::as_map<
-    typename boost::mpl::transform<
-            Keys
-        ,   typename boost::mpl::eval_if< 
-                    boost::mpl::is_sequence<Arg2>
-                ,   Arg2
-                ,   boost::mpl::transform<Keys,Arg2>
-                >::type
-        ,   boost::fusion::pair<boost::mpl::_1,boost::mpl::_2>
-        >::type
-    >::type
-{
-    typedef Keys KeyTypes;
-    typedef typename boost::fusion::result_of::as_map<
-        typename boost::mpl::transform<
-            Keys
-        ,   typename boost::mpl::eval_if< 
-                    boost::mpl::is_sequence<Arg2>
-                ,   Arg2
-                ,   boost::mpl::transform<Keys,Arg2>
+namespace m = boost::mpl;
+namespace f = boost::fusion;
+
+///@brief convenience function to make a boost::fusion::map
+///@detail fusion_map<Keys> will be same as tuple
+///@detail fusion_map<Keys,Values> will map Key to Value
+///@detail fusion_map<Keys,MetaFunc> will map Key to apply<MetaFunc,Key>::type
+template< class Keys, class Arg2 = Keys >
+struct fusion_map {
+    typedef typename
+        f::result_of::as_map< typename
+            m::transform<
+                Keys, typename
+                m::eval_if< 
+                    m::is_sequence<Arg2>,
+                    Arg2,
+                    m::transform<Keys,Arg2>
+                    >::type,
+                f::pair<m::_1,m::_2>
             >::type
-        ,   boost::fusion::pair<boost::mpl::_1,boost::mpl::_2>
         >::type
-    >::type type;
+    type;
+};
+
+///@brief meta-container holding instances for any sequence of types
+///@tparam _Keys sequence of Key types
+///@tparam Arg2 sequence of Value types OR metafunction class OR placeholder expression
+///@detail if Arg2 is a metafunction class, the values that func applied to the _Keys
+template< typename _Keys, typename Arg2 = _Keys >
+struct InstanceMap : fusion_map<_Keys,Arg2>::type
+{
+    typedef _Keys Keys;
+    typedef typename fusion_map<Keys,Arg2>::type Base;
     
+    // variadic ctors
     InstanceMap(){}
-
     template<class A>
-    InstanceMap(A const&a) : type(a) {}
+    InstanceMap(A const&a) : Base(a) {}
     template<class A,class B>
-    InstanceMap(A const&a,B const&b) : type(a,b) {}
+    InstanceMap(A const&a,B const&b) : Base(a,b) {}
     template<class A,class B,class C>
-    InstanceMap(A const&a,B const&b,C const&c) : type(a,b,c) {}
+    InstanceMap(A const&a,B const&b,C const&c) : Base(a,b,c) {}
     template<class A,class B,class C,class D>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d) : type(a,b,c,d) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d) : Base(a,b,c,d) {}
     template<class A,class B,class C,class D,class E>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e) : type(a,b,c,d,e) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e) : Base(a,b,c,d,e) {}
     template<class A,class B,class C,class D,class E,class F>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f) : type(a,b,c,d,e,f) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f) : Base(a,b,c,d,e,f) {}
     template<class A,class B,class C,class D,class E,class F,class G>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g) : type(a,b,c,d,e,f,g) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g) : Base(a,b,c,d,e,f,g) {}
     template<class A,class B,class C,class D,class E,class F,class G,class H>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h) : type(a,b,c,d,e,f,g,h) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h) : Base(a,b,c,d,e,f,g,h) {}
     template<class A,class B,class C,class D,class E,class F,class G,class H,class I>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h,I const&i) : type(a,b,c,d,e,f,g,h,i) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h,I const&i) : Base(a,b,c,d,e,f,g,h,i) {}
     template<class A,class B,class C,class D,class E,class F,class G,class H,class I,class J>
-    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h,I const&i,J const&j) : type(a,b,c,d,e,f,g,h,i,j) {}
+    InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h,I const&i,J const&j) : Base(a,b,c,d,e,f,g,h,i,j) {}
 
-    template<typename K>
-    typename boost::fusion::result_of::value_at_key<type,K>::type & 
-    get() { return boost::fusion::at_key<K>(*this); }
+    ///@brief get reference to the instance of type associated with key Key
+    ///@tparam Key input 
+    template<typename Key>
+    typename f::result_of::value_at_key<Base,Key>::type & 
+    get() { return f::at_key<Key>(*this); }
     
-    template<typename K>
-    typename boost::fusion::result_of::value_at_key<type,K>::type const & 
-    get() const { return boost::fusion::at_key<K>(*this); }
+    ///@brief get const reference to the instance of type associated with key Key
+    ///@tparam Key input 
+    template<typename Key>
+    typename f::result_of::value_at_key<Base,Key>::type const & 
+    get() const { return f::at_key<Key>(*this); }
     
 };
 
@@ -102,11 +109,11 @@ namespace impl {
 }
 
 
-template<class T> struct is_InstanceMap : boost::mpl::false_ {};
-template<class A,class B> struct is_InstanceMap< InstanceMap<A,B> > : boost::mpl::true_ {};
+template<class T> struct is_InstanceMap : m::false_ {};
+template<class A,class B> struct is_InstanceMap< InstanceMap<A,B> > : m::true_ {};
 
-
-/// values must be convertable into Float
+///@brief an InstanceMap where all value types are numeric, along with some element-wise binary ops
+///@note values must be convertable into Float
 template< typename Keys, typename Arg2 = Keys, class Float = double >
 struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
     typedef NumericInstanceMap<Keys,Arg2,Float> THIS;
@@ -122,33 +129,36 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
     NumericInstanceMap(F a,F b,F c,F d,F e,F f,F g,F h) : BASE(a,b,c,d,e,f,g,h) {}
     NumericInstanceMap(F a,F b,F c,F d,F e,F f,F g,F h,F i) : BASE(a,b,c,d,e,f,g,h,i) {}
     NumericInstanceMap(F a,F b,F c,F d,F e,F f,F g,F h,F i,F j) : BASE(a,b,c,d,e,f,g,h,i,j) {}
+    ///@briew set value of all instances
     void setall(Float val){
         impl::SETVAL<Float> set;
         set.val = val;
-        boost::fusion::for_each( *this, set );
+        f::for_each( *this, set );
     }
+    ///@briew sum of instance values    
     Float sum() const {
         Float sum=0;
         impl::SUM<Float> s(sum);
-        boost::fusion::for_each( *this, s );
+        f::for_each( *this, s );
         return sum;
     }
+    ///@brief convertable to Float as sum of elements
     operator Float() const { return sum(); }
     void operator+=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::plus<Float> > add(*this);
-        boost::fusion::for_each(o,add);
+        f::for_each(o,add);
     }
     void operator-=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::minus<Float> > add(*this);
-        boost::fusion::for_each(o,add);
+        f::for_each(o,add);
     }
     void operator/=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::divides<Float> > add(*this);
-        boost::fusion::for_each(o,add);
+        f::for_each(o,add);
     }
     void operator*=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::multiplies<Float> > add(*this);
-        boost::fusion::for_each(o,add);
+        f::for_each(o,add);
     }
 };
 
