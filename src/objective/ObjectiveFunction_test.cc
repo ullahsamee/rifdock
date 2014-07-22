@@ -18,6 +18,7 @@ namespace bf = boost::fusion;
 using std::cout;
 using std::endl;
 
+
 struct ScoreInt {
 	typedef double Result;
 	typedef int Interaction;
@@ -73,6 +74,35 @@ struct ConfigTest {
 	ConfigTest():scale(1){}
 };
 
+template<class Interactions>
+struct SimpleInteractionSource {
+	
+	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
+	
+	MAP interactions_map_;
+	
+	typedef Interactions InteractionTypes;
+
+	template<class Interaction>	std::vector<Interaction> & get() {
+		return interactions_map_.template get<Interaction>();
+	}
+	template<class Interaction>	std::vector<Interaction> const & get() const {
+		return interactions_map_.template get<Interaction>();
+	}
+
+	template<class Interaction>
+	struct has_interaction : mpl::bool_<f::result_of::has_key<MAP,Interaction>::value> {};
+
+	template<class Interaction>
+	struct interaction_placeholder_type { typedef Interaction type; };
+
+};
+template<class I>
+std::ostream & operator<<(std::ostream & out, SimpleInteractionSource<I> const & s){ 
+	return out << s.interactions_map_;
+}
+
+
 TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	typedef	ObjectiveFunction<
 		mpl::list<
@@ -86,7 +116,8 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	ObjFun score;
 
 	typedef ObjFun::Results Results;
-	typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > InteractionSource;
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	// typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
 	interaction_source.get<int>().push_back(1);
@@ -103,14 +134,18 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 
 	score.get_objective<ScoreInt>().local_scale = 2.0;
 	EXPECT_EQ( Results(4,4,2.468,3.0), score(interaction_source) );
-	// cout << score << endl;
+
+	std::ostringstream oss;
+	oss << score << endl;
 }
 
 
 TEST(ObjectiveFunction,test_results){
 	typedef	ObjectiveFunction< mpl::vector< ScoreDouble, ScoreInt >, ConfigTest	> ObjFun;
 	ObjFun score;
-	typedef util::meta::InstanceMap< mpl::vector<int,double>, std::vector<mpl::_1> > InteractionSource;
+	// typedef util::meta::InstanceMap< mpl::vector<int,double>, std::vector<mpl::_1> > InteractionSource;
+	typedef SimpleInteractionSource< mpl::vector<int,double> > InteractionSource;	
+
 	InteractionSource interaction_source;
 	interaction_source.get<int>().push_back(1);
 	interaction_source.get<int>().push_back(7);	
@@ -125,6 +160,81 @@ TEST(ObjectiveFunction,test_results){
 	EXPECT_DOUBLE_EQ( 27.7035, (double)(results*weights + results) );
 	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights - results) );
 	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights/weights) );
+}
+
+template<class Interactions>
+struct PlaceholderInteractionSource {
+	
+	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
+	typedef util::meta::InstanceMap<Interactions,mpl::always<std::vector<size_t> > > MAP_int;
+	
+	MAP interactions_map_;
+	MAP_int placeholder_map_;	
+	
+	typedef Interactions InteractionTypes;
+
+	template<class Interaction>	void add_interaction(Interaction const & interaction) {
+		std::vector<Interaction> & vec = interactions_map_.template get<Interaction>();
+		vec.push_back(interaction);
+		placeholder_map_ .template get<Interaction>().push_back( vec.size()-1 );
+		// cout << "add_interaction: " << interaction << " placeholder: " << vec.size()-1 << endl;
+	}
+
+	template<class Interaction>	std::vector<size_t> const & get() const {
+		return placeholder_map_.template get<Interaction>();
+	}
+
+	template<class Interaction>
+	struct has_interaction : mpl::bool_<f::result_of::has_key<MAP,Interaction>::value> {};
+
+	template<class Interaction>
+	struct interaction_placeholder_type { typedef size_t type; };
+
+	template<class Interaction>
+	Interaction const & get_interaction(size_t placeholder) const {
+		// cout << "get_interaction " << (interactions_map_.template get<Interaction>()[placeholder]) 
+		//      << " placeholder " << placeholder << endl;
+		return interactions_map_.template get<Interaction>()[placeholder];
+	}
+
+};
+template<class I>
+std::ostream operator<<(std::ostream & out, PlaceholderInteractionSource<I> const & s){ 
+	return out << s.interactions_map_;
+}
+
+
+TEST(ObjectiveFunction,test_iteraction_placeholder){
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreInt,
+			ScoreInt2,
+			ScoreDouble,
+			ScoreIntDouble
+		>,
+		ConfigTest
+	> ObjFun;
+	ObjFun score;
+
+	typedef ObjFun::Results Results;
+	typedef PlaceholderInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	InteractionSource interaction_source;
+	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
+	interaction_source.add_interaction<int>(1);
+	EXPECT_EQ( Results(1,2,0,0), score(interaction_source) );
+	interaction_source.add_interaction<double>(1.234);
+	interaction_source.add_interaction<double>(2);	
+	interaction_source.add_interaction<double>(-2);
+	EXPECT_EQ( Results(1,2,1.234,0), score(interaction_source) );
+	interaction_source.add_interaction<std::pair<int,double> >(std::make_pair(1,1.5));
+	EXPECT_EQ( Results(1,2,1.234,1.5), score(interaction_source) );
+
+	score.default_config_.scale = 2.0;
+	EXPECT_EQ( Results(2,4,2.468,3.0), score(interaction_source) );
+
+	score.get_objective<ScoreInt>().local_scale = 2.0;
+	EXPECT_EQ( Results(4,4,2.468,3.0), score(interaction_source) );
+
 }
 
 }

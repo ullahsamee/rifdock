@@ -32,6 +32,27 @@ namespace traits {
 
 namespace impl {
 
+	SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(InteractionType)
+
+	template< class Interaction, class PlaceHolder, class InteractionSource, bool>
+	struct get_interaction_from_marker_impl {
+		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const &){
+			return placeholder;
+		}
+	};
+	template< class Interaction, class PlaceHolder, class InteractionSource>
+	struct get_interaction_from_marker_impl<Interaction,PlaceHolder,InteractionSource,false> {
+		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const & source){
+			return source.template get_interaction<Interaction>(placeholder);
+		}
+	};
+	template< class Interaction, class PlaceHolder, class InteractionSource >
+	Interaction const & get_interaction_from_marker(PlaceHolder const & placeholder, InteractionSource const & source){
+		return get_interaction_from_marker_impl<
+			Interaction,PlaceHolder,InteractionSource,boost::is_same<PlaceHolder,Interaction>::value>()
+			(placeholder,source);
+	}
+
 	///@brief helper class tests Objective::Interaction == Interaction
 	template<class Interaction>
 	struct objective_interactions_equal {
@@ -68,11 +89,15 @@ namespace impl {
 			BOOST_STATIC_ASSERT( f::result_of::has_key<Results,Objective>::value );
 			// std::cout << "    EvalObjective source: " << typeid(interaction_source.template get<Interaction>()).name() << std::endl;
 			// std::cout << "               objective: " << typeid(objective).name() << std::endl;
-			BOOST_FOREACH( Interaction const & petals, interaction_source.template get<Interaction>() ){
-				// std::cout << "        Interaction: " << petals <<
+			typedef typename InteractionSource::template interaction_placeholder_type<Interaction>::type Placeholder;
+			BOOST_FOREACH( Placeholder const & interaction_placeholder, interaction_source.template get<Interaction>() ){
+				// std::cout << "        Interaction: " << interaction <<
 									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
+				Interaction const & tmp( get_interaction_from_marker<Interaction,Placeholder,InteractionSource>
+						(interaction_placeholder,interaction_source) );
 				objective(
-					petals,
+					tmp,
+					// interaction_placeholder,
 					results.template get<Objective>(),
 					config
 				);
@@ -101,7 +126,7 @@ namespace impl {
 		) : interaction_source(p),objective_map(f),results(r),config(c) {}
 		
 		template<class Interaction> void operator()(util::meta::type2type<Interaction>) const {
-			BOOST_STATIC_ASSERT( f::result_of::has_key<InteractionSource,Interaction>::value );
+			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
 			// std::cout << "EvalObjectives Interaction: " << typeid(Interaction).name() << std::endl;
 			f::for_each(
 				objective_map.template get<Interaction>(), 
@@ -218,13 +243,14 @@ struct ObjectiveFunction {
 		Config const & config
 	) const {
 		// make sure we only operate on interactions contained in source
-		typedef typename util::meta::intersect<
+		typedef typename 
+			util::meta::intersect<
 				InteractionTypes,
-				typename InteractionSource::Keys
+				typename InteractionSource::InteractionTypes
 			>::type  
 			MutualInteractionTypes;
 		Results results;
-		BOOST_STATIC_ASSERT( util::meta::is_InstanceMap<InteractionSource>::value );
+		// BOOST_STATIC_ASSERT( util::meta::is_InstanceMap<InteractionSource>::value );
 		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
 			impl::EvalObjectives<
 				InteractionSource,
@@ -255,7 +281,7 @@ std::ostream & operator<<(std::ostream & out, ObjectiveFunction<O,C> const & obj
 	typedef ObjectiveFunction<O,C> OBJ;
 	out << "ObjectiveFunction" << std::endl;
 	out << "    Interactions:" << std::endl;
-		m::for_each<typename OBJ::Interaction>(util::meta::PrintType(out,"        "));
+		m::for_each<typename OBJ::InteractionTypes>(util::meta::PrintType(out,"        "));
 	out << "    Objectives:" << std::endl;		
 	f::for_each( obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
 	out << "    RAW:" << std::endl;

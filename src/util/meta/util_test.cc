@@ -21,6 +21,34 @@ namespace meta {
 
 // }
 
+
+
+struct EMPTY {};
+struct DOUBLE { typedef double FOO; };
+struct CHAR { typedef char FOO; };
+
+SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,int)
+SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,float)
+
+SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(FOO)
+
+
+TEST(META_UTIL,member_type_default){
+
+	BOOST_STATIC_ASSERT( boost::is_same< int    , get_FOO_int<EMPTY  >::type >::value );
+	BOOST_STATIC_ASSERT( boost::is_same< double , get_FOO_int<DOUBLE >::type >::value );
+	BOOST_STATIC_ASSERT( boost::is_same< char   , get_FOO_int<CHAR   >::type >::value );
+
+	BOOST_STATIC_ASSERT( boost::is_same< float  , get_FOO_float<EMPTY  >::type >::value );
+
+	BOOST_STATIC_ASSERT( boost::is_same< EMPTY  , get_FOO_SELF<EMPTY  >::type >::value );
+	BOOST_STATIC_ASSERT( boost::is_same< double , get_FOO_SELF<DOUBLE >::type >::value );
+	BOOST_STATIC_ASSERT( boost::is_same< char   , get_FOO_SELF<CHAR   >::type >::value );
+
+	BOOST_STATIC_ASSERT( boost::is_same< int    , get_FOO_SELF<int>::type >::value );
+
+}
+
 }
 }
 }

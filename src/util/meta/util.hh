@@ -85,6 +85,30 @@ struct intersect {
 		>::type type;
 };
 
+// utility to get MEMBER if it exists, else double                             
+struct __EMPTY_TYPE_UTILITY__ {};
+template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTILITY__ type; };
+
+#define SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(MEMBER,DEFAULT)                                  \
+	template<typename T, typename Enable = scheme::util::meta::__EMPTY_TYPE_UTILITY__>       \
+		struct get_ ## MEMBER ## _ ## DEFAULT                                                \
+			{ typedef DEFAULT type; };                                                       \
+	template<typename T>                                                                     \
+		struct get_ ## MEMBER ## _ ## DEFAULT<                                               \
+		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::FOO>::type >  \
+			{ typedef typename T::MEMBER type; };
+
+#define SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(MEMBER)                                     \
+	template<typename T, typename Enable = scheme::util::meta::__EMPTY_TYPE_UTILITY__>       \
+		struct get_ ## MEMBER ## _SELF                                                       \
+			{ typedef T type; };                                                             \
+	template<typename T>                                                                     \
+		struct get_ ## MEMBER ## _SELF<                                                      \
+		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::FOO>::type >  \
+			{ typedef typename T::MEMBER type; };
+
+
+
 /////////////// in progress.... ////////////////
 
 // template< typename SeqOfSeq >
@@ -110,18 +134,18 @@ struct intersect {
 
 
 
-	// utility to get ResultType if it exists, else double
-	// template<typename T> struct tovoid { typedef void type; };
-	// template<typename T, typename Enable = void>
-	// struct result_type_impl { typedef double type; };
-	// template<typename T> 
-	// struct result_type_impl< T, typename tovoid<typename T::ResultType>::type > {
-	//     typedef typename T::ResultType  type; 
-	// };
-
 
 }
 }
 }
+
+namespace std {
+	template<class A,class B>
+	std::ostream & operator<<(std::ostream & out, std::pair<A,B> const & p){ 
+		return out << p.first << "," << p.second;
+	}
+}
+
+
 
 #endif

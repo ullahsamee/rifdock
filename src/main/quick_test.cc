@@ -7,8 +7,8 @@
 // #include <nest/maps/parameter_maps_test_nbrcell.cc>
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
-// #include <objective/ObjectiveFunction_test.cc>
-#include <util/meta/InstanceMap_test.cc>
+#include <objective/ObjectiveFunction_test.cc>
+// #include <util/meta/InstanceMap_test.cc>
 // #include <util/meta/util_test.cc>
 
 int main(int argc, char **argv)
