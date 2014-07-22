@@ -70,38 +70,28 @@ namespace impl {
 	///@brief helper functor to call objective for all Interaction instances in InteractionSource
 	template<
 		class Interaction,
-		class InteractionSource,
 		class Results,
 		class Config
 	>
 	struct EvalObjective {
-		InteractionSource const & interaction_source;
+		Interaction const & interaction;
 		Results & results;
 		Config const & config;
 
 		EvalObjective(
-			InteractionSource const & p,
+			Interaction const & i,
 			Results & r,
 			Config const & c
-		) : interaction_source(p),results(r),config(c) {}
+		) : interaction(i),results(r),config(c) {}
 
 		template<class Objective> void operator()(Objective const & objective) const {
 			BOOST_STATIC_ASSERT( f::result_of::has_key<Results,Objective>::value );
-			// std::cout << "    EvalObjective source: " << typeid(interaction_source.template get<Interaction>()).name() << std::endl;
 			// std::cout << "               objective: " << typeid(objective).name() << std::endl;
-			typedef typename InteractionSource::template interaction_placeholder_type<Interaction>::type Placeholder;
-			BOOST_FOREACH( Placeholder const & interaction_placeholder, interaction_source.template get<Interaction>() ){
-				// std::cout << "        Interaction: " << interaction <<
-									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
-				Interaction const & tmp( get_interaction_from_marker<Interaction,Placeholder,InteractionSource>
-						(interaction_placeholder,interaction_source) );
-				objective(
-					tmp,
-					// interaction_placeholder,
-					results.template get<Objective>(),
-					config
-				);
-			}
+			objective(
+				interaction,
+				results.template get<Objective>(),
+				config
+			);
 		}
 	};
 
@@ -128,15 +118,22 @@ namespace impl {
 		template<class Interaction> void operator()(util::meta::type2type<Interaction>) const {
 			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
 			// std::cout << "EvalObjectives Interaction: " << typeid(Interaction).name() << std::endl;
-			f::for_each(
-				objective_map.template get<Interaction>(), 
-				EvalObjective<
-					Interaction,
-					InteractionSource,
-					Results,
-					Config
-				>(interaction_source,results,config) 
-			);
+			typedef typename InteractionSource::template interaction_placeholder_type<Interaction>::type Placeholder;
+			BOOST_FOREACH( Placeholder const & interaction_placeholder, interaction_source.template get<Interaction>() ){
+				// std::cout << "        Interaction: " << interaction <<
+									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
+				Interaction const & interaction =
+					get_interaction_from_marker<
+							Interaction,
+							Placeholder,
+							InteractionSource
+						>( interaction_placeholder, interaction_source );
+				f::for_each(
+					objective_map.template get<Interaction>(), 
+					EvalObjective< Interaction, Results, Config >
+					             ( interaction, results, config)
+				);
+			}
 		}
 	};
 

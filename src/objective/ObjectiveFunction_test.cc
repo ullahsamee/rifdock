@@ -42,6 +42,16 @@ struct ScoreInt2 {
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreInt2 const& si){ return out << si.name(); }
+struct ScoreInt3 {
+	typedef double Result;
+	typedef int Interaction;
+	static std::string name(){ return "ScoreInt3"; }	
+	template<class Config>
+	void operator()(Interaction const & a, Result & result, Config const& c) const {
+		result += 3*a*c.scale;
+	}
+};
+std::ostream & operator<<(std::ostream & out,ScoreInt3 const& si){ return out << si.name(); }
 
 struct ScoreDouble {
 	typedef double Result;
@@ -209,6 +219,7 @@ TEST(ObjectiveFunction,test_iteraction_placeholder){
 		mpl::list<
 			ScoreInt,
 			ScoreInt2,
+			ScoreInt3,
 			ScoreDouble,
 			ScoreIntDouble
 		>,
@@ -219,21 +230,21 @@ TEST(ObjectiveFunction,test_iteraction_placeholder){
 	typedef ObjFun::Results Results;
 	typedef PlaceholderInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
 	InteractionSource interaction_source;
-	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
+	EXPECT_EQ( Results(0,0,0,0,0), score(interaction_source) );
 	interaction_source.add_interaction<int>(1);
-	EXPECT_EQ( Results(1,2,0,0), score(interaction_source) );
+	EXPECT_EQ( Results(1,2,3,0,0), score(interaction_source) );
 	interaction_source.add_interaction<double>(1.234);
 	interaction_source.add_interaction<double>(2);	
 	interaction_source.add_interaction<double>(-2);
-	EXPECT_EQ( Results(1,2,1.234,0), score(interaction_source) );
+	EXPECT_EQ( Results(1,2,3,1.234,0), score(interaction_source) );
 	interaction_source.add_interaction<std::pair<int,double> >(std::make_pair(1,1.5));
-	EXPECT_EQ( Results(1,2,1.234,1.5), score(interaction_source) );
+	EXPECT_EQ( Results(1,2,3,1.234,1.5), score(interaction_source) );
 
 	score.default_config_.scale = 2.0;
-	EXPECT_EQ( Results(2,4,2.468,3.0), score(interaction_source) );
+	EXPECT_EQ( Results(2,4,6,2.468,3.0), score(interaction_source) );
 
 	score.get_objective<ScoreInt>().local_scale = 2.0;
-	EXPECT_EQ( Results(4,4,2.468,3.0), score(interaction_source) );
+	EXPECT_EQ( Results(4,4,6,2.468,3.0), score(interaction_source) );
 
 }
 
