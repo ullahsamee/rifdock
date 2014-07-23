@@ -49,6 +49,14 @@ TEST(META_UTIL,member_type_default){
 
 }
 
+TEST(META_UTIL,PrintType){
+	m::vector<int,char> m;
+
+	PrintType()(m);
+
+	PrintType(std::cout,"",false)(m); std::cout << std::endl;
+}
+
 }
 }
 }

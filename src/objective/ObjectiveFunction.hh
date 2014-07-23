@@ -19,6 +19,8 @@
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/mpl.hpp>
 
+// #define DEBUG_IO 
+
 namespace scheme {
 namespace objective {
 
@@ -31,8 +33,6 @@ namespace traits {
 }
 
 namespace impl {
-
-	SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(InteractionType)
 
 	template< class Interaction, class PlaceHolder, class InteractionSource, bool>
 	struct get_interaction_from_marker_impl {
@@ -86,7 +86,9 @@ namespace impl {
 
 		template<class Objective> void operator()(Objective const & objective) const {
 			BOOST_STATIC_ASSERT( f::result_of::has_key<Results,Objective>::value );
-			// std::cout << "               objective: " << typeid(objective).name() << std::endl;
+			#ifdef DEBUG_IO
+			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
+			#endif
 			objective(
 				interaction,
 				results.template get<Objective>(),
@@ -117,9 +119,15 @@ namespace impl {
 		
 		template<class Interaction> void operator()(util::meta::type2type<Interaction>) const {
 			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
-			// std::cout << "EvalObjectives Interaction: " << typeid(Interaction).name() << std::endl;
+			#ifdef DEBUG_IO
+				std::cout << "    EvalObjectives Interaction: ";
+				util::meta::PrintType(std::cout).operator()(Interaction());
+			#endif
 			typedef typename InteractionSource::template interaction_placeholder_type<Interaction>::type Placeholder;
-			BOOST_FOREACH( Placeholder const & interaction_placeholder, interaction_source.template get<Interaction>() ){
+			BOOST_FOREACH(
+				Placeholder const & interaction_placeholder,
+				interaction_source.template get_interactions<Interaction>()
+			){
 				// std::cout << "        Interaction: " << interaction <<
 									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
 				Interaction const & interaction =
@@ -247,7 +255,10 @@ struct ObjectiveFunction {
 			>::type  
 			MutualInteractionTypes;
 		Results results;
-		// BOOST_STATIC_ASSERT( util::meta::is_InstanceMap<InteractionSource>::value );
+		BOOST_STATIC_ASSERT( m::size<MutualInteractionTypes>::value );
+		#ifdef DEBUG_IO
+			std::cout << "ObjectiveFunction operator()" << std::endl;
+		#endif
 		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
 			impl::EvalObjectives<
 				InteractionSource,

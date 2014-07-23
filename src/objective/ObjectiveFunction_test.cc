@@ -93,10 +93,12 @@ struct SimpleInteractionSource {
 	
 	typedef Interactions InteractionTypes;
 
-	template<class Interaction>	std::vector<Interaction> & get() {
+	template<class Interaction>	std::vector<Interaction> & 
+	get_interactions() {
 		return interactions_map_.template get<Interaction>();
 	}
-	template<class Interaction>	std::vector<Interaction> const & get() const {
+	template<class Interaction>	std::vector<Interaction> const & 
+	get_interactions() const {
 		return interactions_map_.template get<Interaction>();
 	}
 
@@ -130,13 +132,13 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	// typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
-	interaction_source.get<int>().push_back(1);
+	interaction_source.get_interactions<int>().push_back(1);
 	EXPECT_EQ( Results(1,2,0,0), score(interaction_source) );
-	interaction_source.get<double>().push_back(1.234);
-	interaction_source.get<double>().push_back(2);	
-	interaction_source.get<double>().push_back(-2);
+	interaction_source.get_interactions<double>().push_back(1.234);
+	interaction_source.get_interactions<double>().push_back(2);	
+	interaction_source.get_interactions<double>().push_back(-2);
 	EXPECT_EQ( Results(1,2,1.234,0), score(interaction_source) );
-	interaction_source.get<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
+	interaction_source.get_interactions<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
 	EXPECT_EQ( Results(1,2,1.234,1.5), score(interaction_source) );
 
 	score.default_config_.scale = 2.0;
@@ -157,9 +159,9 @@ TEST(ObjectiveFunction,test_results){
 	typedef SimpleInteractionSource< mpl::vector<int,double> > InteractionSource;	
 
 	InteractionSource interaction_source;
-	interaction_source.get<int>().push_back(1);
-	interaction_source.get<int>().push_back(7);	
-	interaction_source.get<double>().push_back(1.2345);	
+	interaction_source.get_interactions<int>().push_back(1);
+	interaction_source.get_interactions<int>().push_back(7);	
+	interaction_source.get_interactions<double>().push_back(1.2345);	
 	ObjFun::Results weights(2.0);
 	ObjFun::Results results = score(interaction_source);
 	float tot = results;
@@ -174,23 +176,29 @@ TEST(ObjectiveFunction,test_results){
 
 template<class Interactions>
 struct PlaceholderInteractionSource {
-	
+	typedef size_t Placeholder;
 	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
-	typedef util::meta::InstanceMap<Interactions,mpl::always<std::vector<size_t> > > MAP_int;
+	typedef util::meta::InstanceMap<Interactions,mpl::always<std::vector<Placeholder> > > MAP_int;
 	
 	MAP interactions_map_;
 	MAP_int placeholder_map_;	
 	
 	typedef Interactions InteractionTypes;
 
-	template<class Interaction>	void add_interaction(Interaction const & interaction) {
+	template<class Interaction>	
+	void 
+	add_interaction(
+		Interaction const & interaction
+	){
 		std::vector<Interaction> & vec = interactions_map_.template get<Interaction>();
 		vec.push_back(interaction);
 		placeholder_map_ .template get<Interaction>().push_back( vec.size()-1 );
 		// cout << "add_interaction: " << interaction << " placeholder: " << vec.size()-1 << endl;
 	}
 
-	template<class Interaction>	std::vector<size_t> const & get() const {
+	template<class Interaction>
+	std::vector<Placeholder> const & 
+	get_interactions() const {
 		return placeholder_map_.template get<Interaction>();
 	}
 
@@ -198,10 +206,13 @@ struct PlaceholderInteractionSource {
 	struct has_interaction : mpl::bool_<f::result_of::has_key<MAP,Interaction>::value> {};
 
 	template<class Interaction>
-	struct interaction_placeholder_type { typedef size_t type; };
+	struct interaction_placeholder_type { typedef Placeholder type; };
 
 	template<class Interaction>
-	Interaction const & get_interaction(size_t placeholder) const {
+	Interaction const & 
+	get_interaction(
+		Placeholder const & placeholder
+	) const {
 		// cout << "get_interaction " << (interactions_map_.template get<Interaction>()[placeholder]) 
 		//      << " placeholder " << placeholder << endl;
 		return interactions_map_.template get<Interaction>()[placeholder];
