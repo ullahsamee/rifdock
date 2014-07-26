@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 #include <util/meta/util.hh>
 
+#include <boost/tuple/tuple.hpp>
+#include <boost/mpl/assert.hpp>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 
@@ -52,10 +55,66 @@ TEST(META_UTIL,member_type_default){
 TEST(META_UTIL,PrintType){
 	m::vector<int,char> m;
 
-	PrintType()(m);
+	std::ostringstream out;
+	PrintType(out).operator()(m);
 
-	PrintType(std::cout,"",false)(m); std::cout << std::endl;
+	PrintType(out,"",false)(m); out << std::endl;
+
+	// std::cout << out.str() << std::endl;
 }
+
+TEST(META_UTIL,remove_ref){
+	using boost::is_same;
+	using boost::tuple;
+	using boost::reference_wrapper;
+	using std::pair;
+
+	BOOST_MPL_ASSERT(( is_same< int, remove_refwrap<int>::type > ));
+	BOOST_MPL_ASSERT(( is_same< int, remove_refwrap<reference_wrapper<int> >::type > ));
+	BOOST_MPL_ASSERT_NOT(( is_same< int, reference_wrapper<int> > ));
+
+	BOOST_MPL_ASSERT(( is_same< int, remove_refwrap<const int>::type > ));
+	BOOST_MPL_ASSERT(( is_same< int, remove_refwrap<reference_wrapper<const int> >::type > ));
+	BOOST_MPL_ASSERT_NOT(( is_same< int const, reference_wrapper<int const> > ));
+
+	BOOST_MPL_ASSERT(( is_same< int, recursive_remove_refwrap<int>::type > ));
+	BOOST_MPL_ASSERT(( is_same< int, recursive_remove_refwrap<reference_wrapper<int> >::type > ));
+	BOOST_MPL_ASSERT(( is_same< pair<int,char>, recursive_remove_refwrap<pair<int,char> >::type > ));
+	BOOST_MPL_ASSERT(( is_same< pair<int,char>, recursive_remove_refwrap<pair<reference_wrapper<int>,char> >::type > ));
+	BOOST_MPL_ASSERT(( is_same< pair<int,char>, recursive_remove_refwrap<
+		pair<  reference_wrapper<int>,  reference_wrapper<char>   > >::type > ));
+
+	BOOST_MPL_ASSERT(( is_same<
+		tuple<                   int        >, recursive_remove_refwrap<
+		tuple< reference_wrapper<int>       > >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int ,                  char  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int>,reference_wrapper<char> >      >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int ,                  char ,                   float  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int>,reference_wrapper<char>, reference_wrapper<float> >      >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int ,                  char ,                   float ,                   int  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int>,reference_wrapper<char>, reference_wrapper<float>, reference_wrapper<int> >      >::type > ));
+
+	BOOST_MPL_ASSERT(( is_same<
+		tuple<                   int        >, recursive_remove_refwrap<
+		tuple< reference_wrapper<int>       > >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int ,                        char  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int>,reference_wrapper<const char> >      >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int       ,                  char ,                   float  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int const>,reference_wrapper<char>, reference_wrapper<float> >      >::type > ));
+	BOOST_MPL_ASSERT(( is_same< 
+		tuple<                   int ,                  char ,                   float       ,                   int  >  ,   recursive_remove_refwrap<
+		tuple< reference_wrapper<int>,reference_wrapper<char>, reference_wrapper<float const>, reference_wrapper<int> >      >::type > ));
+
+	// print_type< recursive_remove_refwrap< tuple< reference_wrapper<int>,reference_wrapper<char> > >::type >();
+
+}
+
+
 
 }
 }

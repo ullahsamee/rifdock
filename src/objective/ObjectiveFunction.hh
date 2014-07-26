@@ -89,6 +89,7 @@ namespace impl {
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
 			#endif
+			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
 			objective(
 				interaction,
 				results.template get<Objective>(),

@@ -1,8 +1,10 @@
 #ifndef INCLUDED_kinematics_Body_HH
 #define INCLUDED_kinematics_Body_HH
 
+#include <types.hh>
 #include <util/meta/util.hh>
 #include <util/meta/InstanceMap.hh>
+#include <util/StoragePolicy.hh>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -31,6 +33,7 @@ struct ActorConcept {
 
 	typedef _Position Position;
 	typedef _Data Data;
+	typedef ActorConcept<Position,Data> THIS;
 
 	Position position_;
 	Data data_;
@@ -54,6 +57,8 @@ struct ActorConcept {
 
 	Position const &
 	position() const { return position_; }
+
+	bool operator==(THIS const & o) const { return o.position_==position_ && o.data_==data_; }
 };
 template< class P, class D >
 std::ostream & operator<<(std::ostream & out, ActorConcept<P,D> const & a){
@@ -61,66 +66,96 @@ std::ostream & operator<<(std::ostream & out, ActorConcept<P,D> const & a){
 }
 
 
-template<class Actors>
-struct Conformation : util::meta::InstanceMap<Actors,std::vector<m::_1> > {
-
-};
-
-template<class Actors,class Position>
-struct Body {
-	boost::shared_ptr<Conformation<Actors> > conformation_;
-	Position position_;
-
-	Body( boost::shared_ptr<Conformation<Actors> > cp ) : conformation_(cp) {}
+template< class Actors, class ActorContainer, class _Xform >
+struct ConformationConcept : util::meta::InstanceMap<Actors,ActorContainer> {
+	typedef _Xform Xform;
 
 	template<class Actor>
-	Actor get_positioned_actor(size_t i) const {
-		Actor const & actor0 = conformation_->template get<Actor>()[i];
-		return Actor(actor0,position_);
+	void add_actor(Actor const & a){
+		this->template get<Actor>().insert(this->template get<Actor>().end(),a);
 	}
-
-	void set_position(Position const & p) { position_ = p; }
-	Position const & position() const { return position_; }	
 };
 
-template<class T>
+
+///@brief holds a Conformation pointer and an Xform
+template<
+	class Conformation,
+	template<class> class StoragePolicy = util::StoreSharedPointer
+>
+struct Body : public StoragePolicy<Conformation> {
+	typedef StoragePolicy<Conformation> Super;
+	typedef typename Conformation::Xform Xform;	
+
+	Body() : position_(), Super() {}
+	Body(Conformation & c) : position_(), Super(&c) {}
+
+	template<class Actor> 
+	Actor
+	get_actor(
+		size_t i
+	) const { 
+		return Actor(this->value()->template get<Actor>().at(i),position_);
+	}
+	template<class Actor> 
+	Actor
+	get_actor_unsafe(size_t i) const { 
+		return Actor(this->value()->template get<Actor>()[i],position_); 
+	}
+
+	Xform const & xform() const { return position_; }
+	Conformation const & conformation() const { return this->value(); }
+ private:
+	Xform position_;
+ };
+template< class C >
+std::ostream & operator<<(std::ostream & out, Body<C> const & b){
+	return out << "Body( " << b.xform() << ", " << b.conformation_ptr() << " )";
+}
+
+template<class Interaction>
 struct SceneIter {
 
 };
 
 template<
-	class _Actors,
-	class _Interactions = void,
-	class _Position = double
+	class _Conformation,
+	class _Interactions,
+	template<class> class _ConfStoragePolicy = util::StoreSharedPointer
 >
 struct Scene {
 		
-	typedef _Actors Actors;
+	typedef _Conformation Conformation;
 	typedef _Interactions Interactions;	
-	typedef _Position Position;	
+	typedef Body<Conformation,_ConfStoragePolicy> Body;
+	typedef typename Conformation::Keys Actors;
+	// typedef typename Conformation::Xform Xform;	
+	typedef std::vector<Body> Bodies;
+
+	Bodies bodies_;
+
+	Bodies const & bodies() const { return bodies_; }
+	Body const & body       (size_t i) const { return bodies_.at(i); }
+	Body const & body_unsafe(size_t i) const { return bodies_[i]; }
+	void add_body(Conformation const & c){ bodies_.push_back(c); }
+	void add_body(Body const & b){ bodies_.push_back(b); }
+
+	///////// interactions
 
 	template<class Interaction>
 	struct has_interaction : m::bool_<false> {}; // f::result_of::has_key<MAP,Interaction>::value> {};
 
 	template<class Interaction>
-	struct interaction_placeholder_type { 
-		typedef typename SceneIter<Interaction>::value_type type; 
-	};
-	template<class Interaction>
 	struct interactions_type { 
 		typedef std::pair<SceneIter<Interaction>,SceneIter<Interaction> > type; 
 	};
-
-	typedef std::vector<Body<Actors,Position> > Bodies;
-	Bodies bodies_;
-	Bodies const & bodies() const { return bodies_; }
-	Bodies       & bodies()       { return bodies_; }	
-
-
 	template<class Interaction>
 	typename interactions_type<Interaction>::type const &
 	get_interactions() const;
 
+	template<class Interaction>
+	struct interaction_placeholder_type { 
+		typedef typename SceneIter<Interaction>::value_type type; 
+	};
 	template<class Interaction>
 	Interaction const &
 	get_interaction(
@@ -130,12 +165,16 @@ struct Scene {
 
 
 };
-template<class A,class I>
-std::ostream & operator<<(std::ostream & out, Scene<A,I> const & scene){ 
-	typedef Scene<A,I> Scene;
-	out << "Scene";
-	out << "    nbodies: " << scene.bodies().size() << std::endl;
-	util::meta::PrintType(out).template operator()<typename Scene::Actors>(typename Scene::Actors());
+template<class C,class I,template<class>class B>
+std::ostream & operator<<(std::ostream & out, Scene<C,I,B> const & scene){ 
+	using std::endl;
+	typedef Scene<C,I,B> Scene;
+	out << "Scene" << endl;
+	out << "  Nbodies: " << scene.bodies().size() << endl;
+	BOOST_FOREACH(typename Scene::Body const & b, scene.bodies()){ out << "    " << b << endl; }
+	out << "  Types:" << endl;
+	out << "    Actors:" << endl; util::meta::print_type<typename Scene::Actors>(out,"        ");
+	out << "    Conformation:" << endl; util::meta::print_type<typename Scene::Conformation>(out,"        ");	
 	return out;
 }
 

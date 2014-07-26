@@ -13,18 +13,19 @@ FILE(GLOB UTIL_META_CC "src/util/meta/*.cc")
 FILE(GLOB NEST_CC "src/nest/*.cc")
 FILE(GLOB OBJ_CC "src/objective/*.cc")
 FILE(GLOB NEST_MAP_CC "src/nest/maps/*.cc")
+FILE(GLOB KIN_CC "src/kinematics/*.cc")
 
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_CXX_FLAGS         "-O3 -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_CXX_FLAGS         "-O3 -ffast-math" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -ffast-math" )
+SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math" )
 #SET( CMAKE_CXX_FLAGS         "-O0 " )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 " )
 
 project (main_test)
-add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC} ${OBJ_CC} ${NEST_MAP_CC} ${UTIL_META_CC})
+add_executable(main_test src/main/main_test.cc ${UTIL_CC} ${NEST_CC} ${OBJ_CC} ${NEST_MAP_CC} ${UTIL_META_CC} ${KIN_CC})
 target_link_libraries(main_test ${EXTRA_LIBS} )
 
 

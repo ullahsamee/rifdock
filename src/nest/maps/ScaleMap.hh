@@ -2,9 +2,10 @@
 #define INCLUDED_scheme_nest_maps_ScaleMap_HH
 
 #include <util/template_loop.hh>
+#include <util/SimpleArray.hh>
 #include <boost/function.hpp>
+#include <boost/type_traits/make_signed.hpp>
 #include <boost/bind.hpp>
-#include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -15,14 +16,14 @@ namespace maps {
 
 	///@brief Parameter Mapping Policy for cartesian grids
 	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
+	///@tparam Value the output value type, default
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	///@note NEST num_cells MUST agree with cell_sizes_
-	///@note bounds and cell indices are represented as Eigen Arrays (like params) NOT Value Types
+	///@note bounds and cell indices are represented as SimpleArrays (like params) NOT Value Types
 	template<
 		int DIM,
-		class Value=Eigen::Matrix<double,DIM,1>,
+		class Value=util::SimpleArray<DIM,double>,
 		class Index=size_t,
 		class Float=double
 	>
@@ -32,9 +33,10 @@ namespace maps {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<int,DIM,1> SignedIndices;
-		typedef Eigen::Array<Float,DIM,1> Params;		
+		typedef typename boost::make_signed<Index>::type SignedIndex;
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
+		typedef util::SimpleArray<DIM,Float> Params;		
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 	 private:
 		///@brief lower bound on value space		
@@ -63,7 +65,7 @@ namespace maps {
 		void init(){
 			num_cells_ = cell_sizes_.prod();
 			for(size_t i = 0; i < DIM; ++i){
-				cell_sizes_pref_sum_[i] = cell_sizes_.head(i).prod();
+				cell_sizes_pref_sum_[i] = cell_sizes_.prod(i);
 				cell_width_[i] = (upper_bound_[i]-lower_bound_[i])/(Float)cell_sizes_[i];
 				assert(upper_bound_[i] > lower_bound_[i]);
 			}
@@ -171,9 +173,9 @@ namespace maps {
 			// for(size_t i = 0; i < DIM; ++i) delta_param[i] = delta / cell_width_[i];
 			Params params;
 			value_to_params_for_cell(value,params,0);
-			int const BIG = 12345678;
-			SignedIndices lb = (params-param_delta+(Float)BIG).max((Float)BIG).template cast<int>() - BIG ;
-			SignedIndices ub = (params+param_delta).template cast<Index>().min(cell_sizes_-1).template cast<int>();
+			SignedIndex const BIG = 12345678;
+			SignedIndices lb = (params-param_delta+(Float)BIG).max((Float)BIG).template cast<SignedIndex>() - BIG ;
+			SignedIndices ub = (params+param_delta).template cast<Index>().min(cell_sizes_-(Index)1).template cast<SignedIndex>();
 			// std::cout << "PM " << params.transpose() << std::endl;
 			// std::cout << "DL " << delta_param.transpose() << std::endl;
 			// std::cout << "LB " << lb.transpose() << std::endl;

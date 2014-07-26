@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <assert.h>
-#include <Eigen/Core>
+#include <util/SimpleArray.hh>
 
 namespace scheme {
 namespace nest {
@@ -23,7 +23,7 @@ struct ArrayValueArchitype {
 	///@brief Parameter to Value Map Policy Class Concept
 	///@detail JUST A DEFINITION OF THE CONCEPT AND PLACEHOLDER!
 	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
+	///@tparam Value the output value type, default SimpleArray
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	template<
@@ -37,8 +37,8 @@ struct ArrayValueArchitype {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,Float> Params;
 
 		///@brief cell size
 		Index num_cells() const { return 0; }
@@ -59,12 +59,12 @@ struct ArrayValueArchitype {
 	///@brief Parameter to Value Map Policy Class Concept
 	///@detail JUST A DEFINITION OF THE CONCEPT AND PLACEHOLDER!
 	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
+	///@tparam Value the output value type, default SimpleArray
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	template<
 		int DIM,
-		class Value=Eigen::Array<double,DIM,1>,
+		class Value=util::SimpleArray<DIM,double>,
 		class Index=size_t,
 		class Float=double
 	>
@@ -73,8 +73,8 @@ struct ArrayValueArchitype {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,Float> Params;
 
 		///@brief cell size
 		Index num_cells() const { return 0; }
@@ -103,12 +103,12 @@ struct ArrayValueArchitype {
 	///@brief Parameter to Value Map Policy Class Concept
 	///@detail JUST A DEFINITION OF THE CONCEPT AND PLACEHOLDER!
 	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
+	///@tparam Value the output value type, default SimpleArray
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	template<
 		int DIM,
-		class Value=Eigen::Array<double,DIM,1>,
+		class Value=util::SimpleArray<DIM,double>,
 		class Index=size_t,
 		class Float=double
 	>
@@ -117,8 +117,8 @@ struct ArrayValueArchitype {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,Float> Params;
 
 		///@brief cell size
 		Index num_cells() const { return 0; }

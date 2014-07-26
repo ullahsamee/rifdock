@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <objective/ObjectiveFunction.hh>
 #include <boost/mpl/vector.hpp>
+#include <boost/mpl/transform.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/size.hpp>
 #include <boost/static_assert.hpp>
@@ -72,8 +73,8 @@ struct ScoreIntDouble {
 	void operator()(int i,double a, Result & result, Config const& c) const {
 		result += i*a*c.scale;
 	}
-	template<class Config>
-	void operator()(Interaction const & p, Result & result, Config const& c) const {
+	template<class Pair, class Config>
+	void operator()(Pair const & p, Result & result, Config const& c) const {
 		this->operator()(p.first,p.second,result,c);
 	}
 };
@@ -84,7 +85,7 @@ struct ConfigTest {
 	ConfigTest():scale(1){}
 };
 
-template<class Interactions>
+template<class Interactions >
 struct SimpleInteractionSource {
 	
 	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
@@ -129,7 +130,6 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 
 	typedef ObjFun::Results Results;
 	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
-	// typedef util::meta::InstanceMap< mpl::vector<int,double,std::pair<int,double> >, std::vector<mpl::_1> > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
 	interaction_source.get_interactions<int>().push_back(1);
@@ -256,6 +256,126 @@ TEST(ObjectiveFunction,test_iteraction_placeholder){
 
 	score.get_objective<ScoreInt>().local_scale = 2.0;
 	EXPECT_EQ( Results(4,4,6,2.468,3.0), score(interaction_source) );
+
+}
+
+TEST(ObjectiveFunction,ref_wrap_sanity){
+	int i = 2;
+	char c = 'b';
+	std::pair<int,char> p(1,'a');
+	std::pair<boost::reference_wrapper<int>,boost::reference_wrapper<char> > pr(boost::ref(i),boost::ref(c));
+	EXPECT_NE( p.first, pr.first );	EXPECT_NE( p.second, pr.second );
+	p = pr;
+	EXPECT_EQ( p.first, pr.first );	EXPECT_EQ( p.second, pr.second );
+	pr.first = boost::ref(i); pr.second = boost::ref(c);
+
+	int & iref = pr.first;
+	EXPECT_EQ(i,iref);
+	iref = 4;
+	EXPECT_EQ(i,4);
+
+	// pr = p;
+	// EXPECT_EQ( p.first, pr.first );
+
+}
+
+
+template<class IM_FROM, class IM_TO>
+struct CopyIM {
+	IM_FROM const & from_;
+	IM_TO & to_;
+	CopyIM(IM_FROM const & from,IM_TO & to) : from_(from),to_(to) {}
+	template<class T>
+	void operator()(util::meta::type2type<T>){
+		// cout << "FOO ";
+		// util::meta::print_type<T>();
+		// to_.template get<T>().resize(from_.template get<T>().size());
+		// std::copy( from_.template get<T>().begin(), from_.template get<T>().end(), to_.template get<T>().begin() );
+		// to_.template get<T>().clear();
+		BOOST_FOREACH( T const & v, from_.template get<T>() ){
+			to_.template get<T>().push_back( std::make_pair( v.first, v.second ) );
+		}
+	}
+};
+
+
+struct vec_of_rem_refwrap {
+	template<class T> struct apply { typedef 
+		std::vector<typename util::meta::recursive_remove_refwrap<T>::type> type; }; };
+
+template<class Interactions >
+struct RefInteractionSource {
+	
+	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAPREF;
+	typedef util::meta::InstanceMap<Interactions, vec_of_rem_refwrap > MAPVAL;	
+
+	MAPVAL imap_val_;
+	MAPREF imap_ref_;	
+	
+	typedef Interactions InteractionTypes;
+
+	void store_refs(){
+		CopyIM<MAPVAL,MAPREF> cpim(imap_val_,imap_ref_);
+		m::for_each<Interactions,util::meta::type2type<m::_1> >(cpim);
+	}
+
+	template<class Interaction>	std::vector<Interaction> const & 
+	get_interactions() const {
+		return imap_ref_.template get<Interaction>();
+	}
+
+	template<class Interaction>	std::vector<typename util::meta::recursive_remove_refwrap<Interaction>::type > & 
+	get_interactions_vals() {
+		return imap_val_.template get<Interaction>();
+	}
+
+	template<class Interaction>
+	struct has_interaction : mpl::bool_<f::result_of::has_key<MAPREF,Interaction>::value> {};
+
+	template<class Interaction>
+	struct interaction_placeholder_type { typedef Interaction type; };
+
+};
+template<class I>
+std::ostream & operator<<(std::ostream & out, RefInteractionSource<I> const & s){ 
+	return out << s.imap_val_;
+}
+
+struct ScoreIntRefDoubleRef : ScoreIntDouble {
+	typedef std::pair<boost::reference_wrapper<int const>, boost::reference_wrapper<double const> > Interaction;
+	// template<class Config>
+	// void operator()(Interaction const & p, Result & result, Config const& c) const {
+	// 	int i = p.first;
+	// 	double d = p.second;
+	// 	this->template operator()<Config>(i,d,result,c);
+	// }
+};
+
+TEST(ObjectiveFunction,tuple_of_ref_interactions){
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreIntRefDoubleRef
+		>,
+		ConfigTest
+	> ObjFun;
+	ObjFun score;
+
+	using boost::reference_wrapper;
+
+	typedef ObjFun::Results Results;
+	typedef std::pair<reference_wrapper<int const>,reference_wrapper<double const> > I1;
+	typedef RefInteractionSource< mpl::vector<I1> > InteractionSource;	
+	InteractionSource interaction_source;
+
+	EXPECT_EQ( Results(0), score(interaction_source) );
+	interaction_source.get_interactions_vals<I1>().push_back(std::make_pair(1,1.5));
+	interaction_source.store_refs();
+	// std::vector< std::pair<int,double> > & tmp = interaction_source.get_interactions_vals<I1>();
+
+	EXPECT_EQ( Results(1.5), score(interaction_source) );
+
+	// std::ostringstream oss;
+	// oss << score << endl;
 
 }
 

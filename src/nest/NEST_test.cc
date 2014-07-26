@@ -80,16 +80,16 @@ void test_coverage_unit1cell(){
 	for(size_t r = 0; r <= rmax; ++r){
 		double cellradius = sqrt(DIM) * 0.5 / (1<<r);
 		for(size_t iter = 0; iter < 100000/DIM; ++iter){
-			Matrix<double,DIM,1> tgt;
+			util::SimpleArray<DIM,double> tgt;
 			for(size_t i = 0; i < DIM; ++i) tgt[i] = uniform(rng);
 			size_t index = nest.get_index(tgt,r);
 			ASSERT_LT( index , nest.size(r) );
-			Matrix<double,DIM,1> val = nest.set_and_get(index,r);
+			util::SimpleArray<DIM,double> val = nest.set_and_get(index,r);
 			ASSERT_LE( (tgt-val).norm(), cellradius );
 		}
-		Matrix<double,DIM,1> zeros; zeros.fill(0);
+		util::SimpleArray<DIM,double> zeros; zeros.fill(0);
 		ASSERT_LE( (zeros-nest.set_and_get(nest.get_index(zeros,r),r)).norm(), cellradius );
-		Matrix<double,DIM,1> ones; ones.fill(0.999999);
+		util::SimpleArray<DIM,double> ones; ones.fill(0.999999);
 		ASSERT_LE( (ones-nest.set_and_get(nest.get_index(ones,r),r)).norm(), cellradius );
 	}
 }
@@ -119,7 +119,7 @@ TEST(NEST,index_nesting){
 
 template<int DIM>
 void test_store_pointer_virtual(){
-	typedef Matrix<double,DIM,1> VAL;
+	typedef util::SimpleArray<DIM,double> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest_val(2);
 	NEST<DIM,VAL,UnitMap,StorePointer> nest_ptr(2);
 	NestBase<> * nest_val_virtual = &nest_val;
@@ -150,12 +150,12 @@ TEST(NEST,store_pointer_virtual){
 
 template<int DIM>
 void test_uniformity(){
-	typedef Matrix<double,DIM,1> VAL;
+	typedef util::SimpleArray<DIM,double> VAL;
 	NEST<DIM,VAL,UnitMap,StoreValue  > nest(1);
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		double scale = 1<<r;
-		ArrayXi counts(1<<r); counts.fill(0);
+		Eigen::ArrayXi counts(1<<r); counts.fill(0);
 		for(size_t i = 0; i < nest.size(r); ++i){
 			ASSERT_TRUE( nest.set_state(i,r) );
 			for(size_t j = 0; j < DIM; ++j){

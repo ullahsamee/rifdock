@@ -22,14 +22,14 @@ using scheme::nest::StorePointer;
 
 TEST(NEST_ScaleMap,particular_values){
 	{
-		typedef Matrix<double,1,1> VAL;
+		typedef util::SimpleArray<1,double> VAL;
 		VAL lb, ub;
-		Matrix<size_t,1,1> bs;
-		lb << -16.0;
-		ub <<  16.0;
-		bs << 1;
+		util::SimpleArray<1,size_t> bs;
+		lb = -16.0;
+		ub =  16.0;
+		bs = 1;
 		NEST<1,VAL,ScaleMap> nest1(lb,ub,bs);
-		bs << 2;
+		bs = 2;
 		NEST<1,VAL,ScaleMap> nest2(lb,ub,bs);
 		ASSERT_EQ( nest1.set_and_get(0,0)[0],  0.0 );
 		ASSERT_EQ( nest1.set_and_get(0,1)[0], -8.0 );
@@ -43,42 +43,39 @@ TEST(NEST_ScaleMap,particular_values){
 		ASSERT_EQ( nest2.set_and_get(3,1)[0], 12.0 );	
 	}
 	{
-		typedef Vector2d VAL;
-		Matrix<double,2,1> lb, ub;
-		Matrix<size_t,2,1> bs;
-		lb << -16.0,-24;
-		ub <<  16.0, 24;
-		bs << 2,3;
+		typedef util::SimpleArray<2,double> VAL;
+		util::SimpleArray<2,double> lb(-16.0,-24), ub(16.0, 24);
+		util::SimpleArray<2,size_t> bs(2,3);
 		NEST<2,VAL,ScaleMap> nest(lb,ub,bs);
-		ASSERT_EQ( nest.set_and_get(0,0), Vector2d(-8,-16) );
-		ASSERT_EQ( nest.set_and_get(1,0), Vector2d( 8,-16) );	
-		ASSERT_EQ( nest.set_and_get(2,0), Vector2d(-8,  0) );
-		ASSERT_EQ( nest.set_and_get(3,0), Vector2d( 8,  0) );	
-		ASSERT_EQ( nest.set_and_get(4,0), Vector2d(-8, 16) );
-		ASSERT_EQ( nest.set_and_get(5,0), Vector2d( 8, 16) );
-		ASSERT_EQ( nest.set_and_get(0,1), Vector2d(-12,-20) );
-		ASSERT_EQ( nest.set_and_get(1,1), Vector2d( -4,-20) );
-		ASSERT_EQ( nest.set_and_get(2,1), Vector2d(-12,-12) );
-		ASSERT_EQ( nest.set_and_get(3,1), Vector2d( -4,-12) );
-		ASSERT_EQ( nest.set_and_get(0,2), Vector2d(-14,-22) );
-		ASSERT_EQ( nest.set_and_get(1,2), Vector2d(-10,-22) );
-		ASSERT_EQ( nest.set_and_get(2,2), Vector2d(-14,-18) );
-		ASSERT_EQ( nest.set_and_get(3,2), Vector2d(-10,-18) );
-		ASSERT_EQ( nest.set_and_get(0,3), Vector2d(-15,-23) );
-		ASSERT_EQ( nest.set_and_get(1,3), Vector2d(-13,-23) );
-		ASSERT_EQ( nest.set_and_get(2,3), Vector2d(-15,-21) );
-		ASSERT_EQ( nest.set_and_get(3,3), Vector2d(-13,-21) );
-		ASSERT_EQ( nest.set_and_get(5*64+60,3), Vector2d(13,21) );
-		ASSERT_EQ( nest.set_and_get(5*64+61,3), Vector2d(15,21) );
-		ASSERT_EQ( nest.set_and_get(5*64+62,3), Vector2d(13,23) );
-		ASSERT_EQ( nest.set_and_get(5*64+63,3), Vector2d(15,23) );
+		ASSERT_EQ( nest.set_and_get(0,0), VAL(-8,-16) );
+		ASSERT_EQ( nest.set_and_get(1,0), VAL( 8,-16) );	
+		ASSERT_EQ( nest.set_and_get(2,0), VAL(-8,  0) );
+		ASSERT_EQ( nest.set_and_get(3,0), VAL( 8,  0) );	
+		ASSERT_EQ( nest.set_and_get(4,0), VAL(-8, 16) );
+		ASSERT_EQ( nest.set_and_get(5,0), VAL( 8, 16) );
+		ASSERT_EQ( nest.set_and_get(0,1), VAL(-12,-20) );
+		ASSERT_EQ( nest.set_and_get(1,1), VAL( -4,-20) );
+		ASSERT_EQ( nest.set_and_get(2,1), VAL(-12,-12) );
+		ASSERT_EQ( nest.set_and_get(3,1), VAL( -4,-12) );
+		ASSERT_EQ( nest.set_and_get(0,2), VAL(-14,-22) );
+		ASSERT_EQ( nest.set_and_get(1,2), VAL(-10,-22) );
+		ASSERT_EQ( nest.set_and_get(2,2), VAL(-14,-18) );
+		ASSERT_EQ( nest.set_and_get(3,2), VAL(-10,-18) );
+		ASSERT_EQ( nest.set_and_get(0,3), VAL(-15,-23) );
+		ASSERT_EQ( nest.set_and_get(1,3), VAL(-13,-23) );
+		ASSERT_EQ( nest.set_and_get(2,3), VAL(-15,-21) );
+		ASSERT_EQ( nest.set_and_get(3,3), VAL(-13,-21) );
+		ASSERT_EQ( nest.set_and_get(5*64+60,3), VAL(13,21) );
+		ASSERT_EQ( nest.set_and_get(5*64+61,3), VAL(15,21) );
+		ASSERT_EQ( nest.set_and_get(5*64+62,3), VAL(13,23) );
+		ASSERT_EQ( nest.set_and_get(5*64+63,3), VAL(15,23) );
 		// cout << VAL(0,0) << endl;
 	}
 }
 
 
 TEST(UnitMap,value_to_params_for_cell){
-	typedef UnitMap<2,RowVector2d> MapType;
+	typedef UnitMap<2> MapType;
 	MapType umap(3);
 	MapType::Params params;
 
@@ -101,7 +98,7 @@ TEST(UnitMap,value_to_params_for_cell){
 
 TEST(ScaleMap,value_to_params_for_cell){
 	{
-		typedef ScaleMap<2,RowVector2d> MapType;
+		typedef ScaleMap<2> MapType;
 		MapType smap(
 			MapType::Params(0,0),
 			MapType::Params(4,4),
@@ -135,7 +132,7 @@ TEST(ScaleMap,value_to_params_for_cell){
 		ASSERT_EQ( params[1], -2.5 );
 	}
 	{
-		typedef ScaleMap<2,RowVector2d> MapType;
+		typedef ScaleMap<2> MapType;
 		double scale = 2.0;
 		MapType::Params shift(0.597,1.1243);
 		MapType smap(
@@ -178,16 +175,14 @@ TEST(ScaleMap,value_to_params_for_cell){
 
 template<int DIM>
 void test_index_lookup_scaled(){
-	typedef Matrix<double,DIM,1> VAL;
-	Matrix<double,10,1> lb0,ub0;
-	Matrix<size_t,10,1> bs0;
-	lb0 << -1.3,2.2,0,-3,-5,-9.9,1.3,44,-13.3,99;
-	ub0 <<  1.3,4.2,1,10,-3, 9.9,4.3,44, 13.3,199;
-	bs0 << 2,1,2,3,4,5,6,7,8,9;
+	typedef util::SimpleArray<DIM,double> VAL;
+	util::SimpleArray<10,double> lb0(-1.3,2.2,0,-3,-5,-9.9,1.3,44,-13.3,99);
+	util::SimpleArray<10,double> ub0(1.3,4.2,1,10,-3, 9.9,4.3,44, 13.3,199);
+	util::SimpleArray<10,size_t> bs0(2,1,2,3,4,5,6,7,8,9);
 
-	typedef Matrix<double,DIM,1> VAL;
+	typedef util::SimpleArray<DIM,double> VAL;
 	VAL lb, ub;
-	Matrix<size_t,DIM,1> bs;
+	util::SimpleArray<DIM,size_t> bs;
 	for(size_t i = 0; i < DIM; ++i){
 		lb[i] = lb0[i]; ub[i] = ub0[i]; bs[i] = bs0[i];
 	}
@@ -220,15 +215,12 @@ TEST(NEST_ScaleMap,index_lookup_scaled){
 template<int DIM>
 void test_map_scale_bounds(){
 	BOOST_STATIC_ASSERT(DIM<10);
-	Matrix<double,10,1> lb0,ub0;
-	Matrix<size_t,10,1> bs0;
-	lb0 << -1.3,2.2,0,-3,-5,-9.9,1.3,44,-13.3,99;
-	ub0 <<  1.3,4.2,1,10,-3, 9.9,4.3,44, 13.3,199;
-	bs0 << 1,2,3,4,5,6,7,8,9,10;
+	util::SimpleArray<10,double> lb0(-1.3,2.2,0,-3,-5,-9.9,1.3,44,-13.3,99),ub0(1.3,4.2,1,10,-3, 9.9,4.3,44, 13.3,199);
+	util::SimpleArray<10,size_t> bs0(1,2,3,4,5,6,7,8,9,10);
 
-	typedef Matrix<double,DIM,1> VAL;
+	typedef util::SimpleArray<DIM,double> VAL;
 	VAL lb, ub;
-	Matrix<size_t,DIM,1> bs;
+	util::SimpleArray<DIM,size_t> bs;
 	for(size_t i = 0; i < DIM; ++i){
 		lb[i] = lb0[i]; ub[i] = ub0[i]; bs[i] = bs0[i];
 	}
@@ -299,7 +291,7 @@ TEST(NEST_UnitMap,NEST_bin_circumradius_unitmap){
 
 template<int DIM>
 void test_bin_circumradius_scalemap(){
-	typedef NEST<DIM,Eigen::Matrix<double,DIM,1>,ScaleMap> NestType;
+	typedef NEST<DIM,util::SimpleArray<DIM,double>,ScaleMap> NestType;
 	typename NestType::ValueType lb, ub;
 	for(size_t i = 0; i < DIM; ++i){
 		lb[i] = -1;
@@ -367,15 +359,15 @@ void test_coverage_random_ScaleMap(){
 }
 
 TEST(NEST_ScaleMap,test_coverage_DIM_1_to_9){
-	test_coverage_random_ScaleMap<  NEST<1,Eigen::Matrix<double,1,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<2,Eigen::Matrix<double,2,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<3,Eigen::Matrix<double,3,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<4,Eigen::Matrix<double,4,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<5,Eigen::Matrix<double,5,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<6,Eigen::Matrix<double,6,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<7,Eigen::Matrix<double,7,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<8,Eigen::Matrix<double,8,1>,ScaleMap>  >();
-	test_coverage_random_ScaleMap<  NEST<9,Eigen::Matrix<double,9,1>,ScaleMap>  >();			
+	test_coverage_random_ScaleMap<  NEST<1,util::SimpleArray<1,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<2,util::SimpleArray<2,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<3,util::SimpleArray<3,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<4,util::SimpleArray<4,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<5,util::SimpleArray<5,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<6,util::SimpleArray<6,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<7,util::SimpleArray<7,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<8,util::SimpleArray<8,double>,ScaleMap>  >();
+	test_coverage_random_ScaleMap<  NEST<9,util::SimpleArray<9,double>,ScaleMap>  >();			
 }
 
 

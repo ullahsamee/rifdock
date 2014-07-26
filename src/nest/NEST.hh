@@ -1,25 +1,21 @@
 #ifndef INCLUDED_scheme_nest_NEST_HH
 #define INCLUDED_scheme_nest_NEST_HH
 
-#include <Eigen/Dense>
+#include <util/SimpleArray.hh>
 #include <util/dilated_int.hh>
-#include <nest/storage_policy.hh>
+#include <util/StoragePolicy.hh>
 #include <util/template_loop.hh>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <vector>
+#include <boost/type_traits/make_signed.hpp>
 
 namespace scheme {
 namespace nest {
 
-	using namespace Eigen;
-	typedef Eigen::Matrix<size_t,1,1> Vector1s;
-	typedef Eigen::Matrix<size_t,2,1> Vector2s;
-	typedef Eigen::Matrix<size_t,3,1> Vector3s;
-	typedef Eigen::Matrix<size_t,4,1> Vector4s;			
-	typedef Eigen::Matrix<size_t,5,1> Vector5s;			
-	typedef Eigen::Matrix<size_t,6,1> Vector6s;			
+	using util::StoreValue;
+	using util::StorePointer;	
 
 	///@brief Base class for NEST
 	///@tparam Index index type
@@ -66,21 +62,23 @@ namespace nest {
 	///@tparam Float floating point type for internal parameters, default double
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
-		class Value = Eigen::Matrix<double,DIM,1>,
+		class Value = util::SimpleArray<DIM,double>,
 		template<int,class,class,class> class ParamMap = maps::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
-		class Index = size_t,
+		class _Index = size_t,
 		class Float = double
 	>
 	struct NEST : 
-	    public NestBase<Index>,
-		public ParamMap<DIM,Value,Index,Float>, 
+	    public NestBase<_Index>,
+		public ParamMap<DIM,Value,_Index,Float>, 
 	    public StoragePolicy<Value>
 	{
+		typedef _Index Index;
+		typedef typename boost::make_signed<Index>::type SignedIndex;
 		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float> ThisType;
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<int,DIM,1> SignedIndices;
-		typedef Eigen::Array<Float,DIM,1> Params;		
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
+		typedef util::SimpleArray<DIM,Float> Params;		
 		typedef Value ValueType;
 		typedef Index IndexType;
 		typedef Float FloatType;
@@ -203,8 +201,8 @@ namespace nest {
 		void get_neighbors(Indices const & indices, Index cell_index, Index resl, OutIter out) const {
 			assert(resl<=MAX_RESL_ONE_CELL); // not rigerous check if Ncells > 1
 			// std::cout << indices.transpose() << std::endl;
-			SignedIndices lb = ((indices.template cast<int>()-1).max(     0     ));
-			SignedIndices ub = ((indices.template cast<int>()+1).min((1<<resl)-1));
+			SignedIndices lb = ((indices.template cast<SignedIndex>()-(SignedIndex)1).max((SignedIndex)       0     ));
+			SignedIndices ub = ((indices.template cast<SignedIndex>()+(SignedIndex)1).min((SignedIndex)((1<<resl)-1)));
 			// std::cout << "IX " << indices.transpose() << " cell " << cell_index << std::endl;
 			// std::cout << "LB " << lb.transpose() << std::endl;
 			// std::cout << "UB " << ub.transpose() << std::endl;			
@@ -233,7 +231,8 @@ namespace nest {
 			}
 			return true;
 		}
-		///@brief put the zorder indices of all neighbor bins within a particular cell for Value v at resolution resl into OutIter out
+		///@brief put the zorder indices of all neighbor bins within a particular cell for Value v at resolution
+		///@brief resl into OutIter out
 		template<class OutIter>
 		void get_neighbors_for_cell(Value const & v, Index resl, Index cell_index, OutIter out) const {
 			assert(resl<=MAX_RESL_ONE_CELL); // not rigerous check if Ncells > 1
@@ -289,7 +288,7 @@ namespace nest {
 	              public ParamMap<0,Value,Index,Float>, 
 	              public StoragePolicy<Value>
 	{
-		typedef Eigen::Array<Float,0,1> Params;
+		typedef char Params; // no params
 		///@brief choices vector constructor
 		NEST(std::vector<Value> const & _choices) : ParamMap<0,Value,Index,Float>(_choices){}
 		///@brief get num states at depth resl

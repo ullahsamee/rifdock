@@ -60,7 +60,7 @@ void generic_test_coverage_of_value(
 	for(Index r = 0; r <= rmax; ++r){
 		Index index = nest.get_index(value,r);
 		if(index >= nest.size(r)){
-			std::cout << value.transpose() << " " << index << " " << r << std::endl;
+			std::cout << value << " " << index << " " << r << std::endl;
 		}
 		assert(index < nest.size(r));
 		Value bincen = nest.set_and_get(index,r);

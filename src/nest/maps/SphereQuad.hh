@@ -2,6 +2,7 @@
 #define INCLUDED_scheme_nest_maps_SphereQuad_HH
 
 #include <Eigen/Dense>
+#include <util/SimpleArray.hh>
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -48,7 +49,7 @@ namespace maps {
 
 	template<
 		int DIM,
-		class Value=Eigen::Matrix<double,3,1>,
+		class Value=util::SimpleArray<DIM,double>,
 		class Index=size_t,
 		class Float=double
 	>
@@ -59,8 +60,8 @@ namespace maps {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;		
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,Float> Params;		
 
 		///@brief sets value to parameters without change
 		///@return false iff invalid parameters

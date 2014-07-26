@@ -2,9 +2,10 @@
 #define INCLUDED_scheme_nest_maps_UnitMap_HH
 
 #include <util/template_loop.hh>
+#include <util/SimpleArray.hh>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
-#include <Eigen/Dense>
+// #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -31,8 +32,8 @@ namespace maps {
 		typedef Value ValueType ;
 		typedef Float FloatType ;		
 		typedef Index IndexType ;		
-		typedef Eigen::Array<Index,DIM,1> Indices;
-		typedef Eigen::Array<Float,DIM,1> Params;
+		typedef util::SimpleArray<DIM,Index> Indices;
+		typedef util::SimpleArray<DIM,Float> Params;
 
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 		///@brief constructor

@@ -14,7 +14,7 @@ using std::cout;
 using std::endl;
 
 TEST( SphereQuad, cell_centers ){
-	typedef SphereQuad<2,RowVector3d> MapType;
+	typedef SphereQuad<2,util::SimpleArray<3,double> > MapType;
 	typedef MapType::Params PRM;
 	typedef MapType::ValueType VAL;
 	MapType sd;
@@ -29,12 +29,12 @@ TEST( SphereQuad, cell_centers ){
 	sd.params_to_value( PRM(0.5,0.5), 4, val ); ASSERT_EQ( val, VAL( 1, 0, 0) );
 	sd.params_to_value( PRM(0.5,0.5), 5, val ); ASSERT_EQ( val, VAL( 0, 0,-1) );
 
-	sd.value_to_params( VAL( 0, 0, 1), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL( 0, 1, 0), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1, 0, 0), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL( 0,-1, 0), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1, 0, 0), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL( 0, 0,-1), prm, celli ); ASSERT_TRUE( (prm==PRM(0.5,0.5)).minCoeff() ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL( 0, 0, 1), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL( 0, 1, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1, 0, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL( 0,-1, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1, 0, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL( 0, 0,-1), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 5 );
 
 	sd.value_to_params( VAL( 0.999999999, 0.999999999, 1.000000000), prm, celli ); ASSERT_EQ( celli, 0 );
 	sd.value_to_params( VAL( 0.999999999, 1.000000000, 0.999999999), prm, celli ); ASSERT_EQ( celli, 1 );

@@ -2,9 +2,7 @@
 #define INCLUDED_scheme_nest_maps_DiscreteChoiceMap_HH
 
 #include <util/template_loop.hh>
-#include <boost/function.hpp>
 #include <boost/bind.hpp>
-#include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -20,7 +18,7 @@ namespace maps {
 	struct DiscreteChoiceMap {
 		BOOST_STATIC_ASSERT_MSG(DIM==0,"DiscreteChoiceMap DIM must be == 0");
 		static int const DIMENSION = DIM;
-		typedef Eigen::Array<Float,DIM,1> Params;		
+		typedef char Params;		
 		std::vector<Value> choices;
 		DiscreteChoiceMap(std::vector<Value> const & _choices) : choices(_choices), num_cells_(choices.size()) {}
 		///@brief sets value based only on cell_index

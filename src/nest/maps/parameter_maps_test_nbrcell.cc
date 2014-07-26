@@ -18,7 +18,7 @@ using std::endl;
 
 TEST(ParamMap,UnitMap_get_neighboring_cells){
 	{
-		typedef UnitMap<2,Eigen::Vector2d> MapType;
+		typedef UnitMap<2> MapType;
 		MapType umap(1);
 		std::vector<size_t> cnb;
 		std::back_insert_iterator<std::vector<size_t> > biter(cnb);
@@ -41,7 +41,7 @@ TEST(ParamMap,UnitMap_get_neighboring_cells){
 
 	}
 	{
-		typedef UnitMap<2,Eigen::Vector2d> MapType;
+		typedef UnitMap<2> MapType;
 		MapType umap(100);
 		std::vector<size_t> cnb;
 		std::back_insert_iterator<std::vector<size_t> > biter(cnb);
@@ -93,18 +93,18 @@ TEST(ParamMap,UnitMap_get_neighboring_cells){
 }
 
 TEST(ScaleMap,ScaleMap_cellindices){
-	Eigen::Array<size_t,1,1> bs; bs<<3;	ScaleMap<1> m1(bs);
+	util::SimpleArray<1,size_t> bs(3); ScaleMap<1> m1(bs);
 	for(size_t i = 0; i < 3; ++i) ASSERT_EQ( i, m1.indices_to_cellindex(m1.cellindex_to_indices(i)) );
-	ScaleMap<2> m2(Eigen::Array<size_t,2,1>(3,4));
+	ScaleMap<2> m2(util::SimpleArray<2,size_t>(3,4));
 	for(size_t i = 0; i < 3*4; ++i) ASSERT_EQ( i, m2.indices_to_cellindex(m2.cellindex_to_indices(i)) );
-	ScaleMap<3> m3(Eigen::Array<size_t,3,1>(3,4,8));
+	ScaleMap<3> m3(util::SimpleArray<3,size_t>(3,4,8));
 	for(size_t i = 0; i < 3*4*8; ++i) ASSERT_EQ( i, m3.indices_to_cellindex(m3.cellindex_to_indices(i)) );
-	ScaleMap<4> m4(Eigen::Array<size_t,4,1>(3,4,8,17));
+	ScaleMap<4> m4(util::SimpleArray<4,size_t>(3,4,8,17));
 	for(size_t i = 0; i < 3*4*8*17; ++i) ASSERT_EQ( i, m4.indices_to_cellindex(m4.cellindex_to_indices(i)) );
 }
 
 TEST(ScaleMap,ScaleMap_get_neighboring_cells_244){
-	typedef ScaleMap<2,Eigen::Vector2d> MapType;
+	typedef ScaleMap<2> MapType;
 	MapType umap(
 		MapType::Params(0,0),
 		MapType::Params(4,4),
@@ -198,7 +198,7 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_244){
 }
 
 TEST(ScaleMap,ScaleMap_get_neighboring_cells_433){
-	typedef ScaleMap<4,Eigen::Vector4d> MapType;
+	typedef ScaleMap<4> MapType;
 	MapType umap(
 		MapType::Params(0,0,0,0),
 		MapType::Params(3,3,3,3),
@@ -258,10 +258,10 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_433){
 }
 
 TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_m1){
-	typedef ScaleMap<4,Eigen::Array<double,4,1> > MapType;
+	typedef ScaleMap<4> MapType;
 	MapType umap(
-		MapType::Params(0,0,0,0)-1,
-		MapType::Params(3,3,3,3)-1,
+		MapType::Params(0,0,0,0)-1.0,
+		MapType::Params(3,3,3,3)-1.0,
 		MapType::Indices(3,3,3,3)
 	);
 	std::vector<size_t> cnb;
@@ -269,24 +269,24 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_m1){
 	int i;
 
 	cnb.clear(); i = 0;
-	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5,0.5,0.5)-1, 0.4, biter );
+	umap.get_neighboring_cells( MapType::ValueType(1.5,0.5,0.5,0.5)-1.0, 0.4, biter );
 	ASSERT_EQ( cnb.size(), 1 );
 	ASSERT_EQ( cnb[i++], 1 );	
 
 	cnb.clear(); i = 0;
-	umap.get_neighboring_cells( MapType::ValueType(1.3,0.5,0.5,0.5)-1, 0.4, biter );
+	umap.get_neighboring_cells( MapType::ValueType(1.3,0.5,0.5,0.5)-1.0, 0.4, biter );
 	ASSERT_EQ( cnb.size(), 2 );
 	ASSERT_EQ( cnb[i++], 0 );	
 	ASSERT_EQ( cnb[i++], 1 );	
 
 	cnb.clear(); i = 0;
-	umap.get_neighboring_cells( MapType::ValueType(1.3,0.1,0.1,0.5)-1, 0.4, biter );
+	umap.get_neighboring_cells( MapType::ValueType(1.3,0.1,0.1,0.5)-1.0, 0.4, biter );
 	ASSERT_EQ( cnb.size(), 2 );
 	ASSERT_EQ( cnb[i++], 0 );	
 	ASSERT_EQ( cnb[i++], 1 );	
 
 	cnb.clear(); i = 0;
-	umap.get_neighboring_cells( MapType::ValueType(1.3,0.1,0.1,1.3)-1, 0.4, biter );
+	umap.get_neighboring_cells( MapType::ValueType(1.3,0.1,0.1,1.3)-1.0, 0.4, biter );
 	ASSERT_EQ( cnb.size(), 4 );
 	ASSERT_EQ( cnb[i++], 0 );	
 	ASSERT_EQ( cnb[i++], 1 );	
@@ -294,7 +294,7 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_m1){
 	ASSERT_EQ( cnb[i++], 28 );	
 
 	cnb.clear(); i = 0;
-	umap.get_neighboring_cells( MapType::ValueType(2.3,1.8,2.1,1.8)-1, 0.4, biter );
+	umap.get_neighboring_cells( MapType::ValueType(2.3,1.8,2.1,1.8)-1.0, 0.4, biter );
 	ASSERT_EQ( cnb.size(), 16 );
 	ASSERT_EQ( cnb[i++], 40 );	
 	ASSERT_EQ( cnb[i++], 41 );	
@@ -318,7 +318,7 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_m1){
 }
 
 TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_o2){
-	typedef ScaleMap<4,Eigen::Array<double,4,1> > MapType;
+	typedef ScaleMap<4> MapType;
 	MapType umap(
 		MapType::Params(0,0,0,0)/2.0,
 		MapType::Params(3,3,3,3)/2.0,
@@ -378,7 +378,7 @@ TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_o2){
 }
 
 TEST(ScaleMap,ScaleMap_get_neighboring_cells_433_o5m1){
-	typedef ScaleMap<4,Eigen::Array<double,4,1> > MapType;
+	typedef ScaleMap<4> MapType;
 	MapType smap(
 		MapType::Params(0,0,0,0)/5.0-1.0,
 		MapType::Params(3,3,3,3)/5.0-1.0,
