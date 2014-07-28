@@ -1,17 +1,20 @@
 #include <main/gtest_util.hh>
 
 // include desired tests here:
-// #include <util/StoragePolicy_test.cc>
 // #include <nest/NEST_test.cc> // 4.479 vs. 3.5 wo Eigen
 // #include <nest/NEST_neighbor_test.cc> // 4.567 // 3.6 wo Eigen
 // #include <nest/maps/parameter_maps_test.cc> // 7.546 // 4.2 wo Eigen
-#include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.3 wo eigen
+// #include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.3 wo eigen
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 
-// #include <util/meta/InstanceMap_test.cc>
+// #include <util/StoragePolicy_test.cc>
+// #include <util/SimpleArray_test.cc>
 // #include <util/meta/util_test.cc>
+#include <util/meta/InstanceMap_test.cc>
+
 // #include <objective/ObjectiveFunction_test.cc>
+
 // #include <kinematics/Scene_test.cc>
 
 int main(int argc, char **argv)

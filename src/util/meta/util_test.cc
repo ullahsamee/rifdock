@@ -30,8 +30,11 @@ struct EMPTY {};
 struct DOUBLE { typedef double FOO; };
 struct CHAR { typedef char FOO; };
 
+struct VAL { typedef int value_type; };
+
 SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,int)
 SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,float)
+SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(value_type,void)
 
 SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(FOO)
 
@@ -49,6 +52,9 @@ TEST(META_UTIL,member_type_default){
 	BOOST_STATIC_ASSERT( boost::is_same< char   , get_FOO_SELF<CHAR   >::type >::value );
 
 	BOOST_STATIC_ASSERT( boost::is_same< int    , get_FOO_SELF<int>::type >::value );
+
+	BOOST_STATIC_ASSERT( boost::is_same< void   , get_value_type_void<EMPTY>::type >::value );
+	BOOST_STATIC_ASSERT( boost::is_same< int    , get_value_type_void<VAL>::type >::value );
 
 }
 

@@ -153,7 +153,7 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 			{ typedef DEFAULT type; };                                                       \
 	template<typename T>                                                                     \
 		struct get_ ## MEMBER ## _ ## DEFAULT<                                               \
-		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::FOO>::type >  \
+		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::MEMBER>::type >  \
 			{ typedef typename T::MEMBER type; };
 
 #define SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(MEMBER)                                     \
@@ -162,7 +162,7 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 			{ typedef T type; };                                                             \
 	template<typename T>                                                                     \
 		struct get_ ## MEMBER ## _SELF<                                                      \
-		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::FOO>::type >  \
+		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::MEMBER>::type >  \
 			{ typedef typename T::MEMBER type; };
 
 

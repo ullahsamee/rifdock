@@ -3,6 +3,7 @@
 
 #include <types.hh>
 #include <cmath>
+#include <boost/assert.hpp>
 
 namespace scheme {
 namespace util {
@@ -12,8 +13,13 @@ namespace impl {
 	struct NoInit {};
 }
 
+///@brief minimal fixed size array with element-wise operations
+///@note used this instead of Eigen Array in NEST to speed compilation by ~30%
 template<int N, class F=double>
 struct SimpleArray {
+	typedef F value_type;
+	typedef F* iterator;
+	typedef F const* const_iterator;
 	F D[N];
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
 	SimpleArray(){}
@@ -29,6 +35,8 @@ struct SimpleArray {
 	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i, F j){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i;D[9]=j; }
 	F       & operator[](size_t i)       { return D[i]; }
 	F const & operator[](size_t i) const { return D[i]; }
+	F       & at(size_t i)       { BOOST_VERIFY(i < N); return D[i]; }
+	F const & at(size_t i) const { BOOST_VERIFY(i < N); return D[i]; }
 	template<class OF> SimpleArray<N,OF> cast() const {
 		SimpleArray<N,OF> r; for(int i = 0; i < N; ++i) r[i] = (*this)[i]; return r;
 	}
@@ -45,6 +53,10 @@ struct SimpleArray {
 	}
 	F norm() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return std::sqrt(n); }
 	void fill(F v){ for(int i = 0; i < N; ++i) D[i]=v; }
+	iterator begin() { return &D[0]; }
+	iterator end  () { return &D[N]; }
+	const_iterator begin() const { return &D[0]; }
+	const_iterator end  () const { return &D[N]; }
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){

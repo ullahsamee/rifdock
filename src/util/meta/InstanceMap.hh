@@ -1,8 +1,11 @@
 #ifndef INCLUDED_util_meta_InstanceMap_HH
 #define INCLUDED_util_meta_InstanceMap_HH
 
+#include <util/meta/util.hh>
+#include <vector>
 #include <boost/mpl/zip_view.hpp>
 #include <boost/mpl/is_sequence.hpp>
+#include <boost/mpl/always.hpp>
 #include <functional>
 #include <boost/fusion/include/as_map.hpp>
 #include <boost/fusion/include/at_key.hpp>
@@ -17,6 +20,9 @@ namespace meta {
 namespace m = boost::mpl;
 namespace f = boost::fusion;
 
+// struct FUSION_PAIRS { template<class T> struct apply { typedef void type; }; };
+struct FUSION_PAIRS { typedef void type; };
+
 ///@brief convenience function to make a boost::fusion::map
 ///@detail fusion_map<Keys> will be same as tuple
 ///@detail fusion_map<Keys,Values> will map Key to Value
@@ -25,18 +31,26 @@ template< class Keys, class Arg2 = Keys >
 struct fusion_map {
     typedef typename
         f::result_of::as_map< typename
-            m::transform<
-                Keys, typename
-                m::eval_if< 
-                    m::is_sequence<Arg2>,
-                    Arg2,
-                    m::transform<Keys,Arg2>
-                    >::type,
-                f::pair<m::_1,m::_2>
+            m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>,
+                Keys, // already fusion pairs
+                m::transform<
+                    Keys, typename
+                    m::eval_if< 
+                        // m::is_sequence<Arg2>,
+                        m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
+                        Arg2,                   // It seems one of these two it getting instantiated even
+                        m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
+                        >::type,         
+                    f::pair<m::_1,m::_2>
+                >
             >::type
         >::type
     type;
 };
+
+/// *** this compiles, so it seems like the upper eval_if should protect WTF?
+///     typedef m::eval_if_c< true, m::identity<int>, m::eval_if_c<true,void,void> >::type TEST;
+
 
 ///@brief meta-container holding instances for any sequence of types
 ///@tparam _Keys sequence of Key types
@@ -45,8 +59,8 @@ struct fusion_map {
 template< typename _Keys, typename Arg2 = _Keys >
 struct InstanceMap : fusion_map<_Keys,Arg2>::type
 {
-    typedef _Keys Keys;
-    typedef typename fusion_map<Keys,Arg2>::type Base;
+    typedef typename fusion_map<_Keys,Arg2>::type Base;
+    // typedef typename m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>, m::identity<void>, _Keys >::type Keys;
     
     // variadic ctors
     InstanceMap(){}
@@ -186,6 +200,25 @@ NumericInstanceMap<A,B,C> operator/(NumericInstanceMap<A,B,C> const & a, Numeric
     result /= b;
     return result;
 }
+
+namespace impl {
+    SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(value_type,void)
+}
+
+struct std_vector_mfc { template<class T> struct apply { typedef std::vector<T> type; }; };
+
+template<class DefaultCFC = std_vector_mfc>
+struct make_container_pair { template<class T> struct apply { 
+    typedef typename impl::get_value_type_void<T>::type VALUE;
+    typedef typename m::eval_if<
+        boost::is_same<void,VALUE>,
+        m::identity< f::pair<   T  , typename m::apply<DefaultCFC,T>::type > >,
+        m::identity< f::pair< VALUE, T > >
+      >::type type;
+ }; };
+
+template<class Containers>
+struct ContainerInstanceMap : InstanceMap< typename m::transform<Containers,make_container_pair<> >::type, FUSION_PAIRS > {};
 
 
 }
