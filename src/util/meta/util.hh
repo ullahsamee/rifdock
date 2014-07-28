@@ -1,147 +1,35 @@
 #ifndef INCLUDED_util_meta_util_HH
 #define INCLUDED_util_meta_util_HH
 
-#include <iostream>
-#include <boost/fusion/include/pair.hpp>
-#include <boost/fusion/include/for_each.hpp>
-#include <boost/fusion/include/mpl.hpp>
-#include <boost/fusion/include/is_sequence.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/copy_if.hpp>
-#include <boost/mpl/set.hpp>
-#include <boost/mpl/insert.hpp>
-#include <boost/mpl/inserter.hpp>
-#include <boost/mpl/pair.hpp>
-#include <boost/mpl/transform.hpp>
-// #include <boost/mpl/iter_fold.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/is_sequence.hpp>
-
-#include <boost/type_traits/remove_const.hpp>
-#include <boost/tuple/tuple.hpp>
+// #include <iostream>
+// #include <boost/fusion/include/pair.hpp>
+// #include <boost/fusion/include/for_each.hpp>
+// #include <boost/fusion/include/mpl.hpp>
+// #include <boost/fusion/include/is_sequence.hpp>
+// #include <boost/mpl/copy.hpp>
+// #include <boost/mpl/copy_if.hpp>
+// #include <boost/mpl/set.hpp>
+// #include <boost/mpl/insert.hpp>
+// #include <boost/mpl/inserter.hpp>
+// #include <boost/mpl/pair.hpp>
+// #include <boost/mpl/transform.hpp>
+// // #include <boost/mpl/iter_fold.hpp>
+// #include <boost/mpl/for_each.hpp>
+// #include <boost/mpl/vector.hpp>
+// #include <boost/mpl/is_sequence.hpp>
 
 namespace scheme {
 namespace util {
 namespace meta {
 
-namespace m = boost::mpl;
-namespace f = boost::fusion;
-
+// namespace m = boost::mpl;
+// namespace f = boost::fusion;
 
 template<class T> struct type2type {};
-
 
 template<class T> struct showclass;
 template<int T> struct showint;
 
-
-struct PrintType {
-	std::ostream & out;
-	std::string indent;
-	bool newline;
-
-
-	PrintType(
-		std::ostream & _out=std::cout,
-		std::string _indent="",
-		bool n=true
-	) : 
-		out(_out),indent(_indent),newline(n) {}
-
-	template <typename T>
-	typename boost::disable_if_c<f::traits::is_sequence<T>::value>::type
-	operator()( T const & ) const {
-		out << indent << typeid(T).name();
-		if(newline) out << std::endl; else out << " ";
-	}
-	template <typename T>
-	typename boost::enable_if_c<f::traits::is_sequence<T>::value>::type
-	operator()(T const &) const {
-		out << indent << "TypeSeq<";
-		if(newline) out << std::endl; else out << " ";		
-		m::for_each<T>( PrintType(out,newline?indent+"    ":"",newline) );
-		out << (newline?(indent+"  "):"") << ">";
-		if(newline) out << std::endl; else out << " ";		
-	}
-	template <typename T>
-	void operator()( type2type<T> const & = type2type<T>() ) const {
-		out << indent << typeid(T).name();
-		if(newline) out << std::endl; else out << " ";
-	}
-	template <typename A,typename B>
-	void operator()(m::pair<A,B> const &) const {
-		out << indent << "mpl::pair< " << typeid(A).name() << ", " << typeid(B).name() << " > ";
-		if(newline) out << std::endl; else out << " ";
-	}
-	template <typename A,typename B>
-	void operator()(std::pair<A,B> const &) const {
-		out << indent << "std::pair< " << typeid(A).name() << ", " << typeid(B).name() << " > ";
-		if(newline) out << std::endl; else out << " ";		
-	}
-	template <typename A,typename B>
-	void operator()(f::pair<A,B> const &) const {
-		out << indent << "fusion::pair< " << typeid(A).name() << ", " << typeid(B).name() << " > ";
-		if(newline) out << std::endl; else out << " ";
-	}
-
-
-
-	// template <typename A,typename B>
-	// void operator()(m::vector<A,B> const &) const {
-	// 	PrintType p(out,indent,false);
-	// 	out << indent << "mpl::vector< ";
-	// 	p(A()); out << ", "; p(B()); out << " >";
-	// 	if(newline) out << std::endl;
-	// }
-};
-
-template<class T>
-void print_type(
-	std::ostream & out=std::cout,
-	std::string indent="",
-	bool newline=true)
-{
-	PrintType p(out,indent,newline);
-	// this is OK because PrintType does nothing with the arg
-	T *t(0);
-	p.template operator()<T>(*t);
-}
-
-struct PrintInstanceType {
-	std::ostream & out;
-	std::string indent;
-	PrintInstanceType(std::ostream & _out=std::cout,std::string _indent="") : out(_out),indent(_indent) {}
-	template <typename T>
-	void operator()(T const & x) const {
-		out << indent << x << " (" << typeid(T).name() << ")" << std::endl;
-	}
-};
-
-struct PrintBFMapofVec {
-	std::ostream & out;
-	std::string indent;
-	PrintBFMapofVec(std::ostream & _out=std::cout,std::string _indent="") : out(_out),indent(_indent) {}
-	template <typename T>
-	void operator()(T const & x) const {
-		out << indent << "KeyType: " << typeid(typename T::first_type).name() << std::endl;
-		f::for_each( x.second, PrintInstanceType(out,indent+"    ") );
-	}
-};
-
-template <typename SeqA, typename SeqB> 
-struct intersect { 
-	typedef typename 
-		m::copy<
-			SeqB ,
-			m::inserter< m::set<>, m::insert< m::_1, m::_2 > > 
-		>::type set_seq2;
-	typedef typename 
-		m::copy_if<
-			SeqA,
-			m::has_key< set_seq2, m::_1 > 
-		>::type type;
-};
 
 // utility to get MEMBER if it exists, else double                             
 struct __EMPTY_TYPE_UTILITY__ {};
@@ -190,54 +78,11 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 // 	typedef typename flatten< SeqOfSeq >::type type;
 // };
 
-template<class T> struct remove_refwrap { typedef typename boost::remove_const<T>::type type; };
-template<class T> struct remove_refwrap<boost::reference_wrapper<T> > { typedef typename boost::remove_const<T>::type type; };
-
-///@brief works with pair and tuple
-template<class T> struct recursive_remove_refwrap { typedef typename remove_refwrap<T>::type type; };
-template<class A,class B>
-	struct recursive_remove_refwrap<std::pair<A,B> > { typedef 
-		std::pair< typename remove_refwrap<A>::type ,
-		           typename remove_refwrap<B>::type > type; };
-template<class A> 
-	struct recursive_remove_refwrap<boost::tuple<A> > { typedef 
-		boost::tuple< typename remove_refwrap<A>::type > type; };
-template<class A,class B>
-	struct recursive_remove_refwrap<boost::tuple<A,B> > { typedef 
-		boost::tuple< typename remove_refwrap<A>::type ,
-		              typename remove_refwrap<B>::type > type; };
-template<class A,class B,class C>
-	struct recursive_remove_refwrap<boost::tuple<A,B,C> > { typedef
-		boost::tuple< typename remove_refwrap<A>::type ,
-		              typename remove_refwrap<B>::type ,
-		              typename remove_refwrap<C>::type > type; };
-template<class A,class B,class C,class D>
-	struct recursive_remove_refwrap<boost::tuple<A,B,C,D> > { typedef
-		boost::tuple< typename remove_refwrap<A>::type ,
-		              typename remove_refwrap<B>::type ,
-		              typename remove_refwrap<C>::type ,
-		              typename remove_refwrap<D>::type > type; };
-
-// struct recursive_remove_refwrap_MFC {
-// 	template<class T> struct apply { typedef typename recursive_remove_refwrap<T>::type type; }; };
-
-
 
 
 }
 }
 }
-
-
-namespace std {
-	template<class A,class B>
-	std::ostream & operator<<(std::ostream & out, std::pair<A,B> const & p){ 
-		// return out << "std::pair< " << typeid(A).name() << ", " 
-		//<< typeid(B).name() << " >( " << p.first << ", " << p.second << " )";
-		return out << p.first << ", " << p.second;		
-	}
-}
-
 
 
 #endif

@@ -1,5 +1,10 @@
 #include <gtest/gtest.h>
+
 #include <objective/ObjectiveFunction.hh>
+#include <objective/ObjectiveFunction_io.hh>
+
+#include <util/meta/ref_wrap.hh>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/mpl/list.hpp>
@@ -8,7 +13,6 @@
 
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/io.hpp>
-
 
 namespace scheme {
 namespace objective {

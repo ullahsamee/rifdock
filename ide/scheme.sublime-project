@@ -17,7 +17,7 @@
             "variants" : [
                 {
                     "name": "Run",
-                    "shell_cmd": "cd build && cmake .. -G Ninja && time ninja -j8 main_test && ./main_test &> ../tmp/sublime_output.txt",
+                    "shell_cmd": "cd build && cmake .. -G Ninja && time ninja main_test && ./main_test &> ../tmp/sublime_output.txt",
                 }
             ]
         },

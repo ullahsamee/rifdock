@@ -3,6 +3,7 @@
 
 #include <types.hh>
 #include <util/meta/util.hh>
+#include <util/meta/print_type.hh>
 #include <util/meta/InstanceMap.hh>
 #include <util/StoragePolicy.hh>
 #include <boost/foreach.hpp>

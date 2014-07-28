@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
+
 #include <util/meta/util.hh>
+#include <util/meta/print_type.hh>
+#include <util/meta/ref_wrap.hh>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/mpl/assert.hpp>

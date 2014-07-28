@@ -2,6 +2,7 @@
 #define INCLUDED_objective_ObjectiveFunction_HH
 
 #include <util/meta/util.hh>
+#include <util/meta/intersect.hh>
 #include <util/meta/InstanceMap.hh>
 
 #include <boost/foreach.hpp>
@@ -284,19 +285,6 @@ struct ObjectiveFunction {
 
 };
 
-
-template<typename O,typename C>
-std::ostream & operator<<(std::ostream & out, ObjectiveFunction<O,C> const & obj){
-	typedef ObjectiveFunction<O,C> OBJ;
-	out << "ObjectiveFunction" << std::endl;
-	out << "    Interactions:" << std::endl;
-		m::for_each<typename OBJ::InteractionTypes>(util::meta::PrintType(out,"        "));
-	out << "    Objectives:" << std::endl;		
-	f::for_each( obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
-	out << "    RAW:" << std::endl;
-		m::for_each<typename OBJ::Objectives>(util::meta::PrintType(out,"        "));
-	return out;
-}
 
 }
 }

@@ -1,8 +1,9 @@
+#include <gtest/gtest.h>
 
 #include <nest/NEST.hh>
 #include <nest/NEST_concepts.hh>
 #include <nest/NEST_test_util.hh>
-#include <gtest/gtest.h>
+#include <util/meta/util.hh>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
@@ -10,6 +11,8 @@
 #include <nest/maps/DiscreteChoiceMap.hh>
 #include <boost/foreach.hpp>
 #include <iterator>
+
+// #include <Eigen/Core>
 
 namespace scheme {
 namespace nest {
@@ -46,6 +49,15 @@ TEST(NEST,particular_cases){
 	ASSERT_EQ( nest2.set_and_get(2,1), NEST<2>::ValueType(0.25,0.75)   );
 	ASSERT_EQ( nest2.set_and_get(3,1), NEST<2>::ValueType(0.75,0.75)   );
 }
+
+// // keep this out because #include <Eigen/Core> takes almost a second to compile
+// TEST(NEST,works_with_eigen){
+// 	typedef Eigen::Matrix<float,2,1> MAT;
+// 	typedef NEST<2,MAT> Nest;
+// 	Nest nest;
+// 	MAT m; m << 0.5,0.5;
+// 	ASSERT_EQ( nest.set_and_get(0,0), m );
+// }
 
 TEST(NEST,map_discrete) {
 	using std::cout;
