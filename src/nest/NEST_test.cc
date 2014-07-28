@@ -155,15 +155,15 @@ void test_uniformity(){
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		double scale = 1<<r;
-		Eigen::ArrayXi counts(1<<r); counts.fill(0);
+		std::vector<int> counts(1<<r,0);
 		for(size_t i = 0; i < nest.size(r); ++i){
 			ASSERT_TRUE( nest.set_state(i,r) );
 			for(size_t j = 0; j < DIM; ++j){
 				counts[nest.value()[j]*scale]++;
 			}
 		}
-		ASSERT_EQ( (1<<((DIM-1)*r))*DIM, counts.minCoeff() );		
-		ASSERT_EQ( (1<<((DIM-1)*r))*DIM, counts.maxCoeff() );				
+		ASSERT_EQ( (1<<((DIM-1)*r))*DIM, *std::min_element(counts.begin(),counts.end()) );
+		ASSERT_EQ( (1<<((DIM-1)*r))*DIM, *std::max_element(counts.begin(),counts.end()) );
 	}
 }
 

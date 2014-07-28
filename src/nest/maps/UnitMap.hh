@@ -5,7 +5,6 @@
 #include <util/SimpleArray.hh>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
-// #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -18,12 +17,12 @@ namespace maps {
 	///@detail just copies the [0.0,1.0] hypercube coords to Value
 	///        the first dimension will incremented by cell_index
 	///@tparam DIM the dimension number of the input parameter space
-	///@tparam Value the output value type, default Eigen Matrix
+	///@tparam Value the output value type, default SimpleArray
 	///@tparam Index index type, default size_t
 	///@tparam Float float type, default double
 	template<
 		int DIM,
-		class Value=Eigen::Matrix<double,DIM,1>,
+		class Value=util::SimpleArray<DIM,double>,
 		class Index=size_t,
 		class Float=double
 	>

@@ -8,7 +8,6 @@
 
 #include <boost/static_assert.hpp>
 #include <cstddef>
-#include <Eigen/Core>
 
 namespace scheme {
 namespace util {

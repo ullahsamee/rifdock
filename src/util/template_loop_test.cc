@@ -1,13 +1,11 @@
-#include <util/template_loop.hh>
 #include <gtest/gtest.h>
+#include <util/template_loop.hh>
 #include <iostream>
 #include <vector>
-#include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <Eigen/Core>
-#include <Eigen/StdVector>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
+#include <util/SimpleArray.hh>
 
 namespace scheme {
 namespace util {
@@ -15,12 +13,10 @@ namespace util {
 using std::cout;
 using std::endl;
 
-void testfunc(Eigen::Array<int,3,1> const & /*a*/){}
+void testfunc(SimpleArray<3,int> const & /*a*/){}
 
 TEST(NESTED_FOR,interface_test){
-    Eigen::Array<int,3,1> lb, ub;
-    lb << 0,0,3;
-    ub << 4,2,3;
+    SimpleArray<3,int> lb(0,0,3), ub(4,2,3);
     NESTED_FOR<3>(lb,ub,testfunc);
 }
 
@@ -37,10 +33,8 @@ struct TestFun {
 
 TEST(NESTED_FOR,boost_bind_functor){
     static const size_t DIM=2;
-    typedef Eigen::Array<int,DIM,1> IDX;
-    IDX lb,ub;
-    lb << 0,0;
-    ub << 4,2;
+    typedef SimpleArray<DIM,int> IDX;
+    IDX lb(0,0),ub(4,2);
     {
         TestFun<IDX> mytest;
         boost::function<void(IDX)> functor = boost::bind( &TestFun<IDX>::func_to_call, &mytest, 0, 0, _1 );
@@ -60,7 +54,8 @@ TEST(NESTED_FOR,boost_bind_functor){
 
 template<class Indices>
 struct RecordCalls {
-    std::vector<Indices,Eigen::aligned_allocator<Indices> > calls;
+    // std::vector<Indices,Eigen::aligned_allocator<Indices> > calls;
+    std::vector<Indices> calls;
     void operator()(Indices const & i){
         calls.push_back(i);
     }
@@ -70,10 +65,8 @@ struct RecordCalls {
 TEST(NESTED_FOR,check_all_output){
     {
         static const size_t DIM=1;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0;
-        ub << 4;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0),ub(4);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -90,10 +83,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=2;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10;
-        ub << 4,-4 ;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10),ub(4,-4 );
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -112,10 +103,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=3;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3;
-        ub << 4,-4 ,3;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3),ub(4,-4 ,3);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -134,10 +123,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=4;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6;
-        ub << 4,-4 ,7,8;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6),ub(4,-4 ,7,8);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -156,10 +143,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=5;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2;
-        ub << 4,-4 ,7,8,4;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2),ub(4,-4 ,7,8,4);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -179,10 +164,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=6;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2,7;
-        ub << 4,-4 ,7,8,4,8;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2,7),ub(4,-4 ,7,8,4,8);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -203,10 +186,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=7;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2,7,0;
-        ub << 4,-4 ,7,8,4,8,1;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2,7,0),ub(4,-4 ,7,8,4,8,1);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -228,10 +209,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=8;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2,7,0,34;
-        ub << 4,-4 ,7,8,4,8,1,35;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2,7,0,34),ub(4,-4 ,7,8,4,8,1,35);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -254,10 +233,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=9;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2,7,0,34,1;
-        ub << 2,-7 ,7,8,4,8,1,35,2;
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2,7,0,34,1),ub(2,-7 ,7,8,4,8,1,35,2);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );
@@ -281,10 +258,8 @@ TEST(NESTED_FOR,check_all_output){
 
     {
         static const size_t DIM=10;
-        typedef Eigen::Array<int,DIM,1> IDX;
-        IDX lb,ub;
-        lb << 0,-10,3,6,2,7,0,34,1,12;
-        ub << 2,-8 ,5,8,4,8,1,35,2,13;    
+        typedef SimpleArray<DIM,int> IDX;
+        IDX lb(0,-10,3,6,2,7,0,34,1,12),ub(2,-8 ,5,8,4,8,1,35,2,13);
         RecordCalls<IDX> recorder;
         NESTED_FOR<DIM>( lb, ub, recorder );
         ASSERT_EQ( recorder.calls.size(), (ub-lb+1).prod() );

@@ -14,7 +14,7 @@ namespace impl {
 }
 
 ///@brief minimal fixed size array with element-wise operations
-///@note used this instead of Eigen Array in NEST to speed compilation by ~30%
+///@note used this instead of Eigen Array in NEST to speed compilation by 20%-50%
 template<int N, class F=double>
 struct SimpleArray {
 	typedef F value_type;
