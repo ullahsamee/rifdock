@@ -10,6 +10,7 @@
 #include <boost/foreach.hpp>
 #include <vector>
 #include <boost/type_traits/make_signed.hpp>
+#include <boost/any.hpp>
 
 namespace scheme {
 namespace nest {
@@ -26,23 +27,32 @@ namespace nest {
 		virtual ~NestBase(){}
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool virtual_set_state(Index index, Index resl) = 0;
+		virtual bool 
+		virtual_get_state(
+			Index index, 
+			Index resl, 
+			boost::any & result
+		) = 0;
 		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@returns false if invalid index
-		virtual	bool virtual_set_state(
+		virtual	bool 
+		virtual_get_state(
 			std::vector<size_t> const & indices,
 			Index cell_index,
 			size_t & iindex,
-			Index resl
+			Index resl,
+			boost::any & result
 		) = 0;
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
-		virtual Index virtual_size(Index resl) const = 0;
+		virtual Index 
+		virtual_size(Index resl) const = 0;
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
-		virtual size_t virtual_dim() const = 0;
+		virtual size_t 
+		virtual_dim() const = 0;
 	};
 
 
@@ -53,6 +63,8 @@ namespace nest {
 
 	namespace maps { template< int DIM, class Value, class Index, class Float > struct UnitMap; }
 
+	struct Empty {};
+
 	///@brief templated nesting grids
 	///@tparam DIM dimension of the grid
 	///@tparam Value type of value the grid represents
@@ -60,22 +72,24 @@ namespace nest {
 	///@tparam StoragePolicy defines storage of Values, possibly allowing Nests to wrap pointers
 	///@tparam Index index type, default size_t
 	///@tparam Float floating point type for internal parameters, default double
+	///@tparam bool is_virtual if you really want to optimize your code, you can set this to false
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
 		class Value = util::SimpleArray<DIM,double>,
 		template<int,class,class,class> class ParamMap = maps::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class _Index = size_t,
-		class Float = double
+		class Float = double,
+		bool is_virtual = true
 	>
 	struct NEST : 
-	    public NestBase<_Index>,
+	    public boost::mpl::if_c<is_virtual,NestBase<_Index>,Empty>::type,
 		public ParamMap<DIM,Value,_Index,Float>, 
 	    public StoragePolicy<Value>
 	{
 		typedef _Index Index;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
-		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float> ThisType;
+		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float,is_virtual> ThisType;
 		typedef util::SimpleArray<DIM,Index> Indices;
 		typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
 		typedef util::SimpleArray<DIM,Float> Params;		
@@ -247,22 +261,31 @@ namespace nest {
 
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool virtual_set_state(Index index, Index resl) { return set_state(index,resl); }
+		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
+			Value & v = *boost::any_cast<Value*>(result);
+			bool status = set_value( index, resl, v );
+			this->nonconst_value() = v;
+			return status;
+		}
 		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@return false iff invalid index
-		virtual bool virtual_set_state(
+		virtual bool virtual_get_state(
 			std::vector<size_t> const & hindices,
 			Index cell_index,
 			size_t & iindex,
-			Index resl
+			Index resl,
+			boost::any & result
 		) {
 			Float scale = 1.0 / Float(ONE<<resl);
 			Params params;
 			for(size_t i = 0; i < DIM; ++i) params[i] = (static_cast<Float>(hindices[iindex]) + 0.5 ) * scale;
 			iindex += DIM;
-			return this->params_to_value( params, cell_index, this->nonconst_value() );
+			Value & v( *boost::any_cast<Value*>(result) );
+			bool status = this->params_to_value( params, cell_index, v );
+			this->nonconst_value() = v;
+			return status;
 		}
 		///@brief virtual function returning size(resl)
 		///@return size at depth resl
@@ -280,14 +303,16 @@ namespace nest {
 		class Value,
 		template<int,class,class,class> class ParamMap,
 		template<class> class StoragePolicy,
-		class Index,
-		class Float
+		class _Index,
+		class Float,
+		bool is_virtual
 	>
-	struct NEST<0,Value,ParamMap,StoragePolicy,Index,Float> : 
-	              public NestBase<Index>,
-	              public ParamMap<0,Value,Index,Float>, 
+	struct NEST<0,Value,ParamMap,StoragePolicy,_Index,Float,is_virtual> : 
+	    		  public boost::mpl::if_c<is_virtual,NestBase<_Index>,Empty>::type,
+	              public ParamMap<0,Value,_Index,Float>, 
 	              public StoragePolicy<Value>
 	{
+		typedef _Index Index;
 		typedef char Params; // no params
 		///@brief choices vector constructor
 		NEST(std::vector<Value> const & _choices) : ParamMap<0,Value,Index,Float>(_choices){}
@@ -296,12 +321,18 @@ namespace nest {
 		Index size(Index /*resl*/=0) const { return this->num_cells(); }
 		///@brief set state
 		///@return false iff invalid index
+		bool set_state(Index index, Index /*resl*/, Value & val){
+			// assert(index < this->num_cells());
+			Params params;
+			return this->params_to_value( params, index, val );
+		}
+		///@brief set state
+		///@return false iff invalid index
 		bool set_state(Index index, Index /*resl*/=0){
 			// assert(index < this->num_cells());
 			Params params;
 			return this->params_to_value( params, index, this->nonconst_value() );
 		}
-
 		///@brief calls set_state(index,resl) then returns value()
 		///@return value of set state
 		Value const & set_and_get(Index index, Index resl=0){
@@ -315,21 +346,27 @@ namespace nest {
 
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool virtual_set_state(Index index, Index resl) { return set_state(index,resl); }
+		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
+			return set_state( index, resl, *boost::any_cast<Value*>(result) );
+		}
 
 		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume no indices from hindices vector, using only cell_index
 		///        for use in composite data structures containing NestBases
 		virtual
 		bool
-		virtual_set_state(
+		virtual_get_state(
 			std::vector<size_t> const & /*hindices*/,
 			Index cell_index,
 			size_t & /*iindex*/,
-			Index /*resl*/
+			Index /*resl*/,
+			boost::any & result
 		) {
 			Params params;
-			return this->params_to_value( params, cell_index, this->nonconst_value() );
+			Value & v( *boost::any_cast<Value*>(result) );
+			bool status = this->params_to_value( params, cell_index, v );
+			this->nonconst_value() = v;
+			return status;
 		}
 		///@brief return size(resl)
 		///@return num_cells for these type

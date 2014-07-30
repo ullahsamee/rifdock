@@ -984,6 +984,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 40D4CDF20E30E07400294801 /* FrameworkTarget.xcconfig */;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
+				CLANG_CXX_LIBRARY = "libstdc++";
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1005,6 +1007,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 40D4CDF20E30E07400294801 /* FrameworkTarget.xcconfig */;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
+				CLANG_CXX_LIBRARY = "libstdc++";
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;

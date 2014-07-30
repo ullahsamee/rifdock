@@ -132,8 +132,8 @@ TEST(NEST,index_nesting){
 template<int DIM>
 void test_store_pointer_virtual(){
 	typedef util::SimpleArray<DIM,double> VAL;
-	NEST<DIM,VAL,UnitMap,StoreValue  > nest_val(2);
-	NEST<DIM,VAL,UnitMap,StorePointer> nest_ptr(2);
+	NEST<DIM,VAL,UnitMap,StoreValue  ,size_t,double,true> nest_val(2);
+	NEST<DIM,VAL,UnitMap,StorePointer,size_t,double,true> nest_ptr(2);
 	NestBase<> * nest_val_virtual = &nest_val;
 	NestBase<> * nest_ptr_virtual = &nest_ptr;	
 	StorePointer<VAL> * ptr_store      = dynamic_cast< StorePointer<VAL>* >(nest_ptr_virtual);
@@ -145,9 +145,13 @@ void test_store_pointer_virtual(){
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
 		for(size_t i = 0; i < nest_val.size(r); ++i){
-			ASSERT_TRUE( nest_val_virtual->virtual_set_state(i,r) );
-			ASSERT_TRUE( nest_ptr_virtual->virtual_set_state(i,r) );			
+			VAL tmp;
+			boost::any a = &tmp;
+			ASSERT_TRUE( nest_val_virtual->virtual_get_state(i,r,a) );
+			ASSERT_TRUE( nest_ptr_virtual->virtual_get_state(i,r,a) );			
 			ASSERT_EQ( nest_val.value(), val_pointed_to );
+			ASSERT_EQ( nest_val.value(), tmp );
+			ASSERT_EQ( tmp, val_pointed_to );
 		}
 	}
 }
