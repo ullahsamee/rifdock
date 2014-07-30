@@ -26,7 +26,8 @@ namespace kinematics {
 
 namespace m = boost::mpl;
 namespace f = boost::fusion;
-
+using std::cout;
+using std::endl;
 /* Requirements
 	selective position update
 	neighbor list
@@ -150,19 +151,22 @@ namespace f = boost::fusion;
 		typedef typename Scene::Index Index;
 		SceneIter(){}
 		SceneIter(Scene const & s, Index ib, Index ia) : scene_(&s),ibody_(ib),iactor_(ia){}
-		static THIS make_begin(Scene const & s){ return THIS(s,next_nonempty(s,0),0); }
-		static THIS make_end  (Scene const & s){ return THIS(s,s.nbodies()       ,0); }
+		static THIS make_begin(Scene const & s){ return THIS(s,next_nonempty(s,(Index)0),(Index)0); }
+		static THIS make_end  (Scene const & s){ return THIS(s,       s.nbodies()       ,(Index)0); }
 		static Index next_nonempty(Scene const & s, Index i) {
+			// cout << "next_nonempty " << i;
 			while( i < s.nbodies_asym() && 0==s.body(i).conformation().template get<Actor>().size() ) ++i;
+			// cout << " -> " << i << endl;
 			return i;
 		}
 	private:
 	    friend class boost::iterator_core_access;
 		void increment(){
+            assert( ibody_ < scene_->nbodies() );
 			++iactor_;
-			if( iactor_ == scene_->body(ibody_).conformation().template get<Actor>().size() ){
+			if( iactor_ == scene_->conformation_unsafe(ibody_).template get<Actor>().size() ){
 				iactor_ = 0;
-				next_nonempty(*scene_,++ibody_);
+				ibody_ = next_nonempty(*scene_,++ibody_);
 			}
 		}
 		std::pair<Index,Index> const dereference() const { return std::make_pair(ibody_,iactor_);	}
@@ -200,27 +204,47 @@ namespace f = boost::fusion;
 
 		SceneIter(){}
 		SceneIter(Scene const & s, Index ib1, Index ib2) : scene_(&s),ibody1_(ib1),ibody2_(ib2){
-			if(ib1==0 && ib2==0){ update_range(); }
+			if(ib1==0 && ib2==1 && s.nbodies() != 0 ){ update_range(); }
 		}
 		void update_range(){
 			range_ = ContInter::get_interactions(
-				scene_->body(ibody1_).conformation().template get<Actor1>()  ,
-				scene_->body(ibody2_).conformation().template get<Actor2>()  );
+				scene_->conformation_unsafe(ibody1_).template get<Actor1>()  ,
+				scene_->conformation_unsafe(ibody2_).template get<Actor2>()  );
 			iter_ = get_cbegin(range_);
 			end_  = get_cend(range_);
+			cout << "UPDATE_RANGE " << ibody1_ << " " << ibody2_ << " beg " << *iter_ << " end " << *end_ << endl;
 		}
-		static THIS make_begin(Scene const & s){ THIS beg(s,0,0); return ++beg; }
-		static THIS make_end  (Scene const & s){ return THIS(s,s.nbodies_asym(),0); }
+		static THIS make_begin(Scene const & s){ Index i=0,j=s.nbodies()>1?1:0; next_nonempty(s,i,j); return THIS(s,i,j); }
+		static THIS make_end  (Scene const & s){ return THIS(s,(Index)s.nbodies_asym(),(Index)0 ); }
+		static void next_nonempty(Scene const & s, Index & i, Index & j) {
+			// cout << "next_nonempty " << i<<"-"<<j;
+ 			while( i < s.nbodies_asym() && j < s.nbodies() && ( 0==s.body(i).conformation().template get<Actor1>().size() ||
+			                                                    0==s.body(j).conformation().template get<Actor2>().size() )  )
+			{
+				++j; j += i==j?1:0;
+				if( j >= s.nbodies() ){
+					j = 0;
+					++i;
+				}
+			}
+			// cout << " -> " << i << "-" << j << endl;
+		}
 	private:
 	    friend class boost::iterator_core_access;
 		void increment(){
+			cout << "INCREMENT iter_ " << *iter_;
 			++iter_;
+			cout << " -> " << *iter_ << " end " << *end_ << endl;
 			if( iter_==end_ ){ // end_ of body/body inter, must update range_
 				++ibody2_;
-				if( ibody2_ == scene_->nbodies() ){
+				ibody2_ += ibody1_==ibody2_ ? 1 : 0; // ensure not equal
+				if( ibody2_ >= scene_->nbodies() ){
 					ibody2_ = 0;
 					++ibody1_;
 				}
+				cout << "NEXT_NONEMPTY " << ibody1_ << " " << ibody2_;
+				next_nonempty(*scene_,ibody1_,ibody2_);
+				cout << " -> " << ibody1_ << " " << ibody2_ << endl;
 				if( ibody1_ < scene_->nbodies_asym() ) update_range();
 				// std::cout << "redo range_ " << ibody1_ << " " << ibody2_ << std::endl;
 				// std::cout << "SceneIter NEW BODIES: " << ibody1_ << " " << ibody2_ << std::endl;
@@ -254,6 +278,36 @@ namespace f = boost::fusion;
 	template<class T1, class T2,class I> struct get_placeholder_type<std::pair<T1,T2>,I> { 
 		typedef typename std::pair<std::pair<I,I>,std::pair<I,I> > type; };
 
+	template<class Scene,class Actor1>
+	void
+	get_scene_interaction(
+		Scene const & scene,
+		typename get_placeholder_type<Actor1,typename Scene::Index>::type const & p,
+		Actor1 & out
+	) {
+		typedef typename Scene::Body Body;
+		Body const & body1 = scene.body(p.first );
+		Actor1 const & a_0 = body1.conformation().template get<Actor1>()[p.second];
+		Actor1 a( a_0, body1.position() );
+		out = a;
+	}
+	template<class Scene,class Actor1,class Actor2>
+	void
+	get_scene_interaction(
+		Scene const & scene,
+		typename get_placeholder_type<std::pair<Actor1,Actor2>,typename Scene::Index>::type const & p,
+		std::pair<Actor1,Actor2> & out
+	) {
+		typedef typename Scene::Body Body;
+		Body const & body1 = scene.body(p.first.first );
+		Body const & body2 = scene.body(p.first.second);
+		Actor1 const & a1_0 = body1.conformation().template get<Actor1>()[p.second.first];
+		Actor2 const & a2_0 = body2.conformation().template get<Actor2>()[p.second.second];		
+		Actor1 a1( a1_0, body1.position() );
+		Actor2 a2( a2_0, body2.position() );
+		out = std::make_pair(a1,a2);
+	}
+
 	template<
 		class _Conformation,
 		class _Position,
@@ -274,8 +328,13 @@ namespace f = boost::fusion;
 		Bodies const & bodies() const { return bodies_; }
 		Body const & body       (size_t i) const { return bodies_.at(i); }
 		Body const & body_unsafe(size_t i) const { return bodies_[i]; }
-		void add_body(shared_ptr<Conformation const> c){ bodies_.push_back(c); }
+		Conformation const & conformation       (size_t i) const { return bodies_.at(i).conformation(); }
+		Conformation const & conformation_unsafe(size_t i) const { return bodies_[i].conformation(); }
+		Conformation & mutable_conformation(size_t i) { return const_cast<Conformation&>(bodies_[i].conformation()); }
+		void add_body(shared_ptr<Conformation const> const & c){ bodies_.push_back(c); }
 		void add_body(Body const & b){ bodies_.push_back(b); }
+		void set_body(size_t i, shared_ptr<Conformation const> const & c){ bodies_[i] = c; }
+		void set_body(size_t i, Body const & b){ bodies_[i] = b; }
 
 		size_t nbodies() const { return bodies_.size()*(symframes_.size()+1); }
 		size_t nbodies_asym() const { return bodies_.size(); }
@@ -301,17 +360,21 @@ namespace f = boost::fusion;
 		template<class Interaction>
 		Interaction
 		get_interaction(
+			SceneIter<THIS,Interaction> const & iter
+		) const {
+			Interaction i;
+			get_scene_interaction(*this,*iter,i);
+			return i;
+		}
+
+		template<class Interaction>
+		Interaction
+		get_interaction(
 			typename get_placeholder_type<Interaction,Index>::type const & p
 		) const {
-			Body const & body1( bodies_[p.first.first] );
-			Body const & body2( bodies_[p.first.second] );
-			typedef typename Interaction::first_type Actor1;
-			typedef typename Interaction::second_type Actor2;
-			Actor1 const & a1_0 = body1.conformation().template get<Actor1>()[p.second.first];
-			Actor2 const & a2_0 = body2.conformation().template get<Actor2>()[p.second.second];		
-			Actor1 a1( a1_0, body1.position() );
-			Actor2 a2( a2_0, body2.position() );
-			return std::make_pair(a1,a2);
+			Interaction i;
+			get_scene_interaction(*this,p,i);
+			return i;
 		}
 
 

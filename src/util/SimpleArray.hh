@@ -46,8 +46,8 @@ struct SimpleArray {
 	SimpleArray<N,F> min(SimpleArray<N,F> const & b){ SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
 	F prod() const { F p=1; for(int i = 0; i < N; ++i) p *= D[i]; return p; }
 	F sum () const { F p=0; for(int i = 0; i < N; ++i) p += D[i]; return p; }
-	F prod(int l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
-	F sum (int l) const { F p=0; for(int i = 0; i < l; ++i) p += D[i]; return p; }
+	F prod(size_t l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
+	F sum (size_t l) const { F p=0; for(int i = 0; i < l; ++i) p += D[i]; return p; }
 	bool operator==(SimpleArray<N,F> const & o) const {
 		bool r = true; for(int i = 0; i < N; ++i) r &= D[i]==o.D[i]; return r;
 	}

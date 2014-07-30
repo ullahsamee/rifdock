@@ -255,7 +255,7 @@ void test_bin_circumradius(
 	typename NEST::ValueType lb,
 	typename NEST::ValueType ub
 ){
-	boost::random::mt19937 rng(time(0));
+	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;
 	typename NEST::ValueType randpt;
 	for(size_t r = 0; r <= std::min((size_t)10,(size_t)NEST::MAX_RESL_ONE_CELL); ++r){
@@ -312,7 +312,7 @@ TEST(NEST_ScaleMap,NEST_bin_circumradius_scalemap){
 
 template<class NestType>
 void test_coverage_random_ScaleMap(){
-	boost::random::mt19937 rng(time(0));
+	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;
 	
 	// set up random bounds

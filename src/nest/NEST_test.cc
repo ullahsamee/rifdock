@@ -85,7 +85,7 @@ TEST(NEST,map_discrete) {
 
 template<int DIM>
 void test_coverage_unit1cell(){
-	boost::random::mt19937 rng(time(0)); 
+	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;
 	NEST<DIM> nest;
 	size_t rmax = 9/DIM+1;

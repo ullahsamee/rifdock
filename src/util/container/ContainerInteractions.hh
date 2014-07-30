@@ -59,8 +59,8 @@ namespace container {
 		typedef std::pair<ContainerInteractionsIter<Index>,ContainerInteractionsIter<Index> > Range;
 		static Range get_interactions(Container1 const & c1, Container2 const & c2){
 			// std::cout << "ContainerInteractions default" << std::endl;
-			return std::make_pair( ContainerInteractionsIter<Index>(   0     ,0,c2.size())      ,
-				                   ContainerInteractionsIter<Index>(c1.size(),0,c2.size())      );
+			return std::make_pair( ContainerInteractionsIter<Index>((Index)           0           ,(Index)0,(Index)c2.size())      ,
+				                   ContainerInteractionsIter<Index>((Index)(c2.size()?c1.size():0),(Index)0,(Index)c2.size())      );
 		}
 	};
 	template<class T> typename T::const_iterator get_cbegin(T const & t){ return t.begin(); }

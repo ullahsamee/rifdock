@@ -116,7 +116,7 @@ TEST( SphereQuad, test_index_nesting_of_bincenters_various_valuetypes ){
 TEST(SphereQuad, test_coverage){
 	typedef NEST<2,RowVector3d,SphereQuad> NestType;
 
-	boost::random::mt19937 rng(time(0));
+	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gaussian;
 	
 	size_t max_resl = 9;

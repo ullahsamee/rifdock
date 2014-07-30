@@ -17,13 +17,47 @@ TEST(util_container_ContainerInteractions,default_on_vector){
 		CI::Range 
 	>::value );
 
-	std::vector<int> a(2,0);
-	std::vector<int> b(3,1);
+	std::vector<int> a;
+	std::vector<int> b;
+	get_citer<CI::Range>::type beg;
+	get_citer<CI::Range>::type end;
+	CI::Range r;
 
-	CI::Range r = CI::get_interactions(a,b);
-	// BOOST_FOREACH( Index2 p, r ) cout << p << endl;
-	get_citer<CI::Range>::type beg = get_cbegin(r);
-	get_citer<CI::Range>::type end = get_cend(r);
+	r = CI::get_interactions(a,b);
+	beg = get_cbegin(r);
+	end = get_cend(r);
+	ASSERT_EQ( beg, end );
+
+	a.push_back(0); // 1,0
+
+		r = CI::get_interactions(a,b);
+		beg = get_cbegin(r);
+		end = get_cend(r);
+		ASSERT_EQ( beg, end );
+
+	a.pop_back();
+	b.push_back(0); // 0,1
+
+		r = CI::get_interactions(a,b);
+		beg = get_cbegin(r);
+		end = get_cend(r);
+		ASSERT_EQ( beg, end );
+
+	a.push_back(0); // 1,1
+
+		r = CI::get_interactions(a,b);
+		beg = get_cbegin(r);
+		end = get_cend(r);
+		ASSERT_EQ( *beg++, Index2(0,0) );
+		ASSERT_EQ( beg, end );
+
+	a.push_back(0);
+	b.push_back(0);
+	b.push_back(0);
+
+	r = CI::get_interactions(a,b);
+	beg = get_cbegin(r);
+	end = get_cend(r);
 	ASSERT_EQ( *beg++, Index2(0,0) );
 	ASSERT_EQ( *beg++, Index2(0,1) );
 	ASSERT_EQ( *beg++, Index2(0,2) );
