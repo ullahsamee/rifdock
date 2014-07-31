@@ -11,7 +11,9 @@ using std::endl;
 TEST(SimpleArray,bounds_check){
 	SimpleArray<3,int> a;
 	a[3]; // non-bounds checked
+	#ifndef NDEBUG
 	ASSERT_DEATH( a.at(3), "Assertion.*SimpleArray" );
+	#endif
 }
 
 TEST(SimpleArray,iteration){

@@ -20,6 +20,7 @@ struct X1dim {
 	bool operator==(X1dim const & o) const { return o.val_==val_; }
 };
 X1dim operator*(X1dim a, X1dim b){ return X1dim(a.val_+b.val_); }
+X1dim inverse(X1dim x){	return X1dim(-x.val_); }
 std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.val_; }
 
 	namespace TEST_BOUNDS {
@@ -35,8 +36,8 @@ std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.
 
 		TEST(Scene,interactions_empty_onebody){
 			Scene scene;
-			SceneIter<Scene,ADI> adibeg,adiend;
-			SceneIter<Scene,ADC> adcbeg,adcend;
+			Scene::iter_type<ADI>::type adibeg,adiend;
+			Scene::iter_type<ADC>::type adcbeg,adcend;
 			
 			tie(adibeg,adiend) = scene.get_interactions<ADI>();
 			tie(adcbeg,adcend) = scene.get_interactions<ADC>();
@@ -105,85 +106,170 @@ std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.
 			ASSERT_EQ( adibeg, adiend );
 			ASSERT_EQ( scene.get_interaction<ADC>( adcbeg++), ADC(1,'0') );
 			ASSERT_EQ( adcbeg, adcend );
-
 		}
 
 
 		typedef std::pair<ADI,ADC> IIC;
-		typedef SceneIter<Scene,IIC> IterIC;
-		typedef get_placeholder_type<IIC,Index>::type PIC;
 		typedef std::pair<ADC,ADI> ICI;
-		typedef SceneIter<Scene,ICI> IterCI;
-		typedef get_placeholder_type<ICI,Index>::type PCI;
+		typedef std::pair<ADI,ADI> III;
+		typedef std::pair<ADC,ADC> ICC;
 
 		TEST(Scene,interactions_empty_twobody){
 			using std::make_pair;
 
 			Scene scene;
-			SceneIter<Scene,IIC> iicbeg,iicend;
-			SceneIter<Scene,ICI> icibeg,iciend;
+			Scene::iter_type<IIC>::type iicbeg,iicend;
+			Scene::iter_type<ICI>::type icibeg,iciend;
+			Scene::iter_type<III>::type iiibeg,iiiend;
+			Scene::iter_type<ICC>::type iccbeg,iccend;			
 			
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
 			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
+			ASSERT_EQ( iiibeg, iiiend );
+			ASSERT_EQ( iccbeg, iccend );
 			
 			scene.add_body( make_shared<Conformation>() );
 			
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
 			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
+			ASSERT_EQ( iiibeg, iiiend );
+			ASSERT_EQ( iccbeg, iccend );
 
 			scene.add_body( make_shared<Conformation>() );
 			
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
 			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
+			ASSERT_EQ( iiibeg, iiiend );
+			ASSERT_EQ( iccbeg, iccend );
 
 			scene.mutable_conformation(0).add_actor(ADI(0,0));
 
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
 			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
+			ASSERT_EQ( iiibeg, iiiend );
+			ASSERT_EQ( iccbeg, iccend );
 
 			scene.mutable_conformation(0).add_actor(ADC(0,'0')); // still empty, because intra-body
 
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
 			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
+			ASSERT_EQ( iiibeg, iiiend );
+			ASSERT_EQ( iccbeg, iccend );
 
-			scene.mutable_conformation(1).add_actor(ADC(1,0));
+			scene.mutable_conformation(1).add_actor(ADC(1,'0'));
 
 			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
-			// tie(icibeg,iciend) = scene.get_interactions<ICI>();
 			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
 			ASSERT_EQ( iicbeg, iicend );
-			// ASSERT_EQ( *icibeg, *iciend );
+			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( icibeg, iciend );
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			ASSERT_EQ( iiibeg, iiiend );
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( iccbeg, iccend );
 
-			// scene.mutable_conformation(1).add_actor(ICI(1,'0'));
+			scene.mutable_conformation(1).add_actor(ADC(1,'1'));
 
-			// tie(iicbeg,iicend) = scene.get_interactions<IIC>();
-			// tie(icibeg,iciend) = scene.get_interactions<ICI>();
-			// ASSERT_EQ( *iicbeg++, Index2(0,0) );
-			// ASSERT_EQ( *iicbeg++, Index2(0,1) );
-			// ASSERT_EQ( *iicbeg++, Index2(1,0) );
-			// ASSERT_EQ( iicbeg, iicend );
-			// ASSERT_EQ( *icibeg++, Index2(1,0) );
-			// ASSERT_EQ( icibeg, iciend );
+			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( iicbeg, iicend );
+			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+			ASSERT_EQ( icibeg, iciend );
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			ASSERT_EQ( iiibeg, iiiend );
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( iccbeg, iccend );
 
-			// tie(iicbeg,iicend) = scene.get_interactions<IIC>();
-			// tie(icibeg,iciend) = scene.get_interactions<ICI>();
-			// // IIC iic = scene.get_interaction<IIC>(*iicbeg);
-			// ASSERT_EQ( scene.get_interaction<IIC>( iicbeg++), IIC(0,0) );
-			// ASSERT_EQ( scene.get_interaction<IIC>(*iicbeg++), IIC(0,1) );
-			// ASSERT_EQ( scene.get_interaction<IIC>( iicbeg++), IIC(1,0) );
-			// ASSERT_EQ( iicbeg, iicend );
-			// ASSERT_EQ( scene.get_interaction<ICI>( icibeg++), ICI(1,'0') );
-			// ASSERT_EQ( adcbeg, adcend );
+			scene.mutable_conformation(1).add_actor(ADI(1,0));
+
+			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( iicbeg, iicend );
+			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+			ASSERT_EQ( icibeg, iciend );
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( iiibeg, iiiend );
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( iccbeg, iccend );
+
+			scene.mutable_conformation(1).add_actor(ADI(1,1));
+
+			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(1,0)) );
+			ASSERT_EQ( iicbeg, iicend );
+			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+			ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+			ASSERT_EQ( icibeg, iciend );
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( iiibeg, iiiend );
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+			ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+			ASSERT_EQ( iccbeg, iccend );
+
+			tie(iicbeg,iicend) = scene.get_interactions<IIC>();
+			ASSERT_EQ( scene.get_interaction<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'0')) );
+			ASSERT_EQ( scene.get_interaction<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'1')) );
+			ASSERT_EQ( scene.get_interaction<IIC>(*iicbeg++), make_pair(ADI(1,0),ADC(0,'0')) );
+			ASSERT_EQ( scene.get_interaction<IIC>(*iicbeg++), make_pair(ADI(1,1),ADC(0,'0')) );
+			ASSERT_EQ( iicbeg, iicend );
+			tie(icibeg,iciend) = scene.get_interactions<ICI>();
+			ASSERT_EQ( scene.get_interaction<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,0)) );
+			ASSERT_EQ( scene.get_interaction<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,1)) );
+			ASSERT_EQ( scene.get_interaction<ICI>(*icibeg++), make_pair(ADC(1,'0'),ADI(0,0)) );
+			ASSERT_EQ( scene.get_interaction<ICI>(*icibeg++), make_pair(ADC(1,'1'),ADI(0,0)) );
+			ASSERT_EQ( icibeg, iciend );
+			tie(iiibeg,iiiend) = scene.get_interactions<III>();
+			ASSERT_EQ( scene.get_interaction<III>(iiibeg++), make_pair(ADI(0,0),ADI(1,0)) );
+			ASSERT_EQ( scene.get_interaction<III>(iiibeg++), make_pair(ADI(0,0),ADI(1,1)) );
+			ASSERT_EQ( iiibeg, iiiend );
+			tie(iccbeg,iccend) = scene.get_interactions<ICC>();
+			ASSERT_EQ( scene.get_interaction<ICC>(iccbeg++), make_pair(ADC(0,'0'),ADC(1,'0')) );
+			ASSERT_EQ( scene.get_interaction<ICC>(iccbeg++), make_pair(ADC(0,'0'),ADC(1,'1')) );
+			ASSERT_EQ( iccbeg, iccend );
 
 		}
 

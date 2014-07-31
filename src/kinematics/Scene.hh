@@ -139,18 +139,18 @@ using std::endl;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class Scene, class Interaction>
-	struct SceneIter : boost::iterator_facade<
-							SceneIter<Scene,Interaction>,
+	struct SceneIter1B : boost::iterator_facade<
+							SceneIter1B<Scene,Interaction>,
 							std::pair<typename Scene::Index,typename Scene::Index> const,
 							boost::forward_traversal_tag,
 							std::pair<typename Scene::Index,typename Scene::Index> const
 						>					
 	{
-		typedef SceneIter<Scene,Interaction> THIS;
+		typedef SceneIter1B<Scene,Interaction> THIS;
 		typedef Interaction Actor;
 		typedef typename Scene::Index Index;
-		SceneIter(){}
-		SceneIter(Scene const & s, Index ib, Index ia) : scene_(&s),ibody_(ib),iactor_(ia){}
+		SceneIter1B(){}
+		SceneIter1B(Scene const & s, Index ib, Index ia) : scene_(&s),ibody_(ib),iactor_(ia){}
 		static THIS make_begin(Scene const & s){ return THIS(s,next_nonempty(s,(Index)0),(Index)0); }
 		static THIS make_end  (Scene const & s){ return THIS(s,       s.nbodies()       ,(Index)0); }
 		static Index next_nonempty(Scene const & s, Index i) {
@@ -175,10 +175,6 @@ using std::endl;
 		Index ibody_,iactor_;
 	};
 
-	template<class Scene, class Actor1>
-	struct SceneIter<Scene,std::pair<Actor1,Actor1> > {
-		SceneIter(){ std::cout << "SceneIter2B_HOMO" << std::endl; }
-	};
 
 	template<class I> struct  make_pairpair { typedef std::pair<std::pair<I,I>,std::pair<I,I> > type; };
 
@@ -187,67 +183,123 @@ using std::endl;
 ////////////////////////// SceneIter specialization 2body hetero //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class Scene, class Actor1,class Actor2>
-	struct SceneIter<Scene,std::pair<Actor1,Actor2> >  : boost::iterator_facade<
-							SceneIter<Scene,std::pair<Actor1,Actor2> >,
+	struct CountPairNoDuplicates {
+		template<class Index>
+		static
+		void
+		next(Index & i, Index & j, Index size){
+			++j;
+			j += i==j ? 1 : 0; // skip iff j- == i
+			if( j >= size ){
+				j = 0;
+				++i;
+			}			
+		}
+		static size_t get_i_end(size_t n){ return n; }
+		static size_t get_j_end(size_t  ){ return 0; }
+	};
+	struct CountPairUpperTriangle {
+		template<class Index>
+		static
+		void
+		next(Index & i, Index & j, Index size){
+			++j;
+			if( j >= size ){
+				++i;
+				j = i+1;
+			}			
+		}
+		static size_t get_i_end(size_t n){ if(n==1) return 1; return n==0?0:n-1; }
+		static size_t get_j_end(size_t n){ if(n==1) return 2; return n==0?0:n; }
+	};
+
+	template<class Scene,class Interaction, class CountPair>
+	struct SceneIter2B : boost::iterator_facade<
+							SceneIter2B<Scene,std::pair<
+								typename Interaction::first_type,
+								typename Interaction::second_type>,
+								CountPair >,
 							typename make_pairpair<typename Scene::Index>::type const,
 							boost::forward_traversal_tag,
 							typename make_pairpair<typename Scene::Index>::type const
 						>{
-		typedef SceneIter<Scene,std::pair<Actor1,Actor2> > THIS;
+		typedef typename Interaction::first_type Actor1;
+		typedef typename Interaction::second_type Actor2;
+		typedef SceneIter2B<Scene,std::pair<Actor1,Actor2>,CountPair> THIS;
 		typedef typename Scene::Index Index;
 		typedef typename Scene::Conformation Conf;
 		typedef typename f::result_of::value_at_key<Conf,Actor1>::type Container1;
 		typedef typename f::result_of::value_at_key<Conf,Actor2>::type Container2;
-		typedef util::container::ContainerInteractions<Container1,Container2,Index> ContInter;
+		typedef util::container::ContainerInteractions<typename Scene::Position,Container1,Container2,Index> ContInter;
 		typedef typename ContInter::Range ContRange;
 
-		SceneIter(){}
-		SceneIter(Scene const & s, Index ib1, Index ib2) : scene_(&s),ibody1_(ib1),ibody2_(ib2){
-			if(ib1==0 && ib2==1 && s.nbodies() != 0 ){ update_range(); }
-		}
-		void update_range(){
-			range_ = ContInter::get_interactions(
+		SceneIter2B(){}
+		SceneIter2B(Scene const & s, Index ib1, Index ib2) : scene_(&s),ibody1_(ib1),ibody2_(ib2){}
+		void
+		update_range(){ // X * A = B, X = B * ~A
+			ContInter::get_interaction_range(
+				scene_->body_unsafe(ibody2_).position() * inverse( scene_->body_unsafe(ibody1_).position() ) ,
 				scene_->conformation_unsafe(ibody1_).template get<Actor1>()  ,
-				scene_->conformation_unsafe(ibody2_).template get<Actor2>()  );
+				scene_->conformation_unsafe(ibody2_).template get<Actor2>()  ,
+				range_  );
 			iter_ = get_cbegin(range_);
 			end_  = get_cend(range_);
-			cout << "UPDATE_RANGE " << ibody1_ << " " << ibody2_ << " beg " << *iter_ << " end " << *end_ << endl;
+			// cout << "UPDATE_RANGE " << ibody1_ << " " << ibody2_ << " beg " << *iter_ << " end " << *end_ << endl;
 		}
-		static THIS make_begin(Scene const & s){ Index i=0,j=s.nbodies()>1?1:0; next_nonempty(s,i,j); return THIS(s,i,j); }
-		static THIS make_end  (Scene const & s){ return THIS(s,(Index)s.nbodies_asym(),(Index)0 ); }
-		static void next_nonempty(Scene const & s, Index & i, Index & j) {
-			// cout << "next_nonempty " << i<<"-"<<j;
- 			while( i < s.nbodies_asym() && j < s.nbodies() && ( 0==s.body(i).conformation().template get<Actor1>().size() ||
-			                                                    0==s.body(j).conformation().template get<Actor2>().size() )  )
-			{
-				++j; j += i==j?1:0;
-				if( j >= s.nbodies() ){
-					j = 0;
-					++i;
-				}
-			}
+		static
+		THIS 
+		make_begin(
+			Scene const & s
+		){
+			Index i=0,j=s.nbodies()>1?1:0;
+			next_while_empty(s,i,j); 
+			THIS beg(s,i,j); 
+			// cout << "MAKE BEGIN " << i << " " << j << " " << *beg << endl;
+			if(i < (Index)s.nbodies_asym() && j < (Index)s.nbodies() ) beg.update_range();
+			return beg;
+		}
+		static
+		THIS
+		make_end(
+			Scene const & s
+		){ 
+			return THIS(s,
+				(Index)CountPair::get_i_end(s.nbodies_asym()) ,
+				(Index)CountPair::get_j_end(s.nbodies_asym()) );
+		}
+		static
+		void
+		next_while_empty(
+			Scene const & s,
+			Index & i,
+			Index & j
+		) {
+			// cout << "next_while_empty " << i<<"-"<<j << endl;
+ 			while( i < s.nbodies_asym() && j < s.nbodies() && ( 
+ 				0==s.body(i).conformation().template get<Actor1>().size() ||
+			    0==s.body(j).conformation().template get<Actor2>().size() )
+			){
+				// cout << "  NEXT " << i << " " << j;
+ 				CountPair::next(i,j,s.nbodies());
+ 				// cout << " -> " << i << " " << j << endl;
+ 			}
 			// cout << " -> " << i << "-" << j << endl;
 		}
 	private:
 	    friend class boost::iterator_core_access;
-		void increment(){
-			cout << "INCREMENT iter_ " << *iter_;
+		void
+		increment(){
+			// cout << "INCREMENT iter_ " << *iter_;
 			++iter_;
-			cout << " -> " << *iter_ << " end " << *end_ << endl;
+			// cout << " -> " << *iter_ << " end " << *end_ << endl;
 			if( iter_==end_ ){ // end_ of body/body inter, must update range_
-				++ibody2_;
-				ibody2_ += ibody1_==ibody2_ ? 1 : 0; // ensure not equal
-				if( ibody2_ >= scene_->nbodies() ){
-					ibody2_ = 0;
-					++ibody1_;
-				}
-				cout << "NEXT_NONEMPTY " << ibody1_ << " " << ibody2_;
-				next_nonempty(*scene_,ibody1_,ibody2_);
-				cout << " -> " << ibody1_ << " " << ibody2_ << endl;
-				if( ibody1_ < scene_->nbodies_asym() ) update_range();
+				CountPair::next(ibody1_,ibody2_,scene_->nbodies());
+				// cout << "NEXT_NONEMPTY " << ibody1_ << " " << ibody2_;
+				next_while_empty(*scene_,ibody1_,ibody2_);
+				// cout << " -> " << ibody1_ << " " << ibody2_ << endl;
+				if( ibody1_ < scene_->nbodies_asym() && ibody2_ < scene_->nbodies() ) update_range();
 				// std::cout << "redo range_ " << ibody1_ << " " << ibody2_ << std::endl;
-				// std::cout << "SceneIter NEW BODIES: " << ibody1_ << " " << ibody2_ << std::endl;
+				// std::cout << "SceneIter2B NEW BODIES: " << ibody1_ << " " << ibody2_ << std::endl;
 			}
 			// not valid when at end
 			// assert( ibody1_ < scene_->nbodies_asym() );
@@ -255,10 +307,12 @@ using std::endl;
 			// assert( iter_->first  < scene_->body(ibody1_).conformation().template get<Actor1>().size() );
 			// assert( iter_->second < scene_->body(ibody2_).conformation().template get<Actor2>().size() );
 		}
-		typename make_pairpair<Index>::type const dereference() const { 
+		typename make_pairpair<Index>::type const
+		dereference() const { 
 			return std::make_pair(std::make_pair(ibody1_,ibody2_),*iter_);
 		}
-		bool equal(THIS const & o) const { 
+		bool
+		equal(THIS const & o) const { 
 			// hacky but works for checking end_
 			// std::cout << "EQUAL " << ibody1_ << " " << ibody2_ << " / " << o.ibody1_ << " " << o.ibody2_ << std::endl;
 			return scene_==o.scene_ && ibody1_==o.ibody1_ && ibody2_==o.ibody2_;
@@ -270,7 +324,7 @@ using std::endl;
 	};
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////// SceneIter specialization 2body homo / //////////////////////////
+////////////////////////// Scene / //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class T,class I> struct get_placeholder_type {
@@ -280,7 +334,7 @@ using std::endl;
 
 	template<class Scene,class Actor1>
 	void
-	get_scene_interaction(
+	get_scene_interaction_from_placeholder(
 		Scene const & scene,
 		typename get_placeholder_type<Actor1,typename Scene::Index>::type const & p,
 		Actor1 & out
@@ -293,7 +347,7 @@ using std::endl;
 	}
 	template<class Scene,class Actor1,class Actor2>
 	void
-	get_scene_interaction(
+	get_scene_interaction_from_placeholder(
 		Scene const & scene,
 		typename get_placeholder_type<std::pair<Actor1,Actor2>,typename Scene::Index>::type const & p,
 		std::pair<Actor1,Actor2> & out
@@ -345,25 +399,37 @@ using std::endl;
 		struct has_interaction : m::bool_<false> {}; // f::result_of::has_key<MAP,Interaction>::value> {};
 
 		template<class Interaction>
+		struct iter_type { typedef typename 
+			m::if_< util::meta::is_pair<Interaction>,
+				typename m::if_< util::meta::is_homo_pair<Interaction>,
+					SceneIter2B<THIS,Interaction,CountPairUpperTriangle>,
+					SceneIter2B<THIS,Interaction,CountPairNoDuplicates>
+				>::type,
+				SceneIter1B<THIS,Interaction>
+			>::type
+			type; };
+
+		template<class Interaction>
 		struct interactions_type { 
-			typedef std::pair<SceneIter<THIS,Interaction>,SceneIter<THIS,Interaction> > type; 
+			typedef typename iter_type<Interaction>::type Iter;
+			typedef std::pair<Iter,Iter> type; 
 		};
 		template<class Interaction>
 		typename interactions_type<Interaction>::type
 		get_interactions() const {
-			typedef SceneIter<THIS,Interaction> ITER;
-			ITER beg = ITER::make_begin(*this);
-			ITER end = ITER::make_end  (*this);
+			typedef typename iter_type<Interaction>::type Iter;
+			Iter beg = Iter::make_begin(*this);
+			Iter end = Iter::make_end  (*this);
 			return std::make_pair(beg,end);
 		}
 
 		template<class Interaction>
 		Interaction
 		get_interaction(
-			SceneIter<THIS,Interaction> const & iter
+			typename iter_type<Interaction>::type const & iter
 		) const {
 			Interaction i;
-			get_scene_interaction(*this,*iter,i);
+			get_scene_interaction_from_placeholder(*this,*iter,i);
 			return i;
 		}
 
@@ -373,7 +439,7 @@ using std::endl;
 			typename get_placeholder_type<Interaction,Index>::type const & p
 		) const {
 			Interaction i;
-			get_scene_interaction(*this,p,i);
+			get_scene_interaction_from_placeholder(*this,p,i);
 			return i;
 		}
 

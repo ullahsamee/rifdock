@@ -1,34 +1,25 @@
 #ifndef INCLUDED_util_meta_util_HH
 #define INCLUDED_util_meta_util_HH
 
-// #include <iostream>
-// #include <boost/fusion/include/pair.hpp>
-// #include <boost/fusion/include/for_each.hpp>
-// #include <boost/fusion/include/mpl.hpp>
-// #include <boost/fusion/include/is_sequence.hpp>
-// #include <boost/mpl/copy.hpp>
-// #include <boost/mpl/copy_if.hpp>
-// #include <boost/mpl/set.hpp>
-// #include <boost/mpl/insert.hpp>
-// #include <boost/mpl/inserter.hpp>
-// #include <boost/mpl/pair.hpp>
-// #include <boost/mpl/transform.hpp>
-// // #include <boost/mpl/iter_fold.hpp>
-// #include <boost/mpl/for_each.hpp>
-// #include <boost/mpl/vector.hpp>
-// #include <boost/mpl/is_sequence.hpp>
+#include <boost/mpl/bool.hpp>
 
 namespace scheme {
 namespace util {
 namespace meta {
 
-// namespace m = boost::mpl;
+namespace m = boost::mpl;
 // namespace f = boost::fusion;
 
 template<class T> struct type2type {};
 
 template<class T> struct showclass;
 template<int T> struct showint;
+
+template<class T> struct is_pair : m::false_ {};
+template<class A,class B> struct is_pair<std::pair<A,B> > : m::true_ {};
+
+template<class T> struct is_homo_pair : m::false_ {};
+template<class A> struct is_homo_pair<std::pair<A,A> > : m::true_ {};
 
 
 // utility to get MEMBER if it exists, else double                             

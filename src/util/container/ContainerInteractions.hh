@@ -54,13 +54,21 @@ namespace container {
 	};
 
 	///@brief Default implementation of ContainerInteractions, double loop over all by []/size()
-	template<class Container1, class Container2, class Index>
+	template<class Xform, class Container1, class Container2, class Index>
 	struct ContainerInteractions {
 		typedef std::pair<ContainerInteractionsIter<Index>,ContainerInteractionsIter<Index> > Range;
-		static Range get_interactions(Container1 const & c1, Container2 const & c2){
+		static
+		void
+		get_interaction_range(
+			Xform const &,  // X * A = B, X = B * ~A
+			Container1 const & c1,
+			Container2 const & c2,
+			Range & r
+		){
 			// std::cout << "ContainerInteractions default" << std::endl;
-			return std::make_pair( ContainerInteractionsIter<Index>((Index)           0           ,(Index)0,(Index)c2.size())      ,
-				                   ContainerInteractionsIter<Index>((Index)(c2.size()?c1.size():0),(Index)0,(Index)c2.size())      );
+			typedef ContainerInteractionsIter<Index> Iter;
+			r = std::make_pair( Iter((Index)           0           ,(Index)0,(Index)c2.size())      ,
+			                    Iter((Index)(c2.size()?c1.size():0),(Index)0,(Index)c2.size())      );
 		}
 	};
 	template<class T> typename T::const_iterator get_cbegin(T const & t){ return t.begin(); }
