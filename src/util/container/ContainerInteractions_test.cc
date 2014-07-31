@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <util/container/ContainerInteractions.hh>
-
+#include <stdint.h>
 
 namespace scheme {
 namespace util {

@@ -98,12 +98,12 @@ using std::endl;
 		class _Conformation,
 		class _Position
 	>
-	struct Body {
+	struct BodyTplt {
 		typedef _Conformation Conformation;
 		typedef _Position Position;	
 
-		Body() : position_(), conformation_(NULL) {}
-		Body(shared_ptr<Conformation const> c) : position_(),conformation_(c) {}
+		BodyTplt() : position_(), conformation_(NULL) {}
+		BodyTplt(shared_ptr<Conformation const> c) : position_(),conformation_(c) {}
 
 		template<class Actor> 
 		Actor
@@ -128,7 +128,7 @@ using std::endl;
 		shared_ptr<Conformation const> conformation_;
 	 };
 	template< class C, class P >
-	std::ostream & operator<<(std::ostream & out, Body<C,P> const & b){
+	std::ostream & operator<<(std::ostream & out, BodyTplt<C,P> const & b){
 		return out << "Body( " << b.xform() << ", " << &b.conformation() << " )";
 	}
 
@@ -371,7 +371,7 @@ using std::endl;
 		
 		typedef _Conformation Conformation;
 		typedef _Position Position;
-		typedef Body<Conformation,Position> Body;
+		typedef BodyTplt<Conformation,Position> Body;
 		typedef Scene<Conformation,Position> THIS;
 		typedef std::vector<Body> Bodies;
 		typedef _Index Index;
