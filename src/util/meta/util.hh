@@ -21,6 +21,8 @@ template<class A,class B> struct is_pair<std::pair<A,B> > : m::true_ {};
 template<class T> struct is_homo_pair : m::false_ {};
 template<class A> struct is_homo_pair<std::pair<A,A> > : m::true_ {};
 
+template<class T> struct first_type { typedef typename T::first_type type; };
+template<class T> struct second_type { typedef typename T::second_type type; };
 
 // utility to get MEMBER if it exists, else double                             
 struct __EMPTY_TYPE_UTILITY__ {};

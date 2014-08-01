@@ -214,10 +214,10 @@ struct PlaceholderInteractionSource {
 
 	template<class Interaction>
 	Interaction const & 
-	get_interaction(
+	get_interaction_from_placeholder(
 		Placeholder const & placeholder
 	) const {
-		// cout << "get_interaction " << (interactions_map_.template get<Interaction>()[placeholder]) 
+		// cout << "get_interaction_from_placeholder " << (interactions_map_.template get<Interaction>()[placeholder]) 
 		//      << " placeholder " << placeholder << endl;
 		return interactions_map_.template get<Interaction>()[placeholder];
 	}

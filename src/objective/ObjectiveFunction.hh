@@ -36,20 +36,20 @@ namespace traits {
 namespace impl {
 
 	template< class Interaction, class PlaceHolder, class InteractionSource, bool>
-	struct get_interaction_from_marker_impl {
+	struct get_interaction_from_placeholder_impl {
 		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const &){
 			return placeholder;
 		}
 	};
 	template< class Interaction, class PlaceHolder, class InteractionSource>
-	struct get_interaction_from_marker_impl<Interaction,PlaceHolder,InteractionSource,false> {
+	struct get_interaction_from_placeholder_impl<Interaction,PlaceHolder,InteractionSource,false> {
 		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const & source){
-			return source.template get_interaction<Interaction>(placeholder);
+			return source.template get_interaction_from_placeholder<Interaction>(placeholder);
 		}
 	};
 	template< class Interaction, class PlaceHolder, class InteractionSource >
-	Interaction const & get_interaction_from_marker(PlaceHolder const & placeholder, InteractionSource const & source){
-		return get_interaction_from_marker_impl<
+	Interaction const & get_interaction_from_placeholder(PlaceHolder const & placeholder, InteractionSource const & source){
+		return get_interaction_from_placeholder_impl<
 			Interaction,PlaceHolder,InteractionSource,boost::is_same<PlaceHolder,Interaction>::value>()
 			(placeholder,source);
 	}
@@ -86,7 +86,7 @@ namespace impl {
 		) : interaction(i),results(r),config(c) {}
 
 		template<class Objective> void operator()(Objective const & objective) const {
-			BOOST_STATIC_ASSERT( f::result_of::has_key<Results,Objective>::value );
+			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
 			#endif
@@ -133,7 +133,7 @@ namespace impl {
 				// std::cout << "        Interaction: " << interaction <<
 									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
 				Interaction const & interaction =
-					get_interaction_from_marker<
+					get_interaction_from_placeholder<
 							Interaction,
 							Placeholder,
 							InteractionSource

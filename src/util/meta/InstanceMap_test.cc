@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <util/meta/InstanceMap.hh>
+#include <util/meta/print_type.hh>
 #include <boost/mpl/quote.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/fusion/include/for_each.hpp>
@@ -54,7 +55,7 @@ TEST(InstanceMap,holds_types){
 		ASSERT_EQ( imap.get<int>(), 1 );
 		ASSERT_EQ( imap.get<char>(), 'C' );
 		ASSERT_EQ( imap.get<float>(), 1.2345f );
-		// bf::for_each(imap,PrintInstanceType());
+		// bf::for_each((TEST::Base&)imap,PrintInstanceType());
 	}
 
 	{
@@ -106,7 +107,7 @@ TEST(InstanceMap,holds_types){
 		ASSERT_EQ( imap.get<float>().size(),3);
 
 	}
-	// bf::map< bf::pair<int,int>, bf::pair<char,char>, bf::pair<float,float> > test;
+	bf::map< bf::pair<int,int>, bf::pair<char,char>, bf::pair<float,float> > test;
 	// bf::for_each( test, PrintInstanceType() );
 
 }

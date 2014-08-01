@@ -15,7 +15,7 @@
 // #include <util/SimpleArray_test.cc>
 // #include <util/meta/util_test.cc>
 // #include <util/meta/InstanceMap_test.cc>
-#include <util/container/ContainerInteractions_test.cc>
+// #include <util/container/ContainerInteractions_test.cc>
 
 // #include <objective/ObjectiveFunction_test.cc>
 

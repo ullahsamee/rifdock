@@ -60,8 +60,11 @@ template< typename _Keys, typename Arg2 = _Keys >
 struct InstanceMap : fusion_map<_Keys,Arg2>::type
 {
     typedef typename fusion_map<_Keys,Arg2>::type Base;
+    typedef Base FusionType;
     // typedef typename m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>, m::identity<void>, _Keys >::type Keys;
-    
+    typedef typename m::transform< Base, util::meta::first_type<m::_1> >::type Keys;
+    typedef typename m::transform< Base, util::meta::second_type<m::_1> >::type Values;
+
     // variadic ctors
     InstanceMap(){}
     template<class A>
@@ -89,13 +92,13 @@ struct InstanceMap : fusion_map<_Keys,Arg2>::type
     ///@tparam Key input 
     template<typename Key>
     typename f::result_of::value_at_key<Base,Key>::type & 
-    get() { return f::at_key<Key>(*this); }
+    get() { return f::at_key<Key>((Base&)*this); }
     
     ///@brief get const reference to the instance of type associated with key Key
     ///@tparam Key input 
     template<typename Key>
     typename f::result_of::value_at_key<Base,Key>::type const & 
-    get() const { return f::at_key<Key>(*this); }
+    get() const { return f::at_key<Key>((Base&)*this); }
     
 };
 
@@ -132,6 +135,7 @@ template< typename Keys, typename Arg2 = Keys, class Float = double >
 struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
     typedef NumericInstanceMap<Keys,Arg2,Float> THIS;
     typedef InstanceMap<Keys,Arg2> BASE;
+    typedef typename BASE::Base FusionType;
     typedef Float F;
     NumericInstanceMap(F f=0){ setall(f); }
     NumericInstanceMap(F a,F b) : BASE(a,b) {}
@@ -147,32 +151,32 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
     void setall(Float val){
         impl::SETVAL<Float> set;
         set.val = val;
-        f::for_each( *this, set );
+        f::for_each( (FusionType&)*this, set );
     }
     ///@briew sum of instance values    
     Float sum() const {
         Float sum=0;
         impl::SUM<Float> s(sum);
-        f::for_each( *this, s );
+        f::for_each( (FusionType&)*this, s );
         return sum;
     }
     ///@brief convertable to Float as sum of elements
     operator Float() const { return sum(); }
     void operator+=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::plus<Float> > add(*this);
-        f::for_each(o,add);
+        f::for_each((FusionType&)o,add);
     }
     void operator-=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::minus<Float> > add(*this);
-        f::for_each(o,add);
+        f::for_each((FusionType&)o,add);
     }
     void operator/=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::divides<Float> > add(*this);
-        f::for_each(o,add);
+        f::for_each((FusionType&)o,add);
     }
     void operator*=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::multiplies<Float> > add(*this);
-        f::for_each(o,add);
+        f::for_each((FusionType&)o,add);
     }
 };
 
