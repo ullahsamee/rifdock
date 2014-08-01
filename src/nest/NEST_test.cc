@@ -164,6 +164,24 @@ TEST(NEST,store_pointer_virtual){
 	test_store_pointer_virtual<6>();
 }
 
+TEST(NEST,store_nothing){
+	typedef util::SimpleArray<2,double> VAL;
+	NEST<2,VAL,UnitMap,util::StoreNothing,size_t,double,true> nest;
+	VAL tmp(-10,-10);
+	boost::any a = &tmp;
+	ASSERT_TRUE( nest.virtual_get_state(0,0,a) );
+	ASSERT_EQ( tmp, VAL(0.5,0.5) );
+
+	std::vector<size_t> vi(2);
+	vi[0] = 1;
+	vi[1] = 0;
+	size_t ii=0;
+	ASSERT_TRUE( nest.virtual_get_state(vi,0,ii,1,a) );
+	ASSERT_EQ( tmp, VAL(0.75,0.25) );
+	ASSERT_EQ( ii , 2 );
+
+}
+
 template<int DIM>
 void test_uniformity(){
 	typedef util::SimpleArray<DIM,double> VAL;

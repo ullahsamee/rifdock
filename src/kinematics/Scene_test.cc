@@ -2,10 +2,11 @@
 
 #include "kinematics/Scene_io.hh"
 #include "actor/ActorConcept_io.hh"
+#include "numeric/X1dim.hh"
 
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
-#include "boost/tuple/tuple.hpp"
+#include <boost/tuple/tuple.hpp>
 
 
 
@@ -15,18 +16,7 @@ namespace scheme { namespace kinematics {
 using std::cout;
 using std::endl;
 using boost::tie;
-
-///@brief Simple linear "Xform" class for testing
-struct X1dim {
-	double val_;
-	X1dim() : val_(0) {}
-	X1dim(double d) : val_(d) {}
-	bool operator==(X1dim const & o) const { return o.val_==val_; }
-};
-X1dim operator*(X1dim a, X1dim b){ return X1dim(a.val_+b.val_); }
-X1dim inverse(X1dim x){	return X1dim(-x.val_); }
-std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.val_; }
-
+using numeric::X1dim;
 
 
 namespace TEST_BOUNDS {
@@ -518,96 +508,96 @@ namespace TEST_BOUNDS {
 		s.mutable_conformation_asym(1).add_actor(ADC(1,'0'));
 
 		tie(iicbeg,iicend) = s.get_interactions<IIC>();
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
 		ASSERT_EQ( iicbeg, iicend );
 		tie(icibeg,iciend) = s.get_interactions<ICI>();
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
 		ASSERT_EQ( icibeg, iciend );
 		tie(iiibeg,iiiend) = s.get_interactions<III>();
 		ASSERT_EQ( iiibeg, iiiend );
 		tie(iccbeg,iccend) = s.get_interactions<ICC>();
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
 		ASSERT_EQ( iccbeg, iccend );
 
 		s.mutable_conformation_asym(1).add_actor(ADC(1,'1'));
 
 		tie(iicbeg,iicend) = s.get_interactions<IIC>();
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
 		ASSERT_EQ( iicbeg, iicend );
 		tie(icibeg,iciend) = s.get_interactions<ICI>();
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
 		ASSERT_EQ( icibeg, iciend );
 		tie(iiibeg,iiiend) = s.get_interactions<III>();
 		ASSERT_EQ( iiibeg, iiiend );
 		tie(iccbeg,iccend) = s.get_interactions<ICC>();
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
 		ASSERT_EQ( iccbeg, iccend );
 
 		s.mutable_conformation_asym(1).add_actor(ADI(1,0));
 
 		tie(iicbeg,iicend) = s.get_interactions<IIC>();
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
 		ASSERT_EQ( iicbeg, iicend );
 		tie(icibeg,iciend) = s.get_interactions<ICI>();
-		ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
 		ASSERT_EQ( icibeg, iciend );
 		tie(iiibeg,iiiend) = s.get_interactions<III>();
-		ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
 		ASSERT_EQ( iiibeg, iiiend );
 		tie(iccbeg,iccend) = s.get_interactions<ICC>();
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
 		ASSERT_EQ( iccbeg, iccend );
 
 		s.mutable_conformation_asym(1).add_actor(ADI(1,1));
 
 		tie(iicbeg,iicend) = s.get_interactions<IIC>();
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
-		ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(1,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( *iicbeg++, make_pair(Index2(1,0),Index2(1,0)) );
 		ASSERT_EQ( iicbeg, iicend );
 		tie(icibeg,iciend) = s.get_interactions<ICI>();
-		ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,1)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
-		ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( *icibeg++, make_pair(Index2(1,0),Index2(1,0)) );
 		ASSERT_EQ( icibeg, iciend );
 		tie(iiibeg,iiiend) = s.get_interactions<III>();
-		ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( *iiibeg++, make_pair(Index2(0,1),Index2(0,1)) );
 		ASSERT_EQ( iiibeg, iiiend );
 		tie(iccbeg,iccend) = s.get_interactions<ICC>();
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
-		ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,0)) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( *iccbeg++, make_pair(Index2(0,1),Index2(0,1)) );
 		ASSERT_EQ( iccbeg, iccend );
 
 		tie(iicbeg,iicend) = s.get_interactions<IIC>();
-		ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'0')) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'1')) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(1,0),ADC(0,'0')) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(1,1),ADC(0,'0')) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'0')) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(0,0),ADC(1,'1')) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(1,0),ADC(0,'0')) );
+		ASSERT_NE(iicbeg,iicend); ASSERT_EQ( s.get_interaction_from_placeholder<IIC>(*iicbeg++), make_pair(ADI(1,1),ADC(0,'0')) );
 		ASSERT_EQ( iicbeg, iicend );
 		tie(icibeg,iciend) = s.get_interactions<ICI>();
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,0)) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,1)) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(1,'0'),ADI(0,0)) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(1,'1'),ADI(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(0,'0'),ADI(1,1)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(1,'0'),ADI(0,0)) );
+		ASSERT_NE(icibeg,iciend); ASSERT_EQ( s.get_interaction_from_placeholder<ICI>(*icibeg++), make_pair(ADC(1,'1'),ADI(0,0)) );
 		ASSERT_EQ( icibeg, iciend );
 		tie(iiibeg,iiiend) = s.get_interactions<III>();
-		ASSERT_EQ( s.get_interaction_from_placeholder<III>(*iiibeg++), make_pair(ADI(0,0),ADI(1,0)) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<III>(*iiibeg++), make_pair(ADI(0,0),ADI(1,1)) );
+		ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( s.get_interaction_from_placeholder<III>(*iiibeg++), make_pair(ADI(0,0),ADI(1,0)) );
+		ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( s.get_interaction_from_placeholder<III>(*iiibeg++), make_pair(ADI(0,0),ADI(1,1)) );
 		ASSERT_EQ( iiibeg, iiiend );
 		tie(iccbeg,iccend) = s.get_interactions<ICC>();
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICC>(*iccbeg++), make_pair(ADC(0,'0'),ADC(1,'0')) );
-		ASSERT_EQ( s.get_interaction_from_placeholder<ICC>(*iccbeg++), make_pair(ADC(0,'0'),ADC(1,'1')) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( s.get_interaction_from_placeholder<ICC>(*iccbeg++), make_pair(ADC(0,'0'),ADC(1,'0')) );
+		ASSERT_NE(iccbeg,iccend); ASSERT_EQ( s.get_interaction_from_placeholder<ICC>(*iccbeg++), make_pair(ADC(0,'0'),ADC(1,'1')) );
 		ASSERT_EQ( iccbeg, iccend );
 
 		std::ostringstream out;
@@ -663,7 +653,7 @@ namespace TEST_BOUNDS {
 			tie(icibeg,iciend) = s.get_interactions<ICI>();
 			tie(iiibeg,iiiend) = s.get_interactions<III>();
 			tie(iccbeg,iccend) = s.get_interactions<ICC>();
-			ASSERT_EQ( (*iiibeg++).first, Index2(0,2) );
+			ASSERT_NE(iiibeg,iiiend); ASSERT_EQ( (*iiibeg++).first, Index2(0,2) );
 			ASSERT_EQ( iicbeg, iicend );
 			ASSERT_EQ( icibeg, iciend );
 			ASSERT_EQ( iiibeg, iiiend );
@@ -868,23 +858,23 @@ namespace TEST_BOUNDS {
 		s.mutable_conformation_asym(4).add_actor( ADI(4,0) );
 
 		tie(iter,end) = s.get_interactions<III>();
-		ASSERT_EQ( (*iter++).first, Index2(0,1) );
-		ASSERT_EQ( (*iter++).first, Index2(0,2) );
-		ASSERT_EQ( (*iter++).first, Index2(0,3) );
-		ASSERT_EQ( (*iter++).first, Index2(0,4) );
-		ASSERT_EQ( (*iter++).first, Index2(1,2) );
-		ASSERT_EQ( (*iter++).first, Index2(1,3) );
-		ASSERT_EQ( (*iter++).first, Index2(1,4) );
-		ASSERT_EQ( (*iter++).first, Index2(2,3) );
-		ASSERT_EQ( (*iter++).first, Index2(2,4) );
-		ASSERT_EQ( (*iter++).first, Index2(3,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,4) );
 		ASSERT_EQ( iter, end );
 	}
 
 	TEST(Scene,interactions_twobody_hetero){
 		using std::make_pair;
 
-		Scene s(5);
+		Scene s(4);
 		Scene::iter_type<IIC>::type iter,end;
 		
 		s.mutable_conformation_asym(0).add_actor( ADI(0,0) );
@@ -903,18 +893,18 @@ namespace TEST_BOUNDS {
 		// BOOST_FOREACH( Index4 i4, s.get_interactions<IIC>() ) cout << i4 << endl;
 
 		tie(iter,end) = s.get_interactions<IIC>();
-		ASSERT_EQ( (*iter++).first, Index2(0,1) );
-		ASSERT_EQ( (*iter++).first, Index2(0,2) );
-		ASSERT_EQ( (*iter++).first, Index2(0,3) );
-		ASSERT_EQ( (*iter++).first, Index2(1,0) );
-		ASSERT_EQ( (*iter++).first, Index2(1,2) );
-		ASSERT_EQ( (*iter++).first, Index2(1,3) );
-		ASSERT_EQ( (*iter++).first, Index2(2,0) );
-		ASSERT_EQ( (*iter++).first, Index2(2,1) );
-		ASSERT_EQ( (*iter++).first, Index2(2,3) );
-		ASSERT_EQ( (*iter++).first, Index2(3,0) );
-		ASSERT_EQ( (*iter++).first, Index2(3,1) );
-		ASSERT_EQ( (*iter++).first, Index2(3,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,2) );
 		ASSERT_EQ( iter, end );
 
 	}
@@ -942,21 +932,91 @@ namespace TEST_BOUNDS {
 		//             ADI( 12, 0 )
 
 		tie(iter,end) = s.get_interactions<III>();
-		ASSERT_EQ( (*iter++).first, Index2(0,1) );
-		ASSERT_EQ( (*iter++).first, Index2(0,2) );
-		ASSERT_EQ( (*iter++).first, Index2(0,3) );
-		ASSERT_EQ( (*iter++).first, Index2(0,4) );
-		ASSERT_EQ( (*iter++).first, Index2(0,5) );
-		ASSERT_EQ( (*iter++).first, Index2(1,2) );
-		ASSERT_EQ( (*iter++).first, Index2(1,3) );
-		ASSERT_EQ( (*iter++).first, Index2(1,4) );
-		ASSERT_EQ( (*iter++).first, Index2(1,5) );
-		ASSERT_EQ( (*iter++).first, Index2(2,3) );
-		ASSERT_EQ( (*iter++).first, Index2(2,4) );
-		ASSERT_EQ( (*iter++).first, Index2(2,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,5) );
 		ASSERT_EQ( iter, end );
 	}
 
+	TEST(Scene,interactions_twobody_hetero_sym){
+		using std::make_pair;
+
+		Scene s(4);
+		s.add_symframe(10.0);
+		Scene::iter_type<IIC>::type iter,end;
+		
+		s.mutable_conformation_asym(0).add_actor( ADI(0,0) );
+		s.mutable_conformation_asym(1).add_actor( ADI(1,0) );
+		s.mutable_conformation_asym(2).add_actor( ADI(2,0) );
+		s.mutable_conformation_asym(3).add_actor( ADI(3,0) );
+		
+		tie(iter,end) = s.get_interactions<IIC>();
+		ASSERT_EQ( iter, end );
+
+		s.mutable_conformation_asym(0).add_actor( ADC(0,'0') );
+		s.mutable_conformation_asym(1).add_actor( ADC(1,'0') );
+		s.mutable_conformation_asym(2).add_actor( ADC(2,'0') );
+		s.mutable_conformation_asym(3).add_actor( ADC(3,'0') );
+
+		// BOOST_FOREACH( Index4 i4, s.get_interactions<IIC>() ) cout << i4 << endl;
+
+		tie(iter,end) = s.get_interactions<IIC>();
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,6) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(0,7) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,6) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(1,7) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,6) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(2,7) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,4) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,5) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,6) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(3,7) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(4,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(4,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(4,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(4,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(5,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(5,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(5,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(5,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(6,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(6,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(6,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(6,3) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(7,0) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(7,1) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(7,2) );
+		ASSERT_NE(iter,end); ASSERT_EQ( (*iter++).first, Index2(7,3) );
+		ASSERT_EQ( iter, end );
+
+	}
 
 }
 

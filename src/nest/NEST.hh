@@ -264,7 +264,7 @@ namespace nest {
 		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
 			Value & v = *boost::any_cast<Value*>(result);
 			bool status = set_value( index, resl, v );
-			this->nonconst_value() = v;
+			this->set_stored_value(v);
 			return status;
 		}
 		///@brief virtual virtual function to set the state of this nest
@@ -280,11 +280,11 @@ namespace nest {
 		) {
 			Float scale = 1.0 / Float(ONE<<resl);
 			Params params;
-			for(size_t i = 0; i < DIM; ++i) params[i] = (static_cast<Float>(hindices[iindex]) + 0.5 ) * scale;
+			for(size_t i = 0; i < DIM; ++i) params[i] = (static_cast<Float>(hindices[iindex+i]) + 0.5 ) * scale;
 			iindex += DIM;
 			Value & v( *boost::any_cast<Value*>(result) );
 			bool status = this->params_to_value( params, cell_index, v );
-			this->nonconst_value() = v;
+			this->set_stored_value(v);
 			return status;
 		}
 		///@brief virtual function returning size(resl)
@@ -347,7 +347,10 @@ namespace nest {
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
 		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
-			return set_state( index, resl, *boost::any_cast<Value*>(result) );
+			Value & v( *boost::any_cast<Value*>(result) );
+			bool status = set_state( index, resl, v );
+			this->set_stored_value(v);
+			return status;
 		}
 
 		///@brief virtual virtual function to set the state of this nest
@@ -365,7 +368,7 @@ namespace nest {
 			Params params;
 			Value & v( *boost::any_cast<Value*>(result) );
 			bool status = this->params_to_value( params, cell_index, v );
-			this->nonconst_value() = v;
+			this->set_stored_value(v);
 			return status;
 		}
 		///@brief return size(resl)

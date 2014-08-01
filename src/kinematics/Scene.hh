@@ -136,6 +136,7 @@ namespace impl {
 		typedef typename Conformation::Actors Actors;
 		typedef std::vector<Body> Bodies;
 		typedef _Index Index;
+		typedef m::true_ DefinesInteractionWeight;
 
 		Bodies bodies_;
 		std::vector<Position> symframes_; // w/o identity
@@ -237,11 +238,15 @@ namespace impl {
 
 		/////////////////////////// interactions //////////////////////////////////
 
-		// template<class Interaction>
-		// struct has_interaction : m::bool_<false> {}; // f::result_of::has_key<MAP,Interaction>::value> {};
+		// TODO: fix this!
+		template<class Interaction> struct
+		has_interaction : m::bool_<true> {}; // f::result_of::has_key<MAP,Interaction>::value> {};
 
-		template<class Interaction>
-		struct iter_type { typedef typename 
+		template<class Interaction>	struct
+		interaction_placeholder_type {typedef typename get_placeholder_type<Interaction,Index>::type type; };
+
+		template<class Interaction> struct
+		iter_type { typedef typename 
 			m::if_< util::meta::is_pair<Interaction>,
 				typename m::if_< util::meta::is_homo_pair<Interaction>,
 					SceneIter2B<THIS,Interaction,CountPairUpperTriangle>,
@@ -251,8 +256,8 @@ namespace impl {
 			>::type
 			type; };
 
-		template<class Interaction>
-		struct interactions_type { 
+		template<class Interaction> struct
+		interactions_type { 
 			typedef typename iter_type<Interaction>::type Iter;
 			typedef std::pair<Iter,Iter> type; 
 		};
@@ -265,6 +270,7 @@ namespace impl {
 			return std::make_pair(beg,end);
 		}
 
+		///@brief gets a concrete interaction (Actor or pair of Actors) from a SceneIter
 		template<class Iter>
 		typename Iter::Interaction
 		get_interaction_from_iter(
@@ -276,6 +282,7 @@ namespace impl {
 			return i;
 		}
 
+		///@brief gets a concrete interaction (Actor or pair of Actors) from a placeholder
 		template<class Interaction>
 		Interaction
 		get_interaction_from_placeholder(
@@ -286,7 +293,15 @@ namespace impl {
 			return i;
 		}
 
-
+		///@brief default weight is 1.0
+		template<class PlaceHolder>
+		double get_weight_from_placeholder(PlaceHolder const &) const {
+			return 1.0;
+		}
+		///@brief for symmetry, if either body not in asym unit, weight should be 0.5
+		double get_weight_from_placeholder(std::pair<std::pair<Index,Index>,std::pair<Index,Index> > const & ph ) const {
+			return ( ph.first.first < nbodies_asym() && ph.first.second < nbodies_asym() ) ? 1.0 : 0.5;
+		}
 
 	};
 

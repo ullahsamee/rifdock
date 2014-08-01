@@ -35,20 +35,21 @@ namespace traits {
 
 namespace impl {
 
+	// TODO: is there any way these could return references?
 	template< class Interaction, class PlaceHolder, class InteractionSource, bool>
 	struct get_interaction_from_placeholder_impl {
-		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const &){
+		Interaction operator()(PlaceHolder const & placeholder, InteractionSource const &){
 			return placeholder;
 		}
 	};
 	template< class Interaction, class PlaceHolder, class InteractionSource>
 	struct get_interaction_from_placeholder_impl<Interaction,PlaceHolder,InteractionSource,false> {
-		Interaction const & operator()(PlaceHolder const & placeholder, InteractionSource const & source){
+		Interaction operator()(PlaceHolder const & placeholder, InteractionSource const & source){
 			return source.template get_interaction_from_placeholder<Interaction>(placeholder);
 		}
 	};
 	template< class Interaction, class PlaceHolder, class InteractionSource >
-	Interaction const & get_interaction_from_placeholder(PlaceHolder const & placeholder, InteractionSource const & source){
+	Interaction get_interaction_from_placeholder(PlaceHolder const & placeholder, InteractionSource const & source){
 		return get_interaction_from_placeholder_impl<
 			Interaction,PlaceHolder,InteractionSource,boost::is_same<PlaceHolder,Interaction>::value>()
 			(placeholder,source);
@@ -78,26 +79,40 @@ namespace impl {
 		Interaction const & interaction;
 		Results & results;
 		Config const & config;
-
+		double weight;
 		EvalObjective(
 			Interaction const & i,
 			Results & r,
-			Config const & c
-		) : interaction(i),results(r),config(c) {}
+			Config const & c,
+			double w
+		) : interaction(i),results(r),config(c),weight(w) {}
 
 		template<class Objective> void operator()(Objective const & objective) const {
 			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
 			#endif
+			typedef typename f::result_of::value_at_key<Results,Objective>::type Result;
 			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
-			objective(
-				interaction,
-				results.template get<Objective>(),
-				config
-			);
+			Result result = objective( interaction, config );
+			results.template get<Objective>() += weight*result;
 		}
 	};
+
+	using m::false_;
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(DefinesInteractionWeight,false_)
+	// SCHEME_HAS_MEMBER_TYPE(DefinesInteractionWeight)
+
+	template<class InteractionSource, class Placeholder>
+	typename boost::disable_if<typename get_DefinesInteractionWeight_false_<InteractionSource>::type,double>::type
+	get_interaction_weight(InteractionSource const & , Placeholder const & ){ 
+		return 1.0;
+	}
+	template<class InteractionSource, class Placeholder>
+	typename boost::enable_if<typename get_DefinesInteractionWeight_false_<InteractionSource>::type,double>::type
+	get_interaction_weight(InteractionSource const & is, Placeholder const & ph){ 
+		return is.get_weight_from_placeholder(ph);
+	}
 
 	///@brief helper functor to call each objective for Interaction
 	template<
@@ -130,6 +145,7 @@ namespace impl {
 				Placeholder const & interaction_placeholder,
 				interaction_source.template get_interactions<Interaction>()
 			){
+				double weight = get_interaction_weight(interaction_source,interaction_placeholder);
 				// std::cout << "        Interaction: " << interaction <<
 									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
 				Interaction const & interaction =
@@ -141,11 +157,15 @@ namespace impl {
 				f::for_each(
 					objective_map.template get<Interaction>(), 
 					EvalObjective< Interaction, Results, Config >
-					             ( interaction, results, config)
+					             ( interaction, results, config, weight )
 				);
 			}
 		}
 	};
+
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(InteractionTypes,void)
+
+	// get_interaction_weight
 
 }
 
@@ -162,7 +182,7 @@ struct ObjectiveConcept {
 	///@param Interaction main body or interaction to evaluate
 	///@param Result result should be stored here
 	template<class Config>
-	void operator()( Interaction const& a, Result & result, Config const& ) const { result += a; }
+	Result operator()( Interaction const& a, Config const& ) const { return a; }
 };
 
 ///@brief a generic objective function for interacting bodies
@@ -250,11 +270,15 @@ struct ObjectiveFunction {
 		Config const & config
 	) const {
 		// make sure we only operate on interactions contained in source
-		typedef typename 
-			util::meta::intersect<
+		typedef typename impl::get_InteractionTypes_void<InteractionSource>::type SourceInteractionTypes;
+		typedef typename m::eval_if<
+				boost::is_same<void,SourceInteractionTypes>,
 				InteractionTypes,
-				typename InteractionSource::InteractionTypes
-			>::type  
+				util::meta::intersect<
+					InteractionTypes,
+					SourceInteractionTypes
+				>
+			>::type
 			MutualInteractionTypes;
 		Results results;
 		BOOST_STATIC_ASSERT( m::size<MutualInteractionTypes>::value );

@@ -31,8 +31,8 @@ struct ScoreInt {
 	ScoreInt():local_scale(1.0){}
 	static std::string name(){ return "ScoreInt"; }
 	template<class Config>
-	void operator()(Interaction a, Result & result, Config const& c) const {
-		result += a*c.scale * local_scale;
+	Result operator()(Interaction a, Config const& c) const {
+		return a*c.scale * local_scale;
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreInt const& si){ return out << si.name(); }
@@ -42,8 +42,8 @@ struct ScoreInt2 {
 	typedef int Interaction;
 	static std::string name(){ return "ScoreInt2"; }	
 	template<class Config>
-	void operator()(Interaction const & a, Result & result, Config const& c) const {
-		result += 2*a*c.scale;
+	Result operator()(Interaction const & a, Config const& c) const {
+		return 2*a*c.scale;
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreInt2 const& si){ return out << si.name(); }
@@ -52,8 +52,8 @@ struct ScoreInt3 {
 	typedef int Interaction;
 	static std::string name(){ return "ScoreInt3"; }	
 	template<class Config>
-	void operator()(Interaction const & a, Result & result, Config const& c) const {
-		result += 3*a*c.scale;
+	Result operator()(Interaction const & a, Config const& c) const {
+		return 3*a*c.scale;
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreInt3 const& si){ return out << si.name(); }
@@ -63,8 +63,8 @@ struct ScoreDouble {
 	typedef double Interaction;
 	static std::string name(){ return "ScoreDouble"; }	
 	template<class Config>
-	void operator()(Interaction const & a, Result & result, Config const& c) const {
-		result += a*c.scale;
+	Result operator()(Interaction const & a, Config const& c) const {
+		return a*c.scale;
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreDouble const& si){ return out << si.name(); }
@@ -74,12 +74,12 @@ struct ScoreIntDouble {
 	typedef std::pair<int,double> Interaction;
 	static std::string name(){ return "ScoreIntDouble"; }	
 	template<class Config>
-	void operator()(int i,double a, Result & result, Config const& c) const {
-		result += i*a*c.scale;
+	Result operator()(int i,double a, Config const& c) const {
+		return i*a*c.scale;
 	}
 	template<class Pair, class Config>
-	void operator()(Pair const & p, Result & result, Config const& c) const {
-		this->operator()(p.first,p.second,result,c);
+	Result operator()(Pair const & p, Config const& c) const {
+		return this->operator()(p.first,p.second,c);
 	}
 };
 std::ostream & operator<<(std::ostream & out,ScoreIntDouble const& si){ return out << si.name(); }
@@ -168,14 +168,14 @@ TEST(ObjectiveFunction,test_results){
 	interaction_source.get_interactions<double>().push_back(1.2345);	
 	ObjFun::Results weights(2.0);
 	ObjFun::Results results = score(interaction_source);
-	float tot = results;
+	float tot = results.sum();
 	EXPECT_FLOAT_EQ( 9.2345f, tot );
-	EXPECT_DOUBLE_EQ( 9.2345, results );		
-	EXPECT_DOUBLE_EQ( 18.469, (double)(results*weights) );
-	EXPECT_DOUBLE_EQ( 18.469, (double)(results+results) );
-	EXPECT_DOUBLE_EQ( 27.7035, (double)(results*weights + results) );
-	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights - results) );
-	EXPECT_DOUBLE_EQ( 9.2345, (double)(results*weights/weights) );
+	EXPECT_DOUBLE_EQ( 9.2345, results.sum() );		
+	EXPECT_DOUBLE_EQ( 18.469,  (results*weights).sum() );
+	EXPECT_DOUBLE_EQ( 18.469,  (results+results).sum() );
+	EXPECT_DOUBLE_EQ( 27.7035, (results*weights + results).sum() );
+	EXPECT_DOUBLE_EQ( 9.2345,  (results*weights - results).sum() );
+	EXPECT_DOUBLE_EQ( 9.2345,  (results*weights/weights).sum() );
 }
 
 template<class Interactions>
@@ -316,7 +316,8 @@ struct RefInteractionSource {
 	MAPVAL imap_val_;
 	MAPREF imap_ref_;	
 	
-	typedef Interactions InteractionTypes;
+	// leave thes out here to test default behavoir
+	// typedef Interactions InteractionTypes;
 
 	void store_refs(){
 		CopyIM<MAPVAL,MAPREF> cpim(imap_val_,imap_ref_);
@@ -348,7 +349,7 @@ std::ostream & operator<<(std::ostream & out, RefInteractionSource<I> const & s)
 struct ScoreIntRefDoubleRef : ScoreIntDouble {
 	typedef std::pair<boost::reference_wrapper<int const>, boost::reference_wrapper<double const> > Interaction;
 	// template<class Config>
-	// void operator()(Interaction const & p, Result & result, Config const& c) const {
+	// Result operator()(Interaction const & p, Config const& c) const {
 	// 	int i = p.first;
 	// 	double d = p.second;
 	// 	this->template operator()<Config>(i,d,result,c);

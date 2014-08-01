@@ -103,6 +103,14 @@ struct InstanceMap : fusion_map<_Keys,Arg2>::type
 };
 
 namespace impl {
+    template<class T> struct EQUAL { 
+        T const & rhs;
+        bool & is_equal;
+        EQUAL(T const & r,bool & b): rhs(r),is_equal(b){}
+        template<class X> void operator()(X const & x) const {
+            is_equal &= (rhs.template get<typename X::first_type>() == x.second);
+        }
+    };
     template<class Float> struct SUM { 
         Float & sum; SUM(Float & s):sum(s){}
         template<class T> void operator()(T const & x) const { sum += x.second; }
@@ -160,8 +168,17 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
         f::for_each( (FusionType&)*this, s );
         return sum;
     }
-    ///@brief convertable to Float as sum of elements
-    operator Float() const { return sum(); }
+    ///@brief test equality element by element
+    bool operator==(THIS const & o) const {
+        bool is_equal = true;
+        impl::EQUAL<THIS> e(o,is_equal);
+        f::for_each( (FusionType&)*this, e );
+        return is_equal;
+        // return true;
+    }
+    bool operator!=(THIS const & o) const { return !(*this==o); }
+    // /@brief convertable to Float as sum of elements
+    // operator Float() const { return sum(); }
     void operator+=(THIS const & o){
         impl::BINARY_OP_EQUALS< THIS, std::plus<Float> > add(*this);
         f::for_each((FusionType&)o,add);
@@ -179,6 +196,10 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
         f::for_each((FusionType&)o,add);
     }
 };
+// template<class A,class B, class C>
+// std::ostream & operator<<(std::ostream & out, NumericInstanceMap<A,B,C> const & m){
+//     return out << (typename NumericInstanceMap<A,B,C>::FusionType&)m;
+// }
 
 template<class A, class B, class C>
 NumericInstanceMap<A,B,C> operator*(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){

@@ -39,6 +39,7 @@ SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,int)
 SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(FOO,float)
 SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(value_type,void)
 
+
 SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(FOO)
 
 
@@ -58,6 +59,31 @@ TEST(META_UTIL,member_type_default){
 
 	BOOST_STATIC_ASSERT( boost::is_same< void   , get_value_type_void<EMPTY>::type >::value );
 	BOOST_STATIC_ASSERT( boost::is_same< int    , get_value_type_void<VAL>::type >::value );
+
+}
+
+using m::false_;
+SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(TF,false_)
+struct TRUE_  { typedef m::true_ TF; };
+struct FALSE_ { typedef m::false_ TF; };
+
+TEST(META_UTIL,member_type_default_mpl_TF){
+
+	BOOST_STATIC_ASSERT( !get_TF_false_<EMPTY >::type::value );
+	BOOST_STATIC_ASSERT(  get_TF_false_<TRUE_ >::type::value );
+	BOOST_STATIC_ASSERT( !get_TF_false_<FALSE_>::type::value );
+	
+}
+
+
+
+SCHEME_HAS_MEMBER_TYPE(FOO)
+
+TEST(META_UTIL,has_member_type){
+
+	BOOST_STATIC_ASSERT( !has_type_FOO<EMPTY  >::value );
+	BOOST_STATIC_ASSERT(  has_type_FOO<DOUBLE >::value );
+	BOOST_STATIC_ASSERT(  has_type_FOO<CHAR   >::value );
 
 }
 

@@ -46,6 +46,14 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::MEMBER>::type >  \
 			{ typedef typename T::MEMBER type; };
 
+#define SCHEME_HAS_MEMBER_TYPE(MEMBER)                                                       \
+	template<typename T, typename Enable = scheme::util::meta::__EMPTY_TYPE_UTILITY__>       \
+		struct has_type_ ## MEMBER                                                           \
+		  : m::false_ {};                                                                    \
+	template<typename T>                                                                     \
+		struct has_type_ ## MEMBER <                                                         \
+		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::MEMBER>::type >  \
+			: m::true_ {};
 
 
 /////////////// in progress.... ////////////////

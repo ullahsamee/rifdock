@@ -18,12 +18,14 @@ namespace util {
 	///@tparam Value type of value that is stored
 	template< class Value >
 	class StoragePolicy {
-		StoragePolicy(Value const &);
+		// StoragePolicy(Value const &);
 		///@return reference to the stored value
-		Value const & value() const;
+		// Value const & value() const;
 	protected:
+		///@brief set the value
+		void set_stored_value(Value const & v);
 		///@return nonconst reference to stored Value
-		Value & nonconst_value();
+		// Value & nonconst_value();
 	};
 
 	/// @brief Storage Policy Class, store by value
@@ -35,10 +37,27 @@ namespace util {
 		///@return const reference to stored Value
 		Value const & value() const { return value_; }
 	protected:
+		///@brief set the value
+		void set_stored_value(Value const & v){ value_ = v; }
 		///@return nonconst reference to stored Value
 		Value & nonconst_value() { return value_; }
 		Value value_;
 		~StoreValue(){}
+	};
+
+	/// @brief Storage Policy Class, store nothing
+	template< class Value >
+	struct StoreNothing {
+		StoreNothing() {}
+		// StoreNothing(Value const & v) : value_(v){}
+		///@return const reference to stored Value
+		// Value const & value() const { return value_; }
+	protected:
+		///@brief set the value
+		void set_stored_value(Value const & v){}
+		///@return nonconst reference to stored Value
+		// Value & nonconst_value() { return value_; }
+		~StoreNothing(){}
 	};
 
 	/// @brief Store-by-pointer policy
@@ -52,6 +71,8 @@ namespace util {
 		/// @param new_pointer 
 		void set_pointer(Value * new_pointer) { value_ = new_pointer; }
 	protected:
+		///@brief set the value
+		void set_stored_value(Value const & v){ *value_ = v; }
 		///@return nonconst reference to stored Value
 		Value & nonconst_value() { return *value_; }
 		Value * value_;
@@ -69,6 +90,8 @@ namespace util {
 		/// @param new_pointer 
 		void set_pointer(Value * new_pointer) { value_ = new_pointer; }
 	protected:
+		///@brief set the value
+		void set_stored_value(Value const & v){ *value_ = v; }
 		///@return nonconst reference to stored Value
 		Value & nonconst_value() { return *value_; }
 		shared_ptr<Value> value_;
