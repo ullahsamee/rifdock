@@ -227,12 +227,13 @@ void performance_test_helper(Scene const & scene, Visitor & visitor){
 
 
 
-TEST(SceneObjective,DISABLED_performance){
-// TEST(SceneObjective,performance){
+// TEST(SceneObjective,DISABLED_performance){
+TEST(SceneObjective,performance){
 	// TODO: speed up SceneIter iteration 
 	//       iteration seems to take about 100 cycles per score call overhead
 	//       much of this is probably all the conditions for symmetry checks
 	//       could template out these and have both sym and asym scenes?
+	// FIX with visitation pattern, seems at least 10x faster
 
 	typedef	objective::ObjectiveFunction<
 		m::vector<
@@ -257,8 +258,8 @@ TEST(SceneObjective,DISABLED_performance){
 
 	Scene scene; {
 		Scene::Index const NBOD = 10;
-		Scene::Index const NSYM = 10;
-		Scene::Index const NACT = 174;
+		Scene::Index const NSYM = 20;
+		Scene::Index const NACT = 394;
 		for(Scene::Index i = 0; i < NBOD; ++i) scene.add_body();		
 		for(Scene::Index i = 0; i < NSYM-1; ++i) scene.add_symframe(i+1);
 		for(Scene::Index i = 0; i < NBOD; ++i){
@@ -268,9 +269,9 @@ TEST(SceneObjective,DISABLED_performance){
 		}
 	}
 
-	// cout << score(scene).get<ScoreADIADI>() << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
-	// ScoreADIADI::ncalls = 0;
-	// return;
+	cout << score(scene).get<ScoreADIADI>() << " " << (double)ScoreADIADI::ncalls/1000000.0 << "M" << endl;
+	ScoreADIADI::ncalls = 0;
+	return;
 
 
 	if(false)
@@ -310,7 +311,7 @@ TEST(SceneObjective,DISABLED_performance){
 
 
 	scene.visit(visitor);
-	cout << visitor.result_ << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
+	cout << visitor.result_ << " " << (double)ScoreADIADI::ncalls/1000000.0 << "M" << endl;
 	ScoreADIADI::ncalls = 0;
 
 }

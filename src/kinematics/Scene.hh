@@ -142,7 +142,7 @@ namespace impl {
 		typedef typename Conformation::Actors Actors;
 		typedef std::vector<Body> Bodies;
 		typedef m::true_ DefinesInteractionWeight;
-		typedef m::true_ DefinesVisitor;
+		typedef m::true_ UseVisitor;
 
 		Bodies bodies_;
 		std::vector<Position> symframes_; // w/o identity

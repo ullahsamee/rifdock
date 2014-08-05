@@ -101,7 +101,7 @@ namespace impl {
 
 	using m::false_;
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(DefinesInteractionWeight,false_)
-	// SCHEME_HAS_MEMBER_TYPE(DefinesInteractionWeight)
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(UseVisitor,false_)
 
 	template<class InteractionSource, class Placeholder>
 	typename boost::disable_if<typename get_DefinesInteractionWeight_false_<InteractionSource>::type,double>::type
@@ -119,22 +119,41 @@ namespace impl {
 		class InteractionSource,
 		class ObjectiveMap,
 		class Results,
+		class Config,
+		class Enable = void
+	>
+	struct EvalObjectives {};
+
+
+	template<
+		class InteractionSource,
+		class ObjectiveMap,
+		class Results,
 		class Config
 	>
-	struct EvalObjectives {
-		InteractionSource const & interaction_source;
-		ObjectiveMap const & objective_map;
-		Results & results;
-		Config const & config;
+	struct EvalObjectives<
+		InteractionSource,
+		ObjectiveMap,
+		Results,
+		Config,
+		typename boost::disable_if<typename get_UseVisitor_false_<InteractionSource>::type>::type
+	> {
+		InteractionSource const & interaction_source_;
+		ObjectiveMap const & objective_map_;
+		Results & results_;
+		Config const & config_;
 		
 		EvalObjectives(
 			InteractionSource const & p,
 			ObjectiveMap const & f,
 			Results & r,
 			Config const & c
-		) : interaction_source(p),objective_map(f),results(r),config(c) {}
+		) : interaction_source_(p),objective_map_(f),results_(r),config_(c) {
+			// std::cout << "USE ITERATION" << std::endl;
+		}
 		
-		template<class Interaction> void operator()(util::meta::type2type<Interaction>) const {
+		template<class Interaction>	void
+		operator()(util::meta::type2type<Interaction>) const {
 			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectives Interaction: ";
@@ -143,25 +162,96 @@ namespace impl {
 			typedef typename InteractionSource::template interaction_placeholder_type<Interaction>::type Placeholder;
 			BOOST_FOREACH(
 				Placeholder const & interaction_placeholder,
-				interaction_source.template get_interactions<Interaction>()
+				interaction_source_.template get_interactions<Interaction>()
 			){
-				double weight = get_interaction_weight(interaction_source,interaction_placeholder);
+				double weight = get_interaction_weight(interaction_source_,interaction_placeholder);
 				// std::cout << "        Interaction: " << interaction <<
-									 // " Result: " << typeid(results.template get<Objective>()).name() << std::endl;
+									 // " Result: " << typeid(results_.template get<Objective>()).name() << std::endl;
 				Interaction const & interaction =
 					get_interaction_from_placeholder<
 							Interaction,
 							Placeholder,
 							InteractionSource
-						>( interaction_placeholder, interaction_source );
+						>( interaction_placeholder, interaction_source_ );
 				f::for_each(
-					objective_map.template get<Interaction>(), 
-					EvalObjective< Interaction, Results, Config >
-					             ( interaction, results, config, weight )
+					objective_map_.template get<Interaction>(), 
+					EvalObjective< Interaction, Results , Config >
+					             ( interaction, results_, config_, weight )
 				);
 			}
 		}
+
 	};
+
+	template<
+		class _Interaction,
+		class Objectives,
+		class Results,
+		class Config
+	>
+	struct ObjectivesVisitor {
+		typedef _Interaction Interaction;
+		typedef m::false_ Symmetric;
+		Objectives const & objectives_;
+		Results & results_;
+		Config const & config_;
+		ObjectivesVisitor(
+			Objectives const & o,
+			Results  & r,
+			Config const & c
+		) : objectives_(o), results_(r), config_(c){}
+		void operator()( Interaction const & interaction, double weight=1.0) {
+			f::for_each(
+				objectives_,
+				EvalObjective< Interaction, Results , Config >
+					         ( interaction, results_, config_, weight )
+			);
+		}
+	};
+
+	template<
+		class InteractionSource,
+		class ObjectiveMap,
+		class Results,
+		class Config
+	>
+	struct EvalObjectives<
+		InteractionSource,
+		ObjectiveMap,
+		Results,
+		Config,
+		typename boost::enable_if<typename get_UseVisitor_false_<InteractionSource>::type>::type
+	> {
+		InteractionSource const & interaction_source_;
+		ObjectiveMap const & objective_map_;
+		Results & results_;
+		Config const & config_;
+		
+		EvalObjectives(
+			InteractionSource const & p,
+			ObjectiveMap const & f,
+			Results & r,
+			Config const & c
+		) : interaction_source_(p),objective_map_(f),results_(r),config_(c) {
+			// std::cout << "USE VISITATION" << std::endl;
+		}
+		
+		template<class Interaction>	void
+		operator()(util::meta::type2type<Interaction>) const {
+			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
+			#ifdef DEBUG_IO
+				std::cout << "    EvalObjectives Interaction: ";
+				util::meta::PrintType(std::cout).operator()(Interaction());
+			#endif
+			typedef typename f::result_of::value_at_key<ObjectiveMap,Interaction>::type Objectives;
+			Objectives const & objectives = objective_map_.template get<Interaction>();
+			ObjectivesVisitor<Interaction,Objectives,Results,Config> visitor(objectives,results_,config_);
+			interaction_source_.visit(visitor);
+		}
+
+	};
+
+
 
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(InteractionTypes,void)
 
