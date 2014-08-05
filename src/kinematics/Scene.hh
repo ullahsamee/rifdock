@@ -175,7 +175,11 @@ namespace impl {
 
 		Conformation const & conformation(Index i) const { return bodies_.at(i%bodies_.size()).conformation(); }
 		// Body const & body       (Index i) const { return bodies_.at(i); }
-		Position const & position(Index i) const { return bodies_.at(i%bodies_.size()).position(); }
+		Position position(Index i) const {
+			Index isym = sym_index_map(i);
+			if( isym == 0 )	return              bodies_.at(i).position();
+			else return symframes_.at(isym-1) * bodies_.at(i).position();
+		}
 
 		/// mainly internal use
 		Bodies const & __bodies_unsafe__() const { return bodies_; }
@@ -194,7 +198,7 @@ namespace impl {
 		Index nbodies() const { return n_sym_bodies_; }
 		Index nbodies_asym() const { return bodies_.size(); }
 
-		//////////////////////////// actors //////////////////////////////////
+		//////////////////////////// actor iteration //////////////////////////////////
 
 		template<class Actor>
 		std::pair<
@@ -242,7 +246,7 @@ namespace impl {
 		}
 
 
-		/////////////////////////// interactions //////////////////////////////////
+		/////////////////////////// interaction iteration //////////////////////////////////
 
 		// TODO: fix this!
 		template<class Interaction> struct
@@ -317,14 +321,14 @@ namespace impl {
 			typedef typename Visitor::Interaction Actor;
 			typedef typename f::result_of::value_at_key<Conformation,Actor>::type Container;
 			Index const NBOD = (Index)bodies_.size();
-			bool const symmetric = impl::get_Symmetric_true_<Visitor>::value;
+			bool const symmetric = impl::get_Symmetric_true_<Visitor>::type::value;
 			Index const NSYM = symmetric ? (Index)symframes_.size()+1 : 1;
 			for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
 				Conformation const & c = conformation(i1);
 				Position     const & p =     position(i1);
 				Container const & container = c.template get<Actor>();
 				BOOST_FOREACH( Actor const & a, container ){
-					visitor(a);
+					visitor( Actor(a,p) );
 				}
 			}
 
@@ -349,7 +353,7 @@ namespace impl {
 				Position     const & p1 =     position(i1);
 				for(Index i2 = 0; i2 < NBOD*NSYM; ++i2){
 					if( i1 >= NBOD && i2 >= NBOD ) continue;
-					if( boost::is_same<Actor1,Actor2>::value && i2 <= i1 ) continue;
+					if( i1==i2 || (boost::is_same<Actor1,Actor2>::value && i2 <= i1) ) continue;
 					Conformation const & c2 = conformation(i2);
 					Position     const & p2 =     position(i2);
 

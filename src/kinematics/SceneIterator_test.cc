@@ -11,15 +11,13 @@
 
 
 
-namespace scheme { namespace kinematics {
+namespace scheme { namespace kinematics { namespace test {
 
 using std::cout;
 using std::endl;
 using boost::tie;
 using numeric::X1dim;
 
-
-namespace TEST_BOUNDS {
 	typedef actor::ActorConcept<X1dim,int> ADI;
 	typedef actor::ActorConcept<X1dim,char> ADC;	
 	typedef m::vector< ADI, ADC > Actors;
@@ -1018,7 +1016,7 @@ namespace TEST_BOUNDS {
 
 	}
 
-}
+
 
 // TEST(SceneIterator,bodies_hold_actors)
 // {
@@ -1095,5 +1093,6 @@ namespace TEST_BOUNDS {
 
 // }
 
+}
 }
 }

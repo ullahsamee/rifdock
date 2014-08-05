@@ -1,7 +1,7 @@
 #ifndef INCLUDED_actor_ActorConcept_HH
 #define INCLUDED_actor_ActorConcept_HH
 
-
+#include <utility>
 
 namespace scheme {
 namespace actor {
@@ -40,6 +40,9 @@ namespace actor {
 		position() const { return position_; }
 
 		bool operator==(THIS const & o) const { return o.position_==position_ && o.data_==data_; }
+
+		// necessary for testing only
+		bool operator<(THIS const & o) const { return std::make_pair(position_,data_) < std::make_pair(o.position_,o.data_); }
 	};
 
 

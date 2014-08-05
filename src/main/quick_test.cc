@@ -19,9 +19,10 @@
 
 // #include <objective/ObjectiveFunction_test.cc>
 
-// #include <kinematics/Scene_test.cc>
+#include <kinematics/Scene_test.cc>
+// #include <kinematics/SceneIterator_test.cc>
 
-#include <kinematics/Scene_objective_test.cc>
+// #include <kinematics/Scene_objective_test.cc>
 
 int main(int argc, char **argv)
 {
