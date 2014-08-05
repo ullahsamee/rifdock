@@ -13,12 +13,10 @@ struct X1dim {
 	X1dim(double d) : val_(d) {}
 	bool operator==(X1dim const & o) const { return o.val_==val_; }
 };
-X1dim operator*(X1dim a, X1dim b){ return X1dim(a.val_+b.val_); }
-X1dim inverse(X1dim x){	return X1dim(-x.val_); }
-std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.val_; }
-double distance(X1dim a, X1dim b){
-	return std::abs(a.val_ - b.val_);
-}
+inline X1dim operator*(X1dim a, X1dim b){ return X1dim(a.val_+b.val_); }
+inline std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.val_; }
+inline X1dim inverse(X1dim x){	return X1dim(-x.val_); }
+inline double distance(X1dim a, X1dim b){ return std::abs(a.val_ - b.val_); }
 
 }}
 

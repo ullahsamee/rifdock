@@ -1,7 +1,7 @@
 #include <main/gtest_util.hh>
 
 // include desired tests here:
-#include <nest/NEST_test.cc> // 4.479 vs. 3.0 wo Eigen
+// #include <nest/NEST_test.cc> // 4.479 vs. 3.0 wo Eigen
 // #include <nest/NEST_neighbor_test.cc> // 4.567 // 3.26 wo Eigen
 // #include <nest/MultiNest_test.cc>
 
@@ -21,7 +21,7 @@
 
 // #include <kinematics/Scene_test.cc>
 
-// #include <kinematics/Scene_objective_test.cc>
+#include <kinematics/Scene_objective_test.cc>
 
 int main(int argc, char **argv)
 {

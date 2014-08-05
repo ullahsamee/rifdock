@@ -48,7 +48,9 @@ namespace container {
 		std::pair<Index,Index> const dereference() const { return std::make_pair(i1,i2);	}
 		bool equal(THIS const & o) const { 
 			// std::cout << "ContainerInteractionsIter EQUAL: " << i1 << "-" << i2 << "-" << s1 << " / " << o.i1 << "-" << o.i2 << "-" << o.s1 << std::endl;
-			return i1==o.i1 && i2==o.i2 && s2==o.s2;
+			assert(s2==o.s2);
+			return i1==o.i1 && i2==o.i2;
+			// return reinterpret_cast<uint64_t const&>(*this) == reinterpret_cast<uint64_t const&>(o);
 		}
 		Index i1,i2,s2;
 	};

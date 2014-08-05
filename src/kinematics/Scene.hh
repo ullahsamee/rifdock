@@ -17,6 +17,7 @@
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/mpl.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <vector>
 
@@ -48,7 +49,8 @@ namespace impl {
 	///@brief holds a Conformation pointer and an Xform
 	template<
 		class _Conformation,
-		class _Position
+		class _Position,
+		class Index
 	>
 	struct BodyTplt {
 		typedef _Conformation Conformation;
@@ -60,13 +62,13 @@ namespace impl {
 		template<class Actor> 
 		Actor
 		get_actor(
-			size_t i
+			Index i
 		) const { 
 			return Actor(this->value()->template get<Actor>().at(i),position_);
 		}
 		template<class Actor> 
 		Actor
-		get_actor_unsafe(size_t i) const { 
+		get_actor_unsafe(Index i) const { 
 			return Actor(this->value()->template get<Actor>()[i],position_); 
 		}
 
@@ -79,6 +81,9 @@ namespace impl {
 		Position position_;
 		shared_ptr<Conformation const> conformation_;
 	 };
+
+	using m::true_;
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(Symmetric,true_)
 
 }
 
@@ -129,21 +134,22 @@ namespace impl {
 	>
 	struct Scene {
 		
+		typedef Scene<_Conformation,_Position,_Index> THIS;
 		typedef _Conformation Conformation;
 		typedef _Position Position;
-		typedef impl::BodyTplt<Conformation,Position> Body;
-		typedef Scene<Conformation,Position> THIS;
+		typedef _Index Index;
+		typedef impl::BodyTplt<Conformation,Position,Index> Body;
 		typedef typename Conformation::Actors Actors;
 		typedef std::vector<Body> Bodies;
-		typedef _Index Index;
 		typedef m::true_ DefinesInteractionWeight;
+		typedef m::true_ DefinesVisitor;
 
 		Bodies bodies_;
 		std::vector<Position> symframes_; // w/o identity
-		size_t n_sym_bodies_;
+		Index n_sym_bodies_;
 
 		void update(){
-			n_sym_bodies_ = bodies_.size()*(symframes_.size()+1);
+			n_sym_bodies_ = (Index)bodies_.size()*((Index)symframes_.size()+1);
 		}
 		Index sym_index_map(Index & i) const {
 			Index isym = i / bodies_.size();
@@ -151,7 +157,7 @@ namespace impl {
 			return isym;
 		}
 
-		Scene(size_t nbodies=0) { for(size_t i=0; i<nbodies; ++i) add_body(); update(); }
+		Scene(Index nbodies=0) { for(Index i=0; i<nbodies; ++i) add_body(); update(); }
 
 		void set_symmetry(std::vector<Position> const & sym){ symframes_ = sym; update(); }
 		void add_symframe(Position const & symframe){ symframes_.push_back(symframe); update(); }
@@ -162,31 +168,31 @@ namespace impl {
 		void add_body(){ bodies_.push_back( make_shared<Conformation const>() ); update(); }
 		void add_body(shared_ptr<Conformation const> const & c){ bodies_.push_back(c); update(); }
 		void add_body(Body const & b){ bodies_.push_back(b); update(); }
-		void set_body(size_t i, shared_ptr<Conformation const> const & c){ bodies_[i] = c; }
-		void set_body(size_t i, Body const & b){ bodies_[i] = b; }
-		Conformation & mutable_conformation_asym(size_t i) { return const_cast<Conformation&>(bodies_.at(i).conformation()); }
+		void set_body(Index i, shared_ptr<Conformation const> const & c){ bodies_[i] = c; }
+		void set_body(Index i, Body const & b){ bodies_[i] = b; }
+		Conformation & mutable_conformation_asym(Index i) { return const_cast<Conformation&>(bodies_.at(i).conformation()); }
 
 
-		Conformation const & conformation(size_t i) const { return bodies_.at(i).conformation(); }
-		// Body const & body       (size_t i) const { return bodies_.at(i); }
-		Body const & position(size_t i) const { return bodies_.at(i).position(); }
+		Conformation const & conformation(Index i) const { return bodies_.at(i%bodies_.size()).conformation(); }
+		// Body const & body       (Index i) const { return bodies_.at(i); }
+		Position const & position(Index i) const { return bodies_.at(i%bodies_.size()).position(); }
 
 		/// mainly internal use
 		Bodies const & __bodies_unsafe__() const { return bodies_; }
 		std::vector<Position> & __symframes_unsafe__(){ return symframes_; }		
 
-		Position const & __position_unsafe_asym__(size_t i) const { return bodies_[i].position(); }
-		Position       & __position_unsafe_asym__(size_t i)       { return bodies_[i].position(); }
-		Position const __position_unsafe__(size_t i) const { 
+		Position const & __position_unsafe_asym__(Index i) const { return bodies_[i].position(); }
+		Position       & __position_unsafe_asym__(Index i)       { return bodies_[i].position(); }
+		Position const __position_unsafe__(Index i) const { 
 			Index isym = sym_index_map(i);
 			if( isym == 0 )	return bodies_[i].position();
 			else return symframes_[isym-1] * bodies_[i].position();
 		}
-		Conformation const & __conformation_unsafe_asym__(size_t i) const { return bodies_[i].conformation(); }
-		Conformation const & __conformation_unsafe__(size_t i) const { return bodies_[i%bodies_.size()].conformation(); }
+		Conformation const & __conformation_unsafe_asym__(Index i) const { return bodies_[i].conformation(); }
+		Conformation const & __conformation_unsafe__(Index i) const { return bodies_[i%bodies_.size()].conformation(); }
 
-		size_t nbodies() const { return n_sym_bodies_; }
-		size_t nbodies_asym() const { return bodies_.size(); }
+		Index nbodies() const { return n_sym_bodies_; }
+		Index nbodies_asym() const { return bodies_.size(); }
 
 		//////////////////////////// actors //////////////////////////////////
 
@@ -302,6 +308,79 @@ namespace impl {
 		double get_weight_from_placeholder(std::pair<std::pair<Index,Index>,std::pair<Index,Index> > const & ph ) const {
 			return ( ph.first.first < nbodies_asym() && ph.first.second < nbodies_asym() ) ? 1.0 : 0.5;
 		}
+
+		///////////////////////////// Visitation ///////////////////////////////////////
+
+		template<class Visitor>
+		typename boost::disable_if<util::meta::is_pair<typename Visitor::Interaction> >::type
+		visit(Visitor & visitor) const {
+			typedef typename Visitor::Interaction Actor;
+			typedef typename f::result_of::value_at_key<Conformation,Actor>::type Container;
+			Index const NBOD = (Index)bodies_.size();
+			bool const symmetric = impl::get_Symmetric_true_<Visitor>::value;
+			Index const NSYM = symmetric ? (Index)symframes_.size()+1 : 1;
+			for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
+				Conformation const & c = conformation(i1);
+				Position     const & p =     position(i1);
+				Container const & container = c.template get<Actor>();
+				BOOST_FOREACH( Actor const & a, container ){
+					visitor(a);
+				}
+			}
+
+		}
+
+		template<class Visitor>
+		typename boost::enable_if<util::meta::is_pair<typename Visitor::Interaction> >::type
+		visit(Visitor & visitor) const {
+			typedef typename Visitor::Interaction::first_type Actor1;
+			typedef typename Visitor::Interaction::second_type Actor2;			
+			typedef typename f::result_of::value_at_key<Conformation,Actor1>::type Container1;
+			typedef typename f::result_of::value_at_key<Conformation,Actor2>::type Container2;
+			typedef util::container::ContainerInteractions<typename Scene::Position,Container1,Container2,Index> ContInter;
+			typedef typename ContInter::Range ContRange;
+			typename util::container::get_citer<ContRange>::type iter,end;
+			ContRange range;
+
+			Index const NBOD = (Index)bodies_.size();
+			Index const NSYM = (Index)symframes_.size()+1;
+			for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
+				Conformation const & c1 = conformation(i1);
+				Position     const & p1 =     position(i1);
+				for(Index i2 = 0; i2 < NBOD*NSYM; ++i2){
+					if( i1 >= NBOD && i2 >= NBOD ) continue;
+					if( boost::is_same<Actor1,Actor2>::value && i2 <= i1 ) continue;
+					Conformation const & c2 = conformation(i2);
+					Position     const & p2 =     position(i2);
+
+					// // simple version, ~10-15% faster in simple case
+					// Index const NACT1 = c1.template get<Actor1>().size();
+					// Index const NACT2 = c2.template get<Actor2>().size();				
+					// for(Index j1 = 0; j1 < NACT1; ++j1){
+					// 	Actor1 a1( c1.template get<Actor1>()[j1], p1 );
+					// 	for(Index j2 = 0; j2 < NACT2; ++j2){
+					// 		Actor2 a2( c2.template get<Actor2>()[j2], p2 );
+					// 		visitor( std::make_pair(a1,a2), i1<NBOD&&i2<NBOD?1.0:0.5 );
+					// 	}
+					// }
+
+					Container1 const & container1 = c1.template get<Actor1>();
+					Container2 const & container2 = c2.template get<Actor2>();
+					Position relative_position = __position_unsafe__(i2) * inverse( __position_unsafe__(i1) );
+					ContInter::get_interaction_range( relative_position, container1, container2, range );
+					for( iter = get_cbegin(range),end  = get_cend(range); iter != end; ++iter){
+						Index j1,j2;
+						boost::tie(j1,j2) = *iter;
+						Actor1 a1( c1.template get<Actor1>()[j1], p1 );
+						Actor2 a2( c2.template get<Actor2>()[j2], p2 );
+						visitor( std::make_pair(a1,a2), i1<NBOD&&i2<NBOD?1.0:0.5 );
+					}
+
+				}
+			}
+
+		}
+
 
 	};
 

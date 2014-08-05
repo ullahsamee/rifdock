@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AF165D1319899C440038FDFD /* gtest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF165D1219899C440038FDFD /* gtest.framework */; };
 		AF197D3F198C020900837A67 /* Scene_objective_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D3E198C020900837A67 /* Scene_objective_test.cc */; };
+		AF197D411991741500837A67 /* SceneIterator_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D401991741500837A67 /* SceneIterator_test.cc */; };
 		AFF7A710198988AD00FAF16F /* Scene_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E0198988AD00FAF16F /* Scene_test.cc */; };
 		AFF7A711198988AD00FAF16F /* main_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E3198988AD00FAF16F /* main_test.cc */; };
 		AFF7A713198988AD00FAF16F /* parameter_maps_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E8198988AD00FAF16F /* parameter_maps_test.cc */; };
@@ -52,6 +53,7 @@
 /* Begin PBXFileReference section */
 		AF165D1219899C440038FDFD /* gtest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = gtest.framework; path = ../../Library/Frameworks/gtest.framework; sourceTree = "<group>"; };
 		AF197D3E198C020900837A67 /* Scene_objective_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene_objective_test.cc; sourceTree = "<group>"; };
+		AF197D401991741500837A67 /* SceneIterator_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SceneIterator_test.cc; sourceTree = "<group>"; };
 		AFBEE016198986E3007B0DCC /* Scheme */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Scheme; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFF7A6DF198988AD00FAF16F /* Scene.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Scene.hh; sourceTree = "<group>"; };
 		AFF7A6E0198988AD00FAF16F /* Scene_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene_test.cc; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 		AFF7A6DE198988AD00FAF16F /* kinematics */ = {
 			isa = PBXGroup;
 			children = (
+				AF197D401991741500837A67 /* SceneIterator_test.cc */,
 				AF197D3E198C020900837A67 /* Scene_objective_test.cc */,
 				AFF7A6DF198988AD00FAF16F /* Scene.hh */,
 				AFF7A6E0198988AD00FAF16F /* Scene_test.cc */,
@@ -325,6 +328,7 @@
 				AFF7A717198988AD00FAF16F /* MultiNEST_test.cc in Sources */,
 				AF197D3F198C020900837A67 /* Scene_objective_test.cc in Sources */,
 				AFF7A710198988AD00FAF16F /* Scene_test.cc in Sources */,
+				AF197D411991741500837A67 /* SceneIterator_test.cc in Sources */,
 				AFF7A715198988AD00FAF16F /* SphereDodec_test.cc in Sources */,
 				AFF7A718198988AD00FAF16F /* NEST_neighbor_test.cc in Sources */,
 				AFF7A713198988AD00FAF16F /* parameter_maps_test.cc in Sources */,

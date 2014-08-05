@@ -10,6 +10,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/fusion/include/io.hpp>
 
+#include <stdint.h>
 
 namespace scheme { namespace kinematics { namespace test {
 
@@ -38,15 +39,24 @@ typedef std::pair<Index2,Index2> Index4;
 	std::ostream & operator<<(std::ostream & out,ScoreADI const& s){ return out << s.name(); }
 
 	struct ScoreADIADI {
+		static size_t ncalls;
 		typedef double Result;
+		typedef ADI Actor1;
+		typedef ADI Actor2;
 		typedef std::pair<ADI,ADI> Interaction;
 		static std::string name(){ return "ScoreADIADI"; }
 		template<class Config>
-		Result operator()(Interaction const & a, Config const& ) const {
+		Result operator()(Actor1 const & a1, Actor2 const & a2, Config const& ) const {
+			++ncalls;
 			// cout << a.first << " " << a.second << endl;
-			return distance(a.first.position(),a.second.position());
+			return distance(a1.position(),a2.position());
+		}
+		template<class Config>
+		Result operator()(Interaction const & i, Config const& c) const {
+			return this->template operator()<Config>(i.first,i.second,c);
 		}
 	};
+	size_t ScoreADIADI::ncalls = 0;
 	std::ostream & operator<<(std::ostream & out,ScoreADIADI const& s){ return out << s.name(); }
 
 	struct ScoreADC {
@@ -164,6 +174,146 @@ TEST(SceneObjective,symmetry){
 
 }
 
+
+template<class Objective,class Config>
+struct ObjectiveVisitor {
+	typedef typename Objective::Interaction Interaction;
+	Objective const & objective_;
+	Config const & config_;
+	typename Objective::Result result_;
+	ObjectiveVisitor( Objective const & o, Config const & c) : objective_(o),config_(c),result_() {}
+	void operator()( Interaction const & i, double const & weight = 1.0 ){
+		typename Objective::Result r = objective_.template operator()(i,config_);
+		result_ += weight * r;
+	}
+};
+
+
+
+
+template<class Scene,class Visitor>
+void performance_test_helper(Scene const & scene, Visitor & visitor){
+	typedef ADI Actor1;
+	typedef ADI Actor2;
+	typedef typename Scene::Conformation Conformation;
+	typedef typename Scene::Position Position;
+	typedef typename Scene::Index Index;
+
+		Index const NBOD = (Index)scene.bodies_.size();
+		Index const NSYM = (Index)scene.symframes_.size()+1;
+		for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
+			Conformation const & c1 = scene.conformation(i1);
+			Position     const & p1 =     scene.position(i1);
+			Index const NACT1 = (Index)c1.template get<Actor1>().size();
+			for(Index i2 = 0; i2 < NBOD*NSYM; ++i2){
+				if( i1 >= NBOD && i2 >= NBOD ) continue;
+				if( i2 <= i1 ) continue;
+				Conformation const & c2 = scene.conformation(i2);
+				Position     const & p2 =     scene.position(i2);
+				Index const NACT2 = (Index)c2.template get<Actor2>().size();
+				for(Index j1 = 0; j1 < NACT1; ++j1){
+					Actor1 a1( c1.template get<Actor1>()[j1], p1 );
+					for(Index j2 = 0; j2 < NACT2; ++j2){
+						Actor2 a2( c2.template get<Actor2>()[j2], p2 );
+						visitor( std::make_pair(a1,a2), i1<NBOD&&i2<NBOD?1.0:0.5 );
+					}
+				}
+			}
+		}
+	cout << visitor.result_ << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
+	ScoreADIADI::ncalls = 0;
+}
+
+
+
+
+TEST(SceneObjective,DISABLED_performance){
+// TEST(SceneObjective,performance){
+	// TODO: speed up SceneIter iteration 
+	//       iteration seems to take about 100 cycles per score call overhead
+	//       much of this is probably all the conditions for symmetry checks
+	//       could template out these and have both sym and asym scenes?
+
+	typedef	objective::ObjectiveFunction<
+		m::vector<
+			ScoreADI,
+			ScoreADC,
+			ScoreADIADI,
+			ScoreADCADI
+		>,
+		Config
+	> ObjFun;
+	typedef ObjFun::Results Results;
+
+	ObjFun score;
+
+	typedef m::vector< ADI, ADC > Actors;
+	typedef Conformation<Actors> Conformation;
+	typedef Scene<Conformation,X1dim,uint32_t> Scene;
+
+	ScoreADIADI obj;
+	Config c;
+	ObjectiveVisitor<ScoreADIADI,Config> visitor(obj,c);
+
+	Scene scene; {
+		Scene::Index const NBOD = 10;
+		Scene::Index const NSYM = 10;
+		Scene::Index const NACT = 174;
+		for(Scene::Index i = 0; i < NBOD; ++i) scene.add_body();		
+		for(Scene::Index i = 0; i < NSYM-1; ++i) scene.add_symframe(i+1);
+		for(Scene::Index i = 0; i < NBOD; ++i){
+			for(Scene::Index j = 0; j < NACT; ++j){
+				scene.mutable_conformation_asym(i).add_actor( ADI(j,i) );
+			}
+		}
+	}
+
+	// cout << score(scene).get<ScoreADIADI>() << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
+	// ScoreADIADI::ncalls = 0;
+	// return;
+
+
+	if(false)
+	{
+			// typedef ADI Actor1;
+			// typedef ADI Actor2;
+			// typedef Scene::Position Position;
+			// Scene::Index const NBOD = scene.bodies_.size();
+			// Scene::Index const NSYM = scene.symframes_.size()+1;
+			// for(Scene::Index i1 = 0; i1 < NBOD*NSYM; ++i1){
+			// 	Conformation const & c1 = scene.conformation(i1);
+			// 	Position     const & p1 =     scene.position(i1);
+			// 	Scene::Index const NACT1 = c1.get<Actor1>().size();
+			// 	for(Scene::Index i2 = 0; i2 < NBOD*NSYM; ++i2){
+			// 		if( i1 >= NBOD && i2 >= NBOD ) continue;
+			// 		if( i2 <= i1 ) continue;
+			// 		Conformation const & c2 = scene.conformation(i2);
+			// 		Position     const & p2 =     scene.position(i2);
+			// 		Scene::Index const NACT2 = c2.get<Actor2>().size();					
+			// 		for(Scene::Index j1 = 0; j1 < NACT1; ++j1){
+			// 			Actor1 a1( c1.get<Actor1>()[j1], p1 );
+			// 			for(Scene::Index j2 = 0; j2 < NACT2; ++j2){
+			// 				Actor2 a2( c2.get<Actor2>()[j2], p2 );
+			// 				visitor( a1, a2, i1<NBOD&&i2<NBOD?1.0:0.5 );
+			// 			}
+			// 		}
+			// 	}
+			// }
+			// cout << visitor.result_ << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
+			// ScoreADIADI::ncalls = 0;
+
+	}
+
+	if(false)
+		performance_test_helper(scene,visitor);
+	ScoreADIADI::ncalls = 0;
+
+
+	scene.visit(visitor);
+	cout << visitor.result_ << " " << (double)ScoreADIADI::ncalls/1000000.0 << endl;
+	ScoreADIADI::ncalls = 0;
+
+}
 
 }
 }
