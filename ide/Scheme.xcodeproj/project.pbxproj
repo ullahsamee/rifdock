@@ -10,6 +10,8 @@
 		AF165D1319899C440038FDFD /* gtest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF165D1219899C440038FDFD /* gtest.framework */; };
 		AF197D3F198C020900837A67 /* Scene_objective_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D3E198C020900837A67 /* Scene_objective_test.cc */; };
 		AF197D411991741500837A67 /* SceneIterator_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D401991741500837A67 /* SceneIterator_test.cc */; };
+		AF197D44199185D400837A67 /* InstanceMap_container_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D42199185D400837A67 /* InstanceMap_container_test.cc */; };
+		AF197D45199185D400837A67 /* InstanceMap_numeric_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AF197D43199185D400837A67 /* InstanceMap_numeric_test.cc */; };
 		AFF7A710198988AD00FAF16F /* Scene_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E0198988AD00FAF16F /* Scene_test.cc */; };
 		AFF7A711198988AD00FAF16F /* main_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E3198988AD00FAF16F /* main_test.cc */; };
 		AFF7A713198988AD00FAF16F /* parameter_maps_test.cc in Sources */ = {isa = PBXBuildFile; fileRef = AFF7A6E8198988AD00FAF16F /* parameter_maps_test.cc */; };
@@ -54,6 +56,8 @@
 		AF165D1219899C440038FDFD /* gtest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = gtest.framework; path = ../../Library/Frameworks/gtest.framework; sourceTree = "<group>"; };
 		AF197D3E198C020900837A67 /* Scene_objective_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene_objective_test.cc; sourceTree = "<group>"; };
 		AF197D401991741500837A67 /* SceneIterator_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SceneIterator_test.cc; sourceTree = "<group>"; };
+		AF197D42199185D400837A67 /* InstanceMap_container_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InstanceMap_container_test.cc; sourceTree = "<group>"; };
+		AF197D43199185D400837A67 /* InstanceMap_numeric_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InstanceMap_numeric_test.cc; sourceTree = "<group>"; };
 		AFBEE016198986E3007B0DCC /* Scheme */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Scheme; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFF7A6DF198988AD00FAF16F /* Scene.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Scene.hh; sourceTree = "<group>"; };
 		AFF7A6E0198988AD00FAF16F /* Scene_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene_test.cc; sourceTree = "<group>"; };
@@ -240,6 +244,8 @@
 		AFF7A701198988AD00FAF16F /* meta */ = {
 			isa = PBXGroup;
 			children = (
+				AF197D42199185D400837A67 /* InstanceMap_container_test.cc */,
+				AF197D43199185D400837A67 /* InstanceMap_numeric_test.cc */,
 				AFF7A702198988AD00FAF16F /* InstanceMap.hh */,
 				AFF7A703198988AD00FAF16F /* InstanceMap_test.cc */,
 				AFF7A704198988AD00FAF16F /* intersect.hh */,
@@ -329,8 +335,10 @@
 				AF197D3F198C020900837A67 /* Scene_objective_test.cc in Sources */,
 				AFF7A710198988AD00FAF16F /* Scene_test.cc in Sources */,
 				AF197D411991741500837A67 /* SceneIterator_test.cc in Sources */,
+				AF197D44199185D400837A67 /* InstanceMap_container_test.cc in Sources */,
 				AFF7A715198988AD00FAF16F /* SphereDodec_test.cc in Sources */,
 				AFF7A718198988AD00FAF16F /* NEST_neighbor_test.cc in Sources */,
+				AF197D45199185D400837A67 /* InstanceMap_numeric_test.cc in Sources */,
 				AFF7A713198988AD00FAF16F /* parameter_maps_test.cc in Sources */,
 				AFF7A714198988AD00FAF16F /* parameter_maps_test_nbrcell.cc in Sources */,
 				AFF7A71A198988AD00FAF16F /* ObjectiveFunction_test.cc in Sources */,
@@ -429,7 +437,8 @@
 		AFBEE020198986E3007B0DCC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					/Users/sheffler/scheme/external,
@@ -442,7 +451,8 @@
 		AFBEE021198986E3007B0DCC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					/Users/sheffler/scheme/external,

@@ -20,7 +20,7 @@ std::ostream & operator<<(std::ostream & out, ObjectiveFunction<O,C> const & obj
 	out << "    Interactions:" << std::endl;
 		m::for_each<typename OBJ::InteractionTypes>(util::meta::PrintType(out,"        "));
 	out << "    Objectives:" << std::endl;		
-	f::for_each( obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
+	f::for_each( (typename OBJ::ObjectiveMap::FusionType&)obj.objective_map_, util::meta::PrintBFMapofVec(out,"        ") );
 	out << "    RAW:" << std::endl;
 		m::for_each<typename OBJ::Objectives>(util::meta::PrintType(out,"        "));
 	return out;

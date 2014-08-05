@@ -153,6 +153,7 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 
 	std::ostringstream oss;
 	oss << score << endl;
+	// cout << oss.str();
 }
 
 
@@ -291,13 +292,15 @@ struct CopyIM {
 	CopyIM(IM_FROM const & from,IM_TO & to) : from_(from),to_(to) {}
 	template<class T>
 	void operator()(util::meta::type2type<T>){
+		typedef typename util::meta::recursive_remove_refwrap<T>::type Tnoref;
+		// typedef std::pair<int,double> Tnoref;
 		// cout << "FOO ";
 		// util::meta::print_type<T>();
 		// to_.template get<T>().resize(from_.template get<T>().size());
 		// std::copy( from_.template get<T>().begin(), from_.template get<T>().end(), to_.template get<T>().begin() );
 		// to_.template get<T>().clear();
-		BOOST_FOREACH( T const & v, from_.template get<T>() ){
-			to_.template get<T>().push_back( std::make_pair( v.first, v.second ) );
+		BOOST_FOREACH( Tnoref const & v, from_.template get<T>() ){
+			to_.template get<T>().push_back( std::make_pair( boost::ref(v.first), boost::ref(v.second) ) );
 		}
 	}
 };

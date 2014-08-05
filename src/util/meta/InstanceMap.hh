@@ -23,27 +23,35 @@ namespace f = boost::fusion;
 // struct FUSION_PAIRS { template<class T> struct apply { typedef void type; }; };
 struct FUSION_PAIRS { typedef void type; };
 
+template< class Keys, class Arg2 >
+struct fusion_map_pairs {
+    typedef typename
+    m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>,
+        Keys, // already fusion pairs
+        m::transform<
+            Keys, typename
+            m::eval_if< 
+                // m::is_sequence<Arg2>,
+                m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
+                Arg2,                   // It seems one of these two it getting instantiated even
+                m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
+                >::type,         
+            f::pair<m::_1,m::_2>
+        >
+    >::type type;
+};
+
+
+
 ///@brief convenience function to make a boost::fusion::map
 ///@detail fusion_map<Keys> will be same as tuple
 ///@detail fusion_map<Keys,Values> will map Key to Value
 ///@detail fusion_map<Keys,MetaFunc> will map Key to apply<MetaFunc,Key>::type
-template< class Keys, class Arg2 = Keys >
+template< class Keys, class Arg2 >
 struct fusion_map {
     typedef typename
         f::result_of::as_map< typename
-            m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>,
-                Keys, // already fusion pairs
-                m::transform<
-                    Keys, typename
-                    m::eval_if< 
-                        // m::is_sequence<Arg2>,
-                        m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
-                        Arg2,                   // It seems one of these two it getting instantiated even
-                        m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
-                        >::type,         
-                    f::pair<m::_1,m::_2>
-                >
-            >::type
+            fusion_map_pairs<Keys,Arg2>::type
         >::type
     type;
 };
@@ -59,11 +67,12 @@ struct fusion_map {
 template< typename _Keys, typename Arg2 = _Keys >
 struct InstanceMap : fusion_map<_Keys,Arg2>::type
 {
+    typedef typename fusion_map_pairs<_Keys,Arg2>::type Pairs;
     typedef typename fusion_map<_Keys,Arg2>::type Base;
     typedef Base FusionType;
     // typedef typename m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>, m::identity<void>, _Keys >::type Keys;
-    typedef typename m::transform< Base, util::meta::first_type<m::_1> >::type Keys;
-    typedef typename m::transform< Base, util::meta::second_type<m::_1> >::type Values;
+    typedef typename m::transform< Pairs, util::meta::first_type<m::_1> >::type Keys;
+    typedef typename m::transform< Pairs, util::meta::second_type<m::_1> >::type Values;
 
     // variadic ctors
     InstanceMap(){}
@@ -102,6 +111,7 @@ struct InstanceMap : fusion_map<_Keys,Arg2>::type
     
 };
 
+
 namespace impl {
     template<class T> struct EQUAL { 
         T const & rhs;
@@ -131,6 +141,10 @@ namespace impl {
             sink.template get<typename X::first_type>() = OP()(sink.template get<typename X::first_type>(),x.second);
         }
     };
+}
+template<class A,class B>
+std::ostream & operator<<(std::ostream & out, InstanceMap<A,B> const & m){
+    return out << (typename InstanceMap<A,B>::FusionType&)m;
 }
 
 
@@ -196,10 +210,11 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
         f::for_each((FusionType&)o,add);
     }
 };
-// template<class A,class B, class C>
-// std::ostream & operator<<(std::ostream & out, NumericInstanceMap<A,B,C> const & m){
-//     return out << (typename NumericInstanceMap<A,B,C>::FusionType&)m;
-// }
+template<class A,class B, class C>
+std::ostream & operator<<(std::ostream & out, NumericInstanceMap<A,B,C> const & m){
+    return out << (typename NumericInstanceMap<A,B,C>::FusionType&)m;
+}
+
 
 template<class A, class B, class C>
 NumericInstanceMap<A,B,C> operator*(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){
@@ -245,6 +260,10 @@ struct make_container_pair { template<class T> struct apply {
 template<class Containers>
 struct ContainerInstanceMap : InstanceMap< typename m::transform<Containers,make_container_pair<> >::type, FUSION_PAIRS > {};
 
+template<class A>
+std::ostream & operator<<(std::ostream & out, ContainerInstanceMap<A> const & m){
+    return out << (typename ContainerInstanceMap<A>::FusionType&)m;
+}
 
 }
 }
