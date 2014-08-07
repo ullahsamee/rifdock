@@ -47,7 +47,7 @@ namespace impl {
 	>
 	struct BodyTplt {
 		typedef _Conformation Conformation;
-		typedef _Position Position;	
+		typedef _Position Position;
 
 		BodyTplt() : position_(), conformation_(NULL) {}
 		BodyTplt(shared_ptr<Conformation const> c) : position_(),conformation_(c) {}

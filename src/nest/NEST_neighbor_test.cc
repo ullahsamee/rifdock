@@ -1,8 +1,8 @@
 #include <nest/NEST.hh>
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+// #include <boost/random/uniform_real.hpp>
+// #include <boost/random/mersenne_twister.hpp>
 #include <nest/maps/UnitMap.hh>
 #include <nest/maps/ScaleMap.hh>
 #include <nest/maps/DiscreteChoiceMap.hh>

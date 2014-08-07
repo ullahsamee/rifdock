@@ -13,6 +13,7 @@ FILE(GLOB UTIL_META "src/util/meta/*.cc")
 FILE(GLOB UTIL_CONT "src/util/container/*.cc")
 FILE(GLOB NEST "src/nest/*.cc")
 FILE(GLOB OBJ "src/objective/*.cc")
+FILE(GLOB OBJ_VOX "src/objective/voxel/*.cc")
 FILE(GLOB NEST_MAP "src/nest/maps/*.cc")
 FILE(GLOB KIN "src/kinematics/*.cc")
 
@@ -22,13 +23,13 @@ SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -
 SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG -ffast-math" )
-#SET( CMAKE_CXX_FLAGS         "-O0 " )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 " )
+#SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
 
 project (main_test)
-add_executable(main_test src/main/main_test.cc ${UTIL} ${NEST} ${OBJ} ${NEST_MAP} ${UTIL_META} ${KIN} ${UTIL_CONT})
+add_executable(main_test src/main/main_test.cc ${UTIL} ${NEST} ${OBJ} ${OBJ_VOX} ${NEST_MAP} ${UTIL_META} ${KIN} ${UTIL_CONT})
 target_link_libraries(main_test ${EXTRA_LIBS} )
 
 

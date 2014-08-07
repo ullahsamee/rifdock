@@ -34,6 +34,24 @@ using std::endl;
 		return out;
 	}
 
+	template<class Scene>
+	struct DumpPdb {
+		std::ostream & out;
+		Scene const & scene;
+		DumpPdb(Scene const & s,std::ostream & o) : scene(s),out(o) {}
+		template<typename Actor>
+		void operator()( util::meta::type2type<Actor> ){
+			BOOST_FOREACH(Actor a,scene.template get_actors<Actor>()){
+				dump_pdb(out,a);
+			}
+		}
+	};
+
+	template<class Scene>
+	void dump_pdb( std::ostream & out, Scene const & scene ){
+		m::for_each<typename Scene::Actors,util::meta::type2type<m::_1> >(DumpPdb<Scene>(scene,out));
+	}
+
 }
 }
 

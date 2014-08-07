@@ -15,18 +15,21 @@
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 
-#include <util/meta/util_test.cc>
+// #include <util/meta/util_test.cc>
 // #include <util/container/ContainerInteractions_test.cc>
 // #include <util/meta/InstanceMap_test.cc>
 // #include <util/meta/InstanceMap_container_test.cc>
 // #include <util/meta/InstanceMap_numeric_test.cc>
 
 // #include <objective/ObjectiveFunction_test.cc>
+// #include "objective/voxel/VoxelArray_test.cc"
+// #include "objective/voxel/VoxelArray_integration_test.cc"
 
 // #include <kinematics/Scene_test.cc>
+#include <kinematics/Scene_test_eigen.cc>
 // #include <kinematics/SceneIterator_test.cc>
 
-// #include <kinematics/Scene_objective_test.cc>
+// #include <kinematics/Scene_test_objective.cc>
 
 int main(int argc, char **argv)
 {
