@@ -12,6 +12,7 @@ namespace actor {
 	template<class _Position, class _Data>
 	struct ActorConcept {
 
+		///@brief Position type, leave out to make actor "Fixed"
 		typedef _Position Position;
 		typedef _Data Data;
 		typedef ActorConcept<Position,Data> THIS;

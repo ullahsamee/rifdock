@@ -74,7 +74,7 @@ struct ScoreIntDouble {
 	typedef std::pair<int,double> Interaction;
 	static std::string name(){ return "ScoreIntDouble"; }	
 	template<class Config>
-	Result operator()(int i,double a, Config const& c) const {
+	Result operator()(int const & i,double const & a, Config const& c) const {
 		return i*a*c.scale;
 	}
 	template<class Pair, class Config>
@@ -88,6 +88,10 @@ struct ConfigTest {
 	double scale;
 	ConfigTest():scale(1){}
 };
+
+TEST(ObjectiveFunction,detect_call_operator){
+	BOOST_STATIC_ASSERT( util::meta::has_const_call_oper_3<ScoreIntDouble,double,int const &,double const &,ConfigTest const &>::value );
+}
 
 template<class Interactions >
 struct SimpleInteractionSource {

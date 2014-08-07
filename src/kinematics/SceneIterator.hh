@@ -33,6 +33,10 @@ using std::endl;
 ///////////////////////////////  1 body /////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+	namespace impl {
+		SCHEME_HAS_MEMBER_TYPE(Position)
+	}
+
 	// SymPolicies
 	template<class Scene, class Actor>
 	struct Symmetric {
@@ -66,9 +70,7 @@ using std::endl;
 		typedef Actor Value;
 		typedef typename Scene::Position Pos;
 		static Value deref(Scene const & s, Index ib, Index ia){ 
-			Actor const & a0 = s.__conformation_unsafe__(ib).template get<Actor>()[ia];
-			Pos const & xform = s.__position_unsafe__(ib);
-			return Actor(a0,xform);
+			return s.template get_interaction_from_placeholder<Actor>(std::make_pair(ib,ia));
 		}
 	};	
 

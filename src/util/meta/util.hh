@@ -56,6 +56,35 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 			: m::true_ {};
 
 
+template<typename T, class R, class A, class B, class C>                   \
+struct has_const_call_oper_3 {                                             \
+    template<typename U, R (U::*)(A,B,C) const> struct SFINAE {};          \
+    template<typename U> static char Test(SFINAE<U, &U::operator()>*);     \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
+
+#define SCHEME_HAS_MEMBER_FUNCTION_3(MEMBER)                               \
+template<typename T, class R, class A, class B, class C>                   \
+struct has_member_fun_ ## MEMBER  {                                        \
+    template<typename U, R (U::*)(A,B,C)> struct SFINAE {};                \
+    template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
+#define SCHEME_HAS_CONST_MEMBER_FUNCTION_3(MEMBER)                         \
+template<typename T, class R, class A, class B, class C>                   \
+struct has_const_member_fun_ ## MEMBER  {                                  \
+    template<typename U, R (U::*)(A,B,C) const> struct SFINAE {};          \
+    template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
+
+
 /////////////// in progress.... ////////////////
 
 // template< typename SeqOfSeq >

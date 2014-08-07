@@ -29,7 +29,7 @@ namespace m = boost::mpl;
 namespace f = boost::fusion;
 
 namespace traits {
-	struct result_type { template<class T> struct apply { typedef typename T::Result type; }; };
+	// struct result_type { template<class T> struct apply { typedef typename T::Result type; }; };
 	struct interaction_type { template<class T> struct apply { typedef typename T::Interaction type; }; };
 }
 
@@ -87,7 +87,9 @@ namespace impl {
 			double w
 		) : interaction(i),results(r),config(c),weight(w) {}
 
-		template<class Objective> void operator()(Objective const & objective) const {
+		template<class Objective>
+		void
+		operator()(Objective const & objective) const {
 			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
@@ -207,6 +209,13 @@ namespace impl {
 					         ( interaction, results_, config_, weight )
 			);
 		}
+		// void operator()( typename Interaction::first_type const & a1, typename Interaction::second_type const & a2, double weight=1.0) {
+		// 	f::for_each(
+		// 		objectives_,
+		// 		EvalObjective< Interaction, Results , Config >
+		// 			         ( a1, a2, results_, config_, weight )
+		// 	);
+		// }
 	};
 
 	template<
@@ -254,6 +263,7 @@ namespace impl {
 
 
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(InteractionTypes,void)
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(Result,double)
 
 	// get_interaction_weight
 
@@ -329,7 +339,7 @@ struct ObjectiveFunction {
 	///@typedef Results
 	typedef util::meta::NumericInstanceMap<
 		Objectives,
-		traits::result_type
+		impl::get_Result_double<m::_1>
 	> Results;
 
 	ObjectiveMap objective_map_;

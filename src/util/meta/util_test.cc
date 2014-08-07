@@ -28,6 +28,8 @@ namespace meta {
 // }
 
 
+using std::cout;
+using std::endl;
 
 struct EMPTY {};
 struct DOUBLE { typedef double FOO; };
@@ -150,6 +152,47 @@ TEST(META_UTIL,remove_ref){
 }
 
 
+
+struct USED_MEMORY_CONST {
+	size_t used_memory(int,float,char) const { return 0; }
+};
+struct USED_MEMORY {
+	size_t used_memory(int,float,char) { return 0; }
+};
+
+template<typename T, class A, class B, class C>
+struct HasUsedMemoryMethod
+{
+    template<typename U, size_t (U::*)(A,B,C) const> struct SFINAE {};
+    template<typename U> static char Test(SFINAE<U, &U::used_memory>*);
+    template<typename U> static int Test(...);
+    static const bool Has = sizeof(Test<T>(0)) == sizeof(char);
+};
+
+struct CALL_OPER_CONST {
+	template<class T>
+	void operator()(T,float,char) const {}
+};
+
+SCHEME_HAS_MEMBER_FUNCTION_3(used_memory)
+SCHEME_HAS_CONST_MEMBER_FUNCTION_3(used_memory)
+
+TEST(META_UTIL,detect_function){
+
+	BOOST_STATIC_ASSERT( !HasUsedMemoryMethod<EMPTY            ,int,float,char>::Has );
+	BOOST_STATIC_ASSERT(  HasUsedMemoryMethod<USED_MEMORY_CONST,int,float,char>::Has );
+
+	BOOST_STATIC_ASSERT( !has_const_member_fun_used_memory<EMPTY            ,size_t,int,float,char>::value );
+	BOOST_STATIC_ASSERT( !has_const_member_fun_used_memory<USED_MEMORY      ,size_t,int,float,char>::value );
+	BOOST_STATIC_ASSERT(  has_const_member_fun_used_memory<USED_MEMORY_CONST,size_t,int,float,char>::value );	
+	BOOST_STATIC_ASSERT( !has_member_fun_used_memory      <EMPTY            ,size_t,int,float,char>::value );
+	BOOST_STATIC_ASSERT(  has_member_fun_used_memory      <USED_MEMORY      ,size_t,int,float,char>::value );	
+	BOOST_STATIC_ASSERT( !has_member_fun_used_memory      <USED_MEMORY_CONST,size_t,int,float,char>::value );	
+
+	BOOST_STATIC_ASSERT( !has_const_call_oper_3<EMPTY          ,void,int,float,char>::value );	
+	BOOST_STATIC_ASSERT(  has_const_call_oper_3<CALL_OPER_CONST,void,int,float,char>::value );	
+
+}
 
 }
 }

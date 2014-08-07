@@ -3,6 +3,7 @@
 #include "kinematics/Scene_io.hh"
 #include "actor/ActorConcept_io.hh"
 #include "objective/ObjectiveFunction.hh"
+#include "objective/ObjectiveVisitor.hh"
 #include "numeric/X1dim.hh"
 
 #include <boost/make_shared.hpp>
@@ -12,7 +13,7 @@
 
 #include <stdint.h>
 
-namespace scheme { namespace kinematics { namespace test {
+namespace scheme { namespace kinematics { namespace objective_test {
 
 using std::cout;
 using std::endl;
@@ -105,8 +106,8 @@ TEST(SceneObjective,basic){
 	ObjFun score;
 
 	typedef m::vector< ADI, ADC > Actors;
-	typedef Conformation<Actors> Conformation;
-	typedef Scene<Conformation,X1dim,size_t> Scene;
+	typedef Conformation<Actors> Conf;
+	typedef Scene<Conf,X1dim,size_t> Scene;
 
 	Scene scene(3);
 	ASSERT_EQ( score(scene).sum(), 0 );
@@ -175,19 +176,6 @@ TEST(SceneObjective,symmetry){
 }
 
 
-template<class Objective,class Config>
-struct ObjectiveVisitor {
-	typedef typename Objective::Interaction Interaction;
-	Objective const & objective_;
-	Config const & config_;
-	typename Objective::Result result_;
-	ObjectiveVisitor( Objective const & o, Config const & c) : objective_(o),config_(c),result_() {}
-	void operator()( Interaction const & i, double const & weight = 1.0 ){
-		typename Objective::Result r = objective_.template operator()(i,config_);
-		result_ += weight * r;
-	}
-};
-
 
 
 
@@ -235,6 +223,8 @@ TEST(SceneObjective,performance){
 	//       could template out these and have both sym and asym scenes?
 	// FIX with visitation pattern, seems at least 10x faster
 
+	std::cout << "This test performs 301.934M score calls, should take about a second when compiled with optimizations." << std::endl;
+
 	typedef	objective::ObjectiveFunction<
 		m::vector<
 			ScoreADI,
@@ -254,12 +244,12 @@ TEST(SceneObjective,performance){
 
 	ScoreADIADI obj;
 	Config c;
-	ObjectiveVisitor<ScoreADIADI,Config> visitor(obj,c);
+	objective::ObjectiveVisitor<ScoreADIADI,Config> visitor(obj,c);
 
 	Scene scene; {
 		Scene::Index const NBOD = 10;
 		Scene::Index const NSYM = 20;
-		Scene::Index const NACT = 394;
+		Scene::Index const NACT = 400;
 		for(Scene::Index i = 0; i < NBOD; ++i) scene.add_body();		
 		for(Scene::Index i = 0; i < NSYM-1; ++i) scene.add_symframe(i+1);
 		for(Scene::Index i = 0; i < NBOD; ++i){
