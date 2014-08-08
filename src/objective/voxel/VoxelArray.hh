@@ -24,9 +24,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	Bounds lb_,ub_,cs_;
 	std::string cache_location_;
 
-	VoxelArray(std::string const & c="") : cache_location_(c) {
-		if(c.size()) read_cache(cache_location_,*this);
-	}
+	VoxelArray() {}
 
 	template<class F1,class F2, class F3>
 	VoxelArray(F1 const & lb, F2 const & ub, F3 const & cs ) : lb_(lb),ub_(ub),cs_(cs) {

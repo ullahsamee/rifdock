@@ -7,9 +7,8 @@
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/io.hpp>
 
-#include <util/SimpleArray.hh>
-
-#include <set>
+#include "util/SimpleArray.hh"
+#include "io/cache.hh"
 
 namespace scheme {
 namespace util {
@@ -54,6 +53,12 @@ TEST(NumericInstanceMap,basic_test){
 
 }
 
+TEST(NumericInstanceMap,serialization){
+	using namespace dummy;
+	typedef NumericInstanceMap<m::vector<T,U,V>, m::always<double> > NMAP;
+	NMAP imap(1,2,3);
+	ASSERT_EQ( imap, io::test_serialization(imap) );
+}
 
 
 }

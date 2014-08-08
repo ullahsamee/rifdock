@@ -7,9 +7,8 @@
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/io.hpp>
 
-#include <util/SimpleArray.hh>
-
-#include <set>
+#include "util/SimpleArray.hh"
+#include "io/cache.hh"
 
 namespace scheme {
 namespace util {
@@ -113,6 +112,10 @@ TEST(InstanceMap,holds_types){
 		imap.get<float>().push_back(1.2345f);
 		ASSERT_EQ( imap.get<float>().size(),3);
 
+		InstanceMap<Types,std::vector<_1> > imap2 = imap;
+		ASSERT_TRUE(imap2==imap);
+
+
 	}
 	bf::map< bf::pair<int,int>, bf::pair<char,char>, bf::pair<float,float> > test;
 	// bf::for_each( test, PrintInstanceType() );
@@ -156,6 +159,15 @@ TEST(InstanceMap,can_use_fusion_pairs_directly){
 	ASSERT_EQ( imap.get<char>(), 1.234f );
 }
 
+TEST(InstanceMap,serialization){
+	InstanceMap<m::vector<int,char,float> > imap;
+	imap.get<int>() = 1;
+	imap.get<char>() = 'C';	
+	imap.get<float>() = 1.2345f;
+	ASSERT_EQ( imap, io::test_serialization(imap) );
+	InstanceMap<m::vector<int,char,float> > const & cimap = imap;
+	ASSERT_EQ( imap, io::test_serialization(cimap) );
+}
 
 }
 }

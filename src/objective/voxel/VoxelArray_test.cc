@@ -1,15 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "objective/voxel/VoxelArray.hh"
+#include "io/cache.hh"
 
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 
-#include <sstream>
 
 namespace scheme { namespace objective { namespace voxel { namespace test {
 
@@ -79,14 +77,7 @@ TEST(VoxelArray,io){
 	ASSERT_EQ( a, b );
 	for(size_t i = 0; i < b.num_elements(); ++i) b.data()[i] = 0;
 
-	std::ostringstream oss;
-	boost::archive::text_oarchive oarchive(oss);
-	oarchive << a;
-	std::istringstream iss(oss.str());
-	boost::archive::text_iarchive iarchive(iss);
-	iarchive >> b;
-
-	ASSERT_EQ(a,b);
+	ASSERT_EQ( a , io::test_serialization(a) );
 }
 
 }}}}

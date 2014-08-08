@@ -10,9 +10,22 @@
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 
 namespace scheme { namespace io {
+
+	template<class T>
+	T test_serialization(T const & ref){
+		std::ostringstream oss;
+		boost::archive::binary_oarchive oarchive(oss);
+		oarchive << ref;
+		std::istringstream iss(oss.str());
+		boost::archive::binary_iarchive iarchive(iss);
+		T t;
+		iarchive >> t;
+		return t;
+	}
 
 	template<class T>
 	bool read_cache(std::string const & location, T & t){

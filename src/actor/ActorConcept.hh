@@ -42,8 +42,15 @@ namespace actor {
 
 		bool operator==(THIS const & o) const { return o.position_==position_ && o.data_==data_; }
 
-		// necessary for testing only
+		///@brief necessary for testing only
 		bool operator<(THIS const & o) const { return std::make_pair(position_,data_) < std::make_pair(o.position_,o.data_); }
+
+		///@brief necessary for testing only
+	  	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+	  		ar & position_;
+	  		ar & data_;
+	  	}
+
 	};
 
 

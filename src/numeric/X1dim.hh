@@ -13,6 +13,8 @@ struct X1dim {
 	X1dim(double d) : val_(d) {}
 	bool operator==(X1dim const & o) const { return o.val_==val_; }
 	bool operator<(X1dim const & o) const { return val_ < o.val_; }
+  	template<class Archive> void serialize(Archive & ar, const unsigned int ){ ar & val_; }
+
 };
 inline X1dim operator*(X1dim a, X1dim b){ return X1dim(a.val_+b.val_); }
 inline std::ostream & operator<<(std::ostream & out, X1dim const & x){ return out << x.val_; }

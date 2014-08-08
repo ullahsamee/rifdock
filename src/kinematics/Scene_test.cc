@@ -4,6 +4,7 @@
 #include "actor/ActorConcept_io.hh"
 #include "numeric/X1dim.hh"
 #include "objective/ObjectiveVisitor.hh"
+#include "io/cache.hh"
 
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
@@ -42,7 +43,9 @@ struct FixedActor {
 	FixedActor(double d=0) : data_(d) {}
 	bool operator==(FixedActor const & o) const { return o.data_==data_; }
 	bool operator<(FixedActor const & o) const { return data_ < o.data_; }
-
+  	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+  		ar & data_;
+  	}
 };
 std::ostream & operator<<(std::ostream & out,FixedActor const & f){
 	return out << "FixedActor("<<f.data_<<")";
@@ -187,6 +190,33 @@ TEST(Scene,test_fixed_actor){
 	// // this should fail to compile
 	// objective::ObjectiveVisitor<ObjFixedFixed,Config> failvisitor(ObjFixedFixed(),c);	
 	// scene.visit(failvisitor);
+
+}
+
+TEST(Scene,serialization){
+	typedef std::pair<ADI,FixedActor> I;
+	Config c;
+	ObjFixedADI o1;
+	ObjADIFixed o2;
+	objective::ObjectiveVisitor<ObjFixedADI,Config> visitor1(o1,c);
+	objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
+
+	typedef m::vector< ADI, FixedActor > Actors;
+	typedef Scene<Actors,X1dim,uint32_t> Scene;
+
+	Scene scene(2);
+	scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
+	scene.mutable_conformation_asym(1).add_actor(ADI(1,0));	
+	scene.set_position(0,X1dim( 0));
+	scene.set_position(1,X1dim( 0));
+
+	ASSERT_TRUE( scene == io::test_serialization(scene) );
+
+	Scene scene2 = scene;
+	scene.set_position(0,X1dim(1));
+
+	ASSERT_FALSE( scene == scene2 );
+
 
 }
 

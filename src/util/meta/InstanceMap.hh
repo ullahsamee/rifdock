@@ -5,6 +5,7 @@
 #include <vector>
 #include <boost/mpl/zip_view.hpp>
 #include <boost/mpl/is_sequence.hpp>
+#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/always.hpp>
 #include <functional>
 #include <boost/fusion/include/as_map.hpp>
@@ -12,6 +13,8 @@
 #include <boost/fusion/include/value_at_key.hpp>
 #include <boost/fusion/include/mpl.hpp>
 #include <boost/fusion/include/for_each.hpp>
+
+#include <boost/serialization/access.hpp>
 
 namespace scheme {
 namespace util {
@@ -23,41 +26,67 @@ namespace f = boost::fusion;
 // struct FUSION_PAIRS { template<class T> struct apply { typedef void type; }; };
 struct FUSION_PAIRS { typedef void type; };
 
-template< class Keys, class Arg2 >
-struct fusion_map_pairs {
-    typedef typename
-    m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>,
-        Keys, // already fusion pairs
-        m::transform<
-            Keys, typename
-            m::eval_if< 
-                // m::is_sequence<Arg2>,
-                m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
-                Arg2,                   // It seems one of these two it getting instantiated even
-                m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
-                >::type,         
-            f::pair<m::_1,m::_2>
-        >
-    >::type type;
-};
+namespace impl {
+
+    template< class Keys, class Arg2 >
+    struct fusion_map_pairs {
+        typedef typename
+        m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>,
+            Keys, // already fusion pairs
+            m::transform<
+                Keys, typename
+                m::eval_if< 
+                    // m::is_sequence<Arg2>,
+                    m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
+                    Arg2,                   // It seems one of these two it getting instantiated even
+                    m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
+                    >::type,         
+                f::pair<m::_1,m::_2>
+            >
+        >::type type;
+    };
 
 
 
-///@brief convenience function to make a boost::fusion::map
-///@detail fusion_map<Keys> will be same as tuple
-///@detail fusion_map<Keys,Values> will map Key to Value
-///@detail fusion_map<Keys,MetaFunc> will map Key to apply<MetaFunc,Key>::type
-template< class Keys, class Arg2 >
-struct fusion_map {
-    typedef typename
-        f::result_of::as_map< typename
-            fusion_map_pairs<Keys,Arg2>::type
-        >::type
-    type;
-};
+    ///@brief convenience function to make a boost::fusion::map
+    ///@detail fusion_map<Keys> will be same as tuple
+    ///@detail fusion_map<Keys,Values> will map Key to Value
+    ///@detail fusion_map<Keys,MetaFunc> will map Key to apply<MetaFunc,Key>::type
+    template< class Keys, class Arg2 >
+    struct fusion_map {
+        typedef typename
+            f::result_of::as_map< typename
+                fusion_map_pairs<Keys,Arg2>::type
+            >::type
+        type;
+    };
 
-/// *** this compiles, so it seems like the upper eval_if should protect WTF?
-///     typedef m::eval_if_c< true, m::identity<int>, m::eval_if_c<true,void,void> >::type TEST;
+    /// *** this compiles, so it seems like the upper eval_if should protect WTF?
+    ///     typedef m::eval_if_c< true, m::identity<int>, m::eval_if_c<true,void,void> >::type TEST;
+
+    template<class Imap,class Archive>
+    struct SerializeVisitor {
+        Imap & fmap;
+        Archive & archive;
+        SerializeVisitor(Imap & f, Archive & ar) : fmap(f),archive(ar) {}
+        template<class T>
+        void operator()(type2type<T>){
+            archive & fmap.template get<T>();
+        }
+    };
+
+    template<class Imap>
+    struct EqualsVisitor {
+        bool is_equal;
+        Imap const & imap1;
+        Imap const & imap2;
+        EqualsVisitor(Imap const & a, Imap const & b) : is_equal(true),imap1(a), imap2(b) {}
+        template<class T>
+        void operator()(type2type<T>){
+            is_equal &= imap1.template get<T>() == imap2.template get<T>();
+        }
+    };
+}
 
 
 ///@brief meta-container holding instances for any sequence of types
@@ -65,10 +94,11 @@ struct fusion_map {
 ///@tparam Arg2 sequence of Value types OR metafunction class OR placeholder expression
 ///@detail if Arg2 is a metafunction class, the values that func applied to the _Keys
 template< typename _Keys, typename Arg2 = _Keys >
-struct InstanceMap : fusion_map<_Keys,Arg2>::type
+struct InstanceMap : impl::fusion_map<_Keys,Arg2>::type
 {
-    typedef typename fusion_map_pairs<_Keys,Arg2>::type Pairs;
-    typedef typename fusion_map<_Keys,Arg2>::type Base;
+    typedef typename impl::fusion_map_pairs<_Keys,Arg2>::type Pairs;
+    typedef InstanceMap<_Keys,Arg2> THIS;
+    typedef typename impl::fusion_map<_Keys,Arg2>::type Base;
     typedef Base FusionType;
     // typedef typename m::eval_if< boost::is_same<FUSION_PAIRS,Arg2>, m::identity<void>, _Keys >::type Keys;
     typedef typename m::transform< Pairs, util::meta::first_type<m::_1> >::type Keys;
@@ -108,7 +138,19 @@ struct InstanceMap : fusion_map<_Keys,Arg2>::type
     template<typename Key>
     typename f::result_of::value_at_key<Base,Key>::type const & 
     get() const { return f::at_key<Key>((Base&)*this); }
-    
+  
+    bool operator==(THIS const & other) const {
+        impl::EqualsVisitor<THIS> eqv(*this,other);
+        m::for_each<Keys,type2type<m::_1> >(eqv);
+        return eqv.is_equal;
+    }
+
+    friend class boost::serialization::access;
+    template<class Archive> void serialize(Archive & ar, const unsigned int ){
+        impl::SerializeVisitor<THIS,Archive> serializer(*this,ar);
+        m::for_each<Keys,type2type<m::_1> >(serializer);
+    }
+
 };
 
 

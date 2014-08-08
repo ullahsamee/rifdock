@@ -7,7 +7,8 @@
 #include <boost/fusion/include/for_each.hpp>
 #include <boost/fusion/include/io.hpp>
 
-#include <util/SimpleArray.hh>
+#include "util/SimpleArray.hh"
+#include "io/cache.hh"
 
 #include <set>
 
@@ -77,6 +78,31 @@ TEST(ContainerInstanceMap,simple_array_test){
 	SimpleArray<2,size_t> & tmp = cmap.get<size_t>();
 	ASSERT_EQ( tmp.at(0), (size_t)1 );
 	ASSERT_EQ( tmp.at(1), (size_t)2 );
+}
+
+TEST(ContainerInstanceMap,serialization_SimpleArray){
+	ContainerInstanceMap< m::vector<
+		SimpleArray<2,int>,
+		SimpleArray<2,size_t>
+	> > cmap;
+	cmap.get<int>().at(0) = -1;
+	cmap.get<int>().at(1) = -2;
+	cmap.get<size_t>()[0] = 1;
+	cmap.get<size_t>()[1] = 2;
+	ASSERT_EQ( cmap, io::test_serialization(cmap) );
+}
+
+TEST(ContainerInstanceMap,serialization_vector){
+	ContainerInstanceMap< m::vector<
+		std::vector<int>,
+		std::vector<size_t>
+	> > cmap;
+	cmap.get<int>().push_back(-1);
+	cmap.get<int>().push_back(6);
+	cmap.get<int>().push_back(7);		
+	cmap.get<size_t>().push_back(3);
+	cmap.get<size_t>().push_back(924);
+	ASSERT_TRUE( cmap == io::test_serialization(cmap) );
 }
 
 }

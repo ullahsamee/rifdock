@@ -19,6 +19,9 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+
 #include <vector>
 
 namespace scheme {
@@ -48,10 +51,11 @@ namespace impl {
 		class Index
 	>
 	struct BodyTplt {
+		typedef BodyTplt<_Conformation,_Position,Index> THIS;
 		typedef _Conformation Conformation;
 		typedef _Position Position;
 
-		BodyTplt() : position_(), conformation_(NULL) {}
+		BodyTplt() : position_(), conformation_() {}
 		BodyTplt(shared_ptr<Conformation const> c) : position_(),conformation_(c) {}
 
 		template<class Actor> 
@@ -71,6 +75,14 @@ namespace impl {
 		void set_position(Position const & p){ position_ = p; }
 
 		Conformation const & conformation() const { return *conformation_; }
+
+	    friend class boost::serialization::access;
+    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+	    	ar & position_;
+	    	ar & conformation_;
+	    }
+
+	    bool operator==(THIS const & o) const { return position_==o.position_ && *conformation_==*o.conformation_; }
 
 	 private:
 		Position position_;
@@ -128,6 +140,17 @@ namespace impl {
 		Bodies bodies_;
 		std::vector<Position> symframes_; // w/o identity
 		Index n_sym_bodies_;
+
+	    friend class boost::serialization::access;
+    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+	    	ar & bodies_;
+		    ar & symframes_;
+		    ar & n_sym_bodies_;
+	    }
+	    bool operator==(THIS const & o) const {
+	    	return bodies_==o.bodies_ && symframes_==o.symframes_ && n_sym_bodies_==o.n_sym_bodies_;
+	    }
+
 
 		void update(){
 			n_sym_bodies_ = (Index)bodies_.size()*((Index)symframes_.size()+1);
