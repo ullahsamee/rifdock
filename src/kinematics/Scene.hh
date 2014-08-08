@@ -29,16 +29,18 @@ namespace f = boost::fusion;
 using std::cout;
 using std::endl;
 
-template< class ActorContainer >
-struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
-	typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
-	template<class Actor>
-	void add_actor(Actor const & a){
-		this->template get<Actor>().insert(this->template get<Actor>().end(),a);
-	}
-};
 
 namespace impl {
+
+	template< class ActorContainer >
+	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
+		typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
+		template<class Actor>
+		void add_actor(Actor const & a){
+			this->template get<Actor>().insert(this->template get<Actor>().end(),a);
+		}
+	};
+	
 	///@brief holds a Conformation pointer and an Xform
 	template<
 		class _Conformation,
@@ -78,7 +80,7 @@ namespace impl {
 	using m::true_;
 	using m::false_;
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(Symmetric,true_)
-	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(AllowRelativePositioning,false_)
+	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(RequireAbsolutePositioning,false_)
 
 	template<class Interaction>
 	struct AccessVisitor {
@@ -87,30 +89,38 @@ namespace impl {
 		Interaction const & get() const { return i_; }
 	};
 
+	template<class Interaction>
+	struct AccessVisitorAbsolute : AccessVisitor<Interaction> {
+		typedef m::true_ RequireAbsolutePositioning;
+	};
+
 	template<class T,class I> struct get_placeholder_type {
 		typedef typename std::pair<I,I> type; };
 	template<class T1, class T2,class I> struct get_placeholder_type<std::pair<T1,T2>,I> { 
 		typedef typename std::pair<std::pair<I,I>,std::pair<I,I> > type; };
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////// Scene / //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+	///@brief default implementation for inverse
+	template<typename T> T inverse(T const & t){ return t.inverse(); }
 
 	template<
-		class _Conformation,
+		class _ActorContainers,
 		class _Position,
 		class _Index = size_t
 	>
 	struct Scene {
 		
-		typedef Scene<_Conformation,_Position,_Index> THIS;
-		typedef _Conformation Conformation;
+		typedef Scene<_ActorContainers,_Position,_Index> THIS;
 		typedef _Position Position;
 		typedef _Index Index;
-		typedef impl::BodyTplt<Conformation,Position,Index> Body;
+		typedef impl::Conformation<_ActorContainers> Conformation;
 		typedef typename Conformation::Actors Actors;
+		typedef impl::BodyTplt<Conformation,Position,Index> Body;
 		typedef std::vector<Body> Bodies;
 		typedef m::true_ DefinesInteractionWeight;
 		typedef m::true_ UseVisitor;
@@ -172,6 +182,11 @@ namespace impl {
 
 		Index nbodies() const { return n_sym_bodies_; }
 		Index nbodies_asym() const { return bodies_.size(); }
+
+		template<class Actor>
+		Actor get_actor(Index ib, Index ia) const {
+			return Actor( conformation(ib).template get<Actor>().at(ia), position(ib) );
+		}
 
 		//////////////////////////// actor iteration //////////////////////////////////
 
@@ -288,7 +303,7 @@ namespace impl {
 
 					Container1 const & container1 = c1.template get<Actor1>();
 					Container2 const & container2 = c2.template get<Actor2>();
-					Position const rel_pos = __position_unsafe__(i2) * inverse( __position_unsafe__(i1) );
+					Position const rel_pos = inverse(__position_unsafe__(i1))*( __position_unsafe__(i2) );
 					ContInter::get_interaction_range( rel_pos, container1, container2, range );
 					for( iter = get_cbegin(range),end  = get_cend(range); iter != end; ++iter){
 						double const w = i1<NBOD&&i2<NBOD?1.0:0.5;
@@ -308,9 +323,9 @@ namespace impl {
 		template<class Visitor, class Actor1, class Actor2>
 		typename boost::enable_if<
 			m::and_<
+				impl::get_RequireAbsolutePositioning_false_<Visitor>,
 				impl::has_type_Position<Actor1> , 
-				impl::has_type_Position<Actor2> ,
-				m::not_<impl::get_AllowRelativePositioning_false_<Visitor> >
+				impl::has_type_Position<Actor2> 
 			> >::type
 		visit_2b_inner(
 			Visitor & visitor,
@@ -321,6 +336,7 @@ namespace impl {
 			Position const & ,
 			double w
 		) const {
+			// cout << "ABSOLUTE POSITION" << endl;
 			Actor1 a1( a1_0, p1 );
 			Actor2 a2( a2_0, p2 );
 			//TODO: wrap this call in a check for has_const_call_oper_3<Visitor,void,Actor1 const &,Actor2 const &,double>
@@ -330,16 +346,9 @@ namespace impl {
 		///@brief visit_2b_inner specialization handles case where Actor1 is fixed
 		template<class Visitor, class Actor1, class Actor2>
 		typename boost::enable_if<
-			m::or_<
-				m::and_<
-					impl::get_AllowRelativePositioning_false_<Visitor>,
-					impl::has_type_Position<Actor1> , 
-					impl::has_type_Position<Actor2> 
-				>,
-				m::and_<
-					m::not_<impl::has_type_Position<Actor1> >, 
-					        impl::has_type_Position<Actor2> 
-				>
+			m::and_<
+				m::not_<impl::get_RequireAbsolutePositioning_false_<Visitor> >,
+				impl::has_type_Position<Actor2> 
 			> >::type
 		visit_2b_inner(
 			Visitor & visitor,
@@ -436,16 +445,25 @@ namespace impl {
 		///@brief gets a concrete interaction (Actor or pair of Actors) from a SceneIter
 		template<class Iter>
 		typename Iter::Interaction
-		get_interaction_from_iter(
+		get_interaction(
 			Iter const & iter
 		) const {
-			return get_interaction_from_placeholder<typename Iter::Interaction>(*iter);
+			return get_interaction<typename Iter::Interaction>(*iter);
+		}
+
+		///@brief gets a concrete interaction (Actor or pair of Actors) from a SceneIter
+		template<class Iter>
+		typename Iter::Interaction
+		get_interaction_absolute(
+			Iter const & iter
+		) const {
+			return get_interaction_absolute<typename Iter::Interaction>(*iter);
 		}
 
 		///@brief gets a concrete interaction (Actor or pair of Actors) from a placeholder
 		template<class Interaction>
 		typename boost::disable_if< util::meta::is_pair<Interaction>, Interaction >::type
-		get_interaction_from_placeholder(
+		get_interaction(
 			typename impl::get_placeholder_type<Interaction,Index>::type const & ph
 		) const {
 			Conformation const & c = conformation(ph.first);
@@ -454,10 +472,19 @@ namespace impl {
 			visit_1b_inner( visitor, c.template get<Interaction>()[ph.second], p );
 			return visitor.get();
 		}
+
 		///@brief gets a concrete interaction (Actor or pair of Actors) from a placeholder
 		template<class Interaction>
+		typename boost::disable_if< util::meta::is_pair<Interaction>, Interaction >::type
+		get_interaction_absolute(
+			typename impl::get_placeholder_type<Interaction,Index>::type const & ph
+		) const {
+			return get_interaction(ph);
+		}
+
+		template<class Interaction,class Visitor>
 		typename boost::enable_if< util::meta::is_pair<Interaction>, Interaction >::type
-		get_interaction_from_placeholder(
+		get_interaction_from_placeholder_2b(
 			typename impl::get_placeholder_type<Interaction,Index>::type const & ph
 		) const {
 			typedef typename Interaction::first_type Actor1;
@@ -468,11 +495,29 @@ namespace impl {
 			Actor2 const & a2_0 = conformation(i2).template get<Actor2>()[j2];
 			Position const & p1 = position(i1);
 			Position const & p2 = position(i2);
-			Position const rel_pos = __position_unsafe__(i2) * inverse( __position_unsafe__(i1) );
-			impl::AccessVisitor<Interaction> visitor;
+			Position const rel_pos = inverse(__position_unsafe__(i1))*( __position_unsafe__(i2) );
+			Visitor visitor;
 			double dummy=0;
 			visit_2b_inner(visitor,a1_0,a2_0,p1,p2,rel_pos,dummy);
 			return visitor.get();
+		}
+
+		///@brief gets a concrete interaction (Actor or pair of Actors) from a placeholder
+		template<class Interaction>
+		typename boost::enable_if< util::meta::is_pair<Interaction>, Interaction >::type
+		get_interaction(
+			typename impl::get_placeholder_type<Interaction,Index>::type const & ph
+		) const {
+			return get_interaction_from_placeholder_2b<Interaction,impl::AccessVisitor<Interaction> >(ph);
+		}
+
+		///@brief gets a concrete interaction (Actor or pair of Actors) from a placeholder
+		template<class Interaction>
+		typename boost::enable_if< util::meta::is_pair<Interaction>, Interaction >::type
+		get_interaction_absolute(
+			typename impl::get_placeholder_type<Interaction,Index>::type const & ph
+		) const {
+			return get_interaction_from_placeholder_2b<Interaction,impl::AccessVisitorAbsolute<Interaction> >(ph);
 		}
 
 		///@brief default weight is 1.0

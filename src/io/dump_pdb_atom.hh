@@ -6,8 +6,7 @@
 
 namespace scheme { namespace io {
 
-void
-dump_pdb_atom(
+inline void dump_pdb_atom(
 	std::ostream & out,
 	bool nothet,
 	size_t iatom,

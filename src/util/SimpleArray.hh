@@ -4,6 +4,7 @@
 #include <types.hh>
 #include <cmath>
 #include <boost/assert.hpp>
+#include <boost/serialization/access.hpp>
 
 namespace scheme {
 namespace util {
@@ -64,6 +65,10 @@ struct SimpleArray {
 	bool empty() const { return false; }
 	size_type size() const { return N; }
 	void swap(SimpleArray<N,F> & o){ for(int i = 0; i < N; ++i) std::swap(D[i],o.D[i]); }
+	friend class boost::serialization::access;
+    template<class Archive> void serialize(Archive & ar, const unsigned int ){
+		for(size_t i = 0; i < N; ++i) ar & D[i];
+	}
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){

@@ -5,6 +5,8 @@
 #include <boost/any.hpp>
 #include "util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/split_member.hpp>
 
 namespace scheme { namespace objective { namespace voxel {
 
@@ -13,12 +15,18 @@ namespace scheme { namespace objective { namespace voxel {
 template<size_t _DIM,class _Float=float>
 struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	BOOST_STATIC_ASSERT(_DIM>0);
+	typedef boost::multi_array<_Float,_DIM> BASE;
+	typedef VoxelArray<_DIM,_Float> THIS;
 	static size_t const DIM = _DIM;
 	typedef _Float Float;
-	typedef util::SimpleArray<DIM,size_t> Indices;
-	util::SimpleArray<DIM,Float> lb_,ub_,cs_;
+	typedef util::SimpleArray<DIM,typename BASE::size_type> Indices;
+	typedef util::SimpleArray<DIM,Float> Bounds;
+	Bounds lb_,ub_,cs_;
+	std::string cache_location_;
 
-	VoxelArray(){ this->create(); }
+	VoxelArray(std::string const & c="") : cache_location_(c) {
+		if(c.size()) read_cache(cache_location_,*this);
+	}
 
 	template<class F1,class F2, class F3>
 	VoxelArray(F1 const & lb, F2 const & ub, F3 const & cs ) : lb_(lb),ub_(ub),cs_(cs) {
@@ -46,24 +54,44 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	typename boost::disable_if< boost::is_arithmetic<Floats>, Float & >::type
 	operator[](Floats const & floats){ return this->operator()(floats_to_index(floats)); }	
 
-};
-
-
-template<class Float=float>
-struct FieldCache3D : public VoxelArray<3,Float> {
-	FieldCache3D(){}
-	template<class F1,class F2, class F3, class Field>
-	FieldCache3D(Field const & field, F1 const & lb, F2 const & ub, F3 const & cs) : VoxelArray<3,Float>(lb,ub,cs) {
-		// size_t ncalls = 0;
-		for(Float f = this->lb_[0]+this->cs_[0]/2.0; f < this->ub_[0]; f += this->cs_[0]){
-		for(Float g = this->lb_[1]+this->cs_[1]/2.0; g < this->ub_[1]; g += this->cs_[1]){
-		for(Float h = this->lb_[2]+this->cs_[2]/2.0; h < this->ub_[2]; h += this->cs_[2]){
-			// ++ncalls;
-			this->operator[]( util::SimpleArray<3,Float>(f,g,h) ) = field(f,g,h);
-		}}}
-		// std::cout << this->num_elements() << " " << ncalls << std::endl;
+	// void write(std::ostream & out) const { 
+	// 	out.write( (char const*)&lb_, sizeof(Bounds) );
+	// 	out.write( (char const*)&ub_, sizeof(Bounds) );
+	// 	out.write( (char const*)&cs_, sizeof(Bounds) );
+	// 	for(size_t i = 0; i < DIM; ++i) out.write( (char const*)&(this->shape()[i]), sizeof() );
+	// 	out.write( (char const*)this->data(), this->num_elements()*sizeof(Float) );
+	// }
+	// void read(std::istream & in){ 
+	// 	in.read( (char*)&lb_, sizeof(Bounds) );
+	// 	in.read( (char*)&ub_, sizeof(Bounds) );
+	// 	in.read( (char*)&cs_, sizeof(Bounds) );
+	// 	in.read( (char*)this->data(), this->num_elements()*sizeof(Float) );
+	// }
+	bool operator==(THIS const & o) const { 
+		return lb_==o.lb_ && ub_==o.ub_ && cs_==o.cs_ && (BASE const &)o == (BASE const &)*this;
 	}
+
+	friend class boost::serialization::access;
+    template<class Archive> void save(Archive & ar, const unsigned int ) const {
+        ar & lb_;
+        ar & ub_;
+        ar & cs_;
+        for(size_t i = 0; i < DIM; ++i) ar & this->shape()[i];
+        for(size_t i = 0; i < this->num_elements(); ++i) ar & this->data()[i];
+    }
+    template<class Archive> void load(Archive & ar, const unsigned int ){
+        ar & lb_;
+        ar & ub_;
+        ar & cs_;
+        Indices extents;
+        for(size_t i = 0; i < DIM; ++i) ar & extents[i];
+        this->resize(extents);
+        for(size_t i = 0; i < this->num_elements(); ++i) ar & this->data()[i];
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
 };
+
 
 
 }}}

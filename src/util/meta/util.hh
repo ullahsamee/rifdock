@@ -74,6 +74,15 @@ struct has_member_fun_ ## MEMBER  {                                        \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
     typedef m::bool_<value> type;                                          \
 };
+#define SCHEME_HAS_CONST_MEMBER_FUNCTION_0(MEMBER)                         \
+template<typename T, class R>                                              \
+struct has_const_member_fun_ ## MEMBER  {                                  \
+    template<typename U, R (U::*)() const> struct SFINAE {};               \
+    template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
 #define SCHEME_HAS_CONST_MEMBER_FUNCTION_3(MEMBER)                         \
 template<typename T, class R, class A, class B, class C>                   \
 struct has_const_member_fun_ ## MEMBER  {                                  \

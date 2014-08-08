@@ -22,14 +22,16 @@
 // #include <util/meta/InstanceMap_numeric_test.cc>
 
 // #include <objective/ObjectiveFunction_test.cc>
-// #include "objective/voxel/VoxelArray_test.cc"
-// #include "objective/voxel/VoxelArray_integration_test.cc"
+#include "objective/voxel/VoxelArray_test.cc"
+#include "objective/voxel/FieldCache_test.cc"
 
 // #include <kinematics/Scene_test.cc>
-#include <kinematics/Scene_test_eigen.cc>
+// #include <kinematics/Scene_test_eigen.cc>
 // #include <kinematics/SceneIterator_test.cc>
 
 // #include <kinematics/Scene_test_objective.cc>
+
+// #include <actor/ActorBBStub_test.cc>
 
 int main(int argc, char **argv)
 {

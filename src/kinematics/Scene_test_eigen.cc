@@ -23,55 +23,52 @@ using std::cout;
 using std::endl;
 using boost::tie;
 
-using Eigen::AngleAxis;
-typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
+typedef Eigen::AngleAxis<double> AA;
 typedef Eigen::Vector3d Vec;
-}}} namespace Eigen {
-scheme::kinematics::test_eigen::Xform inverse(scheme::kinematics::test_eigen::Xform const & x){ return x.inverse(); }
-std::ostream & operator<<(std::ostream & out,scheme::kinematics::test_eigen::Xform const & x){
+
+Vec UX(1,0,0);
+Vec UY(0,1,0);
+Vec UZ(0,0,1);
+
+struct Xform : Eigen::Transform<double,3,Eigen::AffineCompact>{
+	typedef Eigen::Transform<double,3,Eigen::AffineCompact> BASE;
+	Xform(){}
+	Xform(Vec t, double a, Vec ax) : BASE(AA(a,ax)) { translation() = t; }
+	template<class T> Xform(T const & t) : BASE(t) {}
+};
+
+// Xform inverse(Xform const & x){ return x.inverse(); }
+std::ostream & operator<<(std::ostream & out,Xform const & x){
 	return out << "t("<<x.translation().transpose()<<")";
 }
-
-} namespace scheme { namespace kinematics { namespace test_eigen {
 
 
 TEST(Scene_eigen,eigen_transform){
 	// Xform x(Xform::Identity());
-	AngleAxis<double> aa(0,Vec(1,0,0));
+	AA aa(0,Vec(1,0,0));
 	Xform x(aa);
 	//cout << x << endl;
 	Eigen::Vector3d v(0,0,0);
 	x*v;
 	Eigen::RowVector3d rv(0,0,0);	
 	// x*rv; // not allowed
+	Eigen::Vector3f vf(0,0,0);
+	// x*vf // not allowed
+	x*vf.cast<double>();
+	Eigen::RowVector4d v4(0,0,0,0);
+	// x*v4; // not allowed
 }
 
 typedef size_t Index;
 typedef std::pair<size_t,size_t> Index2;
 typedef std::pair<Index2,Index2> Index4;
 
-struct Xactor {
-	typedef Xform Position;
-	Xform position_;
-	int data_;
-	Xactor() : position_(Xform::Identity()) {}
-	Xactor(Position const & p, int d) : position_(p),data_(d) {}
-	Xactor(Xactor const & a,Position const & moveby){ position_ = moveby*a.position(); data_ = a.data_; }
-	void set_position( Position const & pos	){ position_ = pos; }
-	Position const & position() const { return position_; }
-	// bool operator==(Xactor const & o) const { return o.position_.isApprox(position_) && o.data_==data_; }
-};
-std::ostream & operator<<(std::ostream & out,Xactor const & x){
-	return out << "Xactor( " << x.position() << " " << x.data_ << " )";
-}
 
-void dump_pdb(std::ostream & out,Xactor const & a){
-	cout << a << endl;
-	io::dump_pdb_atom(out, "CA", a.position() * Vec(0,0,0) );
-	io::dump_pdb_atom(out, "O" , a.position() * Vec(1.5,0,0) );	
-	io::dump_pdb_atom(out, "NI", a.position() * Vec(0,1.5,0) );
-	io::dump_pdb_atom(out, "N" , a.position() * Vec(0,0,1.5) );		
-}
+struct Xactor : actor::ActorConcept<Xform,int> {
+	Xactor() : actor::ActorConcept<Xform,int>() {}
+	Xactor(Position const & p, int d) : actor::ActorConcept<Xform,int>(p,d) {}
+	Xactor(Xactor const & a,Position const & moveby){ position_ = moveby*a.position(); data_ = a.data_; }
+};
 
 ////////////// test scores ////////////////////////
 
@@ -116,7 +113,10 @@ void dump_pdb(std::ostream & out,Xactor const & a){
 
 /////////////////// tests //////////////////////////
 
-TEST(Scene_eigen,basic){
+Xform rel(Xform a,Xform b){ return a.inverse()*b; }
+Xform rel2(Xform a,Xform b){ return b*a.inverse(); }
+
+TEST(Scene_eigen,relative_relations_preserved){
 	typedef	objective::ObjectiveFunction<
 		m::vector<
 			ScoreX,
@@ -128,20 +128,52 @@ TEST(Scene_eigen,basic){
 	ObjFun score;
 
 	typedef m::vector< Xactor > Actors;
-	typedef Conformation<Actors> Conf;
-	typedef Scene<Conf,Xform,size_t> Scene;
+	typedef Scene<Actors,Xform> Scene;
 
-	Scene scene(3);
-	ASSERT_EQ( score(scene).sum(), 0 );
+	Scene scene(2);
+	scene.set_position(0,Xform(Vec(10, 0, 0),2,UX));
+	scene.set_position(1,Xform(Vec( 0,10, 0),2,UY));
 
-	scene.mutable_conformation_asym(0).add_actor( Xactor(Xform::Identity(),7) );
-	scene.set_position(0,Xform::Identity());
+	scene.mutable_conformation_asym(0).add_actor( Xactor(Xform(Vec(1,3,1),1,UY),7) );
 
+	scene.mutable_conformation_asym(1).add_actor( Xactor(Xform(Vec(3,4,7),2,UZ),7) );
 
-	std::ofstream out("test.pdb");
-	dump_pdb(out,scene);
-	out.close();
+	Xactor x1,x2,a1,a2,r1,r2;
 
+	x1 = scene.get_actor<Xactor>(0,0);
+	x2 = scene.get_actor<Xactor>(1,0);	
+
+	tie(a1,a2) = scene.get_interaction_absolute<std::pair<Xactor,Xactor> >(
+		std::make_pair(std::make_pair(0,1),std::make_pair(0,0)));
+	tie(r1,r2) = scene.get_interaction<std::pair<Xactor,Xactor> >(
+		std::make_pair(std::make_pair(0,1),std::make_pair(0,0)));
+
+	ASSERT_TRUE( x1.position().isApprox(a1.position()) );
+	ASSERT_TRUE( x2.position().isApprox(a2.position()) );	
+	// cout << x1 << " " << x2 << endl;
+	// cout << a1 << " " << a2 << endl;
+	// cout << r1 << " " << r2 << endl;		
+
+	Xform xa = a1.position().inverse() * a2.position();
+	Xform xr = r1.position().inverse() * r2.position();
+	ASSERT_TRUE( xa.isApprox(xr) );
+
+	/// why ~a*b captures the relation of a to b
+	/// rather than b * ~a?  b * ~a  * a  == b
+	/// ~(c*a)*c*b = ~a*~c*c*b = ~a*b
+	/// ~(a*c)*b*c = ~c*~a*b*c
+	/// b*c*~(a*c) = b*c*~c*a = b*~a
+	Xform a = Xform(Vec(10, 0, 0),2,UX);
+	Xform b = Xform(Vec( 0,10, 0),2,UY);
+	Xform c = Xform(Vec( 0,10,10),1,UZ);	
+	ASSERT_TRUE ( rel (a,b).isApprox( rel (c*a  ,c*b  ) )  );
+	ASSERT_FALSE( rel (a,b).isApprox( rel (  a*c,  b*c) )  );	
+	ASSERT_FALSE( rel2(a,b).isApprox( rel2(c*a  ,c*b  ) )  );
+	ASSERT_TRUE ( rel2(a,b).isApprox( rel2(  a*c,  b*c) )  );
+
+	// xa = a1.position() * a2.position().inverse();
+	// xr = r1.position() * r2.position().inverse();
+	// ASSERT_TRUE( xa.isApprox(xr) );
 }
 
 // TEST(Scene_eigen,symmetry){
@@ -197,7 +229,8 @@ TEST(Scene_eigen,basic){
 // 	//       could template out these and have both sym and asym scenes?
 // 	// FIX with visitation pattern, seems at least 10x faster
 
-// 	std::cout << "This test performs 301.934M score calls, should take about a second when compiled with optimizations." << std::endl;
+// 	std::cout << "This test performs 301.934M score calls, should 
+	// take about a second when compiled with optimizations." << std::endl;
 
 // 	typedef	objective::ObjectiveFunction<
 // 		m::vector<

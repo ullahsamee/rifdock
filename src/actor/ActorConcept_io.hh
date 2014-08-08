@@ -14,15 +14,15 @@ namespace actor {
 		return out << "Actor( " << a.position_ << ", " << a.data_ << " )";
 	}
 
-	template< class P >
-	std::ostream & operator<<(std::ostream & out, ActorConcept<P,int> const & a){
-		return out << "ADI( " << a.position_ << ", " << a.data_ << " )";
-	}
+	// template< class P >
+	// std::ostream & operator<<(std::ostream & out, ActorConcept<P,int> const & a){
+	// 	return out << "ADI( " << a.position_ << ", " << a.data_ << " )";
+	// }
 
-	template< class P >
-	std::ostream & operator<<(std::ostream & out, ActorConcept<P,char> const & a){
-		return out << "ADC( " << a.position_ << ", " << a.data_ << " )";
-	}
+	// template< class P >
+	// std::ostream & operator<<(std::ostream & out, ActorConcept<P,char> const & a){
+	// 	return out << "ADC( " << a.position_ << ", " << a.data_ << " )";
+	// }
 
 
 

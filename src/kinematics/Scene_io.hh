@@ -21,10 +21,10 @@ using std::endl;
 		return out << "Body( " << b.position() << ", " << &b.conformation() << " )";
 	}
 
-	template<class C,class P>
-	std::ostream & operator<<(std::ostream & out, Scene<C,P> const & scene){ 
+	template<class A,class P,class I>
+	std::ostream & operator<<(std::ostream & out, Scene<A,P,I> const & scene){ 
 		using std::endl;
-		typedef Scene<C,P> Scene;
+		typedef Scene<A,P,I> Scene;
 		out << "Scene" << endl;
 		out << "  Nbodies: Asym: " << scene.nbodies_asym() << " Total: " << scene.nbodies() << endl;
 		BOOST_FOREACH(typename Scene::Body const & b, scene.__bodies_unsafe__()){ out << "    " << b << endl; }

@@ -53,16 +53,14 @@ void test_iterator_visitor_agree_for_interaction(Scene const & scene){
 	typedef typename impl::get_placeholder_type<Interaction,typename Scene::Index>::type PH;
 	std::set<Interaction> iterset;
 	BOOST_FOREACH( PH ph, scene.template get_interactions<Interaction>() )
-		iterset.insert( scene.template get_interaction_from_placeholder<Interaction>(ph) );
+		iterset.insert( scene.template get_interaction<Interaction>(ph) );
 	AsymSetVisitor<Interaction> v; scene.visit(v); // is asym only for 1B...
 	ASSERT_EQ( iterset, v.set_ );
 }
 
 void test_iterator_visitor_agree(std::vector<int> nbod, int nsym){
 	typedef m::vector< ADI, ADC, FixedActor > Actors;
-
-	typedef Conformation<Actors> Conformation;
-	typedef Scene<Conformation,X1dim,size_t> Scene;
+	typedef Scene<Actors,X1dim,size_t> Scene;
 	typedef size_t Index;
 	typedef std::pair<size_t,size_t> Index2;
 	typedef std::pair<Index2,Index2> Index4;
@@ -164,8 +162,7 @@ TEST(Scene,test_fixed_actor){
 	objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
 
 	typedef m::vector< ADI, FixedActor > Actors;
-	typedef Conformation<Actors> Conformation;
-	typedef Scene<Conformation,X1dim,uint32_t> Scene;
+	typedef Scene<Actors,X1dim,uint32_t> Scene;
 
 	Scene scene(2);
 	scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));

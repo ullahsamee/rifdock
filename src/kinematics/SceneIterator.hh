@@ -70,7 +70,7 @@ using std::endl;
 		typedef Actor Value;
 		typedef typename Scene::Position Pos;
 		static Value deref(Scene const & s, Index ib, Index ia){ 
-			return s.template get_interaction_from_placeholder<Actor>(std::make_pair(ib,ia));
+			return s.template get_interaction<Actor>(std::make_pair(ib,ia));
 		}
 	};	
 
