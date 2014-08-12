@@ -76,6 +76,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & params,
 			Index cell_index,
+			Index resl,
 			Value & value
 		) const {
 			for(size_t i = 0; i < DIM; ++i){
@@ -91,10 +92,11 @@ namespace maps {
 		///@brief sets params/cell_index from value
 		bool value_to_params(
 			Value const & value,
+			Index resl,
 			Params & params,
 			Index & cell_index
 		) const {
-			value_to_params_for_cell(value,params,0);
+			value_to_params_for_cell(value,resl,params,0);
 			cell_index = 0;
 			for(size_t i = 0; i < DIM; ++i){
 				assert(cell_sizes_[i] > 0);
@@ -112,6 +114,7 @@ namespace maps {
 		///@brief sets params/cell_index from value
 		void value_to_params_for_cell(
 			Value const & value,
+			Index resl,
 			Params & params,
 			Index cell_index
 		) const {
@@ -166,13 +169,19 @@ namespace maps {
 		///@brief return the cell_index of neighboring cells within delta of value
 		///@note delta parameter is in "Parameter Space"
 		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float param_delta, OutIter out) const {
+		void get_neighboring_cells(
+			Value const & value,
+			Index resl,
+			Float param_delta,
+			OutIter out
+		) const {
+			// Float param_delta = 1.0 / (Float)(1<<resl);
 			assert( param_delta > 0);
 			// convert to value space, decided against this
 			// Params delta_param;
 			// for(size_t i = 0; i < DIM; ++i) delta_param[i] = delta / cell_width_[i];
 			Params params;
-			value_to_params_for_cell(value,params,0);
+			value_to_params_for_cell(value,resl,params,0);
 			SignedIndex const BIG = 12345678;
 			SignedIndices lb = (params-param_delta+(Float)BIG).max((Float)BIG).template cast<SignedIndex>() - BIG ;
 			SignedIndices ub = (params+param_delta).template cast<Index>().min(cell_sizes_-(Index)1).template cast<SignedIndex>();

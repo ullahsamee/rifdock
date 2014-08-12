@@ -22,47 +22,47 @@ TEST( SphereQuad, cell_centers ){
 	VAL val;
 	size_t celli;
 
-	sd.params_to_value( PRM(0.5,0.5), 0, val ); ASSERT_EQ( val, VAL( 0, 0, 1) );
-	sd.params_to_value( PRM(0.5,0.5), 1, val ); ASSERT_EQ( val, VAL( 0, 1, 0) );
-	sd.params_to_value( PRM(0.5,0.5), 2, val ); ASSERT_EQ( val, VAL(-1, 0, 0) );
-	sd.params_to_value( PRM(0.5,0.5), 3, val ); ASSERT_EQ( val, VAL( 0,-1, 0) );
-	sd.params_to_value( PRM(0.5,0.5), 4, val ); ASSERT_EQ( val, VAL( 1, 0, 0) );
-	sd.params_to_value( PRM(0.5,0.5), 5, val ); ASSERT_EQ( val, VAL( 0, 0,-1) );
+	sd.params_to_value( PRM(0.5,0.5), 0, 0, val ); ASSERT_EQ( val, VAL( 0, 0, 1) );
+	sd.params_to_value( PRM(0.5,0.5), 1, 0, val ); ASSERT_EQ( val, VAL( 0, 1, 0) );
+	sd.params_to_value( PRM(0.5,0.5), 2, 0, val ); ASSERT_EQ( val, VAL(-1, 0, 0) );
+	sd.params_to_value( PRM(0.5,0.5), 3, 0, val ); ASSERT_EQ( val, VAL( 0,-1, 0) );
+	sd.params_to_value( PRM(0.5,0.5), 4, 0, val ); ASSERT_EQ( val, VAL( 1, 0, 0) );
+	sd.params_to_value( PRM(0.5,0.5), 5, 0, val ); ASSERT_EQ( val, VAL( 0, 0,-1) );
 
-	sd.value_to_params( VAL( 0, 0, 1), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL( 0, 1, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1, 0, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL( 0,-1, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1, 0, 0), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL( 0, 0,-1), prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL( 0, 0, 1), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL( 0, 1, 0), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1, 0, 0), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL( 0,-1, 0), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1, 0, 0), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL( 0, 0,-1), 0, prm, celli ); ASSERT_EQ( prm, PRM(0.5,0.5) ); ASSERT_EQ( celli, 5 );
 
-	sd.value_to_params( VAL( 0.999999999, 0.999999999, 1.000000000), prm, celli ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL( 0.999999999, 1.000000000, 0.999999999), prm, celli ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1.000000000, 0.999999999, 0.999999999), prm, celli ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL( 0.999999999,-1.000000000, 0.999999999), prm, celli ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1.000000000, 0.999999999, 0.999999999), prm, celli ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL( 0.999999999, 0.999999999,-1.000000000), prm, celli ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL( 0.999999999, 0.999999999, 1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL( 0.999999999, 1.000000000, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1.000000000, 0.999999999, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL( 0.999999999,-1.000000000, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1.000000000, 0.999999999, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL( 0.999999999, 0.999999999,-1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 5 );
 
-	sd.value_to_params( VAL(-0.999999999, 0.999999999, 1.000000000), prm, celli ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL(-0.999999999, 1.000000000, 0.999999999), prm, celli ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1.000000000,-0.999999999, 0.999999999), prm, celli ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL(-0.999999999,-1.000000000, 0.999999999), prm, celli ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1.000000000,-0.999999999, 0.999999999), prm, celli ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL(-0.999999999, 0.999999999,-1.000000000), prm, celli ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL(-0.999999999, 0.999999999, 1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL(-0.999999999, 1.000000000, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1.000000000,-0.999999999, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL(-0.999999999,-1.000000000, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1.000000000,-0.999999999, 0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL(-0.999999999, 0.999999999,-1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 5 );
 
-	sd.value_to_params( VAL( 0.999999999,-0.999999999, 1.000000000), prm, celli ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL( 0.999999999, 1.000000000,-0.999999999), prm, celli ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1.000000000, 0.999999999,-0.999999999), prm, celli ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL( 0.999999999,-1.000000000,-0.999999999), prm, celli ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1.000000000, 0.999999999,-0.999999999), prm, celli ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL( 0.999999999,-0.999999999,-1.000000000), prm, celli ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL( 0.999999999,-0.999999999, 1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL( 0.999999999, 1.000000000,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1.000000000, 0.999999999,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL( 0.999999999,-1.000000000,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1.000000000, 0.999999999,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL( 0.999999999,-0.999999999,-1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 5 );
 
-	sd.value_to_params( VAL(-0.999999999,-0.999999999, 1.000000000), prm, celli ); ASSERT_EQ( celli, 0 );
-	sd.value_to_params( VAL(-0.999999999, 1.000000000,-0.999999999), prm, celli ); ASSERT_EQ( celli, 1 );
-	sd.value_to_params( VAL(-1.000000000,-0.999999999,-0.999999999), prm, celli ); ASSERT_EQ( celli, 2 );
-	sd.value_to_params( VAL(-0.999999999,-1.000000000,-0.999999999), prm, celli ); ASSERT_EQ( celli, 3 );
-	sd.value_to_params( VAL( 1.000000000,-0.999999999,-0.999999999), prm, celli ); ASSERT_EQ( celli, 4 );
-	sd.value_to_params( VAL(-0.999999999,-0.999999999,-1.000000000), prm, celli ); ASSERT_EQ( celli, 5 );
+	sd.value_to_params( VAL(-0.999999999,-0.999999999, 1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 0 );
+	sd.value_to_params( VAL(-0.999999999, 1.000000000,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 1 );
+	sd.value_to_params( VAL(-1.000000000,-0.999999999,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 2 );
+	sd.value_to_params( VAL(-0.999999999,-1.000000000,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 3 );
+	sd.value_to_params( VAL( 1.000000000,-0.999999999,-0.999999999), 0, prm, celli ); ASSERT_EQ( celli, 4 );
+	sd.value_to_params( VAL(-0.999999999,-0.999999999,-1.000000000), 0, prm, celli ); ASSERT_EQ( celli, 5 );
 
 	// sd.params_to_value( PRM(0.75,0.75), 5, val ); cout << val << endl;
 	// sd.value_to_params( VAL( 1, 1, 1), prm, celli ); cout << prm.transpose() << " " << celli << endl;

@@ -57,6 +57,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & params,
 			Index cell_index,
+			Index resl,
 			Value & value
 		) const {
 			Map< Matrix<double,3,12> > const cell_centers( dodec_data::get_dodec_cell_centers() );
@@ -68,6 +69,7 @@ namespace maps {
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
 			Value const & value,
+			Index resl,			
 			Params & params,
 			Index & cell_index
 		) const ;
@@ -76,6 +78,7 @@ namespace maps {
 		///@note necessary only for neighbor lookup		
 		void value_to_params_for_cell(
 			Value const & value,
+			Index resl,
 			Params & params
 		) const ;
 

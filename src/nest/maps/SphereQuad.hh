@@ -68,6 +68,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & params,
 			Index cell_index,
+			Index resl,
 			Value & value
 		) const {
 			Map< Matrix<double,3,3> > const rot_to_cell(
@@ -85,6 +86,7 @@ namespace maps {
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
 			Value const & value,
+			Index resl,
 			Params & params,
 			Index & cell_index
 		) const {

@@ -11,7 +11,7 @@
 // #include <nest/MultiNest_test.cc>
 
 // #include <nest/maps/parameter_maps_test.cc> // 7.546 // 4.0 wo Eigen
-// #include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
+#include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 
@@ -23,7 +23,7 @@
 
 // #include <objective/ObjectiveFunction_test.cc>
 // #include "objective/voxel/VoxelArray_test.cc"
-#include "objective/voxel/FieldCache_test.cc"
+// #include "objective/voxel/FieldCache_test.cc"
 // #include "objective/rosetta/AnalyticEvaluation_test.cc"
 // #include "objective/rosetta/RosettaField_test.cc"
 

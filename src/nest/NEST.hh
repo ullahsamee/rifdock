@@ -134,7 +134,7 @@ namespace nest {
 				Index undilated = util::undilate<DIM>(hier_index>>i);
 				params[i] = (static_cast<Float>(undilated) + 0.5 ) * scale;
 			}
-			return this->params_to_value( params, cell_index, value );
+			return this->params_to_value( params, cell_index, resl, value );
 		}
 		///@brief set the state of this NEST to Value for index at depth resl
 		///@return false iff invalid index
@@ -162,7 +162,7 @@ namespace nest {
 		bool get_indicies(Value const & v, Index resl, Indices & indices_out, Index & cell_index_out) const {
 			assert(resl<=MAX_RESL_ONE_CELL); // not rigerous check if Ncells > 1
 			Params params;
-			if( ! this->value_to_params( v, params, cell_index_out ) ) return false;
+			if( ! this->value_to_params( v, resl, params, cell_index_out ) ) return false;
 			Float scale = Float(ONE<<resl);
 			for(size_t i = 0; i < DIM; ++i){
 				// this min for bounds check kinda sucks, but it's necessary if you want to allow points on the boundary
@@ -176,7 +176,7 @@ namespace nest {
 		void get_indicies_for_cell(Value const & v, Index resl, Index cell_index, Indices & indices_out) const {
 			assert(resl<=MAX_RESL_ONE_CELL); // not rigerous check if Ncells > 1
 			Params params;
-			this->value_to_params_for_cell( v, params, cell_index );
+			this->value_to_params_for_cell( v, resl, params, cell_index );
 			Float scale = Float(ONE<<resl);
 			for(size_t i = 0; i < DIM; ++i){
 				// this crazy add/subtract avoids round towards 0 so params < 0 behave correctly
@@ -236,7 +236,7 @@ namespace nest {
 			std::back_insert_iterator<std::vector<Index> > inserter(nbr_cells);
 			Float param_delta = 1.0 / (Float)(1<<resl);
 			// std::cout << "DELTA " << param_delta << std::endl;
-			this->get_neighboring_cells(v,param_delta,inserter);
+			this->get_neighboring_cells(v,resl,param_delta,inserter);
 			BOOST_FOREACH( Index cell_index, nbr_cells ){
 				// std::cout << "NBR_CELL " << cell_index << std::endl;
 				Indices indices;
@@ -264,7 +264,7 @@ namespace nest {
 		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
 			Value & v = *boost::any_cast<Value*>(result);
 			bool status = set_value( index, resl, v );
-			this->set_stored_value(v);
+			if(status) this->set_stored_value(v);
 			return status;
 		}
 		///@brief virtual virtual function to set the state of this nest
@@ -283,8 +283,8 @@ namespace nest {
 			for(size_t i = 0; i < DIM; ++i) params[i] = (static_cast<Float>(hindices[iindex+i]) + 0.5 ) * scale;
 			iindex += DIM;
 			Value & v( *boost::any_cast<Value*>(result) );
-			bool status = this->params_to_value( params, cell_index, v );
-			this->set_stored_value(v);
+			bool status = this->params_to_value( params, cell_index, resl, v );
+			if(status) this->set_stored_value(v);
 			return status;
 		}
 		///@brief virtual function returning size(resl)
@@ -321,17 +321,17 @@ namespace nest {
 		Index size(Index /*resl*/=0) const { return this->num_cells(); }
 		///@brief set state
 		///@return false iff invalid index
-		bool set_state(Index index, Index /*resl*/, Value & val){
+		bool set_state(Index index, Index resl, Value & val){
 			// assert(index < this->num_cells());
 			Params params;
-			return this->params_to_value( params, index, val );
+			return this->params_to_value( params, index, resl, val );
 		}
 		///@brief set state
 		///@return false iff invalid index
-		bool set_state(Index index, Index /*resl*/=0){
+		bool set_state(Index index, Index resl=0){
 			// assert(index < this->num_cells());
 			Params params;
-			return this->params_to_value( params, index, this->nonconst_value() );
+			return this->params_to_value( params, index, resl, this->nonconst_value() );
 		}
 		///@brief calls set_state(index,resl) then returns value()
 		///@return value of set state
@@ -349,7 +349,7 @@ namespace nest {
 		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
 			Value & v( *boost::any_cast<Value*>(result) );
 			bool status = set_state( index, resl, v );
-			this->set_stored_value(v);
+			if(status) this->set_stored_value(v);
 			return status;
 		}
 
@@ -362,13 +362,13 @@ namespace nest {
 			std::vector<size_t> const & /*hindices*/,
 			Index cell_index,
 			size_t & /*iindex*/,
-			Index /*resl*/,
+			Index resl,
 			boost::any & result
 		) {
 			Params params;
 			Value & v( *boost::any_cast<Value*>(result) );
-			bool status = this->params_to_value( params, cell_index, v );
-			this->set_stored_value(v);
+			bool status = this->params_to_value( params, cell_index, resl, v );
+			if(status) this->set_stored_value(v);
 			return status;
 		}
 		///@brief return size(resl)

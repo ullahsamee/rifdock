@@ -79,19 +79,19 @@ TEST(UnitMap,value_to_params_for_cell){
 	MapType umap(3);
 	MapType::Params params;
 
-	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, 0  );
+	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, 0  );
 	ASSERT_EQ( params[0], 1.5 );
 	ASSERT_EQ( params[1], 0.5 );
 
-	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, 1  );
+	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, 1  );
 	ASSERT_EQ( params[0], 0.5 );
 	ASSERT_EQ( params[1], 0.5 );
 
-	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, 2  );
+	umap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, 2  );
 	ASSERT_EQ( params[0], -0.5 );
 	ASSERT_EQ( params[1],  0.5 );
 
-	umap.value_to_params_for_cell( MapType::ValueType(0.2,0.5), params, 2  );
+	umap.value_to_params_for_cell( MapType::ValueType(0.2,0.5), 0, params, 2  );
 	ASSERT_EQ( params[0], -1.8 );
 	ASSERT_EQ( params[1],  0.5 );
 }
@@ -107,27 +107,27 @@ TEST(ScaleMap,value_to_params_for_cell){
 
 		MapType::Params params;
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(0,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(0,0)) );
 		ASSERT_EQ( params[0], 1.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(1,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(1,0)) );
 		ASSERT_EQ( params[0], 0.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(0,1)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(0,1)) );
 		ASSERT_EQ( params[0],  1.5 );
 		ASSERT_EQ( params[1], -0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(2,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(2,0)) );
 		ASSERT_EQ( params[0],-0.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(1,2)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(1,2)) );
 		ASSERT_EQ( params[0],  0.5 );
 		ASSERT_EQ( params[1], -1.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), params, smap.indices_to_cellindex(MapType::Indices(3,3)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5,0.5), 0, params, smap.indices_to_cellindex(MapType::Indices(3,3)) );
 		ASSERT_EQ( params[0], -1.5 );
 		ASSERT_EQ( params[1], -2.5 );
 	}
@@ -143,27 +143,27 @@ TEST(ScaleMap,value_to_params_for_cell){
 
 		MapType::Params params;
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(0,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(0,0)) );
 		ASSERT_EQ( params[0], 1.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(1,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(1,0)) );
 		ASSERT_EQ( params[0], 0.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(0,1)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(0,1)) );
 		ASSERT_EQ( params[0],  1.5 );
 		ASSERT_EQ( params[1], -0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(2,0)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(2,0)) );
 		ASSERT_EQ( params[0],-0.5 );
 		ASSERT_EQ( params[1], 0.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(1,2)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(1,2)) );
 		ASSERT_EQ( params[0],  0.5 );
 		ASSERT_EQ( params[1], -1.5 );
 
-		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), params, smap.indices_to_cellindex(MapType::Indices(3,3)) );
+		smap.value_to_params_for_cell( MapType::ValueType(1.5*scale-shift[0],0.5*scale-shift[1]), 0, params, smap.indices_to_cellindex(MapType::Indices(3,3)) );
 		ASSERT_EQ( params[0], -1.5 );
 		ASSERT_EQ( params[1], -2.5 );
 	}

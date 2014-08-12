@@ -42,6 +42,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & params,
 			Index cell_index,
+			Index resl,
 			Value & value
 		) const {
 			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
@@ -55,11 +56,12 @@ namespace maps {
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
 			Value const & value,
+			Index resl,
 			Params & params,
 			Index & cell_index
 		) const {
 			///@note neighbor lookups require out of bounds mappings to be valid
-			value_to_params_for_cell(value,params,0);
+			value_to_params_for_cell(value,resl,params,0);
 			cell_index = (Index)value[0];
 			params[0] -= (Float)cell_index;
 			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
@@ -71,6 +73,7 @@ namespace maps {
 		///@note necessary only for neighbor lookup		
 		void value_to_params_for_cell(
 			Value const & value,
+			Index /*resl*/,
 			Params & params,
 			Index cell_index
 		) const {
@@ -80,7 +83,13 @@ namespace maps {
 		///@brief return the cell_index of neighboring cells within delta of value
 		///@note delta parameter is in "Parameter Space"
 		template<class OutIter>
-		void get_neighboring_cells(Value const & value, Float param_delta, OutIter out) const {
+		void get_neighboring_cells(
+			Value const & value,
+			Index /*resl*/,
+			Float param_delta,
+			OutIter out
+		) const {
+			// Float param_delta = 1.0 / (Float)(1<<resl);
 			// this BIG thing is to ensure rounding goes down
 			int const BIG = 12345678;
 			int lb = std::max(                0, static_cast<int>( value[0]-param_delta + BIG ) - BIG );

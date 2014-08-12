@@ -48,6 +48,7 @@ struct ArrayValueArchitype {
 		bool params_to_value(
 			Params const & /*params*/,
 			Index /*cell_index*/,
+			Index /*resl*/,
 			Value & /*value*/
 		) const { return false; }
 
@@ -84,6 +85,7 @@ struct ArrayValueArchitype {
 		bool params_to_value(
 			Params const & /*params*/,
 			Index /*cell_index*/,
+			Index /*resl*/,
 			Value & /*value*/
 		) const { return false; }
 
@@ -91,6 +93,7 @@ struct ArrayValueArchitype {
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
 			Value const & /*value*/,
+			Index /*resl*/,
 			Params & /*params*/,
 			Index & /*cell_index*/
 		) const { return false; }
@@ -128,6 +131,7 @@ struct ArrayValueArchitype {
 		bool params_to_value(
 			Params const & /*params*/,
 			Index /*cell_index*/,
+			Index /*resl*/,
 			Value & /*value*/
 		) const { return false; }
 
@@ -135,6 +139,7 @@ struct ArrayValueArchitype {
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
 			Value const & /*value*/,
+			Index /*resl*/,
 			Params & /*params*/,
 			Index & /*cell_index*/
 		) const { return false; }
@@ -143,6 +148,7 @@ struct ArrayValueArchitype {
 		///@note necessary only for neighbor lookup		
 		void value_to_params_for_cell(
 			Value const & /*value*/,
+			Index /*resl*/,
 			Params & /*params*/
 		) const {}
 

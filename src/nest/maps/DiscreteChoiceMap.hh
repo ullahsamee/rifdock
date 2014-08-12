@@ -27,6 +27,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & /*params*/,
 			Index cell_index,
+			Index resl,
 			Value & value
 		) const {
 			if( cell_index >= choices.size() ) return false;
