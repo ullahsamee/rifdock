@@ -85,5 +85,16 @@ TEST(FieldCache,test_file_cache){
 
 }
 
+TEST(BoundingFieldCache,test_bounding){
+	typedef util::SimpleArray<3,float> F3;
+	Ellipse3D field(1,2,3,4,5,6);
+	FieldCache3D<double> f1(field,-11,13,0.444);
+	BoundingFieldCache3D<double> bf1(f1,2.0,0.812);
+
+	cout <<  f1(F3(1,2,3)) << endl;
+	cout << bf1(F3(1,2,3)) << endl;	
+
+}
+
 
 }}}}

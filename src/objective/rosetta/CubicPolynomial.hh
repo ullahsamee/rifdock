@@ -21,8 +21,7 @@
 #ifndef INCLUDED_core_scoring_etable_CubicPolynomial_hh
 #define INCLUDED_core_scoring_etable_CubicPolynomial_hh
 
-namespace objective { 
-namespace rosetta {
+namespace scheme { namespace objective { namespace rosetta {
 
 /// @brief Simple struct holding coefficients of a cubic polynomial of the form
 //  'c3 * x^3 + c2 * x^2 + c1 * x + c0'.
@@ -79,8 +78,7 @@ cubic_polynomial_deriv(
 	return (3*c3*x + 2*c2)*x + c1;
 }
 
-}
-}
+}}}
 
 
 

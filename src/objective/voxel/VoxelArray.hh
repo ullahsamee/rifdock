@@ -22,7 +22,6 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	typedef util::SimpleArray<DIM,typename BASE::size_type> Indices;
 	typedef util::SimpleArray<DIM,Float> Bounds;
 	Bounds lb_,ub_,cs_;
-	std::string cache_location_;
 
 	VoxelArray() {}
 

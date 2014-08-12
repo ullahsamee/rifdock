@@ -35,8 +35,7 @@
 
 #include <objective/rosetta/CubicPolynomial.hh>
 
-namespace objective {
-namespace rosetta {
+namespace scheme { namespace objective { namespace rosetta {
 
 // /// LK-Solvation Implementation
 
@@ -368,7 +367,6 @@ lj_derivatives(
 	dljatrE_ddis *= p.ljatr_final_weight;
 }
 
-}
-}
+}}}
 
 #endif

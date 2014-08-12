@@ -1,21 +1,21 @@
-#ifndef INCLUDED_objective_rosetta_EtableParamsOnePair_hh
-#define INCLUDED_objective_rosetta_EtableParamsOnePair_hh
+#ifndef INCLUDED_objective_rosetta_EtableParams_hh
+#define INCLUDED_objective_rosetta_EtableParams_hh
 
 #include "objective/rosetta/CubicPolynomial.hh"
+#include <vector>
 
-namespace objective { 
-namespace rosetta {
+namespace scheme { namespace objective { namespace rosetta {
 
-
+template<class Real>
 struct ExtraQuadraticRepulsion
 {
-	double xlo;
-	double xhi;
-	double slope;
-	double extrapolated_slope;
-	double ylo;
+	Real xlo;
+	Real xhi;
+	Real slope;
+	Real extrapolated_slope;
+	Real ylo;
 	ExtraQuadraticRepulsion() : xlo(0),xhi(0),slope(0),extrapolated_slope(0),ylo(0) {}
-	ExtraQuadraticRepulsion(double a, double b, double c, double d, double e)
+	ExtraQuadraticRepulsion(Real a, Real b, Real c, Real d, Real e)
 	 : xlo(a),xhi(b),slope(c),extrapolated_slope(d),ylo(e)
 	{}
 };
@@ -24,9 +24,9 @@ struct ExtraQuadraticRepulsion
 /// @brief %EtableParamsOnePair describes all of the parameters for a particular
 /// pair of atom types necessary to evaluate the Lennard-Jones and LK solvation
 /// energies.
+template<class Real>
 struct EtableParamsOnePair
 {
-	typedef double Real;
 	typedef CubicPolynomialParamsBase<Real> CubicPolynomial;
 
 	Real maxd2;
@@ -41,7 +41,7 @@ struct EtableParamsOnePair
 	Real ljatr_cubic_poly_xlo;
 	Real ljatr_cubic_poly_xhi;
 	CubicPolynomial ljatr_cubic_poly_parameters;
-	ExtraQuadraticRepulsion ljrep_extra_repulsion;
+	ExtraQuadraticRepulsion<Real> ljrep_extra_repulsion;
 	bool ljrep_from_negcrossing;
 
 	Real lk_coeff1;
@@ -125,8 +125,24 @@ struct EtableParamsOnePair
 
 };
 
-}
-}
+template<typename Real>
+struct EtableParams : std::vector<EtableParamsOnePair<Real> > {
+	static size_t const N_ATOMTYPES = 25;
+	template<class Size>
+	EtableParamsOnePair<Real> const &
+	params_for_pair(
+		Size atype1,
+		Size atype2
+	) const
+	{
+		Size i1 = atype1 < atype2 ? atype1 : atype2;
+		Size i2 = atype1 < atype2 ? atype2 : atype1;
+		Size index = (i1-1)*N_ATOMTYPES + i2 - (i1*(i1-1)/2 );
+		return this->operator[]( index );
+	}
+};
+
+}}}
 
 #endif
 
