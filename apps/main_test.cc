@@ -1,4 +1,4 @@
-#include <main/gtest_util.hh>
+#include "gtest_util.hh"
 
 int main(int argc, char **argv)
 {

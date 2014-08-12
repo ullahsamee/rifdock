@@ -14,7 +14,7 @@ using std::cout;
 using std::endl;
 
 
-struct Ellipse3D {
+struct Ellipse3D : Field3D <double> {
 	static size_t ncalls;
 	static double sqr(double f) { return f*f; }
 	double c1,c2,c3,sd1,sd2,sd3;
@@ -27,6 +27,7 @@ struct Ellipse3D {
 	template<class F3> double operator()(F3 const & f3) const { return this->operator()(f3[0],f3[1],f3[2]); }
 };
 size_t Ellipse3D::ncalls = 0;
+
 
 template<class Cache,class Field>
 double test_cache_vs_field(Cache const & cache, Field field, int nsamp=10000){
@@ -42,6 +43,11 @@ double test_cache_vs_field(Cache const & cache, Field field, int nsamp=10000){
 		double fieldval = field(samp);
 		// std::cout << cacheval << " " << fieldval << std::endl;
 		maxerr = std::max( std::abs(fieldval-cacheval), maxerr );
+		if( std::abs(fieldval-cacheval) > 10.0 ){
+			cout << samp << " " << fieldval << " " << cacheval << endl;
+			cout << cache.lb_ << endl;
+			cout << cache.ub_ << endl;			
+		}
 	}
 	return maxerr;
 }
@@ -51,10 +57,10 @@ TEST(FieldCache,test_accuracy_random){
 	Ellipse3D field(1,2,3,4,5,6);
 	ASSERT_FLOAT_EQ( field(1,2,3), 11.0 );
 
-	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-11,13,1.6), field, 100000 ), 0.30 );
-	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-11,13,0.8), field, 100000 ), 0.15 );
-	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-11,13,0.4), field, 100000 ), 0.08 );
-	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-11,13,0.2), field, 100000 ), 0.04 );
+	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-10,13,1.6), field, 100000 ), 0.30 );
+	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-10,13,0.8), field, 100000 ), 0.15 );
+	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-10,13,0.4), field, 100000 ), 0.08 );
+	ASSERT_LE( test_cache_vs_field( FieldCache3D<double>(field,-10,13,0.2), field, 100000 ), 0.04 );
 
 }
 
@@ -85,15 +91,51 @@ TEST(FieldCache,test_file_cache){
 
 }
 
-TEST(BoundingFieldCache,test_bounding){
-	typedef util::SimpleArray<3,float> F3;
+TEST(BoundingFieldCache,test_bounding_ellipse_max){
+	typedef util::SimpleArray<3,double> F3;
 	Ellipse3D field(1,2,3,4,5,6);
-	FieldCache3D<double> f1(field,-11,13,0.444);
-	BoundingFieldCache3D<double> bf1(f1,2.0,0.812);
+	FieldCache3D<double> f1(field,-11,13,0.824234);
+	BoundingFieldCache3D<double,AggMax> bf1(f1,2.873,1.234);
 
-	cout <<  f1(F3(1,2,3)) << endl;
-	cout << bf1(F3(1,2,3)) << endl;	
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> uniform;
+	for(int i = 0; i < 10000; ++i){
+		F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (f1.ub_-f1.lb_) + f1.lb_;
+		if( f1[idx] > bf1[idx] ) cout << idx << endl;
+		ASSERT_LE( f1[idx] , bf1[idx] );
+	}
+}
 
+struct Delta : Field3D<double> {
+	double operator()(double f, double g, double h) const { 
+		if( fabs(f) < 0.1 && fabs(g) < 0.1 && fabs(h) < 0.1 ) return 1.0;
+		return 0;
+	}
+
+};
+
+TEST(BoundingFieldCache,test_bounding_delta){
+	typedef util::SimpleArray<3,double> F3;
+	Delta delta;
+	ASSERT_EQ( delta(0.0,0.0,0.0), 1 );
+	ASSERT_EQ( delta(0.2,0.0,0.0), 0 );	
+	FieldCache3D<double> f1(delta,-7.5,7.5,1.0);
+	ASSERT_EQ( f1[F3(0,0,0)], 1.0 );
+	double sum = 0; for(size_t i = 0; i < f1.num_elements(); ++i) sum += f1.data()[i];
+	ASSERT_EQ( sum, 1.0 );
+
+	double spread = 5.4;
+	BoundingFieldCache3D<double,AggMax> bf1(f1,spread,1.0);
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> uniform;
+	for(int i = 0; i < 100000; ++i){
+		F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (bf1.ub_-bf1.lb_) + bf1.lb_;
+		// if( idx.norm() < spread-sqrt(3.0) && bf1[idx]!=1.0) cout << "FAIL1 " << idx << " " << idx.norm()-spread << endl;
+		// if( idx.norm() > spread+sqrt(3.0) && bf1[idx]!=0.0) cout << "FAIL0 " << idx << " " << idx.norm()-spread << endl;	
+		// not sure if cell diagonal sqrt(3) is tight bound here... seems like it should be sqrt(3)/2...
+		if( idx.norm() < spread-sqrt(3.0) ) ASSERT_EQ( bf1[idx], 1.0 );
+		if( idx.norm() > spread+sqrt(3.0) ) ASSERT_LE( bf1[idx], 0.0 ); // can be "uninitialized" vals in corners
+	}
 }
 
 

@@ -2,7 +2,6 @@
 #define INCLUDED_objective_voxel_VoxelArray_HH
 
 #include <boost/multi_array.hpp>
-#include <boost/any.hpp>
 #include "util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
 #include <boost/serialization/access.hpp>

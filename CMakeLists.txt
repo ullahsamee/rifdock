@@ -8,18 +8,23 @@ FILE(GLOB L5 "src/*/*/*/*/*.cc")
 
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG -ffast-math" )
-#SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
+
+SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+#SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
 
 add_subdirectory(external/gmock)
 include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
+
+
+# shitty "data" files to compile faster
+SET_SOURCE_FILES_PROPERTIES( src/objective/rosetta/EtableParams_init.cc PROPERTIES COMPILE_FLAGS -O0 )
 
 list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_serialization boost_iostreams z)
 list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
@@ -29,10 +34,10 @@ include_directories("src")
 link_directories(${CMAKE_LIBRARY_PATH})
 
 project (main_test)
-add_executable(main_test src/main/main_test.cc ${L1} ${L2} ${L3} ${L4} ${L5} )
+add_executable(main_test apps/main_test.cc ${L1} ${L2} ${L3} ${L4} ${L5} )
 target_link_libraries(main_test ${EXTRA_LIBS} )
 
 
 project (quick_test)
-add_executable(quick_test src/main/quick_test.cpp src/objective/rosetta/EtableParams_init.cc)
+add_executable(quick_test apps/quick_test.cc src/objective/rosetta/EtableParams_init.cc )
 target_link_libraries(quick_test ${EXTRA_LIBS})

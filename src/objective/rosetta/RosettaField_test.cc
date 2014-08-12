@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <boost/random/uniform_real.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 #include "objective/rosetta/RosettaField.hh"
 #include "objective/voxel/FieldCache.hh"
@@ -63,41 +65,59 @@ using std::endl;
 
 
 TEST(RosettaField,test_btn){
-	typedef util::SimpleArray<3,float> Vec;
-	typedef actor::Atom<Vec> Atom;
+	typedef util::SimpleArray<3,float> F3;
+	typedef actor::Atom<F3> Atom;
 	std::vector<Atom> atoms;
-	atoms.push_back( Atom( Vec( 0.696,-12.422,3.375), 7 ));
-	atoms.push_back( Atom( Vec( 0.576, -9.666,5.336), 17 ));
-	atoms.push_back( Atom( Vec(-0.523,-10.824,6.189), 3 ));
-	atoms.push_back( Atom( Vec(-1.324,-12.123,4.201), 7 ));
-	atoms.push_back( Atom( Vec(-0.608,-12.327,3.072), 3 ));
-	atoms.push_back( Atom( Vec(-1.125,-12.422,1.933), 13 ));
-	atoms.push_back( Atom( Vec(-0.470,-12.087,5.377), 3 ));
-	atoms.push_back( Atom( Vec( 0.953,-12.267,4.780), 6 ));
-	atoms.push_back( Atom( Vec( 1.765,-11.040,5.134), 4 ));
-	atoms.push_back( Atom( Vec(-1.836,-10.395,6.850), 4 ));
+	atoms.push_back( Atom( F3( 0.696,-12.422,3.375), 7 ));
+	atoms.push_back( Atom( F3( 0.576, -9.666,5.336), 17 ));
+	atoms.push_back( Atom( F3(-0.523,-10.824,6.189), 3 ));
+	atoms.push_back( Atom( F3(-1.324,-12.123,4.201), 7 ));
+	atoms.push_back( Atom( F3(-0.608,-12.327,3.072), 3 ));
+	atoms.push_back( Atom( F3(-1.125,-12.422,1.933), 13 ));
+	atoms.push_back( Atom( F3(-0.470,-12.087,5.377), 3 ));
+	atoms.push_back( Atom( F3( 0.953,-12.267,4.780), 6 ));
+	atoms.push_back( Atom( F3( 1.765,-11.040,5.134), 4 ));
+	atoms.push_back( Atom( F3(-1.836,-10.395,6.850), 4 ));
 
 	RosettaField<Atom> rf(atoms);
-	Vec lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);
+	F3 lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);
 	BOOST_FOREACH(Atom const & a,rf.atoms_){ 
 		lb = lb.min(a.position());
 		ub = ub.max(a.position());
 	}
-	cout << lb << " " << ub << endl;
-	RosettaFieldAtype<Atom> rf1(rf,1);
+	// cout << "LB " << lb << endl;
+	// cout << "UB " << ub << endl;
 
-	cout << "create " << endl;
-	voxel::FieldCache3D<float> fc1(rf1,lb-6.0f,ub+6.0f,0.2);
-	cout << "examine" << endl;
-	size_t nbz=0, naz=0;
-	for(size_t i = 0; i < fc1.num_elements(); ++i){
-		if(fc1.data()[i]>0) ++naz;
-		if(fc1.data()[i]<0) ++nbz;
+	for(int atype = 1; atype <= 25; ++atype){
+		RosettaFieldAtype<Atom> rfa(rf,1);
+		voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,1.0);
+		voxel::BoundingFieldCache3D<float> brc(rc,2.0,1.0);
+
+		// size_t nbz=0, naz=0;
+		// for(size_t i = 0; i < rc.num_elements(); ++i){
+		// 	if(rc.data()[i]>0) ++naz;
+		// 	if(rc.data()[i]<0) ++nbz;
+		// }
+		// cout << rc.num_elements() << " " << (float)naz/rc.num_elements() << " " << (float)nbz/rc.num_elements() << endl;
+
+		// std::ofstream out("/tmp/btn1.dat");
+		// cout << rc.shape()[0] << " " << rc.shape()[1] << " " << rc.shape()[2] << endl;
+		// for(size_t i = 0; i < rc.num_elements(); ++i) out << rc.data()[i] << endl;
+		// out.close();
+
+		// std::ofstream out2("/tmp/btn2.dat");
+		// cout << brc.shape()[0] << " " << brc.shape()[1] << " " << brc.shape()[2] << endl;
+		// for(size_t i = 0; i < brc.num_elements(); ++i) out2 << brc.data()[i] << endl;
+		// out2.close();
+
+		boost::random::mt19937 rng((unsigned int)time(0));
+		boost::uniform_real<> uniform;
+		for(int i = 0; i < 10000; ++i){
+			F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rc.ub_-rc.lb_) + rc.lb_;
+			ASSERT_LE( brc[idx], rc[idx] );
+		}
+
 	}
-	cout << fc1.num_elements() << " " << (float)naz/fc1.num_elements() << " " << (float)nbz/fc1.num_elements() << endl;
-
-
-
 }
 
 

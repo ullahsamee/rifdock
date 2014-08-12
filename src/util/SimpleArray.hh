@@ -28,6 +28,7 @@ struct SimpleArray {
 	F D[N];
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
 	SimpleArray(){}
+	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
 	SimpleArray(F a){ fill(a); }
 	SimpleArray(F a, F b                                        ){ D[0]=a;D[1]=b; }
 	SimpleArray(F a, F b, F c                                   ){ D[0]=a;D[1]=b;D[2]=c; }
@@ -45,10 +46,10 @@ struct SimpleArray {
 	template<class OF> SimpleArray<N,OF> cast() const {
 		SimpleArray<N,OF> r; for(int i = 0; i < N; ++i) r[i] = (*this)[i]; return r;
 	}
-	SimpleArray<N,F> max(F b){ SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b); return r; }
-	SimpleArray<N,F> min(F b){ SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b); return r; }
-	SimpleArray<N,F> max(SimpleArray<N,F> const & b){ SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b[i]); return r; }
-	SimpleArray<N,F> min(SimpleArray<N,F> const & b){ SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
+	SimpleArray<N,F> max(F b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b); return r; }
+	SimpleArray<N,F> min(F b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b); return r; }
+	SimpleArray<N,F> max(SimpleArray<N,F> const & b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b[i]); return r; }
+	SimpleArray<N,F> min(SimpleArray<N,F> const & b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
 	F prod() const { F p=1; for(int i = 0; i < N; ++i) p *= D[i]; return p; }
 	F sum () const { F p=0; for(int i = 0; i < N; ++i) p += D[i]; return p; }
 	F prod(size_t l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
@@ -56,7 +57,8 @@ struct SimpleArray {
 	bool operator==(SimpleArray<N,F> const & o) const {
 		bool r = true; for(int i = 0; i < N; ++i) r &= D[i]==o.D[i]; return r;
 	}
-	F norm() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return std::sqrt(n); }
+	F norm2() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return n; }
+	F norm() const { return std::sqrt(norm2()); }
 	void fill(F v){ for(int i = 0; i < N; ++i) D[i]=v; }
 	iterator begin() { return &D[0]; }
 	iterator end  () { return &D[N]; }
