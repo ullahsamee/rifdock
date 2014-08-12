@@ -13,8 +13,8 @@ FILE(GLOB L5 "src/*/*/*/*/*.cc")
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
 
-SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_CXX_FLAGS         "-O3 -DNEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
 

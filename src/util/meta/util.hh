@@ -65,6 +65,24 @@ struct has_const_call_oper_3 {                                             \
     typedef m::bool_<value> type;                                          \
 };
 
+template<typename T, class R, class A>                                     \
+struct has_subscript_oper {                                                \
+    template<typename U, R (U::*)(A)> struct SFINAE {};                    \
+    template<typename U> static char Test(SFINAE<U, &U::operator[]>*);     \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
+
+template<typename T, class R, class A>                                     \
+struct has_const_subscript_oper {                                          \
+    template<typename U, R (U::*)(A) const> struct SFINAE {};              \
+    template<typename U> static char Test(SFINAE<U, &U::operator[]>*);     \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef m::bool_<value> type;                                          \
+};
+
 #define SCHEME_HAS_MEMBER_FUNCTION_3(MEMBER)                               \
 template<typename T, class R, class A, class B, class C>                   \
 struct has_member_fun_ ## MEMBER  {                                        \

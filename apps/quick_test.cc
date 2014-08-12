@@ -11,9 +11,10 @@
 // #include <nest/MultiNest_test.cc>
 
 // #include <nest/maps/parameter_maps_test.cc> // 7.546 // 4.0 wo Eigen
-#include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
+// #include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
+#include <nest/maps/QuaternionMap_test.cc>
 
 // #include <util/meta/util_test.cc>
 // #include <util/container/ContainerInteractions_test.cc>

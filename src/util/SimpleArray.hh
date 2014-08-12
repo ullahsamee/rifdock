@@ -18,6 +18,7 @@ namespace impl {
 ///@note used this instead of Eigen Array in NEST to speed compilation by 20%-50%
 template<int N, class F=double>
 struct SimpleArray {
+	typedef SimpleArray<N,F> THIS;
 	typedef F value_type;
 	typedef F* iterator;
 	typedef F const* const_iterator;
@@ -46,15 +47,15 @@ struct SimpleArray {
 	template<class OF> SimpleArray<N,OF> cast() const {
 		SimpleArray<N,OF> r; for(int i = 0; i < N; ++i) r[i] = (*this)[i]; return r;
 	}
-	SimpleArray<N,F> max(F b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b); return r; }
-	SimpleArray<N,F> min(F b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b); return r; }
-	SimpleArray<N,F> max(SimpleArray<N,F> const & b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b[i]); return r; }
-	SimpleArray<N,F> min(SimpleArray<N,F> const & b) const { SimpleArray<N,F> r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
+	THIS max(F b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b); return r; }
+	THIS min(F b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b); return r; }
+	THIS max(THIS const & b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b[i]); return r; }
+	THIS min(THIS const & b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
 	F prod() const { F p=1; for(int i = 0; i < N; ++i) p *= D[i]; return p; }
 	F sum () const { F p=0; for(int i = 0; i < N; ++i) p += D[i]; return p; }
 	F prod(size_t l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
 	F sum (size_t l) const { F p=0; for(int i = 0; i < l; ++i) p += D[i]; return p; }
-	bool operator==(SimpleArray<N,F> const & o) const {
+	bool operator==(THIS const & o) const {
 		bool r = true; for(int i = 0; i < N; ++i) r &= D[i]==o.D[i]; return r;
 	}
 	F norm2() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return n; }
@@ -66,11 +67,12 @@ struct SimpleArray {
 	const_iterator end  () const { return &D[N]; }
 	bool empty() const { return false; }
 	size_type size() const { return N; }
-	void swap(SimpleArray<N,F> & o){ for(int i = 0; i < N; ++i) std::swap(D[i],o.D[i]); }
+	void swap(THIS & o){ for(int i = 0; i < N; ++i) std::swap(D[i],o.D[i]); }
 	friend class boost::serialization::access;
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
 		for(size_t i = 0; i < N; ++i) ar & D[i];
 	}
+	THIS operator-() const { THIS r; for(size_t i = 0; i < N; ++i) r[i] = -D[i]; return r; }
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){

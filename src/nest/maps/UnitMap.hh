@@ -34,7 +34,7 @@ namespace maps {
 		typedef util::SimpleArray<DIM,Index> Indices;
 		typedef util::SimpleArray<DIM,Float> Params;
 
-		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
+		BOOST_STATIC_ASSERT_MSG(DIM>0,"UnitMap DIM must be > 0");
 		///@brief constructor
 		UnitMap(Index num_cells=1) : num_cells_(num_cells) {}
 		///@brief sets value to parameters without change
@@ -42,7 +42,7 @@ namespace maps {
 		bool params_to_value(
 			Params const & params,
 			Index cell_index,
-			Index resl,
+			Index /*resl*/,
 			Value & value
 		) const {
 			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
