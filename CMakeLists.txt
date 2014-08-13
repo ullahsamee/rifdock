@@ -6,6 +6,8 @@ FILE(GLOB L3 "src/*/*/*.cc")
 FILE(GLOB L4 "src/*/*/*/*.cc")
 FILE(GLOB L5 "src/*/*/*/*/*.cc")
 
+SET (CMAKE_C_COMPILER  "/usr/bin/clang")
+
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 #SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG -ffast-math" )
@@ -21,6 +23,7 @@ SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNEBUG -ffast-math -mmmx -mfpmath=sse -msse -
 add_subdirectory(external/gmock)
 include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
+include_directories("/usr/include/eigen3")
 
 
 # shitty "data" files to compile faster

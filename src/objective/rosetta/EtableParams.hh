@@ -127,7 +127,7 @@ struct EtableParamsOnePair
 
 template<typename Real>
 struct EtableParams : std::vector<EtableParamsOnePair<Real> > {
-	static size_t const N_ATOMTYPES = 25;
+	static std::size_t const N_ATOMTYPES = 25;
 	template<class Size>
 	EtableParamsOnePair<Real> const &
 	params_for_pair(
