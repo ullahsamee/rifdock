@@ -17,7 +17,7 @@
             "variants" : [
                 {
                     "name": "Run",
-                    "shell_cmd": "rm -f *.pdb && cd build && time ninja -j8 quick_test && ./quick_test &> ../tmp/sublime_output.txt && open *.pdb",
+                    "shell_cmd": "rm -f build/*.pdb && cd build && time ninja -j8 quick_test && ./quick_test &> ../tmp/sublime_output.txt && open *.pdb",
                 }
             ]
         },

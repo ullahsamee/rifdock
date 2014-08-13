@@ -6,6 +6,8 @@
 // #include <util/template_loop_test.cc> // 3.5 vs 2.2 wo Eigen
 // #include <util/SimpleArray_test.cc>
 
+// #include "numeric/euler_angles_test.cc"
+
 // #include <nest/NEST_test.cc> // 4.479 vs. 3.0 wo Eigen
 // #include <nest/NEST_neighbor_test.cc> // 4.567 // 3.26 wo Eigen
 // #include <nest/MultiNest_test.cc>
@@ -14,7 +16,8 @@
 // #include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
-#include <nest/maps/QuaternionMap_test.cc>
+// #include <nest/maps/QuaternionMap_test.cc>
+#include <nest/maps/EulerAnglesMap_test.cc>
 
 // #include <util/meta/util_test.cc>
 // #include <util/container/ContainerInteractions_test.cc>

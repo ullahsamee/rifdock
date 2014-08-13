@@ -4,7 +4,10 @@
 #include <nest/maps/QuaternionMap.hh>
 
 #include <boost/random/normal_distribution.hpp>
+#include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include "io/dump_pdb_atom.hh"
 
@@ -60,6 +63,7 @@ TEST( QuaternionMap, test_cell_validity_check ){
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
 
 	// test that the indices of all valid quats are valid for set_state
 	for(int i = 0; i < 10000; ++i){
@@ -72,32 +76,74 @@ TEST( QuaternionMap, test_cell_validity_check ){
 		}
 	}
 
+	// // test cov rad
+	// {
+	// 	// 	1                   16 119.1666
+	// 	//  2                  256 59.69261
+	// 	//  3                 4096 27.35909
+	// 	//  4                65536 13.58733
+	// 	//  5              1048576 6.926648
+	// 	//  6             16777216 3.517071
+	// 	//  7            268435456 1.735485
+	// 	//  8           4294967296 0.8686822
+	// 	//  9          68719476736 0.4319874
+	// 	// 10        1099511627776 0.2173495
+	// 	// 11       17592186044416 0.110361
+	// 	// 12      281474976710656 0.05478334
+	// 	// 13     4503599627370496 0.02755045
+	// 	// 14    72057594037927936 0.01351415
+	// 	// 15  1152921504606846976 0.006807914
+	// 	NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
+	// 	for(int r = 1; r < 16; ++r){
+	// 		double maxdiff = 0;
+	// 		for(int i = 0; i < 1000000; ++i){
+	// 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
+	// 			q.normalize();
+	// 			// cout << q << endl;
+	// 			Eigen::Quaterniond qcen = nest.set_and_get( nest.get_index(q,r) , r );
+	// 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
+	// 		}
+	// 		cout << boost::format("%2i %20i %.7d") % r % nest.size(r) % (maxdiff*180.0/M_PI) << endl;
+	// 	}
+	// }
 
 	BOOST_STATIC_ASSERT( util::meta::has_subscript_oper<P,double&,size_t>::value );
 	BOOST_STATIC_ASSERT( util::meta::has_const_subscript_oper<P,double const &,size_t>::value );
 
-	cout << "attempt to dump visualiztion" << endl;
-	{
-		typedef Eigen::Vector3d V;
-		NEST<4,Eigen::Quaternion<double>,QuaternionMap> nest;
-		// for(size_t r = 4; r < 5; ++r){
-		size_t r = 4; {
-			std::ofstream out("quatmaptest.pdb");
-			for(size_t i = 0; i < nest.size(r); ++i){
-				if( nest.set_state(i,r) ){
-					Eigen::Quaternion<double> q = nest.value();
-					cout << r << " " << i << " " << q.coeffs().transpose() << endl;
-					 V ximg = q.matrix() * Eigen::Vector3d(1,0,0);
-					 V yimg = q.matrix() * Eigen::Vector3d(0,1.1,0);
-					 V zimg = q.matrix() * Eigen::Vector3d(0,0,1.2);
-					 io::dump_pdb_atom(out,"O" ,30*ximg);
-					 io::dump_pdb_atom(out,"NI",30*yimg);
-					 io::dump_pdb_atom(out,"N" ,30*zimg);
-				}
-			}
-			out.close();
-		}
-	}
+	// cout << "attempt to dump visualiztion" << endl;
+	// {
+	// 	typedef Eigen::Vector3d V;
+	// 	NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
+	// 	// for(size_t r = 4; r < 5; ++r){
+	// 	Eigen::Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
+	// 	qrand.normalize();
+	// 	Eigen::Vector3d X = qrand*Eigen::Vector3d(1,0,0);
+	// 	Eigen::Vector3d Y = qrand*Eigen::Vector3d(0,1.1,0);
+	// 	Eigen::Vector3d Z = qrand*Eigen::Vector3d(0,0,1.2);
+	// 	size_t beg = 0;
+	// 	while(!nest.set_state(beg,10)) beg = std::max<size_t>(uniform(rng)*(nest.size(10)-1000),0);
+	// 	for(size_t r = 1; r <= 9; ++r){
+	// 		std::ofstream out(("quatmaptest_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
+	// 		size_t count = 0;
+	// 		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
+	// 		// continue;
+	// 		for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){
+	// 			if( nest.set_state(i,r) ){
+	// 				++count;
+	// 				if( count > 300) break;
+	// 				Eigen::Quaterniond q = nest.value();
+	// 				cout << r << " " << i << " " << q.coeffs().transpose() << endl;
+	// 				 V ximg = q.matrix() * X;
+	// 				 V yimg = q.matrix() * Y;
+	// 				 V zimg = q.matrix() * Z;;
+	// 				 io::dump_pdb_atom(out,"O" ,61*ximg);
+	// 				 io::dump_pdb_atom(out,"NI",61*yimg);
+	// 				 io::dump_pdb_atom(out,"N" ,61*zimg);
+	// 			}
+	// 		}
+	// 		out.close();
+	// 	}
+	// }
 
 
 }
