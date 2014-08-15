@@ -46,7 +46,7 @@ struct Atom {
 	// ~Atom(){ delete data_; }
 
 	template<class Xform>
-	Atom(Atom const & a,Position const & moveby){
+	Atom(Atom const & a,Xform const & moveby){
 		position_ = moveby*a.position();
 		type_ = a.type_;
 		data_ = a.data_;

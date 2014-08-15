@@ -43,7 +43,9 @@
 // #include "objective/rosetta/AnalyticEvaluation_test.cc"
 // #include "objective/rosetta/RosettaField_test.cc"
 
-#include "chemical/ligand_factory_test.cc"
+// #include "chemical/ligand_factory_test.cc"
+
+#include "objective/methods/hbond_5dof_test.cc"
 
 int main(int argc, char **argv)
 {

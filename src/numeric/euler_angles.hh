@@ -102,7 +102,7 @@ namespace scheme { namespace numeric {
 		typedef typename get_scalar<M>::type T;
 		static T const pi = boost::math::constants::pi<T>();
 		static T const pi_2 = boost::math::constants::pi<T>() * (T)2;
-		static T const epsilon = std::numeric_limits<T>::epsilon();
+		static T const epsilon = (T)10*std::numeric_limits<T>::epsilon();
 		static T const FLOAT_PRECISION = std::sqrt(epsilon);
 		if ( zz(m) >= (T)1 - FLOAT_PRECISION ){
 			euler[0] = std::atan2( sin_cos_range( yx(m) ), sin_cos_range( xx(m) ) );

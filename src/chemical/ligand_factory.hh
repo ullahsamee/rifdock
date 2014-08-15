@@ -41,7 +41,7 @@ struct LigandFactory {
 		/*
 ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	*/
 		std::string line = trim_copy(_line);
-		int const N = line.size();
+		int const N = (int)line.size();
 		BOOST_VERIFY( N > 53 );
 		double x = lexical_cast<double>( trim_copy( line.substr(28,10) ) );
 		double y = lexical_cast<double>( trim_copy( line.substr(38,8) ) );
