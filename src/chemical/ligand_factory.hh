@@ -109,7 +109,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      3  C   ALA     0       2.009   1.420   0.000"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      4  O   ALA     0       1.383   2.339  -0.529"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      5  CB  ALA     0       1.988  -0.773  -1.199"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      6  H   ALA     0      -0.492   0.764  -0.441"); ++j;
+			// if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      6  H   ALA     0      -0.492   0.764  -0.441"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      7  HA  ALA     0       1.797  -0.490   0.913"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      8 1HB  ALA     0       3.078  -0.764  -1.185"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      9 2HB  ALA     0       1.633  -1.802  -1.154"); ++j;
@@ -117,7 +117,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 		}
 		if(resn=="CYS"){
 			vector<int> NC(11); vector<int> BBC(11); vector<int> AT(11); 			/*CYS_ N  */ AT[ 0]= 18; NC[ 0]=  1; BBC[ 0]=  0; 
-			/*CYS_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  0; 
+			/*CYS_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  2; 
 			/*CYS_ C  */ AT[ 2]= 20; NC[ 2]=  1; BBC[ 2]=  0; 
 			/*CYS_ O  */ AT[ 3]= 21; NC[ 3]=  1; BBC[ 3]=  0; 
 			/*CYS_ CB */ AT[ 4]=  4; NC[ 4]=  1; BBC[ 4]=  2; 
@@ -256,7 +256,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      2  CA  GLY     0       1.458   0.000   0.000"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      3  C   GLY     0       2.009   1.420   0.000"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      4  O   GLY     0       1.383   2.339  -0.529"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      5  H   GLY     0      -0.492   0.764  -0.441"); ++j;
+			// if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      5  H   GLY     0      -0.492   0.764  -0.441"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      6 1HA  GLY     0       1.822  -0.535   0.877"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      7 2HA  GLY     0       1.822  -0.535  -0.876"); ++j;
 		}
@@ -295,7 +295,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     14 2HB  HIS     0       2.626  -1.588  -0.874"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     15  HD2 HIS     0       1.916  -2.362  -3.748"); ++j;
 			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     16  HE1 HIS     0      -2.208  -1.787  -2.840"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     17  HE2 HIS     0      -0.542  -2.818  -4.472"); ++j;
+			// if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     17  HE2 HIS     0      -0.542  -2.818  -4.472"); ++j;
 		}
 		if(resn=="ILE"){
 			vector<int> NC(19); vector<int> BBC(19); vector<int> AT(19); 			/*ILE_ N  */ AT[ 0]= 18; NC[ 0]=  2; BBC[ 0]=  0; 
@@ -511,21 +511,21 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 			/*PRO_1HD */ AT[13]= 25; NC[13]=  3; BBC[13]=  3; 
 			/*PRO_2HD */ AT[14]= 25; NC[14]=  3; BBC[14]=  3; 
 			int j = 0;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      1  N   PRO     0       0.000   0.000   0.000"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      2  CA  PRO     0       1.458   0.000   0.000"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      3  C   PRO     0       2.009   1.420   0.000"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      4  O   PRO     0       1.383   2.339  -0.529"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      5  CB  PRO     0       1.803  -0.740  -1.297"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      6  CG  PRO     0       0.666  -0.428  -2.209"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      7  CD  PRO     0      -0.531  -0.340  -1.299"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      8  NV  PRO     0       0.075   0.007   0.001"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM      9  HA  PRO     0       1.820  -0.555   0.878"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     10 1HB  PRO     0       2.770  -0.388  -1.685"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     11 2HB  PRO     0       1.908  -1.816  -1.099"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     12 1HG  PRO     0       0.857   0.511  -2.748"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     13 2HG  PRO     0       0.562  -1.216  -2.970"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     14 1HD  PRO     0      -1.209   0.448  -1.659"); ++j;
-			if( check(AT[j],NC[j],BBC[j]) ) *outiter++ = make_atom_pdbline("ATOM     15 2HD  PRO     0      -1.045  -1.312  -1.273"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      1  N   PRO     0       0.000   0.000   0.000"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      2  CA  PRO     0       1.458   0.000   0.000"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      3  C   PRO     0       2.009   1.420   0.000"); ++j;
+			// if( true     ) *outiter++ = make_atom_pdbline("ATOM      4  O   PRO     0       1.383   2.339  -0.529"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      5  CB  PRO     0       1.803  -0.740  -1.297"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      6  CG  PRO     0       0.666  -0.428  -2.209"); ++j;
+			if( true     ) *outiter++ = make_atom_pdbline("ATOM      7  CD  PRO     0      -0.531  -0.340  -1.299"); ++j;
+			// if( true    ) *outiter++ = make_atom_pdbline("ATOM      8  NV  PRO     0       0.075   0.007   0.001"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM      9  HA  PRO     0       1.820  -0.555   0.878"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     10 1HB  PRO     0       2.770  -0.388  -1.685"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     11 2HB  PRO     0       1.908  -1.816  -1.099"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     12 1HG  PRO     0       0.857   0.511  -2.748"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     13 2HG  PRO     0       0.562  -1.216  -2.970"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     14 1HD  PRO     0      -1.209   0.448  -1.659"); ++j;
+			if( hydrogen ) *outiter++ = make_atom_pdbline("ATOM     15 2HD  PRO     0      -1.045  -1.312  -1.273"); ++j;
 		}
 		if(resn=="GLN"){
 			vector<int> NC(17); vector<int> BBC(17); vector<int> AT(17); 			/*GLN_ N  */ AT[ 0]= 18; NC[ 0]=  3; BBC[ 0]=  0; 
@@ -617,7 +617,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 		}
 		if(resn=="SER"){
 			vector<int> NC(11); vector<int> BBC(11); vector<int> AT(11); 			/*SER_ N  */ AT[ 0]= 18; NC[ 0]=  1; BBC[ 0]=  0; 
-			/*SER_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  0; 
+			/*SER_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  2; 
 			/*SER_ C  */ AT[ 2]= 20; NC[ 2]=  1; BBC[ 2]=  0; 
 			/*SER_ O  */ AT[ 3]= 21; NC[ 3]=  1; BBC[ 3]=  0; 
 			/*SER_ CB */ AT[ 4]=  4; NC[ 4]=  1; BBC[ 4]=  2; 
@@ -642,7 +642,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 		}
 		if(resn=="THR"){
 			vector<int> NC(14); vector<int> BBC(14); vector<int> AT(14); 			/*THR_ N  */ AT[ 0]= 18; NC[ 0]=  1; BBC[ 0]=  0; 
-			/*THR_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  0; 
+			/*THR_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  2; 
 			/*THR_ C  */ AT[ 2]= 20; NC[ 2]=  1; BBC[ 2]=  0; 
 			/*THR_ O  */ AT[ 3]= 21; NC[ 3]=  1; BBC[ 3]=  0; 
 			/*THR_ CB */ AT[ 4]=  3; NC[ 4]=  1; BBC[ 4]=  2; 
@@ -673,7 +673,7 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 		}
 		if(resn=="VAL"){
 			vector<int> NC(16); vector<int> BBC(16); vector<int> AT(16); 			/*VAL_ N  */ AT[ 0]= 18; NC[ 0]=  1; BBC[ 0]=  0; 
-			/*VAL_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  0; 
+			/*VAL_ CA */ AT[ 1]= 19; NC[ 1]=  1; BBC[ 1]=  1; 
 			/*VAL_ C  */ AT[ 2]= 20; NC[ 2]=  1; BBC[ 2]=  0; 
 			/*VAL_ O  */ AT[ 3]= 21; NC[ 3]=  1; BBC[ 3]=  0; 
 			/*VAL_ CB */ AT[ 4]=  3; NC[ 4]=  1; BBC[ 4]=  1; 

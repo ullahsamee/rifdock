@@ -16,7 +16,11 @@ template<class _Position>
 struct Atom {
 	typedef _Position Position;
 
-	Atom() : position_(0,0,0),type_(0),data_(make_shared<AtomData>()) {}
+	Atom() : 
+	    position_(0,0,0),
+	    type_(0),
+	    data_(make_shared<AtomData>()) {}
+	    // data_(new AtomData) {}	    
 
 	Atom(
 		Position const &    p,
@@ -33,9 +37,13 @@ struct Atom {
 	) : position_(p),
 	    type_(type),
 	    data_(make_shared<AtomData>(
+	    // data_(new AtomData(
 	    	atomname,resname,chain,resnum,atomnum,elem,ishet,occ,bfac)
 	    )
 	{}
+
+	// // TODO: compare raw ptr for speed
+	// ~Atom(){ delete data_; }
 
 	template<class Xform>
 	Atom(Atom const & a,Position const & moveby){
@@ -55,11 +63,10 @@ struct Atom {
 	bool operator==(Atom<Position> const & o) const {
 		return numeric::approx_eq(o.position_,position_) && o.type_==type_ && o.data_==data_; }
 
-	//TODO: compare raw ptr for speed
-	// ~Atom(){ delete data_; }
 private:
 	int type_;
 	shared_ptr<AtomData> data_;
+	// AtomData *data_;
 	Position position_;
 };
 
