@@ -68,16 +68,16 @@ TEST(RosettaField,test_btn){
 	typedef util::SimpleArray<3,float> F3;
 	typedef actor::Atom<F3> Atom;
 	std::vector<Atom> atoms;
-	atoms.push_back( Atom( F3( 0.696,-12.422,3.375), 7 ));
+	atoms.push_back( Atom( F3( 0.696,-12.422,3.375), 7  ));
 	atoms.push_back( Atom( F3( 0.576, -9.666,5.336), 17 ));
-	atoms.push_back( Atom( F3(-0.523,-10.824,6.189), 3 ));
-	atoms.push_back( Atom( F3(-1.324,-12.123,4.201), 7 ));
-	atoms.push_back( Atom( F3(-0.608,-12.327,3.072), 3 ));
+	atoms.push_back( Atom( F3(-0.523,-10.824,6.189), 3  ));
+	atoms.push_back( Atom( F3(-1.324,-12.123,4.201), 7  ));
+	atoms.push_back( Atom( F3(-0.608,-12.327,3.072), 3  ));
 	atoms.push_back( Atom( F3(-1.125,-12.422,1.933), 13 ));
-	atoms.push_back( Atom( F3(-0.470,-12.087,5.377), 3 ));
-	atoms.push_back( Atom( F3( 0.953,-12.267,4.780), 6 ));
-	atoms.push_back( Atom( F3( 1.765,-11.040,5.134), 4 ));
-	atoms.push_back( Atom( F3(-1.836,-10.395,6.850), 4 ));
+	atoms.push_back( Atom( F3(-0.470,-12.087,5.377), 3  ));
+	atoms.push_back( Atom( F3( 0.953,-12.267,4.780), 6  ));
+	atoms.push_back( Atom( F3( 1.765,-11.040,5.134), 4  ));
+	atoms.push_back( Atom( F3(-1.836,-10.395,6.850), 4  ));
 
 	RosettaField<Atom> rf(atoms);
 	F3 lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);

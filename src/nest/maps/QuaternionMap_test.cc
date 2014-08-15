@@ -76,8 +76,6 @@ TEST( QuaternionMap, test_cell_validity_check ){
 		}
 	}
 
-	// // test cov rad
-	// {
 	// 	// 	1                   16 119.1666
 	// 	//  2                  256 59.69261
 	// 	//  3                 4096 27.35909
@@ -93,19 +91,29 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	// 	// 13     4503599627370496 0.02755045
 	// 	// 14    72057594037927936 0.01351415
 	// 	// 15  1152921504606846976 0.006807914
-	// 	NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
-	// 	for(int r = 1; r < 16; ++r){
-	// 		double maxdiff = 0;
-	// 		for(int i = 0; i < 1000000; ++i){
-	// 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
-	// 			q.normalize();
-	// 			// cout << q << endl;
-	// 			Eigen::Quaterniond qcen = nest.set_and_get( nest.get_index(q,r) , r );
-	// 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
-	// 		}
-	// 		cout << boost::format("%2i %20i %.7d") % r % nest.size(r) % (maxdiff*180.0/M_PI) << endl;
-	// 	}
-	// }
+	// test cov rad
+	{
+		cout << "QuaternionMap Covrad" << endl;
+		int NRES = 6;
+		int ITERS = 10000;
+		NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
+		for(int r = 1; r <= NRES; ++r){
+			double maxdiff=0, avgdiff=0;
+			for(int i = 0; i <= ITERS; ++i){
+				Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
+				q.normalize();
+				// cout << q << endl;
+				Eigen::Quaterniond qcen = nest.set_and_get( nest.get_index(q,r) , r );
+				maxdiff = std::max(maxdiff,q.angularDistance(qcen));
+				avgdiff += q.angularDistance(qcen);
+			}
+			avgdiff /= ITERS;
+			size_t count = 0; for(size_t i = 0; i < nest.size(r); ++i) if(nest.set_state(i,r)) ++count;
+			double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
+			printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f\n", 
+				r, count, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac );
+		}
+	}
 
 	BOOST_STATIC_ASSERT( util::meta::has_subscript_oper<P,double&,size_t>::value );
 	BOOST_STATIC_ASSERT( util::meta::has_const_subscript_oper<P,double const &,size_t>::value );

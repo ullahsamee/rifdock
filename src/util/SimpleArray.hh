@@ -16,7 +16,7 @@ namespace impl {
 
 ///@brief minimal fixed size array with element-wise operations
 ///@note used this instead of Eigen Array in NEST to speed compilation by 20%-50%
-template<int N, class F=double>
+template<int N, class F=double,bool init0=false>
 struct SimpleArray {
 	typedef SimpleArray<N,F> THIS;
 	typedef F value_type;
@@ -28,7 +28,7 @@ struct SimpleArray {
 	typedef size_t size_type;
 	F D[N];
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
-	SimpleArray(){}
+	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
 	SimpleArray(F a){ fill(a); }
 	SimpleArray(F a, F b                                        ){ D[0]=a;D[1]=b; }

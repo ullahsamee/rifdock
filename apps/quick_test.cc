@@ -2,6 +2,7 @@
 
 // include desired tests here:
 
+// #include "util/hash_test.cc"
 // #include <util/StoragePolicy_test.cc>
 // #include <util/template_loop_test.cc> // 3.5 vs 2.2 wo Eigen
 // #include <util/SimpleArray_test.cc>
@@ -17,7 +18,7 @@
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 // #include <nest/maps/QuaternionMap_test.cc>
-#include <nest/maps/EulerAnglesMap_test.cc>
+// #include <nest/maps/EulerAnglesMap_test.cc>
 
 // #include <util/meta/util_test.cc>
 // #include <util/container/ContainerInteractions_test.cc>
@@ -28,16 +29,21 @@
 // #include <objective/ObjectiveFunction_test.cc>
 // #include "objective/voxel/VoxelArray_test.cc"
 // #include "objective/voxel/FieldCache_test.cc"
-// #include "objective/rosetta/AnalyticEvaluation_test.cc"
-// #include "objective/rosetta/RosettaField_test.cc"
 
 // #include <kinematics/Scene_test.cc>
 // #include <kinematics/Scene_test_eigen.cc>
 // #include <kinematics/SceneIterator_test.cc>
 
+// #include <io/dump_pdb_atom_test.cc>
+
 // #include <kinematics/Scene_test_objective.cc>
 
-// #include <actor/ActorBBStub_test.cc>
+// #include <actor/BBStub_test.cc>
+
+// #include "objective/rosetta/AnalyticEvaluation_test.cc"
+// #include "objective/rosetta/RosettaField_test.cc"
+
+#include "chemical/ligand_factory_test.cc"
 
 int main(int argc, char **argv)
 {

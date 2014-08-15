@@ -42,8 +42,8 @@ struct EulerAnglesMap {
 		for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 		// assert( params[0] <= (Float)num_cells_ );
 		for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
-		if( params[2] < 0.5 ) return false; // convention is 'W' component is >= 0
-		Params euler = (params-0.5)*2.0*boost::math::constants::pi<Float>();
+		if( params[2] > 0.5 ) return false; // convention is 'W' component is >= 0
+		Params euler = params*2.0*boost::math::constants::pi<Float>();
 		numeric::from_euler_angles(euler,value);
 		return true;
 	}
@@ -68,8 +68,9 @@ struct EulerAnglesMap {
 		Params & params,
 		Index /*cell_index*/
 	) const {
-		euler_angles(value,params);
-		params = params / 2.0*boost::math::constants::pi<Float>() + 0.5;
+		numeric::euler_angles(value,params);
+		// std::cout << params << std::endl;
+		params = params / 2.0 / boost::math::constants::pi<Float>();
 		for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 		for(size_t i = 1; i < DIM; ++i) assert( 1.0 >= params[i] );
 	}

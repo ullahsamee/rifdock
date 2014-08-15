@@ -1,49 +1,88 @@
 #ifndef INCLUDED_io_dump_pdb_atom_HH
 #define INCLUDED_io_dump_pdb_atom_HH
 
+#include "chemical/AtomData.hh"
+
 #include <iostream>
+#include <sstream>
 #include <cassert>
+#include <boost/assert.hpp>
 
 namespace scheme { namespace io {
 
+using chemical::AtomData;
+
 inline void dump_pdb_atom(
 	std::ostream & out,
-	bool nothet,
-	size_t iatom,
-	std::string atom,
-	std::string res,
-	char chain,
-	size_t ires,
 	double x, double y, double z,
-	double o, double b,
-	std::string elem
+	AtomData const & a = AtomData()
 ){
-	assert( atom.size()<5);
-	assert( res.size()<4);
-	assert( x<10000 && x > -1000 );
-	assert( y<10000 && y > -1000 );
-	assert( z<10000 && z > -1000 );
+	// std::string atomname,resname,elem;
+	// int atomnum,resnum;
+	// char chain;
+	// bool ishet;
+	// float occ,bfac;
+	BOOST_VERIFY( a.atomname.size() < 5 );
+	BOOST_VERIFY( a.resname.size() < 4 );
+	BOOST_VERIFY( a.elem.size() < 11 );	
+	BOOST_VERIFY( x<10000 && x > -1000 );
+	BOOST_VERIFY( y<10000 && y > -1000 );
+	BOOST_VERIFY( z<10000 && z > -1000 );
 	// cout << "ATOM   1604  C   GLU A 220       5.010  12.933   1.553  1.00 41.10           C" << endl;
 	char buf[128];
-	snprintf(buf,128,"%s%5lu %4s %3s %c%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
-		nothet?"ATOM  ":"HETATM",
-		iatom,
-		atom.c_str(),
-		res.c_str(),
-		chain,
-		ires,
+	std::string aname = a.atomname;
+	if( aname.size() == 1 ) aname = aname+"  ";
+	if( aname.size() == 2 ) aname = aname+" ";
+	snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
+		a.ishet ? "HETAOM  ":"ATOM  ",
+		a.atomnum,
+		aname.c_str(),
+		a.resname.c_str(),
+		a.chain,
+		a.resnum,
 		x,y,z
-		,o,b,elem.c_str()
+		,a.occ,
+		a.bfac,
+		a.elem.c_str()
 	);
 	out << buf;
 }
 
-template<class XYZ> void dump_pdb_atom(std::ostream & out,XYZ const & xyz){
-	dump_pdb_atom(out,true,0,"ATOM","RES",' ',0,xyz[0],xyz[1],xyz[2],1,0,"");
+template<class XYZ>
+inline void dump_pdb_atom(
+	std::ostream & out,
+	XYZ const & xyz,
+	AtomData const & a
+){
+	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],a);
 }
-template<class XYZ> void dump_pdb_atom(std::ostream & out,std::string aname,XYZ const & xyz){
-	dump_pdb_atom(out,true,0,aname,"RES",' ',0,xyz[0],xyz[1],xyz[2],1,0,"");
+
+template<class Atom>
+inline void dump_pdb_atom(
+	std::ostream & out,
+	Atom const & atom,
+	int iatom = -1,
+	int ires = -1,
+	char chain = 0
+){
+	AtomData d = atom.data();
+	if( iatom > 0 )	d.atomnum = iatom;
+	if( ires  > 0 ) d.resnum = ires;
+	if( chain!= 0 ) d.chain = chain;
+	dump_pdb_atom(out,atom.position()[0],atom.position()[1],atom.position()[2],d);
 }
+
+
+template<class Atom>
+inline std::string dump_pdb_atom(
+	Atom const & atom
+){
+	std::ostringstream o;
+	dump_pdb_atom(o,atom.position()[0],atom.position()[1],atom.position()[2],atom.data());
+	return o.str().substr(0,o.str().size()-1);
+}
+
+
 
 }
 }

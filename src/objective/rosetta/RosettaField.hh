@@ -20,7 +20,7 @@ struct RosettaField {
 	float compute_rosetta_energy(float x, float y, float z, int atype) const {
 		float atr=0,rep=0,sol=0;
 		BOOST_FOREACH(Atom const & a,atoms_){
-			EtableParamsOnePair<float> const & p = params.params_for_pair(a.type_,atype);
+			EtableParamsOnePair<float> const & p = params.params_for_pair(a.type(),atype);
 			float const dx = x-a.position()[0];
 			float const dy = y-a.position()[1];
 			float const dz = z-a.position()[2];
