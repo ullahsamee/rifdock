@@ -58,8 +58,8 @@ struct SimpleArray {
 	bool operator==(THIS const & o) const {
 		bool r = true; for(int i = 0; i < N; ++i) r &= D[i]==o.D[i]; return r;
 	}
-	F norm2() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return n; }
-	F norm() const { return std::sqrt(norm2()); }
+	F squaredNorm() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return n; }
+	F norm() const { return std::sqrt(squaredNorm()); }
 	void fill(F v){ for(int i = 0; i < N; ++i) D[i]=v; }
 	iterator begin() { return &D[0]; }
 	iterator end  () { return &D[N]; }

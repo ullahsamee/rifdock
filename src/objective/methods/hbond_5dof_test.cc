@@ -60,8 +60,8 @@ TEST(hbond_5dof,test){
 	// frame1.makeAffine();
 
 	dump_pdb(frame1*gly,"test1.pdb");
-	double e0 = uniform(rng)*2*M_PI;
-	double e2 = uniform(rng)*M_PI;
+	double e0 = uniform(rng)*2.0*M_PI;
+	double e2 = uniform(rng)*1.0*M_PI;
 	for(double e1 = 0; e1 < 2*M_PI; e1+=M_PI/8){
 
 		Matrix3d r; numeric::from_euler_angles(Vector3d(e0,e1,e2),r);

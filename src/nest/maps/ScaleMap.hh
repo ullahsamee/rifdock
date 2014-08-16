@@ -197,7 +197,7 @@ namespace maps {
 		///@brief aka covering radius max distance from bin center to any value within bin
 		Float bin_circumradius(Index resl) const {
 			Params width = (upper_bound_-lower_bound_) / cell_sizes_.template cast<Float>();
-			return 0.5/(Float)(1<<resl) * sqrt((width*width).sum()); // norm2
+			return 0.5/(Float)(1<<resl) * sqrt((width*width).sum()); // squaredNorm
 		}
 
 		///@brief maximum distance from the bin center which must be within the bin

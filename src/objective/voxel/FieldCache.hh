@@ -108,7 +108,7 @@ struct BoundingFieldCache3D : VoxelArray<3,Float> {
 		for(idx[0] = beg[0]; idx[0] <= end[0]; idx[0] += ref_.cs_[0]){
 		for(idx[1] = beg[1]; idx[1] <= end[1]; idx[1] += ref_.cs_[1]){
 		for(idx[2] = beg[2]; idx[2] <= end[2]; idx[2] += ref_.cs_[2]){
-			if( (f3-idx).norm2() <= spread_*spread_ )
+			if( (f3-idx).squaredNorm() <= spread_*spread_ )
 				val = Aggregator::aggregate( val, ref_[idx] );
 		}}}
 		// std::cout << f3 << " | " << beg << " => " << end << std::endl;

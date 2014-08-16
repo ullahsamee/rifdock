@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=SceneObj\*"
+            argument = "--gtest_filter=hecaton\*"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

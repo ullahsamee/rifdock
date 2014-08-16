@@ -121,6 +121,10 @@ namespace nest {
 			return this->num_cells() * ONE<<(DIM*resl);
 		}
 
+		Index cell_index(Index index, Index resl) const {
+			return index >> (DIM*resl);
+		}
+
 		///@brief set the input Value value for index at depth resl
 		///@return false iff invalid index
 		bool set_value(Index index, Index resl, Value & value) const {

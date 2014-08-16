@@ -16,16 +16,16 @@ namespace scheme { namespace nest { namespace maps { namespace test {
 using std::cout;
 using std::endl;
 
-TEST(EulerAnglesMap,test){
+TEST(EulerAnglesMap,DISABLED_covering){
 	using namespace Eigen;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
 
 	cout << "EulerAnglesMap Covrad" << endl;
-	int NRES = 6;
+	int NRES = 7;
 	// int const ITERS = 1000000;
-	int ITERS = 10000;	
+	int ITERS = 1000000;	
 	NEST<3,Matrix3d,EulerAnglesMap> nest;
 	for(int r = 1; r <= NRES; ++r){
 		double maxdiff=0, avgdiff=0;
@@ -47,13 +47,22 @@ TEST(EulerAnglesMap,test){
 		avgdiff /= ITERS;
 		// size/2 because half samples are ignored
 		double volfrac = (double)nest.size(r)/2*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
-		printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f\n", 
-			r, nest.size(r)/2, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac );
+		double avgfrac = (double)nest.size(r)/2*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
+		printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+			r, nest.size(r)/2, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac, avgfrac );
 		// cout << boost::format("%2i %20i %.7d %.7d") % r % nest.size(r) % (maxdiff*180.0/M_PI) % volfrac << endl;
 	}
 
+}
+
+
+TEST(EulerAnglesMap,shapes){
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
+
 	/// inspect maxdiff/avgdiff for some simple shapes
-	ITERS = 100000;
+	int ITERS = 100000;
 	{
 		util::SimpleArray<3,double> b(1,1,1);
 		double maxdiff=0, avgdiff=0;

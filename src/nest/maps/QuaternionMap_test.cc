@@ -26,6 +26,9 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	ASSERT_EQ( (int)-1.5 , -1 );
 	typedef QuaternionMap<4> MapType;
 	typedef MapType::Params P;
+	BOOST_STATIC_ASSERT( util::meta::has_subscript_oper<P,double&,size_t>::value );
+	BOOST_STATIC_ASSERT( util::meta::has_const_subscript_oper<P,double const &,size_t>::value );
+
 	MapType qmap;
 	MapType::ValueType val;
 	P q;
@@ -76,6 +79,13 @@ TEST( QuaternionMap, test_cell_validity_check ){
 		}
 	}
 
+}
+TEST(QuaternionMap,DISABLED_covering){
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
+
+
 	// 	// 	1                   16 119.1666
 	// 	//  2                  256 59.69261
 	// 	//  3                 4096 27.35909
@@ -94,8 +104,8 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	// test cov rad
 	{
 		cout << "QuaternionMap Covrad" << endl;
-		int NRES = 6;
-		int ITERS = 10000;
+		int NRES = 7;
+		int ITERS = 1000000;
 		NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
 		for(int r = 1; r <= NRES; ++r){
 			double maxdiff=0, avgdiff=0;
@@ -110,13 +120,12 @@ TEST( QuaternionMap, test_cell_validity_check ){
 			avgdiff /= ITERS;
 			size_t count = 0; for(size_t i = 0; i < nest.size(r); ++i) if(nest.set_state(i,r)) ++count;
 			double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
-			printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f\n", 
-				r, count, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac );
+			double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;		
+			printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+				r, count, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac, avgfrac );
 		}
 	}
 
-	BOOST_STATIC_ASSERT( util::meta::has_subscript_oper<P,double&,size_t>::value );
-	BOOST_STATIC_ASSERT( util::meta::has_const_subscript_oper<P,double const &,size_t>::value );
 
 	// cout << "attempt to dump visualiztion" << endl;
 	// {

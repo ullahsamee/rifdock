@@ -62,7 +62,7 @@ struct QuaternionMap {
 			Params lower_corner = idxnear.template cast<Float>()*width;
 			Params upper_corner = idxfar .template cast<Float>()*width;			
 			// std::cout << "corners " << lower_corner << " , " << upper_corner << std::endl;
-			if( lower_corner.norm2() > 1.0 || upper_corner.norm2() < 1.0 )
+			if( lower_corner.squaredNorm() > 1.0 || upper_corner.squaredNorm() < 1.0 )
 				return false;
 		// now normalize and "return"
 		Params norm = (params-0.5);
