@@ -41,30 +41,30 @@ struct BCC {
 		Index index
 	) const {
 		bool odd = index & 1;
-		Indices idx = ( (index>>1) / sizes_prefsum_ ) % sizes_;
-		return lower_cen_ + width_ * idx.template cast<Float>() + (odd? half_width_ : 0);
+		Indices indices = ( (index>>1) / sizes_prefsum_ ) % sizes_;
+		return lower_cen_ + width_ * indices.template cast<Float>() + (odd? half_width_ : 0);
 	}
 
 	Indices
 	indices(
-		Floats v,
+		Floats value,
 		bool & odd
 	) const {
-		v = (v-lower_)/width_;
-		Indices idx = v.template cast<Index>();
-		v = v - idx.template cast<Float>() - 0.5;
-		Indices idxc = idx - (v < 0);
-		odd = (0.25 * DIM) < fabs( ( v.sign() * v ).sum() );
-		return  odd ? idxc : idx;
+		value = (value-lower_)/width_;
+		Indices const indices = value.template cast<Index>();
+		value = value - indices.template cast<Float>() - 0.5;
+		Indices const corner_indices = indices - (value < 0);
+		odd = (0.25 * DIM) < fabs( ( value.sign() * value ).sum() );
+		return  odd ? corner_indices : indices;
 	}
 
 	Index
 	operator[](
-		Floats const & v
+		Floats const & value
 	) const {
 		bool odd;
-		Indices idx = indices(v,odd);
-		Index index = (sizes_prefsum_*idx).sum();
+		Indices indices = indices(value,odd);
+		Index index = (sizes_prefsum_*indices).sum();
 		return (index<<1) + odd;
 	}
 };
