@@ -13,20 +13,6 @@ using namespace Eigen;
 using std::cout;
 using std::endl;
 
-///@brief return sum of highest two elements in vector
-template<class Vector>
-double
-sum_of_2_max_components(
-	Vector vector,
-	size_t & argmax_1,
-	size_t & argmax_2
-){
-	// TODO: is there a faster way to do this?
-	double const m1 = vector.maxCoeff(&argmax_1);
-	vector[argmax_1] = -9e9;
-	return vector.maxCoeff(&argmax_2)+m1;
-}
-
 TEST(Trunc24CellMap,cell_lookup){
 	double const r = sqrt(2)/2;
 	double const h = 0.5;
@@ -85,7 +71,7 @@ TEST(Trunc24CellMap,cell_lookup){
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 1*1000*1000;
+	int NSAMP = 10*1000*1000;
 	std::vector<Vector4d> samp(NSAMP);
 	std::vector<size_t> cell(NSAMP),cell2(NSAMP);
 
@@ -105,18 +91,19 @@ TEST(Trunc24CellMap,cell_lookup){
 	for(int i = 0; i < NSAMP; ++i){
 		Vector4d const & quat(samp[i]);
 		Vector4d const quat_pos = samp[i].cwiseAbs();
+		Vector4d tmpv = quat_pos;
 
 		size_t hyperface_axis; // closest hyperface-pair
 		size_t edge_axis_1; // first axis of closest edge
 		size_t edge_axis_2; // second axis of closest edge
-		Vector3d hyperface_corner_edge_dists(
-			quat_pos.maxCoeff(&hyperface_axis), // dist to closest face
-			      1.0/2.0 * quat_pos.sum()  , // dist to closest corner
-			sqrt(2.0)/2.0 * sum_of_2_max_components(quat_pos,edge_axis_1,edge_axis_2) // dist do closest edge
-		);
-		size_t const tmp = edge_axis_1;
-		edge_axis_1 = edge_axis_1<edge_axis_2 ? edge_axis_1 : edge_axis_2;
-		edge_axis_2 = edge_axis_1<edge_axis_2 ? edge_axis_2 : tmp;
+
+		double const hyperface_dist = quat_pos.maxCoeff(&hyperface_axis); // dist to closest face
+		double const corner_dist = quat_pos.sum()/2;
+		tmpv[hyperface_axis] = -9e9;
+		double const edge_dist = sqrt(2)/2 * ( hyperface_dist + tmpv.maxCoeff(&edge_axis_2) );
+
+		edge_axis_1 = hyperface_axis<edge_axis_2 ? hyperface_axis : edge_axis_2;
+		edge_axis_2 = hyperface_axis<edge_axis_2 ? edge_axis_2 : hyperface_axis;
 		assert( edge_axis_1 < edge_axis_2 );
 
 		// cell if closest if of form 1000 (add 4 if negative)
@@ -135,8 +122,12 @@ TEST(Trunc24CellMap,cell_lookup){
 		size_t const edgecell = sign_shift + perm_shift[edge_axis_1][edge_axis_2];
 
 		// pick case 1000 1111 1100 without if statements
-		size_t swtch; hyperface_corner_edge_dists.maxCoeff(&swtch);
+		size_t swtch; Vector3d(hyperface_dist,corner_dist,edge_dist).maxCoeff(&swtch);
 		cell2[i] = swtch==0 ? facecell : (swtch==1 ? cornercell+8 : edgecell+24);
+		// this is slower !?!
+		// double const mx = std::max(std::max(hyperface_dist,corner_dist),edge_dist);
+		// cell2[i] = hyperface_dist==mx ? facecell : (corner_dist==mx ? cornercell+8 : edgecell+24);
+
 
 	}
 	cout << "clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
