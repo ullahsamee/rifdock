@@ -79,8 +79,11 @@ struct SimpleArray {
 	}
 	THIS operator-() const { THIS r; for(size_t i = 0; i < N; ++i) r[i] = -D[i]; return r; }
 	SimpleArray<N,F> sign() const { 
-		SimpleArray<N,F> r; for(int i = 0; i < N; ++i) r[i] = D[i]>0 ? 1.0 : -1.0; return r;
-	}
+		SimpleArray<N,F> r; for(int i = 0; i < N; ++i) r[i] = D[i]>0 ? 1.0 : -1.0; return r; }
+	template<class F2> SimpleArray<N,F> & operator*=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] *= o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator/=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] /= o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator+=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] += o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator-=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] -= o; return *this; }
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){
@@ -96,21 +99,21 @@ template<int N, class F> SimpleArray<N,F> operator*( SimpleArray<N,F> const & a,
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b[i]; return r; }
 template<int N, class F> SimpleArray<N,F> operator/( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] /= b[i];	return r; }
-template<int N, class F> SimpleArray<N,F> operator+( SimpleArray<N,F> const & a, F const & b ){
+template<int N, class F, class F2> SimpleArray<N,F> operator+( SimpleArray<N,F> const & a, F2 const & b ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] += b; return r; }
-template<int N, class F> SimpleArray<N,F> operator-( SimpleArray<N,F> const & a, F const & b ){
+template<int N, class F, class F2> SimpleArray<N,F> operator-( SimpleArray<N,F> const & a, F2 const & b ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] -= b; return r; }
-template<int N, class F> SimpleArray<N,F> operator*( SimpleArray<N,F> const & a, F const & b ){
+template<int N, class F, class F2> SimpleArray<N,F> operator*( SimpleArray<N,F> const & a, F2 const & b ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b; return r; }
-template<int N, class F> SimpleArray<N,F> operator/( SimpleArray<N,F> const & a, F const & b ){
+template<int N, class F, class F2> SimpleArray<N,F> operator/( SimpleArray<N,F> const & a, F2 const & b ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] /= b;	return r; }
-template<int N, class F> SimpleArray<N,F> operator+( F const & b, SimpleArray<N,F> const & a ){
+template<int N, class F, class F2> SimpleArray<N,F> operator+( F2 const & b, SimpleArray<N,F> const & a ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] += b; return r; }
-template<int N, class F> SimpleArray<N,F> operator-( F const & b, SimpleArray<N,F> const & a ){
+template<int N, class F, class F2> SimpleArray<N,F> operator-( F2 const & b, SimpleArray<N,F> const & a ){
 	SimpleArray<N,F> r(b); for(int i = 0; i < N; ++i) r[i] -= a[i]; return r; }
-template<int N, class F> SimpleArray<N,F> operator*( F const & b, SimpleArray<N,F> const & a ){
+template<int N, class F, class F2> SimpleArray<N,F> operator*( F2 const & b, SimpleArray<N,F> const & a ){
 	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b; return r; }
-template<int N, class F> SimpleArray<N,F> operator/( F const & b, SimpleArray<N,F> const & a ){
+template<int N, class F, class F2> SimpleArray<N,F> operator/( F2 const & b, SimpleArray<N,F> const & a ){
 	SimpleArray<N,F> r(b); for(int i = 0; i < N; ++i) r[i] /= a[i];	return r; }
 
 template<int N, class F> SimpleArray<N,F> operator%( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){

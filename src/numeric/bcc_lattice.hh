@@ -46,7 +46,7 @@ struct BCC {
 	}
 
 	Indices
-	indices(
+	get_indices(
 		Floats value,
 		bool & odd
 	) const {
@@ -63,7 +63,7 @@ struct BCC {
 		Floats const & value
 	) const {
 		bool odd;
-		Indices indices = indices(value,odd);
+		Indices indices = get_indices(value,odd);
 		Index index = (sizes_prefsum_*indices).sum();
 		return (index<<1) + odd;
 	}

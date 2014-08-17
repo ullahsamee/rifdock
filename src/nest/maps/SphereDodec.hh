@@ -85,9 +85,9 @@ namespace maps {
 				HouseholderQR<Matrix3d> qr(m);
 				m = qr.householderQ();
 				// cout << m << endl << endl;
-				cout << (m * Vector3d(1,0,0)).transpose() << " " << cell_centers.col(i).transpose() << endl;
-				cout << (m * Vector3d(0,1,0)).transpose() << " " << cell_centers.col(minj).transpose() << endl;				
-				cout << endl;
+				// cout << (m * Vector3d(1,0,0)).transpose() << " " << cell_centers.col(i).transpose() << endl;
+				// cout << (m * Vector3d(0,1,0)).transpose() << " " << cell_centers.col(minj).transpose() << endl;				
+				// cout << endl;
 				// cout << i << " " << minj << " " << mind << " " << endl;
 			}
 			return false;

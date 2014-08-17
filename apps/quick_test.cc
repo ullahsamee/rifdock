@@ -18,10 +18,11 @@
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 // #include <nest/maps/HecatonicosachoronMap_test.cc>
+#include <nest/maps/Trunc24CellMap_test.cc>
 // #include <nest/maps/QuaternionMap_test.cc>
 // #include <nest/maps/EulerAnglesMap_test.cc>
 
-#include "numeric/bcc_lattice_test.cc"
+// #include "numeric/bcc_lattice_test.cc"
 
 // #include <util/meta/util_test.cc>
 // #include <util/container/ContainerInteractions_test.cc>
