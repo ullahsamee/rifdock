@@ -15,10 +15,12 @@ SET (CMAKE_C_COMPILER  "/usr/bin/clang")
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
 
-SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-#SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE" )
+SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+
+#SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
+
 #SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
 

@@ -28,10 +28,11 @@ struct SimpleArray {
 	typedef F const & const_reference;
 	typedef size_t difference_type;
 	typedef size_t size_type;
+	typedef std::numeric_limits<F> NL;
 	F D[N];
 	template<class A>
 	SimpleArray(A const & a,typename boost::disable_if<boost::is_arithmetic<A> >::type* = 0)
-	{ for(int i = 0; i < N; ++i) D[i] = a[i]; }
+	{ for(int i=0;i<N;++i) D[i] = a[i]; }
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
 	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
@@ -50,79 +51,83 @@ struct SimpleArray {
 	F       & at(size_t i)       { BOOST_VERIFY(i < N); return D[i]; }
 	F const & at(size_t i) const { BOOST_VERIFY(i < N); return D[i]; }
 	template<class OF> SimpleArray<N,OF> cast() const {
-		SimpleArray<N,OF> r; for(int i = 0; i < N; ++i) r[i] = (*this)[i]; return r;
+		SimpleArray<N,OF> r; for(int i=0;i<N;++i) r[i] = (*this)[i]; return r;
 	}
-	THIS max(F b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b); return r; }
-	THIS min(F b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b); return r; }
-	THIS max(THIS const & b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::max(r[i],b[i]); return r; }
-	THIS min(THIS const & b) const { THIS r(*this); for(int i = 0; i < N; ++i) r[i] = std::min(r[i],b[i]); return r; }
-	F prod() const { F p=1; for(int i = 0; i < N; ++i) p *= D[i]; return p; }
-	F sum () const { F p=0; for(int i = 0; i < N; ++i) p += D[i]; return p; }
+	THIS maxCoeff() const { F r=NL::min(); for(int i=0;i<N;++i) r = std::max(r,D[i]); return r; }
+	THIS minCoeff() const { F r=NL::max(); for(int i=0;i<N;++i) r = std::min(r,D[i]); return r; }
+	template<class I> THIS maxCoeff(I*arg) const { F r=NL::min(); for(I i=0;i<N;++i){ *arg=r<D[i]?i:*arg; r=r<D[i]?D[i]:r; }; return r; }
+	template<class I> THIS minCoeff(I*arg) const { F r=NL::max(); for(I i=0;i<N;++i){ *arg=r>D[i]?i:*arg; r=r>D[i]?D[i]:r; }; return r; }
+	THIS max(F            b) const { THIS r(*this); for(int i=0;i<N;++i) r[i] = std::max(r[i],b); return r; }
+	THIS min(F            b) const { THIS r(*this); for(int i=0;i<N;++i) r[i] = std::min(r[i],b); return r; }
+	THIS max(THIS const & b) const { THIS r(*this); for(int i=0;i<N;++i) r[i] = std::max(r[i],b[i]); return r; }
+	THIS min(THIS const & b) const { THIS r(*this); for(int i=0;i<N;++i) r[i] = std::min(r[i],b[i]); return r; }
+	F prod() const { F p=1; for(int i=0;i<N;++i) p *= D[i]; return p; }
+	F sum () const { F p=0; for(int i=0;i<N;++i) p += D[i]; return p; }
 	F prod(size_t l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
 	F sum (size_t l) const { F p=0; for(int i = 0; i < l; ++i) p += D[i]; return p; }
 	bool operator==(THIS const & o) const {
-		bool r = true; for(int i = 0; i < N; ++i) r &= D[i]==o.D[i]; return r;
+		bool r = true; for(int i=0;i<N;++i) r &= D[i]==o.D[i]; return r;
 	}
-	F squaredNorm() const { F n=0; for(int i = 0; i < N; ++i) n+=D[i]*D[i]; return n; }
+	F squaredNorm() const { F n=0; for(int i=0;i<N;++i) n+=D[i]*D[i]; return n; }
 	F norm() const { return std::sqrt(squaredNorm()); }
-	void fill(F v){ for(int i = 0; i < N; ++i) D[i]=v; }
+	void fill(F v){ for(int i=0;i<N;++i) D[i]=v; }
 	iterator begin() { return &D[0]; }
 	iterator end  () { return &D[N]; }
 	const_iterator begin() const { return &D[0]; }
 	const_iterator end  () const { return &D[N]; }
 	bool empty() const { return false; }
 	size_type size() const { return N; }
-	void swap(THIS & o){ for(int i = 0; i < N; ++i) std::swap(D[i],o.D[i]); }
+	void swap(THIS & o){ for(int i=0;i<N;++i) std::swap(D[i],o.D[i]); }
 	friend class boost::serialization::access;
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
 		for(size_t i = 0; i < N; ++i) ar & D[i];
 	}
 	THIS operator-() const { THIS r; for(size_t i = 0; i < N; ++i) r[i] = -D[i]; return r; }
 	SimpleArray<N,F> sign() const { 
-		SimpleArray<N,F> r; for(int i = 0; i < N; ++i) r[i] = D[i]>0 ? 1.0 : -1.0; return r; }
-	template<class F2> SimpleArray<N,F> & operator*=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] *= o; return *this; }
-	template<class F2> SimpleArray<N,F> & operator/=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] /= o; return *this; }
-	template<class F2> SimpleArray<N,F> & operator+=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] += o; return *this; }
-	template<class F2> SimpleArray<N,F> & operator-=(F2 const & o){ for(int i = 0; i < N; ++i) D[i] -= o; return *this; }
+		SimpleArray<N,F> r; for(int i=0;i<N;++i) r[i] = D[i]>0 ? 1.0 : -1.0; return r; }
+	template<class F2> SimpleArray<N,F> & operator*=(F2 const & o){ for(int i=0;i<N;++i) D[i] *= o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator/=(F2 const & o){ for(int i=0;i<N;++i) D[i] /= o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator+=(F2 const & o){ for(int i=0;i<N;++i) D[i] += o; return *this; }
+	template<class F2> SimpleArray<N,F> & operator-=(F2 const & o){ for(int i=0;i<N;++i) D[i] -= o; return *this; }
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){
-	for(int i = 0; i < N; ++i) out << a[i] << " ";
+	for(int i=0;i<N;++i) out << a[i] << " ";
 	return out;
 }
 
 template<int N, class F> SimpleArray<N,F> operator+( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] += b[i]; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] += b[i]; return r; }
 template<int N, class F> SimpleArray<N,F> operator-( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] -= b[i]; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] -= b[i]; return r; }
 template<int N, class F> SimpleArray<N,F> operator*( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b[i]; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] *= b[i]; return r; }
 template<int N, class F> SimpleArray<N,F> operator/( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] /= b[i];	return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] /= b[i];	return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator+( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] += b; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] += b; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator-( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] -= b; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] -= b; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator*( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] *= b; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator/( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] /= b;	return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] /= b;	return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator+( F2 const & b, SimpleArray<N,F> const & a ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] += b; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] += b; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator-( F2 const & b, SimpleArray<N,F> const & a ){
-	SimpleArray<N,F> r(b); for(int i = 0; i < N; ++i) r[i] -= a[i]; return r; }
+	SimpleArray<N,F> r(b); for(int i=0;i<N;++i) r[i] -= a[i]; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator*( F2 const & b, SimpleArray<N,F> const & a ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] *= b; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] *= b; return r; }
 template<int N, class F, class F2> SimpleArray<N,F> operator/( F2 const & b, SimpleArray<N,F> const & a ){
-	SimpleArray<N,F> r(b); for(int i = 0; i < N; ++i) r[i] /= a[i];	return r; }
+	SimpleArray<N,F> r(b); for(int i=0;i<N;++i) r[i] /= a[i];	return r; }
 
 template<int N, class F> SimpleArray<N,F> operator%( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,F> r(a); for(int i = 0; i < N; ++i) r[i] %= b[i]; return r; }
+	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] %= b[i]; return r; }
 
 template<int N, class F, class F2> SimpleArray<N,size_t> operator<( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,size_t> r; for(int i = 0; i < N; ++i) r[i] = a[i]<b; return r; }
+	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b; return r; }
 template<int N, class F, class F2> SimpleArray<N,size_t> operator<( F2 const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,size_t> r; for(int i = 0; i < N; ++i) r[i] = a<b[i]; return r; }
+	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a<b[i]; return r; }
 
 }
 }
