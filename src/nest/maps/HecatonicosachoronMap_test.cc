@@ -457,7 +457,7 @@ TEST(hecatonicosachoron,neighbor_identity_rots_init){
 	for(size_t inbr = 0; inbr < 12; ++inbr)
 		nbrs0.push_back( half120cell[ nbrs(0,inbr) ] );
 
-	size_t ir = 0, ia = 0;
+	// size_t ir = 0, ia = 0;
 	size_t id = 0;
 	BOOST_FOREACH( Quaterniond d, half120cell ){
 		Quaterniond const dinv = d.inverse();
@@ -467,7 +467,7 @@ TEST(hecatonicosachoron,neighbor_identity_rots_init){
 		for(size_t inbr = 0; inbr < 12; ++inbr){
 			Quaterniond const q = half120cell[ nbrs(id,inbr) ];
 			Quaterniond p = to_half_cell( dinv * q );
-			double norm = 100.0/p.coeffs().block(0,0,3,1).norm();
+			// double norm = 100.0/p.coeffs().block(0,0,3,1).norm();
 			// std::cout << d << "  |  " << q << "  |  "  << p << endl;
 			if( fabs(p.norm()-1.0) > 0.0000001 ) std::exit(-1);
 			// if( p.w() < 0.8  ) continue;

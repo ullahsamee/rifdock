@@ -1,14 +1,14 @@
-#ifndef INCLUDED_objective_rosetta_RosettaField_HH
-#define INCLUDED_objective_rosetta_RosettaField_HH
+#ifndef INCLUDED_rosetta_objective_RosettaField_HH
+#define INCLUDED_rosetta_objective_RosettaField_HH
 
 #include "objective/voxel/FieldCache.hh"
-#include "objective/rosetta/AnalyticEvaluation.hh"
-#include "objective/rosetta/EtableParams_init.hh"
+#include "rosetta/score/AnalyticEvaluation.hh"
+#include "rosetta/score/EtableParams_init.hh"
 #include "types.hh"
 #include <vector>
 #include <boost/foreach.hpp>
 
-namespace scheme { namespace objective { namespace rosetta {
+namespace scheme { namespace rosetta { namespace score {
 
 template<class Atom>
 struct RosettaField {
@@ -39,7 +39,7 @@ struct RosettaField {
 };
 
 template<class Atom>
-struct RosettaFieldAtype : voxel::Field3D<float> {
+struct RosettaFieldAtype : objective::voxel::Field3D<float> {
 	RosettaField<Atom> const & rf_;
 	int atype_;
 	RosettaFieldAtype(RosettaField<Atom> const & rf, int atype) : rf_(rf),atype_(atype) {}

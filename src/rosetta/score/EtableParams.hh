@@ -1,10 +1,10 @@
-#ifndef INCLUDED_objective_rosetta_EtableParams_hh
-#define INCLUDED_objective_rosetta_EtableParams_hh
+#ifndef INCLUDED_rosetta_objective_EtableParams_hh
+#define INCLUDED_rosetta_objective_EtableParams_hh
 
-#include "objective/rosetta/CubicPolynomial.hh"
+#include "rosetta/score/CubicPolynomial.hh"
 #include <vector>
 
-namespace scheme { namespace objective { namespace rosetta {
+namespace scheme { namespace rosetta { namespace score {
 
 template<class Real>
 struct ExtraQuadraticRepulsion

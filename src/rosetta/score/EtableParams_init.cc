@@ -1,6 +1,6 @@
-#include "objective/rosetta/EtableParams_init.hh"
+#include "rosetta/score/EtableParams_init.hh"
 
-namespace scheme { namespace objective { namespace rosetta {
+namespace scheme { namespace rosetta { namespace score {
 
 // #pragma GCC optimization_level 0
 

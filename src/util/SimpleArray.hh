@@ -37,15 +37,15 @@ struct SimpleArray {
 	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
 	SimpleArray(F a){ fill(a); }
-	SimpleArray(F a, F b                                        ){ D[0]=a;D[1]=b; }
-	SimpleArray(F a, F b, F c                                   ){ D[0]=a;D[1]=b;D[2]=c; }
-	SimpleArray(F a, F b, F c, F d                              ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d; }
-	SimpleArray(F a, F b, F c, F d, F e                         ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e; }
-	SimpleArray(F a, F b, F c, F d, F e, F f                    ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g               ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h          ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i     ){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i, F j){ D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i;D[9]=j; }
+	SimpleArray(F a, F b                                        ){ BOOST_STATIC_ASSERT(N== 2); D[0]=a;D[1]=b; }
+	SimpleArray(F a, F b, F c                                   ){ BOOST_STATIC_ASSERT(N== 3); D[0]=a;D[1]=b;D[2]=c; }
+	SimpleArray(F a, F b, F c, F d                              ){ BOOST_STATIC_ASSERT(N== 4); D[0]=a;D[1]=b;D[2]=c;D[3]=d; }
+	SimpleArray(F a, F b, F c, F d, F e                         ){ BOOST_STATIC_ASSERT(N== 5); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e; }
+	SimpleArray(F a, F b, F c, F d, F e, F f                    ){ BOOST_STATIC_ASSERT(N== 6); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g               ){ BOOST_STATIC_ASSERT(N== 7); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h          ){ BOOST_STATIC_ASSERT(N== 8); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i     ){ BOOST_STATIC_ASSERT(N== 9); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i, F j){ BOOST_STATIC_ASSERT(N==10); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i;D[9]=j; }
 	F       & operator[](size_t i)       { return D[i]; }
 	F const & operator[](size_t i) const { return D[i]; }
 	F       & at(size_t i)       { BOOST_VERIFY(i < N); return D[i]; }
@@ -70,6 +70,7 @@ struct SimpleArray {
 	}
 	F squaredNorm() const { F n=0; for(int i=0;i<N;++i) n+=D[i]*D[i]; return n; }
 	F norm() const { return std::sqrt(squaredNorm()); }
+	void normalize(){ *this /= norm(); }
 	void fill(F v){ for(int i=0;i<N;++i) D[i]=v; }
 	iterator begin() { return &D[0]; }
 	iterator end  () { return &D[N]; }
@@ -128,6 +129,9 @@ template<int N, class F, class F2> SimpleArray<N,size_t> operator<( SimpleArray<
 	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b; return r; }
 template<int N, class F, class F2> SimpleArray<N,size_t> operator<( F2 const & a, SimpleArray<N,F> const & b ){
 	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a<b[i]; return r; }
+
+template<int N, class F> SimpleArray<N,size_t> operator<( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
+	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b[i]; return r; }
 
 }
 }

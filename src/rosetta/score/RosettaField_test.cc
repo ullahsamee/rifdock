@@ -3,12 +3,12 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
-#include "objective/rosetta/RosettaField.hh"
+#include "rosetta/score/RosettaField.hh"
 #include "objective/voxel/FieldCache.hh"
 #include "actor/Atom.hh"
 // #include <Eigen/core>
 
-namespace scheme { namespace objective { namespace rosetta { namespace test {
+namespace scheme { namespace rosetta { namespace score { namespace test {
 
 using std::cout;
 using std::endl;
@@ -90,8 +90,8 @@ TEST(RosettaField,test_btn){
 
 	for(int atype = 1; atype <= 25; ++atype){
 		RosettaFieldAtype<Atom> rfa(rf,1);
-		voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,1.0);
-		voxel::BoundingFieldCache3D<float> brc(rc,2.0,1.0);
+		objective::voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,1.0);
+		objective::voxel::BoundingFieldCache3D<float> brc(rc,2.0,1.0);
 
 		// size_t nbz=0, naz=0;
 		// for(size_t i = 0; i < rc.num_elements(); ++i){

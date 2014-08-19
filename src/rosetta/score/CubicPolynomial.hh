@@ -18,10 +18,10 @@
 ///
 /////////////////////////////////////////////////////////////////////////
 
-#ifndef INCLUDED_core_scoring_etable_CubicPolynomial_hh
-#define INCLUDED_core_scoring_etable_CubicPolynomial_hh
+#ifndef INCLUDED_scheme_rosetta_objective_CubicPolynomial_hh
+#define INCLUDED_scheme_rosetta_objective_CubicPolynomial_hh
 
-namespace scheme { namespace objective { namespace rosetta {
+namespace scheme { namespace rosetta { namespace score {
 
 /// @brief Simple struct holding coefficients of a cubic polynomial of the form
 //  'c3 * x^3 + c2 * x^2 + c1 * x + c0'.

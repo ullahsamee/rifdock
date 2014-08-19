@@ -24,8 +24,8 @@
 ///
 /////////////////////////////////////////////////////////////////////////
 
-#ifndef INCLUDED_core_scoring_etable_AnalyticEvaluation_hh
-#define INCLUDED_core_scoring_etable_AnalyticEvaluation_hh
+#ifndef INCLUDED_scheme_rosetta_objective_AnalyticEvaluation_hh
+#define INCLUDED_scheme_rosetta_objective_AnalyticEvaluation_hh
 
 #include <cmath>
 
@@ -33,9 +33,9 @@
 #include <cassert>
 #endif
 
-#include <objective/rosetta/CubicPolynomial.hh>
+#include <rosetta/score/CubicPolynomial.hh>
 
-namespace scheme { namespace objective { namespace rosetta {
+namespace scheme { namespace rosetta { namespace score {
 
 // /// LK-Solvation Implementation
 

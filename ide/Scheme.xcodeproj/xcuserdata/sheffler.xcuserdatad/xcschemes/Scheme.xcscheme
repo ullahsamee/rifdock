@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=hecaton\*"
+            argument = "--gtest_filter=bcc_lattice\*"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

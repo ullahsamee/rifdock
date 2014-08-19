@@ -61,7 +61,7 @@ inline void dump_pdb_atom(
 template<class XYZ>
 inline void dump_pdb_atom(
 	std::ostream & out,
-	size_t index,
+	int index,
 	XYZ const & xyz
 ){
 	AtomData a; a.atomnum = index;

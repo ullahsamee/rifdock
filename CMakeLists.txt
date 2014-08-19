@@ -15,8 +15,8 @@ SET (CMAKE_C_COMPILER  "/usr/bin/clang")
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
 
-SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 
 #SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
@@ -31,7 +31,7 @@ include_directories("/usr/include/eigen3")
 
 
 # shitty "data" files to compile faster
-SET_SOURCE_FILES_PROPERTIES( src/objective/rosetta/EtableParams_init.cc PROPERTIES COMPILE_FLAGS -O0 )
+SET_SOURCE_FILES_PROPERTIES( src/rosetta/score/EtableParams_init.cc PROPERTIES COMPILE_FLAGS -O0 )
 SET_SOURCE_FILES_PROPERTIES( src/rosetta/atype_map.cc PROPERTIES COMPILE_FLAGS -O0 )
 
 list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_serialization boost_iostreams z boost_timer)
@@ -47,5 +47,5 @@ target_link_libraries(main_test ${EXTRA_LIBS} )
 
 
 project (quick_test)
-add_executable(quick_test apps/quick_test.cc src/objective/rosetta/EtableParams_init.cc src/rosetta/atype_map.cc )
+add_executable(quick_test apps/quick_test.cc src/rosetta/score/EtableParams_init.cc src/rosetta/atype_map.cc )
 target_link_libraries(quick_test ${EXTRA_LIBS})

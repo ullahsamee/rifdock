@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "objective/rosetta/AnalyticEvaluation.hh"
+#include "rosetta/score/AnalyticEvaluation.hh"
 
-#include "objective/rosetta/EtableParams_init.hh"
+#include "rosetta/score/EtableParams_init.hh"
 
 
-namespace scheme { namespace objective { namespace rosetta { namespace test {
+namespace scheme { namespace rosetta { namespace score { namespace test {
 
 using std::cout;
 using std::endl;
