@@ -22,7 +22,7 @@ max2(
 ){
 	// TODO: is there a faster way to do this?
 	mx1 = vector.maxCoeff(&argmax_1);
-	vector[argmax_1] = std::numeric_limits<typename Vector::Scalar>::min();
+	vector[argmax_1] = -std::numeric_limits<typename Vector::Scalar>::max();
 	mx2 = vector.maxCoeff(&argmax_2);
 }
 

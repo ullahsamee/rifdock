@@ -18,10 +18,11 @@
 // #include <nest/maps/SphereDodec_test.cc>
 // #include <nest/maps/SphereQuad_test.cc>
 // #include <nest/maps/HecatonicosachoronMap_test.cc>
-// #include <nest/maps/Trunc24CellMap_test.cc>
+#include <nest/maps/TetracontoctachoronMap_test.cc>
 // #include <nest/maps/QuaternionMap_test.cc>
 // #include <nest/maps/EulerAnglesMap_test.cc>
 
+// #include "numeric/geom_4d_test.cc"
 // #include "numeric/bcc_lattice_test.cc"
 
 // #include <util/meta/util_test.cc>
@@ -44,8 +45,8 @@
 
 // #include <actor/BBStub_test.cc>
 
-#include "rosetta/score/AnalyticEvaluation_test.cc"
-#include "rosetta/score/RosettaField_test.cc"
+// #include "rosetta/score/AnalyticEvaluation_test.cc"
+// #include "rosetta/score/RosettaField_test.cc"
 
 // #include "chemical/ligand_factory_test.cc"
 

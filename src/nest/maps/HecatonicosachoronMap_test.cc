@@ -599,10 +599,10 @@ TEST(hecatonicosachoron,cell_lookup){
 }
 
 
-TEST(hecatonicosachoron,DISABLED_covering){
+TEST(hecatonicosachoron,covering){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 8;
-	int ITERS = 1000000;
+	int ITERS = 1000*1000;
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
@@ -620,7 +620,8 @@ TEST(hecatonicosachoron,DISABLED_covering){
 			avgdiff += q.angularDistance(qcen);
 		}
 		avgdiff /= ITERS;
-		size_t count = 0; for(size_t i = 0; i < nest.size(r); ++i) if(nest.set_state(i,r)) ++count;
+		size_t count = 0; for(size_t i = 0; i < nest.size(r)/60; ++i) if(nest.set_state(i,r)) ++count;
+		count *= 60;
 		// size_t count = nest.size(r);
 		double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
 		double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;		
