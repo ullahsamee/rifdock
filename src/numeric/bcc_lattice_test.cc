@@ -19,6 +19,7 @@ namespace scheme { namespace numeric { namespace test {
 using std::cout;
 using std::endl;
 
+
 TEST(bcc_lattice,centers_map){
 	typedef util::SimpleArray<3,double> V;
 	typedef util::SimpleArray<3,size_t> I;
@@ -378,6 +379,73 @@ TEST(bcc_lattice,orientatin_coverage){
 
 
 // }
+
+
+
+template<int N, class F, class S> 
+F 
+test_bcc_children( int NSAMP ){
+	typedef util::SimpleArray<N,F> V;
+	typedef util::SimpleArray<N,S> I;
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> runif;
+	boost::normal_distribution<> rnorm;	
+	S const Nside = 5;
+	BCC<N,F,S> bcc_parent(I(5),V(-(F)Nside),V((F)Nside));
+	BCC<N,F,S> bcc(I(5),V(-(F)Nside/2.0),V((F)Nside/2.0));
+	BOOST_VERIFY( bcc[bcc[V(0.0)]] == V(0.0) );
+	BOOST_VERIFY( bcc.width_ == V(1.0) );
+	S const i0 = bcc[V(0)];
+	std::vector<size_t> nbrs,nbrs_we;		
+	bcc.neighbors( i0, std::back_inserter(nbrs   ), false );
+	bcc.neighbors( i0, std::back_inserter(nbrs_we), true );		
+
+	/////////////////////////////////////////////////////
+	// test neighbor coverage
+	///////////////////////////////////////////////////////////////
+
+	// F const RNapprox[5] = { 0.558099, 0.701687, 0.742306, 0.845359, 0.882879 };
+	// F const Rapprox = RNapprox[N-3];
+	F inrad = 0.5;
+	if(N==3) inrad = 0.433015;
+
+	int sum_in_nbrs=0, sum_in_nbrs_we=0;
+	for(int i = 0; i < NSAMP; ++i){
+
+		// pick random point in i0 parent cell
+		V samp; for(int j = 0; j < N; ++j)
+			samp[j] = (runif(rng)-0.5)*4.0*inrad;
+		if( bcc_parent[samp] != i0 ){ --i; continue; }
+
+		S index = bcc[samp];
+		// if( index == i0 ){ --i; continue; }
+		if( std::find( nbrs_we.begin(), nbrs_we.end(), index ) != nbrs_we.end() ){
+			++sum_in_nbrs_we;
+			if( std::find( nbrs.begin(), nbrs.end(), index ) != nbrs.end() ){
+				++sum_in_nbrs;
+			}
+		}
+	}
+
+	int nc = std::pow(3,N);
+	int nbccFC = 1+2*N+std::pow(2,N);
+	int nbccFCE = nbccFC + N*(N-1)/2 * 4;
+	printf("BCC child coverage: %i %3i %9.7f   %3i %9.7f\n",
+		N, 
+		nbccFC, (F)sum_in_nbrs/NSAMP,
+		nbccFCE, (F)sum_in_nbrs_we/NSAMP
+	);
+	return 0;
+}
+
+TEST(bcc_lattice,children){
+	cout << "BCC               DIM Nfc   frac_fc  Nfce  frac_fce" << std::endl;
+	test_bcc_children<3,double,size_t>(100*1000);
+	test_bcc_children<4,double,size_t>(100*1000);
+	test_bcc_children<5,double,size_t>(100*1000);
+	test_bcc_children<6,double,size_t>(100*1000);
+	test_bcc_children<7,double,size_t>(100*1000);
+}
 
 
 }}}
