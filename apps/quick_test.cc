@@ -2,55 +2,55 @@
 
 // include desired tests here:
 
-// #include "util/hash_test.cc"
-// #include <util/StoragePolicy_test.cc>
-// #include <util/template_loop_test.cc> // 3.5 vs 2.2 wo Eigen
-// #include <util/SimpleArray_test.cc>
+// #include "util/hash.gtest.cc"
+// #include <util/StoragePolicy.gtest.cc>
+// #include <util/template_loop.gtest.cc> // 3.5 vs 2.2 wo Eigen
+// #include <util/SimpleArray.gtest.cc>
 
-// #include "numeric/euler_angles_test.cc"
+// #include "numeric/euler_angles.gtest.cc"
 
-// #include <nest/NEST_test.cc> // 4.479 vs. 3.0 wo Eigen
-// #include <nest/NEST_neighbor_test.cc> // 4.567 // 3.26 wo Eigen
-// #include <nest/MultiNest_test.cc>
+// #include <nest/NEST.gtest.cc> // 4.479 vs. 3.0 wo Eigen
+// #include <nest/NEST_neighbor.gtest.cc> // 4.567 // 3.26 wo Eigen
+// #include <nest/MultiNest.gtest.cc>
 
-// #include <nest/maps/parameter_maps_test.cc> // 7.546 // 4.0 wo Eigen
-// #include <nest/maps/parameter_maps_test_nbrcell.cc> // 4.472 // 3.1 wo eigen
-// #include <nest/maps/SphereDodec_test.cc>
-// #include <nest/maps/SphereQuad_test.cc>
-// #include <nest/maps/HecatonicosachoronMap_test.cc>
-#include <nest/maps/TetracontoctachoronMap_test.cc>
-// #include <nest/maps/QuaternionMap_test.cc>
-// #include <nest/maps/EulerAnglesMap_test.cc>
+// #include <nest/maps/parameter_maps.gtest.cc> // 7.546 // 4.0 wo Eigen
+// #include <nest/maps/parameter_maps_test_nbrcell.gtest.cc> // 4.472 // 3.1 wo eigen
+// #include <nest/maps/SphereDodec.gtest.cc>
+// #include <nest/maps/SphereQuad.gtest.cc>
+// #include <nest/maps/HecatonicosachoronMap.gtest.cc>
+// #include <nest/maps/TetracontoctachoronMap.gtest.cc>
+// #include <nest/maps/QuaternionMap.gtest.cc>
+// #include <nest/maps/EulerAnglesMap.gtest.cc>
 
-// #include "numeric/geom_4d_test.cc"
-// #include "numeric/bcc_lattice_test.cc"
+// #include "numeric/geom_4d.gtest.cc"
+// #include "numeric/bcc_lattice.gtest.cc"
 
-// #include <util/meta/util_test.cc>
-// #include <util/container/ContainerInteractions_test.cc>
-// #include <util/meta/InstanceMap_test.cc>
-// #include <util/meta/InstanceMap_container_test.cc>
-// #include <util/meta/InstanceMap_numeric_test.cc>
+// #include <util/meta/util.gtest.cc>
+// #include <util/container/ContainerInteractions.gtest.cc>
+// #include <util/meta/InstanceMap.gtest.cc>
+// #include <util/meta/InstanceMap_container.gtest.cc>
+// #include <util/meta/InstanceMap_numeric.gtest.cc>
 
-// #include <objective/ObjectiveFunction_test.cc>
-// #include "objective/voxel/VoxelArray_test.cc"
-// #include "objective/voxel/FieldCache_test.cc"
+// #include <objective/ObjectiveFunction.gtest.cc>
+// #include "objective/voxel/VoxelArray.gtest.cc"
+// #include "objective/voxel/FieldCache.gtest.cc"
 
-// #include <kinematics/Scene_test.cc>
-// #include <kinematics/Scene_test_eigen.cc>
-// #include <kinematics/SceneIterator_test.cc>
+// #include <kinematics/Scene.gtest.cc>
+// #include <kinematics/Scene_test_eigen.gtest.cc>
+// #include <kinematics/SceneIterator.gtest.cc>
 
-// #include <io/dump_pdb_atom_test.cc>
+// #include <io/dump_pdb_atom.gtest.cc>
 
-// #include <kinematics/Scene_test_objective.cc>
+// #include <kinematics/Scene_test_objective.gtest.cc>
 
-// #include <actor/BBStub_test.cc>
+// #include <actor/BBStub.gtest.cc>
 
-// #include "rosetta/score/AnalyticEvaluation_test.cc"
-// #include "rosetta/score/RosettaField_test.cc"
+// #include "rosetta/score/AnalyticEvaluation.gtest.cc"
+// #include "rosetta/score/RosettaField.gtest.cc"
 
-// #include "chemical/ligand_factory_test.cc"
+#include "chemical/ligand_factory.gtest.cc"
 
-// #include "objective/methods/hbond_5dof_test.cc"
+// #include "objective/methods/hbond_5dof.gtest.cc"
 
 int main(int argc, char **argv)
 {

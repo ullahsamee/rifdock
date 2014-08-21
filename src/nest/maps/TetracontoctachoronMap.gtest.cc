@@ -56,7 +56,7 @@ TEST(tetracontoctachoron,cell_lookup){
 TEST(tetracontoctachoron,covering){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 9;
-	int ITERS = 5*1000*1000;
+	int ITERS = 2*1000*1000;
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
