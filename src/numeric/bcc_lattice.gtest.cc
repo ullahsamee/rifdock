@@ -271,60 +271,6 @@ TEST(bcc_lattice,neighbors){
 	// cout << test_bcc_neighbors<7,double,size_t>(1000000) << endl; // 0.6
 }
 
-// QuaternionMap Covrad
-//  1                8  119.36447   61.22694    1.94954    3.83748    0.51790
-//  2              128   59.04495   27.31148    2.16191    7.43172    0.73549
-//  3             1040   27.85890   13.60802    2.04724    6.34244    0.73918
-//  4             8480   13.59714    6.82994    1.99081    6.01270    0.76204
-//  5            68416    6.91475    3.40731    2.02939    6.37995    0.76335
-//  6           548496    3.44178    1.70610    2.01734    6.30746    0.76828
-//  7          4392160    1.73778    0.85268    2.03801    6.50123    0.76802
-TEST(bcc_lattice,orientatin_coverage){
-	typedef double F;
-	typedef size_t S;
-	typedef util::SimpleArray<4,F> V;
-	typedef util::SimpleArray<4,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> rnorm;
-	size_t Nside = 32;
-	BCC<4,F,S> bcc(I(Nside),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
-	// cout << bcc.lower_ << endl;
-	// cout << bcc.width_ << endl;
-	// cout << bcc.lower_+bcc.width_*Nside << endl;
-
-	int NSAMP = 1*1000*1000;
-	google::dense_hash_set<size_t> idx_seen;
-	idx_seen.set_empty_key(999999999999);
-	F maxdiff=0,avgdiff=0;
-	for(int i = 0; i < NSAMP; ++i){
-		V sample( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
-		sample /= sample.norm();
-		if(sample[0]<0) sample = -sample;
-		ASSERT_DOUBLE_EQ( sample.norm(), 1.0 );
-		size_t index = bcc[sample];
-		idx_seen.insert(index);
-		V center = bcc[index];
-		Eigen::Quaterniond samp(sample[0],sample[1],sample[2],sample[3]);
-		Eigen::Quaterniond cen (center[0],center[1],center[2],center[3]);
-		cen.normalize();
-		maxdiff = std::max( maxdiff, samp.angularDistance(cen) );
-		avgdiff += samp.angularDistance(cen);
-	}
-	avgdiff /= NSAMP;
-	size_t count = idx_seen.size();
-	double xcov = (double)NSAMP/count;
-	if(xcov < 50) cout << "volfrac will be low if xcov < 50 or so... (not enough samples)" << endl;
-	cout << "idxfrac: " << (double)count / (Nside*Nside*Nside*Nside) << " xcov " << xcov << endl;
-	double volfrac = (double)count*(maxdiff*maxdiff*maxdiff) * 4.0/3.0*M_PI / 8.0/M_PI/M_PI;
-	double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff) * 4.0/3.0*M_PI / 8.0/M_PI/M_PI;
-	cout << "RESOL         COUNT   CovRad      AvgRad     mx/avg   VolFrac      AvgFrac" << endl;
-	printf("%2lu %16lu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
-				Nside, count, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac, avgfrac );
-
-	ASSERT_LE( volfrac , 3.5 );
-
-}
-
 // TEST(bcc_lattice,coverage_transform_7d){
 // 	using namespace Eigen;
 // 	typedef Transform<double,3,AffineCompact> Xform;
@@ -427,7 +373,7 @@ test_bcc_children( int NSAMP ){
 		}
 	}
 
-	int nc = std::pow(3,N);
+	//int nc = std::pow(3,N);
 	int nbccFC = 1+2*N+std::pow(2,N);
 	int nbccFCE = nbccFC + N*(N-1)/2 * 4;
 	printf("BCC child coverage: %i %3i %9.7f   %3i %9.7f\n",

@@ -23,7 +23,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(tetracontoctachoron,cell_lookup){
+TEST(TetracontoctachoronMap,DISABLED_cell_lookup){
 	// HecatonicosachoronMap<> map;
 	// HecatonicosachoronMap<>::Params p;
 	// for( size_t i = 0; i < 60; ++i){
@@ -53,30 +53,37 @@ TEST(tetracontoctachoron,cell_lookup){
 }
 
 
-TEST(tetracontoctachoron,covering){
+TEST(TetracontoctachoronMap,DISABLED_covering){
 	// cout << "QuaternionMap Covrad" << endl;
-	int NRES = 9;
-	int ITERS = 2*1000*1000;
+	int NRES = 5;
+	int ITERS = 1*1000*1000;
 
-	boost::random::mt19937 rng((unsigned int)time(0));
+	// boost::random::mt19937 rng((unsigned int)time(0));
+	boost::random::mt19937 rng(0);
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
 
 	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
+
+
 	for(int r = 0; r <= NRES; ++r){
+
+
 		double maxdiff=0, avgdiff=0;
 		for(int i = 0; i <= ITERS; ++i){
 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 			q.normalize();
-			// cout << q << endl;
-			Eigen::Quaterniond qcen( nest.set_and_get( nest.get_index(q.matrix(),r) , r ) );
+			size_t index = nest.get_index(q.matrix(),r);
+			// cout << "index: " << index << " sample: " << q.coeffs().transpose() << endl;
+			ASSERT_TRUE( nest.set_state( index , r ) );
+			Eigen::Quaterniond qcen( nest.value() );
 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 			avgdiff += q.angularDistance(qcen);
 		}
 		avgdiff /= ITERS;
+		// size_t count = nest.size(r);
 		size_t count = 0; for(size_t i = 0; i < nest.size(r)/24; ++i) if(nest.set_state(i,r)) ++count;
 		count *= 24;
-		// size_t count = nest.size(r);
 		double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
 		double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;		
 		printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f %10.5f %7.5f\n", 
@@ -93,7 +100,7 @@ TEST(tetracontoctachoron,covering){
 
 }
 
-TEST(tetracontoctachoron,DISABLE_visualize){
+TEST(TetracontoctachoronMap,DISABLED_visualize){
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;

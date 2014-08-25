@@ -80,7 +80,7 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	}
 
 }
-TEST(QuaternionMap,covering){
+TEST(QuaternionMap,DISABLED_covering){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;

@@ -20,7 +20,9 @@ namespace scheme { namespace nest { namespace maps {
 	template<class Q> Q to_half_cell(Q const & q){ return q.w()>=0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()); }
 
 	template<class Float, class Index>
-	Eigen::Map<Eigen::Quaternion<Float>const> cellcen(Index const & i){
+	Eigen::Map<Eigen::Quaternion<Float>const> hbt24_cellcen(Index const & i){
+		// Float const * tmp = numeric::get_raw_48cell_half<Float>() + 4*i;
+		// std::cout << "   raw hbt24_cellcen " << tmp[0] << " " << tmp[1] << " " << tmp[2] << " " << tmp[3] << std::endl;
 		return Eigen::Map<Eigen::Quaternion<Float>const>(
 		 numeric::get_raw_48cell_half<Float>() + 4*i );
 	}
@@ -51,16 +53,22 @@ namespace scheme { namespace nest { namespace maps {
 		) const {
 			// // cout << "        set p0 " << params << endl;
 			Float const & w(cell_width<Float>());
-			Matrix<Float,3,1> p(w*(params[0]-0.5), w*(params[1]-0.5), w*(params[2]-0.5));
+			Params p = w*(params-0.5);
 
-			Float corner_dist = fabs(p[0])+fabs(p[1])+fabs(p[2]);
-			Float delta = sqrt(w*w*w) / (1<<resl);
-			if( corner_dist - delta > 0.925 ) return false;
+
+			if( resl > 3 ){
+				Float corner_dist = fabs(p[0])+fabs(p[1])+fabs(p[2]);
+				Float delta = sqrt(w*w*w) / (Float)(1<<resl);
+			// // static int count = 0;
+   			// //          std::cout << corner_dist << "    " << params << " " << p << std::endl;
+		   //          if(++count > 100) std::exit(-1);
+			 	if( corner_dist - delta > 0.925 ) return false;
+			}
 
 			Eigen::Quaternion<Float> q( sqrt(1.0-p.squaredNorm()), p[0], p[1], p[2] );
 			assert( fabs(q.squaredNorm()-1.0) < 0.000001 );
 
-			q = cellcen<Float>(cell_index)*q;
+			q = hbt24_cellcen<Float>(cell_index)*q;
 
 			value = q.matrix();
 			return true;
@@ -80,8 +88,10 @@ namespace scheme { namespace nest { namespace maps {
 
 			numeric::get_cell_48cell_half(q.coeffs(),cell_index);
 
-			q = cellcen<Float>(cell_index).inverse() * q;
+			q = hbt24_cellcen<Float>(cell_index).inverse() * q;
+
 			q = to_half_cell(q);
+
 			// // cout << q.w() << endl;
 			// assert( q.w() > 0.7 );
 

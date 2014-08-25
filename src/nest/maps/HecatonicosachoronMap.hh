@@ -240,19 +240,19 @@ namespace maps {
 	}
 
 	template<class Float, class Index>
-	Eigen::Map<Eigen::Quaternion<Float>const> cellcen(Index const & i){
+	Eigen::Map<Eigen::Quaternion<Float>const> h120_cellcen(Index const & i){
 		return Eigen::Map<Eigen::Quaternion<Float>const>( get_h120<Float>() + 4*i );
 	}
 	template<class Float, class Index>
-	Eigen::Map<Eigen::Quaternion<Float>const> cellceninv(Index const & i){
+	Eigen::Map<Eigen::Quaternion<Float>const> h120_cellceninv(Index const & i){
 		return Eigen::Map<Eigen::Quaternion<Float>const>( get_h120inv<Float>() + 4*i );
 	}
 	template<class Float, class Index, class Index2>
-	Eigen::Map<Eigen::Quaternion<Float>const> cellnbr(Index const & i,Index2 const & j){
+	Eigen::Map<Eigen::Quaternion<Float>const> h120_cellnbr(Index const & i,Index2 const & j){
 		return Eigen::Map<Eigen::Quaternion<Float>const>( get_h120<Float>() + 4* get_h120_nbrs<uint8_t>()[12*i+j]  );
 	}
 	template<class Float, class Index, class Index2>
-	Eigen::Map<Eigen::Quaternion<Float>const> cellnbrinv(Index const & i,Index2 const & j){
+	Eigen::Map<Eigen::Quaternion<Float>const> h120_cellnbrinv(Index const & i,Index2 const & j){
 		return Eigen::Map<Eigen::Quaternion<Float>const>( get_h120inv<Float>() + 4* get_h120_nbrs<uint8_t>()[12*i+j]  );
 	}
 
@@ -314,7 +314,7 @@ namespace maps {
 			// cout << "    set q0 " << q.coeffs().transpose() << endl;
 			// cout << "  set ci " << cell_index << endl;
 
-			q = cellcen<Float>(cell_index)*q;
+			q = h120_cellcen<Float>(cell_index)*q;
 			// cout << "set q  " << q.coeffs().transpose() << endl;
 			value = q.matrix();
 			return true;
@@ -349,7 +349,7 @@ namespace maps {
 
 			// cout << "  get ci " << cell_index << endl;
 
-			q = cellceninv<Float>(cell_index) * q;
+			q = h120_cellceninv<Float>(cell_index) * q;
 			q = to_half_cell(q);
 			// cout << q.w() << endl;
 			assert( q.w() > 0.7 );

@@ -59,8 +59,8 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=tetracontoctachoron\*"
-            isEnabled = "YES">
+            argument = "--gtest_filter=TetracontoctachoronMap.covering\*"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--gtest_color=no"

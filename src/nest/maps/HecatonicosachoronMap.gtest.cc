@@ -497,7 +497,7 @@ TEST(hecatonicosachoron,static_inv_check){
 	Map< Array<uint8_t,12,60> const > nbrs( get_h120_nbrs<uint8_t>() );
 
 	for(int i = 0; i < 60; ++i){
-		ASSERT_TRUE( Quaterniond(1,0,0,0).isApprox( cellcen<double>(i)*cellceninv<double>(i) ) );
+		ASSERT_TRUE( Quaterniond(1,0,0,0).isApprox( h120_cellcen<double>(i)*h120_cellceninv<double>(i) ) );
 	}
 }
 
@@ -513,7 +513,7 @@ TEST(hecatonicosachoron,neighbor_identity_rots){
 
 	for(int i = 0; i < 60; ++i){
 		ASSERT_TRUE( h120ref[i].isApprox( QM( 4*i + h120raw ) ) );
-		ASSERT_TRUE( h120ref[i].isApprox( cellcen<double>(i) ) );
+		ASSERT_TRUE( h120ref[i].isApprox( h120_cellcen<double>(i) ) );
 		for(int j = 0; j < 12; ++j){
 			ASSERT_EQ( nbrsref(i,j), nbrs(j,i) );
 		}
@@ -536,13 +536,13 @@ TEST(hecatonicosachoron,neighbor_identity_rots){
 	for(int id = 0; id < 60; ++id){
 		// QM d( 4*id + h120raw );
 		// Quaterniond const dinv = d.inverse();
-		QM dinv = cellceninv<double>(id);
+		QM dinv = h120_cellceninv<double>(id);
 		// Quaterniond const dinvd = dinv*d;
 		// std::cout << d << "  |  " << dinv << "  |  "  << dinvd << endl;
 		// ofstream out(("120cell_"+str(id)+".pdb").c_str());		
 		for(size_t inbr = 0; inbr < 12; ++inbr){
 			// QM q( h120raw + 4*nbrs(inbr,id) );
-			Quaterniond p = to_half_cell( dinv * cellnbr<double>(id,inbr) );
+			Quaterniond p = to_half_cell( dinv * h120_cellnbr<double>(id,inbr) );
 			// double norm = 100.0/p.coeffs().block(0,0,3,1).norm();
 			// std::cout << d << "  |  " << q << "  |  "  << p << endl;
 			if( fabs(p.norm()-1.0) > 0.0000001 ) std::exit(-1);
@@ -563,10 +563,10 @@ TEST(hecatonicosachoron,neighbor_identity_rots){
 }
 
 TEST(hecatonicosachoron,cell_bounds){
-	// cout << cellcen<double>(0) << endl;
+	// cout << h120_cellcen<double>(0) << endl;
 	// cout << cellnbr<double>(0,0) << endl;	
-	// cout << (cellcen<double>(0).coeffs()+cellnbr<double>(0,0).coeffs()).normalized().transpose() << endl;		
-	// cout << std::setprecision(17) << (cellcen<double>(0).coeffs()-cellnbr<double>(0,0).coeffs()).norm() << endl;
+	// cout << (h120_cellcen<double>(0).coeffs()+cellnbr<double>(0,0).coeffs()).normalized().transpose() << endl;		
+	// cout << std::setprecision(17) << (h120_cellcen<double>(0).coeffs()-cellnbr<double>(0,0).coeffs()).norm() << endl;
 }
 
 TEST(hecatonicosachoron,cell_lookup){
@@ -574,7 +574,7 @@ TEST(hecatonicosachoron,cell_lookup){
 	// HecatonicosachoronMap<>::Params p;
 	// for( size_t i = 0; i < 60; ++i){
 	// 	size_t cell_index = 999;
-	// 	map.value_to_params( cellcen<double>(i).matrix(), 0, p, cell_index ); 
+	// 	map.value_to_params( h120_cellcen<double>(i).matrix(), 0, p, cell_index ); 
 	// 	// cout << p << endl;
 	// 	ASSERT_EQ( i, cell_index );
 	// 	ASSERT_NEAR( p[0], 0.5, 0.0000001 );
@@ -599,7 +599,7 @@ TEST(hecatonicosachoron,cell_lookup){
 }
 
 
-TEST(hecatonicosachoron,covering){
+TEST(hecatonicosachoron,DISABLED_covering){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 8;
 	int ITERS = 1000*1000;

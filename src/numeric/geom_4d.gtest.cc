@@ -115,7 +115,7 @@ TEST(tetracontoctachoron,half_cell_lookup)
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 10*1000*1000;
+	int NSAMP = 1*1000*1000;
 	std::vector<V4> samp(NSAMP);
 	std::vector<Index> cell(NSAMP),cell2(NSAMP);
 

@@ -18,12 +18,13 @@
 // #include <nest/maps/SphereDodec.gtest.cc>
 // #include <nest/maps/SphereQuad.gtest.cc>
 // #include <nest/maps/HecatonicosachoronMap.gtest.cc>
-// #include <nest/maps/TetracontoctachoronMap.gtest.cc>
 // #include <nest/maps/QuaternionMap.gtest.cc>
 // #include <nest/maps/EulerAnglesMap.gtest.cc>
+#include <nest/maps/TetracontoctachoronMap.gtest.cc>
 
 // #include "numeric/geom_4d.gtest.cc"
 // #include "numeric/bcc_lattice.gtest.cc"
+// #include "numeric/bcc_lattice_orientation.gtest.cc"
 
 // #include <util/meta/util.gtest.cc>
 // #include <util/container/ContainerInteractions.gtest.cc>
@@ -48,7 +49,7 @@
 // #include "rosetta/score/AnalyticEvaluation.gtest.cc"
 // #include "rosetta/score/RosettaField.gtest.cc"
 
-#include "chemical/ligand_factory.gtest.cc"
+// #include "chemical/ligand_factory.gtest.cc"
 
 // #include "objective/methods/hbond_5dof.gtest.cc"
 
