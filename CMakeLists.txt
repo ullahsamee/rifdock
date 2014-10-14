@@ -17,6 +17,7 @@ SET( CMAKE_EXE_LINKER_FLAGS   "-std=c++11 -w -O3 -DDEBUG -ffast-math -mmmx -mfpm
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -O0 -DDEBUG" )
 
 add_subdirectory(external/gmock)
+include_directories("external")
 include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
 include_directories("/usr/local/include/eigen3")
