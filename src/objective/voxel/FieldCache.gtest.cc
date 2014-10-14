@@ -66,8 +66,8 @@ TEST(FieldCache,test_accuracy_random){
 
 TEST(FieldCache,test_file_cache){
 	std::string tmpfile = "FieldCache_test_file.bin.gz";
-	 if(boost::filesystem::exists(tmpfile)) boost::filesystem::remove(tmpfile);
-
+	if(boost::filesystem::exists(tmpfile)) boost::filesystem::remove(tmpfile);
+	
 	Ellipse3D field(1,2,3,4,5,6);
 	FieldCache3D<double> f1(field,-11,13,1.6,tmpfile);
 	size_t ncalls = Ellipse3D::ncalls;
@@ -76,6 +76,8 @@ TEST(FieldCache,test_file_cache){
 
 	ASSERT_EQ( Ellipse3D::ncalls, ncalls ); // field not called again
 	ASSERT_EQ( f1 , f2 );
+
+	cout << "PING 81" << endl;
 
 	f1.resize( util::SimpleArray<3,size_t>(0,0,0) ); // spoil the cache
 	io::write_cache(tmpfile,f1);

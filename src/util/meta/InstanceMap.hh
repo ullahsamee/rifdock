@@ -14,7 +14,8 @@
 #include <boost/fusion/include/mpl.hpp>
 #include <boost/fusion/include/for_each.hpp>
 
-#include <boost/serialization/access.hpp>
+// #include <boost/serialization/access.hpp>
+#include <cereal/access.hpp>
 
 namespace scheme {
 namespace util {
@@ -145,7 +146,8 @@ struct InstanceMap : impl::fusion_map<_Keys,Arg2>::type
         return eqv.is_equal;
     }
 
-    friend class boost::serialization::access;
+    // friend class boost::serialization::access;
+    friend class cereal::access;
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
         impl::SerializeVisitor<THIS,Archive> serializer(*this,ar);
         m::for_each<Keys,type2type<m::_1> >(serializer);

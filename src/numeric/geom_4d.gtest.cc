@@ -21,7 +21,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(tetracontoctachoron,DISABLED_cell_lookup)
+TEST(tetracontoctachoron,cell_lookup)
 {
 	typedef double Float;
 	typedef uint64_t Index;
@@ -42,7 +42,7 @@ TEST(tetracontoctachoron,DISABLED_cell_lookup)
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 1*1000*1000;
+	int NSAMP = 10*1000*1000;
 	std::vector<V4> samp(NSAMP);
 	std::vector<Index> cell(NSAMP),cell2(NSAMP);
 
@@ -57,7 +57,7 @@ TEST(tetracontoctachoron,DISABLED_cell_lookup)
 		// (t24*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
 		(t24*samp[i]).maxCoeff(&cell[i]);		
 	}
-	cout << "naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
 
 	boost::timer::cpu_timer clever;
 	for(int i = 0; i < NSAMP; ++i){
@@ -68,7 +68,7 @@ TEST(tetracontoctachoron,DISABLED_cell_lookup)
 
 
 	}
-	cout << "clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
 
 	for(int i = 0; i < NSAMP; ++i){
 		if( cell[i] != cell2[i] ){
@@ -88,11 +88,11 @@ TEST(tetracontoctachoron,half_cell_lookup)
 	typedef uint64_t Index;
 	typedef Eigen::Matrix<Float,4,1> V4;
 
-	Map<Matrix<Float,24,4,RowMajor>const> t24( numeric::get_raw_48cell_half<Float>() );
+	Map<Matrix<Float,24,4,RowMajor>const> t24h( numeric::get_raw_48cell_half<Float>() );
 
 	for(int i = 0; i < 24; ++i){
 		size_t cell;
-		V4 tmp = t24.row(i);
+		V4 tmp = t24h.row(i);
 		numeric::get_cell_48cell_half( tmp, cell );
 		ASSERT_EQ( cell, i );
 		// if( i > 11 ) continue;
@@ -101,13 +101,13 @@ TEST(tetracontoctachoron,half_cell_lookup)
 		ASSERT_EQ( cell, i );
 	}
 
-	// ASSERT_EQ( V4(0,0,0,-1), t24.row(7).transpose() );
-	// for(int i = 0; i < 48; ++i) ASSERT_FLOAT_EQ( t24.row(i).norm(), 1.0 );
+	// ASSERT_EQ( V4(0,0,0,-1), t24h.row(7).transpose() );
+	// for(int i = 0; i < 48; ++i) ASSERT_FLOAT_EQ( t24h.row(i).norm(), 1.0 );
 
 	// std::ofstream out("test.pdb");
 	// for(int i = 0; i < 24; ++i){
-	// 	if( t24.row(i).block(0,0,1,3).norm() < 0.9 )
-	// 		io::dump_pdb_atom(out,i,10*t24.row(i));
+	// 	if( t24h.row(i).block(0,0,1,3).norm() < 0.9 )
+	// 		io::dump_pdb_atom(out,i,10*t24h.row(i));
 	// }
 	// out.close();
 
@@ -115,7 +115,7 @@ TEST(tetracontoctachoron,half_cell_lookup)
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 1*1000*1000;
+	int NSAMP = 10*1000*1000;
 	std::vector<V4> samp(NSAMP);
 	std::vector<Index> cell(NSAMP),cell2(NSAMP);
 
@@ -127,24 +127,24 @@ TEST(tetracontoctachoron,half_cell_lookup)
 
 	boost::timer::cpu_timer naive;
 	for(int i = 0; i < NSAMP; ++i){
-		// (t24*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
-		(t24*samp[i]).cwiseAbs().maxCoeff(&cell[i]);		
+		// (t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
+		(t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);		
 	}
-	cout << "naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
 
 	boost::timer::cpu_timer clever;
 	for(int i = 0; i < NSAMP; ++i){
 		numeric::get_cell_48cell_half( samp[i], cell2[i] );
 	}
-	cout << "clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
 
 	for(int i = 0; i < NSAMP; ++i){
 		// if( cell[i] > 11 ) continue;
 		// if( cell[i] < 12 ) ASSERT_EQ( cell[i], cell2[i] );
 		if( cell[i] != cell2[i] ){
 			ASSERT_FLOAT_EQ(
-			     t24.row(cell [i]).dot(samp[i]) ,
-			     t24.row(cell2[i]).dot(samp[i]) );
+			     t24h.row(cell [i]).dot(samp[i]) ,
+			     t24h.row(cell2[i]).dot(samp[i]) );
 		} else { 
 			ASSERT_EQ( cell[i], cell2[i] );
 		}

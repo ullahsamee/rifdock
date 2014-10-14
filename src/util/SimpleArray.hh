@@ -4,7 +4,8 @@
 #include <types.hh>
 #include <cmath>
 #include <boost/assert.hpp>
-#include <boost/serialization/access.hpp>
+// #include <boost/serialization/access.hpp>
+#include <cereal/access.hpp>
 #include <boost/utility/enable_if.hpp>
 
 namespace scheme {
@@ -79,7 +80,8 @@ struct SimpleArray {
 	bool empty() const { return false; }
 	size_type size() const { return N; }
 	void swap(THIS & o){ for(int i=0;i<N;++i) std::swap(D[i],o.D[i]); }
-	friend class boost::serialization::access;
+	// friend class boost::serialization::access;
+	friend class cereal::access;	
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
 		for(size_t i = 0; i < N; ++i) ar & D[i];
 	}

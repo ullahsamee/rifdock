@@ -34,14 +34,14 @@ inline void dump_pdb_atom(
 	if( aname.size() == 1 ) aname = aname+"  ";
 	if( aname.size() == 2 ) aname = aname+" ";
 	snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
-		a.ishet ? "HETAOM  ":"ATOM  ",
+		a.ishet ? "HETATM":"ATOM  ",
 		a.atomnum,
 		aname.c_str(),
 		a.resname.c_str(),
 		a.chain,
 		a.resnum,
-		x,y,z
-		,a.occ,
+		x,y,z,
+		a.occ,
 		a.bfac,
 		a.elem.c_str()
 	);
@@ -55,6 +55,17 @@ inline void dump_pdb_atom(
 	XYZ const & xyz
 ){
 	AtomData a; a.elem = elem;
+	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],a);
+}
+
+template<class XYZ>
+inline void dump_pdb_atom(
+	std::ostream & out,
+	std::string elem,
+	int resi,
+	XYZ const & xyz
+){
+	AtomData a; a.elem = elem; a.resnum = resi;
 	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],a);
 }
 

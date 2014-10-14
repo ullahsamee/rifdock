@@ -631,7 +631,7 @@ TEST(hecatonicosachoron,DISABLED_covering){
 
 }
 
-TEST(hecatonicosachoron,visualize){
+TEST(hecatonicosachoron,DISABLED_visualize){
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;

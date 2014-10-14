@@ -19,8 +19,10 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/shared_ptr.hpp>
+#include <cereal/access.hpp>
+#include <cereal/types/memory.hpp>
+// #include <boost/serialization/access.hpp>
+// #include <boost/serialization/shared_ptr.hpp>
 
 #include <vector>
 
@@ -32,6 +34,10 @@ namespace f = boost::fusion;
 using std::cout;
 using std::endl;
 
+// #include <memory>
+// using std::shared_ptr;
+// using std::make_shared;
+// using std::enable_shared_from_this;
 
 namespace impl {
 
@@ -76,10 +82,11 @@ namespace impl {
 
 		Conformation const & conformation() const { return *conformation_; }
 
-	    friend class boost::serialization::access;
+	    // friend class boost::serialization::access;
+	    friend class cereal::access;
     	template<class Archive> void serialize(Archive & ar, const unsigned int ){
 	    	ar & position_;
-	    	ar & conformation_;
+	    	// ar & conformation_; // TODO: must switch this to std::shared_ptr!
 	    }
 
 	    bool operator==(THIS const & o) const { return position_==o.position_ && *conformation_==*o.conformation_; }
@@ -141,7 +148,8 @@ namespace impl {
 		std::vector<Position> symframes_; // w/o identity
 		Index n_sym_bodies_;
 
-	    friend class boost::serialization::access;
+	    // friend class boost::serialization::access;
+	    friend class cereal::access;
     	template<class Archive> void serialize(Archive & ar, const unsigned int ){
 	    	ar & bodies_;
 		    ar & symframes_;

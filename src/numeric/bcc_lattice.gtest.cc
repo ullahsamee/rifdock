@@ -19,6 +19,34 @@ namespace scheme { namespace numeric { namespace test {
 using std::cout;
 using std::endl;
 
+// TEST(TEMPORARY,gm_20140905){
+// 	int NSAMP = 1000000;
+// 	boost::random::mt19937 r((unsigned int)time(0));
+// 	boost::uniform_real<> u;
+// 	Eigen::Matrix<double,6,6> dis; dis.fill(0);
+// 	for(int idata = 1; idata <= 6; ++idata ){
+// 		for(int irep  = 1; irep <= idata; ++irep ){
+// 			int totbin = 16<<(idata-1)*2;
+// 			int nbins = std::pow( totbin, 1.0/irep );
+// 			cout << idata << " " << irep << " " << totbin << " " << std::pow(nbins,irep) << endl;
+// 			for(int iter = 0; iter < NSAMP; ++iter){
+// 				util::SimpleArray<6,double> samp(0.5);
+// 				for(int i=0; i<idata; ++i) samp[i] = u(r);
+// 				util::SimpleArray<6,double> rep(0.5);
+// 				for(int i=0; i<irep; ++i){
+// 					rep[i] = ((int)(samp[i]*nbins)+u(r))/nbins;
+// 				}
+// 				// cout << idata << " " << irep << " " << samp << endl;
+// 				// cout << idata << " " << irep << " " << rep << endl;
+// 				// cout << endl;
+// 				// std::exit(-1);
+// 				dis(irep-1,idata-1) += (samp-rep).norm();
+// 			}
+// 		}
+// 	}
+// 	dis = dis / (double)NSAMP * 100;
+// 	cout << dis << endl;
+// }
 
 TEST(bcc_lattice,centers_map){
 	typedef util::SimpleArray<3,double> V;
@@ -87,14 +115,14 @@ test_bcc_performance(
 	return maxdiff;
 }
 
-TEST(bcc_lattice,performance){
+TEST(bcc_lattice,DISABLED_performance){
 	size_t Nside = 100;
 	double Width = 10.0;
-	double const R3test = test_bcc_performance<3,double,size_t>( 100000, Nside, Width );
-	                      test_bcc_performance<4,double,size_t>( 100000, Nside, Width );
-	                      test_bcc_performance<5,double,size_t>( 100000, Nside, Width );
-	                      test_bcc_performance<6,double,size_t>( 100000, Nside, Width );
-	                      test_bcc_performance<7,double,size_t>( 100000, Nside, Width );
+	double const R3test = test_bcc_performance<3,double,size_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<4,double,size_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<5,double,size_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<6,double,size_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<7,double,size_t>( 10000000, Nside, Width );
 	double const R3 = std::pow(2.0,-5.0/3.0)*sqrt(5) / std::pow(2.0,1.0/3.0) * Width / Nside;
 	ASSERT_LE( R3test     , R3 );
 	ASSERT_GT( R3test*1.1 , R3 );	

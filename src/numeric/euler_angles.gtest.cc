@@ -52,7 +52,7 @@ TEST(euler_angles,DISABLED_performance){
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
 
-	int NSAMP = 1*1000*1000;
+	int NSAMP = 10*1000*1000;
 
 	std::vector<Matrix3d> samp(NSAMP);
 	std::vector<Vector3d> euler(NSAMP);

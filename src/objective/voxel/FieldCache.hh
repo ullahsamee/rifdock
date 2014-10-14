@@ -34,9 +34,14 @@ struct FieldCache3D : VoxelArray<3,Float> {
 		if( io::read_cache(cache_loc_,*this) ){
 			bool extents_eq = true;
 			for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
-			if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ) return;
+			if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ){
+				std::cout << "EXTENTS EQ, USING CACHE" << std::endl;
+				return;
+			}
 			std::cout << "Warning, FieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
 			this->resize(extents);
+		} else {
+			std::cout << "NO CACHE" << std::endl;
 		}
 		// TODO: this should probable be based on integer indices...
 		for(Float f = this->lb_[0]+this->cs_[0]/2.0; f < this->ub_[0]+this->cs_[0]/2.0; f += this->cs_[0]){

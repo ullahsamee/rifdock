@@ -4,8 +4,9 @@
 #include <boost/multi_array.hpp>
 #include "util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/split_member.hpp>
+#include <cereal/access.hpp>
+//#include <boost/serialization/access.hpp>
+//#include <boost/serialization/split_member.hpp>
 
 namespace scheme { namespace objective { namespace voxel {
 
@@ -67,7 +68,9 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 		return lb_==o.lb_ && ub_==o.ub_ && cs_==o.cs_ && (BASE const &)o == (BASE const &)*this;
 	}
 
-	friend class boost::serialization::access;
+	// friend class boost::serialization::access;
+    friend class cereal::access; // befriend the cereal version of access
+
     template<class Archive> void save(Archive & ar, const unsigned int ) const {
         ar & lb_;
         ar & ub_;
@@ -84,7 +87,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
         this->resize(extents);
         for(size_t i = 0; i < this->num_elements(); ++i) ar & this->data()[i];
     }
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
+    // BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 };
 

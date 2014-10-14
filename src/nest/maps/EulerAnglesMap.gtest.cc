@@ -2,6 +2,7 @@
 
 #include "nest/NEST.hh"
 #include "nest/maps/EulerAnglesMap.hh"
+#include "io/dump_pdb_atom.hh"
 
 #include <Eigen/Geometry>
 
@@ -10,6 +11,8 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+
+#include <fstream>
 
 namespace scheme { namespace nest { namespace maps { namespace test {
 
@@ -56,7 +59,7 @@ TEST(EulerAnglesMap,DISABLED_covering){
 }
 
 
-TEST(EulerAnglesMap,shapes){
+TEST(EulerAnglesMap,DISABLED_shapes){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
@@ -116,6 +119,58 @@ TEST(EulerAnglesMap,shapes){
 
 }
 
+TEST(TetracontoctachoronMap,DISABLED_visualize){
+	using namespace Eigen;
+
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
+
+	Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
+	// Quaterniond qrand( 1,0,0,0 );
+	qrand.normalize();
+	Vector3d X = qrand*Vector3d(1,0  ,0  );
+	Vector3d Y = qrand*Vector3d(0,1.2,0  );
+	Vector3d Z = qrand*Vector3d(0,0  ,1.4);
+
+	NEST<3,Matrix3d,EulerAnglesMap> nest;
+	// size_t beg = 0;
+	// while(!nest.set_state(beg,10)) beg = std::max<size_t>(uniform(rng)*(nest.size(10)-1000),0);
+
+	for(size_t r = 0; r <= 8; ++r){
+		int N = 8*8*8;
+		// int beg = std::max( 0, (int)nest.size(r)/12 - N/2 );
+		int beg = 0;
+		std::ofstream out(("euler_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
+		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
+		size_t count1 = 0, count2 = 0;
+		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
+		// continue;
+		// for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){
+		for(size_t i = beg; i < nest.size(r); ++i){		
+			++count1;
+			if( nest.set_state(i,r) ){
+				++count2;
+				if( count1 > N) break;
+				Matrix3d m = nest.value();
+				// cout << r << " " << i << " " << q.coeffs().transpose() << endl;
+				Vector3d ximg = m * X;
+				Vector3d yimg = m * Y;
+				Vector3d zimg = m * Z;;
+				// cout << r << " " << nest.cell_index(i,r) << endl;
+				// out << "MODEL" << std::endl;
+				// io::dump_pdb_atom(out,  "Z" ,count2,Vector3d(0,0,0));
+				io::dump_pdb_atom(out, "O" ,count2,50*ximg);
+				io::dump_pdb_atom(out, "NI",count2,50*yimg);
+				io::dump_pdb_atom(out, "N" ,count2,50*zimg);
+				// out << "ENDMDL" << std::endl;				 
+			}
+		}
+		out.close();
+		cout << r << " " << count2 / (double)count1 << endl;
+	}
+
+}
 
 
 }}}}

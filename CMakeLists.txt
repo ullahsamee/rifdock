@@ -1,22 +1,20 @@
 cmake_minimum_required (VERSION 2.6)
 
-SET (CMAKE_C_COMPILER  "/usr/bin/clang")
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -w -O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -w -O0 -DDEBUG -ffast-math" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -O0 -DDEBUG -ffast-math" )
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -w -ftemplate-backtrace-limit=0" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -ftemplate-backtrace-limit=0" )
 
-#SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-#SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG -ffast-math" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG -ffast-math" )
-#SET( CMAKE_CXX_FLAGS         "-std=c++11 -ftemplate-backtrace-limit=0" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -ftemplate-backtrace-limit=0" )
+SET( CMAKE_CXX_FLAGS          "-std=c++11 -w -O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+SET( CMAKE_EXE_LINKER_FLAGS   "-std=c++11 -w -O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
 
-SET( CMAKE_CXX_FLAGS         "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DDEBUG -ffast-math -mmmx -mfpmath=sse -msse -msse2 -msse3" )
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -w -O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
 
-#SET( CMAKE_CXX_FLAGS         "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O3 -DNDEBUG -fno-vectorize -fno-slp-vectorize -DEIGEN_DONT_VECTORIZE -DEIGEN_DONT_ALIGN" )
-
-#SET( CMAKE_CXX_FLAGS         "-O0 -DDEBUG" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-O0 -DDEBUG" )
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -w -O0 -DDEBUG" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -w -O0 -DDEBUG" )
 
 add_subdirectory(external/gmock)
 include_directories("external/gmock/gtest/include")
@@ -35,7 +33,7 @@ FILE(GLOB L3 "src/*/*/*.cc")
 FILE(GLOB L4 "src/*/*/*/*.cc")
 FILE(GLOB L5 "src/*/*/*/*/*.cc")
 
-list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_serialization boost_iostreams z boost_timer)
+list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boost_timer)
 list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
 
 

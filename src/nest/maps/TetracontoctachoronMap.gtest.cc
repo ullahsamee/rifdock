@@ -116,11 +116,13 @@ TEST(TetracontoctachoronMap,DISABLED_visualize){
 	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
 	// size_t beg = 0;
 	// while(!nest.set_state(beg,10)) beg = std::max<size_t>(uniform(rng)*(nest.size(10)-1000),0);
+
 	for(size_t r = 0; r <= 8; ++r){
-		int N = 4096;
+		int N = 8*8*8;
 		// int beg = std::max( 0, (int)nest.size(r)/12 - N/2 );
 		int beg = 0;
 		std::ofstream out(("tcoc_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
+		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
 		size_t count1 = 0, count2 = 0;
 		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
 		// continue;
@@ -132,13 +134,16 @@ TEST(TetracontoctachoronMap,DISABLED_visualize){
 				if( count1 > N) break;
 				Matrix3d m = nest.value();
 				// cout << r << " " << i << " " << q.coeffs().transpose() << endl;
-				 Vector3d ximg = m * X;
-				 Vector3d yimg = m * Y;
-				 Vector3d zimg = m * Z;;
-				 // cout << r << " " << nest.cell_index(i,r) << endl;
-				 io::dump_pdb_atom(out, "O" ,50*ximg);
-				 io::dump_pdb_atom(out, "NI",50*yimg);
-				 io::dump_pdb_atom(out, "N" ,50*zimg);
+				Vector3d ximg = m * X;
+				Vector3d yimg = m * Y;
+				Vector3d zimg = m * Z;;
+				// cout << r << " " << nest.cell_index(i,r) << endl;
+				// out << "MODEL" << std::endl;
+				// io::dump_pdb_atom(out,  "Z" ,count2,Vector3d(0,0,0));
+				io::dump_pdb_atom(out, "O" ,count2,50*ximg);
+				io::dump_pdb_atom(out, "NI",count2,50*yimg);
+				io::dump_pdb_atom(out, "N" ,count2,50*zimg);
+				// out << "ENDMDL" << std::endl;				 
 			}
 		}
 		out.close();
