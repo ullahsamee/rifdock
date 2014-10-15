@@ -34,9 +34,9 @@ namespace scheme { namespace io {
 	template<class T>
 	bool read_cache(std::string const & location, T & t){
 		using namespace boost::iostreams;
-		std::cout << "read_cache  '" << location << "'" << std::endl;
+		// std::cout << "read_cache  '" << location << "'" << std::endl;
 		if( location.size()==0 || !boost::filesystem::exists(location) ) return false;
-		std::cout << "    exists: '" << location << "'" << std::endl;
+		// std::cout << "    exists: '" << location << "'" << std::endl;
 		std::ifstream file( location.c_str() , std::ios_base::in|std::ios_base::binary );
 		filtering_streambuf<input> in;
 		in.push(gzip_decompressor());
@@ -52,7 +52,7 @@ namespace scheme { namespace io {
 	void write_cache(std::string const & location, T & t){
 		namespace fs = boost::filesystem;
 		if(location.size()==0) return;
-		std::cout << "write_cache '" << location << "'" << std::endl;
+		// std::cout << "write_cache '" << location << "'" << std::endl;
 		using namespace boost::iostreams;
 		std::ofstream file( location.c_str() , std::ios_base::out|std::ios_base::binary );
 		if( !file.good() ) throw 1;

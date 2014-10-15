@@ -40,9 +40,9 @@ struct FieldCache3D : VoxelArray<3,Float> {
 			}
 			std::cout << "Warning, FieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
 			this->resize(extents);
-		} else {
-			std::cout << "NO CACHE" << std::endl;
-		}
+		} // else {
+		// 	std::cout << "NO CACHE" << std::endl;
+		// }
 		// TODO: this should probable be based on integer indices...
 		for(Float f = this->lb_[0]+this->cs_[0]/2.0; f < this->ub_[0]+this->cs_[0]/2.0; f += this->cs_[0]){
 		for(Float g = this->lb_[1]+this->cs_[1]/2.0; g < this->ub_[1]+this->cs_[1]/2.0; g += this->cs_[1]){
