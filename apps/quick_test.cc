@@ -20,7 +20,7 @@
 // #include <nest/maps/HecatonicosachoronMap.gtest.cc>
 // #include <nest/maps/QuaternionMap.gtest.cc>
 // #include <nest/maps/EulerAnglesMap.gtest.cc>
-// #include <nest/maps/TetracontoctachoronMap.gtest.cc>
+#include <nest/maps/TetracontoctachoronMap.gtest.cc>
 
 // #include "numeric/geom_4d.gtest.cc"
 // #include "numeric/bcc_lattice.gtest.cc"
@@ -36,7 +36,7 @@
 // #include "objective/voxel/VoxelArray.gtest.cc"
 // #include "objective/voxel/FieldCache.gtest.cc"
 
-#include <kinematics/Scene.gtest.cc>
+// #include <kinematics/Scene.gtest.cc>
 // #include <kinematics/Scene_test_eigen.gtest.cc>
 // #include <kinematics/SceneIterator.gtest.cc>
 

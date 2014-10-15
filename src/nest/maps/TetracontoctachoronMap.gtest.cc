@@ -23,7 +23,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(TetracontoctachoronMap,DISABLED_cell_lookup){
+TEST(TetracontoctachoronMap,cell_lookup){
 	// HecatonicosachoronMap<> map;
 	// HecatonicosachoronMap<>::Params p;
 	// for( size_t i = 0; i < 60; ++i){
@@ -53,7 +53,7 @@ TEST(TetracontoctachoronMap,DISABLED_cell_lookup){
 }
 
 
-TEST(TetracontoctachoronMap,DISABLED_covering){
+TEST(TetracontoctachoronMap,covering){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 5;
 	int ITERS = 1*1000*1000;
@@ -65,7 +65,7 @@ TEST(TetracontoctachoronMap,DISABLED_covering){
 
 	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
 
-
+	cout << "resl              N     covrad     avgrad    cov/avg  overcover     avgcov  fracused" << endl;
 	for(int r = 0; r <= NRES; ++r){
 
 
