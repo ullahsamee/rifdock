@@ -19,7 +19,14 @@
 namespace scheme { namespace nest { namespace maps { namespace hecat_test {
 
 using namespace Eigen;
-using namespace std;
+using std::cout;
+using std::endl;
+using std::setprecision;
+using std::vector;
+using std::ofstream;
+using std::string;
+using std::bitset;
+using std::ostream;
 
 
 double const r = (1.0+sqrt(5.0))/2.0;

@@ -9,6 +9,8 @@
 
 // #include "numeric/euler_angles.gtest.cc"
 
+#include <dock/fftdock.gtest.cc>
+
 // #include <nest/NEST.gtest.cc> // 4.479 vs. 3.0 wo Eigen
 // #include <nest/NEST_neighbor.gtest.cc> // 4.567 // 3.26 wo Eigen
 // #include <nest/MultiNest.gtest.cc>
@@ -20,7 +22,7 @@
 // #include <nest/maps/HecatonicosachoronMap.gtest.cc>
 // #include <nest/maps/QuaternionMap.gtest.cc>
 // #include <nest/maps/EulerAnglesMap.gtest.cc>
-#include <nest/maps/TetracontoctachoronMap.gtest.cc>
+// #include <nest/maps/TetracontoctachoronMap.gtest.cc>
 
 // #include "numeric/geom_4d.gtest.cc"
 // #include "numeric/bcc_lattice.gtest.cc"

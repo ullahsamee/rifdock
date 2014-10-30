@@ -36,7 +36,7 @@ struct Atom {
 		float               bfac     = AtomData::default_bfac()
 	) : position_(p),
 	    type_(type),
-	    data_(make_shared<AtomData>(
+	    data_(boost::make_shared<AtomData>( //TODO: why do I need boost:: here?????
 	    // data_(new AtomData(
 	    	atomname,resname,chain,resnum,atomnum,elem,ishet,occ,bfac)
 	    )
