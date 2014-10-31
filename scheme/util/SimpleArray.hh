@@ -5,8 +5,11 @@
 #include <cmath>
 #include <boost/assert.hpp>
 // #include <boost/serialization/access.hpp>
-#include <cereal/access.hpp>
 #include <boost/utility/enable_if.hpp>
+
+#ifdef CEREAL
+#include <cereal/access.hpp>
+#endif
 
 namespace scheme {
 namespace util {
@@ -33,7 +36,12 @@ struct SimpleArray {
 	F D[N];
 	template<class A>
 	SimpleArray(A const & a,typename boost::disable_if<boost::is_arithmetic<A> >::type* = 0)
-	{ for(int i=0;i<N;++i) D[i] = a[i]; }
+		{ for(int i=0;i<N;++i) D[i] = a[i]; }
+	template<int N2>
+	SimpleArray(SimpleArray<N2,F> const & a){
+		BOOST_STATIC_ASSERT(N2==N);
+		for(int i=0;i<N;++i) D[i] = a[i];
+	}
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
 	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
@@ -81,7 +89,9 @@ struct SimpleArray {
 	size_type size() const { return N; }
 	void swap(THIS & o){ for(int i=0;i<N;++i) std::swap(D[i],o.D[i]); }
 	// friend class boost::serialization::access;
+	#ifdef CEREAL
 	friend class cereal::access;	
+	#endif
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
 		for(size_t i = 0; i < N; ++i) ar & D[i];
 	}

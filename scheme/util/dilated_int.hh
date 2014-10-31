@@ -144,7 +144,44 @@ template<> inline uint64_t undilate<1>(uint64_t val) {
 	return val;
 }
 
-
+template<class Index>
+uint64_t undilate( uint64_t dim, Index val) {
+	switch(dim){
+		case  1: return undilate< 1>(val);
+		case  2: return undilate< 2>(val);
+		case  3: return undilate< 3>(val);
+		case  4: return undilate< 4>(val);
+		case  5: return undilate< 5>(val);
+		case  6: return undilate< 6>(val);
+		case  7: return undilate< 7>(val);
+		case  8: return undilate< 8>(val);
+		case  9: return undilate< 9>(val);
+		case 10: return undilate<10>(val);
+		case 11: return undilate<11>(val);
+		case 12: return undilate<12>(val);
+		case 13: return undilate<13>(val);
+		case 14: return undilate<14>(val);
+		case 15: return undilate<15>(val);
+		case 16: return undilate<16>(val);
+		case 17: return undilate<17>(val);
+		case 18: return undilate<18>(val);
+		case 19: return undilate<19>(val);
+		case 20: return undilate<20>(val);
+		case 21: return undilate<21>(val);
+		case 22: return undilate<22>(val);
+		case 23: return undilate<23>(val);
+		case 24: return undilate<24>(val);
+		case 25: return undilate<25>(val);
+		case 26: return undilate<26>(val);
+		case 27: return undilate<27>(val);
+		case 28: return undilate<28>(val);
+		case 29: return undilate<29>(val);
+		case 30: return undilate<30>(val);
+		case 31: return undilate<31>(val);
+		case 32: return undilate<32>(val);
+	}
+	return 0;
+}
 
 
 }

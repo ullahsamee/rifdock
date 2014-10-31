@@ -5,6 +5,8 @@
 #include "scheme/util/dilated_int.hh"
 #include "scheme/util/StoragePolicy.hh"
 #include "scheme/util/template_loop.hh"
+#include "scheme/nest/maps/UnitMap.hh"
+
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -21,7 +23,7 @@ namespace nest {
 	///@brief Base class for NEST
 	///@tparam Index index type
 	///@detail Base class for NEST, virtual NEST interface
-	template<class Index=size_t>
+	template<class Index=uint64_t>
 	struct NestBase {
 		///@brief need virtual destructor
 		virtual ~NestBase(){}
@@ -39,7 +41,7 @@ namespace nest {
 		///@returns false if invalid index
 		virtual	bool 
 		virtual_get_state(
-			std::vector<size_t> const & indices,
+			std::vector<Index> const & indices,
 			Index cell_index,
 			size_t & iindex,
 			Index resl,
@@ -49,6 +51,9 @@ namespace nest {
 		///@return number of possible states at depth resl
 		virtual Index 
 		virtual_size(Index resl) const = 0;
+		///@brief get the number of cells in this nest
+		virtual Index 
+		virtual_num_cells() const = 0;
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
 		virtual size_t 
@@ -78,7 +83,7 @@ namespace nest {
 		class Value = util::SimpleArray<DIM,double>,
 		template<int,class,class,class> class ParamMap = maps::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
-		class _Index = size_t,
+		class _Index = uint64_t,
 		class Float = double,
 		bool is_virtual = true
 	>
@@ -276,7 +281,7 @@ namespace nest {
 		///        for use in composite data structures containing NestBases
 		///@return false iff invalid index
 		virtual bool virtual_get_state(
-			std::vector<size_t> const & hindices,
+			std::vector<Index> const & hindices,
 			Index cell_index,
 			size_t & iindex,
 			Index resl,
@@ -293,7 +298,10 @@ namespace nest {
 		}
 		///@brief virtual function returning size(resl)
 		///@return size at depth resl
-		virtual Index virtual_size(Index resl) const { return size(resl); }
+		virtual Index virtual_size(Index resl) const { return this->size(resl); }
+		///@brief virtual function returning num_cells()
+		///@return num_cells
+		virtual Index virtual_num_cells() const { return this->num_cells(); }
 		///@brief virtual runction returning DIM
 		///@return dimension of NEST
 		virtual size_t virtual_dim() const { return DIM; }
@@ -363,7 +371,7 @@ namespace nest {
 		virtual
 		bool
 		virtual_get_state(
-			std::vector<size_t> const & /*hindices*/,
+			std::vector<Index> const & /*hindices*/,
 			Index cell_index,
 			size_t & /*iindex*/,
 			Index resl,
@@ -378,6 +386,9 @@ namespace nest {
 		///@brief return size(resl)
 		///@return num_cells for these type
 		virtual Index virtual_size(Index /*resl*/) const { return this->num_cells(); }
+		///@brief virtual function returning num_cells()
+		///@return num_cells
+		virtual Index virtual_num_cells() const { return this->num_cells(); }
 		///@brief get dimension of this nest
 		///@return always 0 for these types
 		virtual size_t virtual_dim() const { return 0; }

@@ -263,7 +263,7 @@ namespace maps {
 	template<
 		int DIM=3,
 		class Value=Eigen::Matrix3d,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct HecatonicosachoronMap {

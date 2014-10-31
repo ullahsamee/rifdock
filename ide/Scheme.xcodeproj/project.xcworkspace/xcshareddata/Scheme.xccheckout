@@ -10,29 +10,29 @@
 	<string>Scheme</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>B4849A14-4B00-4062-8C93-C9EFA0A65091</key>
-		<string>ssh://github.com/willsheffler/scheme.git</string>
+		<key>909B2D45F8E49F18AD9EDEC6B83BCE00D93496C2</key>
+		<string>github.com:willsheffler/scheme.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>ide/Scheme.xcodeproj/project.xcworkspace</string>
+	<string>ide/Scheme.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>B4849A14-4B00-4062-8C93-C9EFA0A65091</key>
+		<key>909B2D45F8E49F18AD9EDEC6B83BCE00D93496C2</key>
 		<string>../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>ssh://github.com/willsheffler/scheme.git</string>
+	<string>github.com:willsheffler/scheme.git</string>
 	<key>IDESourceControlProjectVersion</key>
-	<integer>110</integer>
+	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>B4849A14-4B00-4062-8C93-C9EFA0A65091</string>
+	<string>909B2D45F8E49F18AD9EDEC6B83BCE00D93496C2</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>B4849A14-4B00-4062-8C93-C9EFA0A65091</string>
+			<string>909B2D45F8E49F18AD9EDEC6B83BCE00D93496C2</string>
 			<key>IDESourceControlWCCName</key>
 			<string>scheme</string>
 		</dict>

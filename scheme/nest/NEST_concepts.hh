@@ -29,7 +29,7 @@ struct ArrayValueArchitype {
 	template<
 		int DIM,
 		class Value=double,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct ParamMapArchitype {
@@ -66,7 +66,7 @@ struct ArrayValueArchitype {
 	template<
 		int DIM,
 		class Value=util::SimpleArray<DIM,double>,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct ParamMapInvertableArchitype {
@@ -112,7 +112,7 @@ struct ArrayValueArchitype {
 	template<
 		int DIM,
 		class Value=util::SimpleArray<DIM,double>,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct ParamMapInvertableNeighborLookup {

@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 #include "scheme/util/SimpleArray.hh"
+
 #include <boost/static_assert.hpp>
 #include <iostream>
 #include <vector>
@@ -30,7 +31,7 @@ namespace scheme { namespace nest { namespace maps {
 	template<
 		int DIM=3,
 		class Value=Eigen::Matrix3d,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct TetracontoctachoronMap {

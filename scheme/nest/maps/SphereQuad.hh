@@ -50,7 +50,7 @@ namespace maps {
 	template<
 		int DIM,
 		class Value=util::SimpleArray<DIM,double>,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct SphereQuad {

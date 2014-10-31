@@ -41,7 +41,7 @@ namespace maps {
 	template<
 		int DIM,
 		class Value=Eigen::Matrix<double,3,1>,
-		class Index=size_t,
+		class Index=uint64_t,
 		class Float=double
 	>
 	struct SphereDodec {
