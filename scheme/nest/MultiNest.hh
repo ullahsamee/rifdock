@@ -56,7 +56,7 @@ namespace scheme { namespace nest {
 		}
 
 		template<class Anys>
-		void get_states(BigIndex const & index, Index resl, Anys & anys) const {
+		bool get_states(BigIndex const & index, Index resl, Anys & anys) const {
 			BOOST_VERIFY(anys.size()==nests_.size());
 			BOOST_VERIFY( index < size(resl) );
 			BigIndex big_cell_index = index >> dim_*resl;
@@ -70,8 +70,9 @@ namespace scheme { namespace nest {
 			for(size_t i = 0; i < nests_.size(); ++i){
 				Index cell_index = big_cell_index / ncells_pref_sum_[i] % ncells_[i];
 				// std::cout << "nest " << i << " " << cell_index << std::endl;
-				nests_[i]->virtual_get_state( hier_indices, cell_index, iindex, resl, anys[i] );
+				if( ! nests_[i]->virtual_get_state( hier_indices, cell_index, iindex, resl, anys[i] ) ) return false; 
 			}
+            return true;
 		}
 
 		void expand_index( BigIndex const & index, Indices & out ) const {
@@ -136,6 +137,14 @@ namespace scheme { namespace nest {
 		BigIndex size( Index resl ) const {
 			return BigIndex((unsigned long)tot_ncells_) * ((BigIndex(1))<<(resl*dim_));
 		}
+
+		///@brief virtual function returning index of value (sent as boost::any)
+		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
+			std::cout << "not implemented" << std::endl;
+			std::exit(-1);
+			return 0;
+		}
+
 	};
 
 

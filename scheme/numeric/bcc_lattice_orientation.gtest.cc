@@ -32,7 +32,7 @@ using std::endl;
 
 void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	typedef double F;
-	typedef size_t S;
+	typedef uint64_t S;
 	typedef util::SimpleArray<4,F> V;
 	typedef util::SimpleArray<4,S> I;
 	boost::random::mt19937 rng((unsigned int)time(0));
@@ -80,12 +80,14 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 
 void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 	typedef double F;
-	typedef size_t S;
+	typedef uint64_t S;
 	typedef util::SimpleArray<4,F> V;
 	typedef util::SimpleArray<4,S> I;
+	typedef util::SimpleArray<3,F> V3;
+	typedef util::SimpleArray<3,S> I3;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> rnorm;
-	BCC<3,F,S> bcc(I(Nside),V( -1.0/Nside ),V( 1.0+1.0/Nside ));
+	BCC<3,F,S> bcc(I3(Nside),V3( -1.0/Nside ),V3( 1.0+1.0/Nside ));
 	// BCC<3,F,S> bcc(I(Nside),V( 0.0 ),V( 1.0));	
 	// BCC<3,F,S> bcc(I(Nside),V(-1.0 ),V( 2.0));
 
@@ -106,7 +108,7 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 
 		Eigen::Quaterniond q;
 		for(int i = 0; i < 4; ++i) q.coeffs()[i] = sample[i];
-		Params params; size_t cell_index;
+		Params params; uint64_t cell_index;
 		map.value_to_params( q.matrix(), 0, params, cell_index );
 		size_t index_bcc = bcc[params];
 		idx_seen.insert(index_bcc);

@@ -123,6 +123,16 @@ namespace scheme { namespace nest { namespace maps {
 
 		///@brief aka covering radius max distance from bin center to any value within bin
 		Float bin_circumradius(Index resl) const {
+			BOOST_VERIFY( resl < 6 );
+			static Float const covrad[6] = {
+				 62.76235, 
+				 37.95720, 
+				 20.53126, 
+				 11.00814, 
+				  5.31355, 
+				  2.66953 
+			};
+			return covrad[resl];
 		}
 
 		///@brief maximum distance from the bin center which must be within the bin
@@ -139,6 +149,7 @@ namespace scheme { namespace nest { namespace maps {
 
 		///@brief cell size
 		Index num_cells() const { return 24; }
+
 	};
 
 

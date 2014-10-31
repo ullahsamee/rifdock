@@ -137,13 +137,13 @@ template<int N, class F, class F2> SimpleArray<N,F> operator/( F2 const & b, Sim
 template<int N, class F> SimpleArray<N,F> operator%( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
 	SimpleArray<N,F> r(a); for(int i=0;i<N;++i) r[i] %= b[i]; return r; }
 
-template<int N, class F, class F2> SimpleArray<N,size_t> operator<( SimpleArray<N,F> const & a, F2 const & b ){
-	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b; return r; }
-template<int N, class F, class F2> SimpleArray<N,size_t> operator<( F2 const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a<b[i]; return r; }
+template<int N, class F, class F2> SimpleArray<N,uint64_t> operator<( SimpleArray<N,F> const & a, F2 const & b ){
+	SimpleArray<N,uint64_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b; return r; }
+template<int N, class F, class F2> SimpleArray<N,uint64_t> operator<( F2 const & a, SimpleArray<N,F> const & b ){
+	SimpleArray<N,uint64_t> r; for(int i=0;i<N;++i) r[i] = a<b[i]; return r; }
 
-template<int N, class F> SimpleArray<N,size_t> operator<( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
-	SimpleArray<N,size_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b[i]; return r; }
+template<int N, class F> SimpleArray<N,uint64_t> operator<( SimpleArray<N,F> const & a, SimpleArray<N,F> const & b ){
+	SimpleArray<N,uint64_t> r; for(int i=0;i<N;++i) r[i] = a[i]<b[i]; return r; }
 
 }
 }

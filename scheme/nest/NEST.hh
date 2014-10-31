@@ -25,8 +25,10 @@ namespace nest {
 	///@detail Base class for NEST, virtual NEST interface
 	template<class Index=uint64_t>
 	struct NestBase {
+
 		///@brief need virtual destructor
 		virtual ~NestBase(){}
+
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
 		virtual bool 
@@ -35,6 +37,7 @@ namespace nest {
 			Index resl, 
 			boost::any & result
 		) = 0;
+
 		///@brief virtual virtual function to set the state of this nest
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
@@ -47,13 +50,19 @@ namespace nest {
 			Index resl,
 			boost::any & result
 		) = 0;
+
+		///@brief virtual function returning index of value (sent as boost::any)
+		virtual Index virtual_get_index( boost::any const & val, Index resl ) const = 0;
+
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
 		virtual Index 
 		virtual_size(Index resl) const = 0;
+
 		///@brief get the number of cells in this nest
 		virtual Index 
 		virtual_num_cells() const = 0;
+
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
 		virtual size_t 
@@ -305,6 +314,13 @@ namespace nest {
 		///@brief virtual runction returning DIM
 		///@return dimension of NEST
 		virtual size_t virtual_dim() const { return DIM; }
+
+		///@brief virtual function returning index of value (sent as boost::any)
+		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
+			// Value & v( *boost::any_cast<Value*>(val) );
+			// return get_index( v, resl );
+			return 0;
+		}
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -383,15 +399,26 @@ namespace nest {
 			if(status) this->set_stored_value(v);
 			return status;
 		}
+	
 		///@brief return size(resl)
 		///@return num_cells for these type
 		virtual Index virtual_size(Index /*resl*/) const { return this->num_cells(); }
+	
 		///@brief virtual function returning num_cells()
 		///@return num_cells
 		virtual Index virtual_num_cells() const { return this->num_cells(); }
+	
 		///@brief get dimension of this nest
 		///@return always 0 for these types
 		virtual size_t virtual_dim() const { return 0; }
+
+		///@brief virtual function returning index of value (sent as boost::any)
+		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
+			std::cout << "not implemented" << std::endl;
+			std::exit(-1);
+			return 0;
+		}
+
 	};
 
 

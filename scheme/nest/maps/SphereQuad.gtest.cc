@@ -20,7 +20,7 @@ TEST( SphereQuad, cell_centers ){
 	MapType sd;
 	PRM prm;
 	VAL val;
-	size_t celli;
+	uint64_t celli;
 
 	sd.params_to_value( PRM(0.5,0.5), 0, 0, val ); ASSERT_EQ( val, VAL( 0, 0, 1) );
 	sd.params_to_value( PRM(0.5,0.5), 1, 0, val ); ASSERT_EQ( val, VAL( 0, 1, 0) );

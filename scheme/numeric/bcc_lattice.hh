@@ -6,7 +6,7 @@
 
 namespace scheme { namespace numeric {
 
-template<int DIM, class Float, class Index = size_t>
+template< int DIM, class Float, class Index = uint64_t >
 struct BCC {
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Floats;
@@ -122,7 +122,7 @@ struct BCC {
 };
 
 
-template<int DIM, class Float, class Index = size_t>
+template< int DIM, class Float, class Index = uint64_t >
 struct Cubic {
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Floats;

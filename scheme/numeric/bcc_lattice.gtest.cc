@@ -50,7 +50,7 @@ using std::endl;
 
 TEST(bcc_lattice,centers_map){
 	typedef util::SimpleArray<3,double> V;
-	typedef util::SimpleArray<3,size_t> I;
+	typedef util::SimpleArray<3,uint64_t> I;
 
 	BCC<3,double> bcc(I(3,5,7),V(0,0,0),V(6,10,14));
 
@@ -118,11 +118,11 @@ test_bcc_performance(
 TEST(bcc_lattice,DISABLED_performance){
 	size_t Nside = 100;
 	double Width = 10.0;
-	double const R3test = test_bcc_performance<3,double,size_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<4,double,size_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<5,double,size_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<6,double,size_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<7,double,size_t>( 10000000, Nside, Width );
+	double const R3test = test_bcc_performance<3,double,uint64_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<4,double,uint64_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<5,double,uint64_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<6,double,uint64_t>( 10000000, Nside, Width );
+	                      test_bcc_performance<7,double,uint64_t>( 10000000, Nside, Width );
 	double const R3 = std::pow(2.0,-5.0/3.0)*sqrt(5) / std::pow(2.0,1.0/3.0) * Width / Nside;
 	ASSERT_LE( R3test     , R3 );
 	ASSERT_GT( R3test*1.1 , R3 );	
@@ -164,11 +164,11 @@ test_bcc_inradius(){
 }
 
 TEST(bcc_lattice,inradius){
-	ASSERT_NEAR( (test_bcc_inradius<3,double,size_t>()), 0.433015, 0.03 );
-	ASSERT_NEAR( (test_bcc_inradius<4,double,size_t>()), 0.500000, 0.03 );
-	ASSERT_NEAR( (test_bcc_inradius<5,double,size_t>()), 0.500000, 0.03 );
-	ASSERT_NEAR( (test_bcc_inradius<6,double,size_t>()), 0.500000, 0.03 );
-	ASSERT_NEAR( (test_bcc_inradius<7,double,size_t>()), 0.500000, 0.03 );
+	ASSERT_NEAR( (test_bcc_inradius<3,double,uint64_t>()), 0.433015, 0.03 );
+	ASSERT_NEAR( (test_bcc_inradius<4,double,uint64_t>()), 0.500000, 0.03 );
+	ASSERT_NEAR( (test_bcc_inradius<5,double,uint64_t>()), 0.500000, 0.03 );
+	ASSERT_NEAR( (test_bcc_inradius<6,double,uint64_t>()), 0.500000, 0.03 );
+	ASSERT_NEAR( (test_bcc_inradius<7,double,uint64_t>()), 0.500000, 0.03 );
 }
 
 template<int N, class F, class S> 
@@ -287,11 +287,11 @@ TEST(bcc_lattice,neighbors){
 	// Nnbrs: 5 cubic  243 bccFC  43 bccFCE  83
 	// Nnbrs: 6 cubic  729 bccFC  77 bccFCE 137
 	// Nnbrs: 7 cubic 2187 bccFC 143 bccFCE 227
-	ASSERT_LE( 0.76, (test_bcc_neighbors<3,double,size_t>(5000)) );
-	ASSERT_LE( 0.69, (test_bcc_neighbors<4,double,size_t>(5000)) );
-	ASSERT_LE( 0.64, (test_bcc_neighbors<5,double,size_t>(5000)) );
-	ASSERT_LE( 0.59, (test_bcc_neighbors<6,double,size_t>(5000)) );
-	ASSERT_LE( 0.54, (test_bcc_neighbors<7,double,size_t>(5000)) );
+	ASSERT_LE( 0.76, (test_bcc_neighbors<3,double,uint64_t>(5000)) );
+	ASSERT_LE( 0.69, (test_bcc_neighbors<4,double,uint64_t>(5000)) );
+	ASSERT_LE( 0.64, (test_bcc_neighbors<5,double,uint64_t>(5000)) );
+	ASSERT_LE( 0.59, (test_bcc_neighbors<6,double,uint64_t>(5000)) );
+	ASSERT_LE( 0.54, (test_bcc_neighbors<7,double,uint64_t>(5000)) );
 	// cout << test_bcc_neighbors<3,double,size_t>(1000000) << endl; // 0.779427
 	// cout << test_bcc_neighbors<4,double,size_t>(1000000) << endl; // 0.75
 	// cout << test_bcc_neighbors<5,double,size_t>(1000000) << endl; // 0.7
@@ -414,11 +414,11 @@ test_bcc_children( int NSAMP ){
 
 TEST(bcc_lattice,children){
 	cout << "BCC               DIM Nfc   frac_fc  Nfce  frac_fce" << std::endl;
-	test_bcc_children<3,double,size_t>(100*1000);
-	test_bcc_children<4,double,size_t>(100*1000);
-	test_bcc_children<5,double,size_t>(100*1000);
-	test_bcc_children<6,double,size_t>(100*1000);
-	test_bcc_children<7,double,size_t>(100*1000);
+	test_bcc_children<3,double,uint64_t>(100*1000);
+	test_bcc_children<4,double,uint64_t>(100*1000);
+	test_bcc_children<5,double,uint64_t>(100*1000);
+	test_bcc_children<6,double,uint64_t>(100*1000);
+	test_bcc_children<7,double,uint64_t>(100*1000);
 }
 
 
