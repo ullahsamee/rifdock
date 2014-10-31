@@ -123,7 +123,7 @@ TEST(TetracontoctachoronMap,DISABLED_visualize){
 		int beg = 0;
 		std::ofstream out(("tcoc_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
 		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
-		size_t count1 = 0, count2 = 0;
+		int count1 = 0, count2 = 0;
 		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
 		// continue;
 		// for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){

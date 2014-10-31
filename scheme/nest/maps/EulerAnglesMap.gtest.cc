@@ -51,7 +51,7 @@ TEST(EulerAnglesMap,DISABLED_covering){
 		// size/2 because half samples are ignored
 		double volfrac = (double)nest.size(r)/2*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
 		double avgfrac = (double)nest.size(r)/2*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
-		printf("%2i %16lu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+		printf("%2i %16llu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
 			r, nest.size(r)/2, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac, avgfrac );
 		// cout << boost::format("%2i %20i %.7d %.7d") % r % nest.size(r) % (maxdiff*180.0/M_PI) % volfrac << endl;
 	}
@@ -143,7 +143,7 @@ TEST(TetracontoctachoronMap,DISABLED_visualize){
 		int beg = 0;
 		std::ofstream out(("euler_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
 		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
-		size_t count1 = 0, count2 = 0;
+		int count1 = 0, count2 = 0;
 		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
 		// continue;
 		// for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){

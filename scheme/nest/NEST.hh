@@ -6,6 +6,7 @@
 #include "scheme/util/StoragePolicy.hh"
 #include "scheme/util/template_loop.hh"
 #include "scheme/nest/maps/UnitMap.hh"
+#include "scheme/util/meta/util.hh"
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -69,7 +70,58 @@ namespace nest {
 		virtual_dim() const = 0;
 	};
 
+	namespace impl {
 
+		////////////////// these functions will call nest.get_index iff the parameter map has
+		////////////////// the necessary value_to_params function
+		SCHEME_HAS_CONST_MEMBER_FUNCTION_4(value_to_params)
+
+		// bool value_to_params(
+		// 	Value const & value,
+		// 	Index resl,
+		// 	Params & params,
+		// 	Index & cell_index
+		// ) const {
+		// #define SCHEME_HAS_CONST_MEMBER_FUNCTION_4(MEMBER)                         \
+		// template<typename T, class R, class A, class B, class C, class D>          \
+		// struct has_const_member_fun_ ## MEMBER  {                                  \
+		//     template<typename U, R (U::*)(A,B,C,D) const> struct SFINAE {};        \
+		//     template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
+		//     template<typename U> static int Test(...);                             \
+		//     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+		//     typedef boost::mpl::bool_<value> type;                                 \
+		// };
+
+		template<class Nest>
+		typename boost::enable_if_c<
+			has_const_member_fun_value_to_params<
+				typename Nest::ParamMapType,
+				bool,
+				typename Nest::Value const &,
+				typename Nest::Index,
+				typename Nest::Params &,
+				typename Nest::Index &
+				>::value,
+			typename Nest::Index >::type
+		wrap_virtual_get_index( Nest const & nest, boost::any const & val, typename Nest::Index resl ) {
+			typename Nest::Value & v( *boost::any_cast<typename Nest::Value*>(val) );
+			return nest.get_index( v, resl );
+		}
+		template<class Nest>
+		typename boost::disable_if_c<
+			has_const_member_fun_value_to_params<
+				typename Nest::ParamMapType,
+				bool,
+				typename Nest::Value const &,
+				typename Nest::Index,
+				typename Nest::Params &,
+				typename Nest::Index &
+				>::value,
+			typename Nest::Index >::type
+		wrap_virtual_get_index( Nest const & nest, boost::any const & val, typename Nest::Index resl ) {
+			BOOST_VERIFY( false );
+		}
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	/// Main NEST template
@@ -89,7 +141,7 @@ namespace nest {
 	///@tparam bool is_virtual if you really want to optimize your code, you can set this to false
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
-		class Value = util::SimpleArray<DIM,double>,
+		class _Value = util::SimpleArray<DIM,double>,
 		template<int,class,class,class> class ParamMap = maps::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class _Index = uint64_t,
@@ -98,9 +150,10 @@ namespace nest {
 	>
 	struct NEST : 
 	    public boost::mpl::if_c<is_virtual,NestBase<_Index>,Empty>::type,
-		public ParamMap<DIM,Value,_Index,Float>, 
-	    public StoragePolicy<Value>
+		public ParamMap<DIM,_Value,_Index,Float>, 
+	    public StoragePolicy<_Value>
 	{
+		typedef _Value Value;
 		typedef _Index Index;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
 		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float,is_virtual> ThisType;
@@ -316,11 +369,10 @@ namespace nest {
 		virtual size_t virtual_dim() const { return DIM; }
 
 		///@brief virtual function returning index of value (sent as boost::any)
-		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
-			// Value & v( *boost::any_cast<Value*>(val) );
-			// return get_index( v, resl );
-			return 0;
+		virtual	Index virtual_get_index( boost::any const & val, Index resl ) const {
+			return impl::wrap_virtual_get_index( *this, val, resl );
 		}
+
 	};
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -328,20 +380,23 @@ namespace nest {
 	///@detail some logic has to be shortcurcited to work with 0-dimensional grids
 	////////////////////////////////////////////////////////////////////////////////
 	template<
-		class Value,
+		class _Value,
 		template<int,class,class,class> class ParamMap,
 		template<class> class StoragePolicy,
 		class _Index,
 		class Float,
 		bool is_virtual
 	>
-	struct NEST<0,Value,ParamMap,StoragePolicy,_Index,Float,is_virtual> : 
+	struct NEST<0,_Value,ParamMap,StoragePolicy,_Index,Float,is_virtual> :
 	    		  public boost::mpl::if_c<is_virtual,NestBase<_Index>,Empty>::type,
-	              public ParamMap<0,Value,_Index,Float>, 
-	              public StoragePolicy<Value>
+	              public ParamMap<0,_Value,_Index,Float>,
+	              public StoragePolicy<_Value>
 	{
 		typedef _Index Index;
+        typedef _Value Value;
 		typedef char Params; // no params
+        typedef ParamMap<0,Value,Index,Float> ParamMapType;
+
 		///@brief choices vector constructor
 		NEST(std::vector<Value> const & _choices) : ParamMap<0,Value,Index,Float>(_choices){}
 		///@brief get num states at depth resl
@@ -414,9 +469,7 @@ namespace nest {
 
 		///@brief virtual function returning index of value (sent as boost::any)
 		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
-			std::cout << "not implemented" << std::endl;
-			std::exit(-1);
-			return 0;
+            return impl::wrap_virtual_get_index( *this, val, resl );
 		}
 
 	};

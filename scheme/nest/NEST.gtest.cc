@@ -219,7 +219,27 @@ TEST(NEST,bounds){
 	#endif
 }
 
+TEST(NEST,virtual_get_index){
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> uniform;
 
+	typedef util::SimpleArray<2,double> VAL;
+	NEST<2,VAL,UnitMap,util::StoreNothing,uint64_t,double,true> nest;
+	NestBase<uint64_t> *nestp = &nest;
+
+	boost::any a;
+	for(int resl = 0; resl < 6; ++resl){
+		for(int iter = 0; iter < 10000; ++iter){
+			VAL v( uniform(rng), uniform(rng) );
+			a = &v;
+			ASSERT_EQ( nest.get_index( v, resl ) , nestp->virtual_get_index( a, resl ) );
+		}
+	}
+
+	NEST<2,VAL,nest::concept::ParamMapArchitype> nest2;
+	ASSERT_DEATH( nest2.virtual_get_index( a, 0 ), ".*" );
+
+}
 
 }
 }

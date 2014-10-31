@@ -21,11 +21,11 @@ TEST(fftdock,fftw){
 	grid[1][0][2] = 1;
 
 	fftw_plan p;
-    p = fftw_plan_dft_3d( grid.shape()[0], grid.shape()[1], grid.shape()[2],
+    p = fftw_plan_dft_3d( (int)grid.shape()[0], (int)grid.shape()[1], (int)grid.shape()[2],
                          (fftw_complex*)grid.data(), (fftw_complex*)grid_f.data(), FFTW_FORWARD, FFTW_ESTIMATE );
 	fftw_execute(p);
     fftw_destroy_plan(p);
-    p = fftw_plan_dft_3d( grid.shape()[0], grid.shape()[1], grid.shape()[2],
+    p = fftw_plan_dft_3d( (int)grid.shape()[0], (int)grid.shape()[1], (int)grid.shape()[2],
                          (fftw_complex*)grid_f.data(), (fftw_complex*)grid_ff.data(), FFTW_BACKWARD, FFTW_ESTIMATE );
 	fftw_execute(p);
     fftw_destroy_plan(p);

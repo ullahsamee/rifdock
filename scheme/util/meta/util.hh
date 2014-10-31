@@ -49,11 +49,11 @@ template<typename T> struct __TO_EMPTY_TYPE_UTILITY__ { typedef __EMPTY_TYPE_UTI
 #define SCHEME_HAS_MEMBER_TYPE(MEMBER)                                                       \
 	template<typename T, typename Enable = scheme::util::meta::__EMPTY_TYPE_UTILITY__>       \
 		struct has_type_ ## MEMBER                                                           \
-		  : m::false_ {};                                                                    \
+		  : boost::mpl::false_ {};                                                           \
 	template<typename T>                                                                     \
 		struct has_type_ ## MEMBER <                                                         \
 		 T, typename scheme::util::meta::__TO_EMPTY_TYPE_UTILITY__<typename T::MEMBER>::type >  \
-			: m::true_ {};
+			: boost::mpl::true_ {};
 
 
 template<typename T, class R, class A, class B, class C>                   \
@@ -62,7 +62,7 @@ struct has_const_call_oper_3 {                                             \
     template<typename U> static char Test(SFINAE<U, &U::operator()>*);     \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
 
 template<typename T, class R, class A>                                     \
@@ -71,7 +71,7 @@ struct has_subscript_oper {                                                \
     template<typename U> static char Test(SFINAE<U, &U::operator[]>*);     \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
 
 template<typename T, class R, class A>                                     \
@@ -80,7 +80,7 @@ struct has_const_subscript_oper {                                          \
     template<typename U> static char Test(SFINAE<U, &U::operator[]>*);     \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
 
 #define SCHEME_HAS_MEMBER_FUNCTION_3(MEMBER)                               \
@@ -90,7 +90,7 @@ struct has_member_fun_ ## MEMBER  {                                        \
     template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
 #define SCHEME_HAS_CONST_MEMBER_FUNCTION_0(MEMBER)                         \
 template<typename T, class R>                                              \
@@ -99,7 +99,7 @@ struct has_const_member_fun_ ## MEMBER  {                                  \
     template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
 #define SCHEME_HAS_CONST_MEMBER_FUNCTION_3(MEMBER)                         \
 template<typename T, class R, class A, class B, class C>                   \
@@ -108,8 +108,18 @@ struct has_const_member_fun_ ## MEMBER  {                                  \
     template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
     template<typename U> static int Test(...);                             \
     static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
-    typedef m::bool_<value> type;                                          \
+    typedef boost::mpl::bool_<value> type;                                 \
 };
+#define SCHEME_HAS_CONST_MEMBER_FUNCTION_4(MEMBER)                         \
+template<typename T, class R, class A, class B, class C, class D>          \
+struct has_const_member_fun_ ## MEMBER  {                                  \
+    template<typename U, R (U::*)(A,B,C,D) const> struct SFINAE {};        \
+    template<typename U> static char Test(SFINAE<U, &U::MEMBER>*);         \
+    template<typename U> static int Test(...);                             \
+    static const bool value = sizeof(Test<T>(0)) == sizeof(char);          \
+    typedef boost::mpl::bool_<value> type;                                 \
+};
+
 
 
 /////////////// in progress.... ////////////////
