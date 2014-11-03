@@ -266,8 +266,10 @@ TEST( MultiNest, get_state_ncell_handling ){
 	multi.get_states( 22, 0, anys ); ASSERT_EQ( val1, A1( 2.5 ) ); ASSERT_EQ( val2, A2( 2.5, 0.5 ) ); ASSERT_EQ( val3, A3( 1.5, 0.5, 0.5 ) );
 	multi.get_states( 23, 0, anys ); ASSERT_EQ( val1, A1( 3.5 ) ); ASSERT_EQ( val2, A2( 2.5, 0.5 ) ); ASSERT_EQ( val3, A3( 1.5, 0.5, 0.5 ) );
 
+	#ifndef NDEBUG
 	ASSERT_DEATH( multi.get_states( 24, 0, anys ), ".*" );
-
+	#endif
+	
 	multi.get_states(  0 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 0.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );
 	multi.get_states(  1 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 1.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );
 	multi.get_states(  2 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 2.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );

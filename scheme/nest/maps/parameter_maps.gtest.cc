@@ -255,12 +255,16 @@ void test_bin_circumradius(
 	typename NEST::ValueType lb,
 	typename NEST::ValueType ub
 ){
+    size_t ITERS = 10*1000;
+	#ifdef NDEBUG
+	ITERS *= 50;
+	#endif
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;
 	typename NEST::ValueType randpt;
 	for(size_t r = 0; r <= std::min((size_t)10,(size_t)NEST::MAX_RESL_ONE_CELL); ++r){
 		double maxdis = 0;
-		for(size_t iter=0; iter < 100000/NEST::DIMENSION; ++iter){
+		for(size_t iter=0; iter < ITERS/NEST::DIMENSION; ++iter){
 			for(size_t i = 0; i < NEST::DIMENSION; ++i) 
 				randpt[i] = uniform(rng)*(ub[i]-lb[i])+lb[i];
 			nest.set_state( nest.get_index(randpt,r) ,r);
@@ -312,6 +316,13 @@ TEST(NEST_ScaleMap,NEST_bin_circumradius_scalemap){
 
 template<class NestType>
 void test_coverage_random_ScaleMap(){
+    size_t ITERS = 1*1000;
+    double FUDGE = 0.06;
+	#ifdef NDEBUG
+	ITERS *= 50;
+	FUDGE = 0.03;
+	#endif
+
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;
 	
@@ -334,7 +345,7 @@ void test_coverage_random_ScaleMap(){
 	NestType nest(lb,ub,cs);
 	size_t max_resl = std::min((size_t)10,(size_t)NestType::MAX_RESL_ONE_CELL-2); // -2 because we set cs up to 4 per dimension
 	std::vector<double> largest_d2_for_r(max_resl+1,0.0);
-	for(size_t i = 0; i < 10000; ++i){
+	for(size_t i = 0; i < ITERS; ++i){
 
 		// set up random value within bounds
 		typename NestType::ValueType val;
@@ -353,7 +364,7 @@ void test_coverage_random_ScaleMap(){
 		// cout << r << " " << largest_d2_for_r[r] << endl;
 		// factor of 1.0+0.03*DIM is a *TOTAL* hack, errer does not scale this way by dimension
 		// but it's enough to make sure the curcumradius is reasonably tight
-		ASSERT_LT(  nest.bin_circumradius(r), (1.0+0.03*(double)NestType::DIMENSION)*sqrt(largest_d2_for_r[r]) );
+		ASSERT_LT(  nest.bin_circumradius(r), (1.0+FUDGE*(double)NestType::DIMENSION)*sqrt(largest_d2_for_r[r]) );
 	}
 
 }

@@ -123,7 +123,12 @@ TEST(SphereQuad, test_coverage){
 	std::vector<double> largest_d2_for_r(max_resl+1,0.0);
 	NestType nest;
 
-	for(size_t i = 0; i < 100000; ++i){
+	size_t ITERS = 30*1000;
+	#ifdef NDEBUG
+		ITERS *= 50;
+	#endif
+
+	for(size_t i = 0; i < ITERS; ++i){
 
 		// set up random value within bounds
 		NestType::ValueType val( gaussian(rng), gaussian(rng), gaussian(rng) );

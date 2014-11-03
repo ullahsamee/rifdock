@@ -413,12 +413,17 @@ test_bcc_children( int NSAMP ){
 }
 
 TEST(bcc_lattice,children){
+	int ITERS = 10*1000;
+	#ifdef NDEBUG
+	ITERS *= 30;
+	#endif
+
 	cout << "BCC               DIM Nfc   frac_fc  Nfce  frac_fce" << std::endl;
-	test_bcc_children<3,double,uint64_t>(100*1000);
-	test_bcc_children<4,double,uint64_t>(100*1000);
-	test_bcc_children<5,double,uint64_t>(100*1000);
-	test_bcc_children<6,double,uint64_t>(100*1000);
-	test_bcc_children<7,double,uint64_t>(100*1000);
+	test_bcc_children<3,double,uint64_t>( ITERS );
+	test_bcc_children<4,double,uint64_t>( ITERS );
+	test_bcc_children<5,double,uint64_t>( ITERS );
+	test_bcc_children<6,double,uint64_t>( ITERS );
+	test_bcc_children<7,double,uint64_t>( ITERS );
 }
 
 

@@ -64,7 +64,13 @@ using std::endl;
 // ATOM  C3  CH1   X   0.06
 
 
-TEST(RosettaField,test_btn){
+TEST(RosettaField,DISABLED_test_btn){
+
+	int ITERS = 1000;
+	#ifdef NDEBUG
+	ITERS *= 40;
+	#endif
+
 	typedef util::SimpleArray<3,float> F3;
 	typedef actor::Atom<F3> Atom;
 	std::vector<Atom> atoms;
@@ -95,14 +101,14 @@ TEST(RosettaField,test_btn){
 
 		boost::random::mt19937 rng((unsigned int)time(0));
 		boost::uniform_real<> uniform;
-		for(int i = 0; i < 10000; ++i){
+		for(int i = 0; i < ITERS; ++i){
 			F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rc.ub_-rc.lb_) + rc.lb_;
 			ASSERT_LE( brc[idx], rc[idx] );
 		}
 
 	}
 
-	int atype = 1;
+//	int atype = 1;
 	RosettaFieldAtype<Atom> rfa(rf,1);
 	objective::voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,0.25);
 	objective::voxel::BoundingFieldCache3D<float> brc(rc,1.0,0.25);

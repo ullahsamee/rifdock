@@ -592,7 +592,12 @@ TEST(hecatonicosachoron,cell_lookup){
 	NEST<3,Matrix3d,HecatonicosachoronMap> nest;
 	// ASSERT_EQ( 0, nest.get_index( nest.set_and_get(0,2), 2 ));
 
-	for(int r = 0; r <= 4; ++r){
+    int MAX_RESL = 3;
+	#ifdef NDEBUG
+	MAX_RESL += 2;
+	#endif
+	
+	for(int r = 0; r <= MAX_RESL; ++r){
 		for(int i = 0; i < (int)nest.size(r); ++i){
 			if( nest.set_state(i,r) ){
 				size_t ilookup = nest.get_index( nest.value(), r );

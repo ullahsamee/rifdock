@@ -21,7 +21,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(tetracontoctachoron,cell_lookup)
+TEST( geom_4d , tetracontoctachoron_cell_lookup )
 {
 	typedef double Float;
 	typedef uint64_t Index;
@@ -42,7 +42,11 @@ TEST(tetracontoctachoron,cell_lookup)
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 10*1000*1000;
+	int NSAMP = 500*1000;
+	#ifdef NDEBUG
+		NSAMP *= 30;
+	#endif
+
 	std::vector<V4> samp(NSAMP);
 	std::vector<Index> cell(NSAMP),cell2(NSAMP);
 
@@ -82,7 +86,7 @@ TEST(tetracontoctachoron,cell_lookup)
 
 }
 
-TEST(tetracontoctachoron,half_cell_lookup)
+TEST( geom_4d , tetracontoctachoron_half_cell_lookup )
 {
 	typedef double Float;
 	typedef uint64_t Index;
@@ -115,7 +119,11 @@ TEST(tetracontoctachoron,half_cell_lookup)
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 10*1000*1000;
+	int NSAMP = 500*1000;
+	#ifdef NDEBUG
+		NSAMP *= 40;
+	#endif
+
 	std::vector<V4> samp(NSAMP);
 	std::vector<Index> cell(NSAMP),cell2(NSAMP);
 
