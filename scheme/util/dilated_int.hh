@@ -183,6 +183,45 @@ uint64_t undilate( uint64_t dim, Index val) {
 	return 0;
 }
 
+template<class Index>
+uint64_t dilate( uint64_t dim, Index val) {
+	switch(dim){
+		case  1: return dilate< 1>(val);
+		case  2: return dilate< 2>(val);
+		case  3: return dilate< 3>(val);
+		case  4: return dilate< 4>(val);
+		case  5: return dilate< 5>(val);
+		case  6: return dilate< 6>(val);
+		case  7: return dilate< 7>(val);
+		case  8: return dilate< 8>(val);
+		case  9: return dilate< 9>(val);
+		case 10: return dilate<10>(val);
+		case 11: return dilate<11>(val);
+		case 12: return dilate<12>(val);
+		case 13: return dilate<13>(val);
+		case 14: return dilate<14>(val);
+		case 15: return dilate<15>(val);
+		case 16: return dilate<16>(val);
+		case 17: return dilate<17>(val);
+		case 18: return dilate<18>(val);
+		case 19: return dilate<19>(val);
+		case 20: return dilate<20>(val);
+		case 21: return dilate<21>(val);
+		case 22: return dilate<22>(val);
+		case 23: return dilate<23>(val);
+		case 24: return dilate<24>(val);
+		case 25: return dilate<25>(val);
+		case 26: return dilate<26>(val);
+		case 27: return dilate<27>(val);
+		case 28: return dilate<28>(val);
+		case 29: return dilate<29>(val);
+		case 30: return dilate<30>(val);
+		case 31: return dilate<31>(val);
+		case 32: return dilate<32>(val);
+	}
+	return 0;
+}
+
 
 }
 }

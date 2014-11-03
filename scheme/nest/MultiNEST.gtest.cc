@@ -12,7 +12,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(MultiNest,boost_any){
+TEST( MultiNest, boost_any ){
 	using boost::any;
 	using boost::any_cast;
 
@@ -38,7 +38,7 @@ TEST(MultiNest,boost_any){
 	*dsp = 2.34; ASSERT_EQ( NULL, any_cast<double*>(&adsp) );
  }
 
-TEST(MultiNest,expand_index){
+TEST( MultiNest, expand_index ){
 	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
 	MultiNest<uint64_t,uint64_t>::Indices indices;
 
@@ -81,7 +81,7 @@ TEST(MultiNest,expand_index){
 	ASSERT_EQ( sum1, 64*3/2 );
  }
 
-TEST(MultiNest,get_state_single_cell){
+TEST( MultiNest, get_state_single_cell ){
 	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
 	MultiNest<uint64_t,uint64_t>::Indices indices;
 
@@ -117,7 +117,36 @@ TEST(MultiNest,get_state_single_cell){
 	multi.get_states( (1<<6)+5, 2, anys ); ASSERT_EQ( val1, A1( 0.875 ) ); ASSERT_EQ( val2, A2( 0.125, 0.375 ) ); ASSERT_EQ( val3, A3( 0.125, 0.125, 0.125 ) );
  }
 
-TEST(MultiNest,get_state_two_cells){
+TEST( MultiNest, get_index_single_cell ){
+	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
+	MultiNest<uint64_t,uint64_t>::Indices indices;
+
+	MultiNest<uint64_t,uint64_t> multi;
+	multi.add_nest( make_shared<NEST<1> >() );
+	multi.add_nest( make_shared<NEST<2> >() );
+	multi.add_nest( make_shared<NEST<3> >() );
+	ASSERT_EQ(multi.size(0),1);
+
+	typedef util::SimpleArray<1,double> A1; A1 val1;
+	typedef util::SimpleArray<2,double> A2; A2 val2;
+	typedef util::SimpleArray<3,double> A3; A3 val3;
+	std::vector<boost::any> anys(3);
+	anys[0] = &val1;
+	anys[1] = &val2;
+	anys[2] = &val3;
+
+	for(int resl = 0; resl < 4; ++resl){
+		for(int index = 0; index < multi.size(resl); ++index){
+			multi.get_states( index, resl, anys );
+			// cout << "VALS: (" << val1 << ") (" << val2 << ") (" << val3 << ")"<<endl;
+			uint64_t test_index = multi.virtual_get_index( &anys, resl );
+			ASSERT_EQ( index, test_index );
+		}
+	}
+
+ }
+
+TEST( MultiNest, get_state_two_cells ){
 	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
 	MultiNest<uint64_t,uint64_t>::Indices indices;
 
@@ -163,9 +192,38 @@ TEST(MultiNest,get_state_two_cells){
 	multi.get_states( (1<<6)+1, 2, anys ); ASSERT_EQ( val1, A1( 0.875  ) ); ASSERT_EQ( val2, A2( 0.125, 0.125 ) ); ASSERT_EQ( val3, A3( 0.125, 0.125, 0.125 ) );
 	multi.get_states( (1<<6)+2, 2, anys ); ASSERT_EQ( val1, A1( 0.625  ) ); ASSERT_EQ( val2, A2( 0.375, 0.125 ) ); ASSERT_EQ( val3, A3( 0.125, 0.125, 0.125 ) );
 	multi.get_states( (1<<6)+5, 2, anys ); ASSERT_EQ( val1, A1( 0.875  ) ); ASSERT_EQ( val2, A2( 0.125, 0.375 ) ); ASSERT_EQ( val3, A3( 0.125, 0.125, 0.125 ) );
-}
+ }
 
-TEST(MultiNest,ncell_handling){
+TEST( MultiNest, get_index_two_cells ){
+	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
+	MultiNest<uint64_t,uint64_t>::Indices indices;
+
+	MultiNest<uint64_t,uint64_t> multi;
+	multi.add_nest( make_shared<NEST<1> >(2) );
+	multi.add_nest( make_shared<NEST<2> >() );
+	multi.add_nest( make_shared<NEST<3> >() );
+	ASSERT_EQ(multi.size(0),2);
+
+	typedef util::SimpleArray<1,double> A1; A1 val1;
+	typedef util::SimpleArray<2,double> A2; A2 val2;
+	typedef util::SimpleArray<3,double> A3; A3 val3;
+	std::vector<boost::any> anys(3);
+	anys[0] = &val1;
+	anys[1] = &val2;
+	anys[2] = &val3;
+
+	for(int resl = 0; resl < 3; ++resl){
+		for(int index = 0; index < multi.size(resl); ++index){
+			multi.get_states( index, resl, anys );
+			// cout << "VALS: (" << val1 << ") (" << val2 << ") (" << val3 << ")"<<endl;
+			uint64_t test_index = multi.virtual_get_index( &anys, resl );
+			ASSERT_EQ( index, test_index );
+		}
+	}
+
+ }
+
+TEST( MultiNest, get_state_ncell_handling ){
 	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
 	MultiNest<uint64_t,uint64_t>::Indices indices;
 
@@ -234,6 +292,37 @@ TEST(MultiNest,ncell_handling){
 	multi.get_states( 21 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 1.25 ) ); ASSERT_EQ( val2, A2( 2.25, 0.25 ) ); ASSERT_EQ( val3, A3( 1.25, 0.25, 0.25 ) );
 	multi.get_states( 22 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 2.25 ) ); ASSERT_EQ( val2, A2( 2.25, 0.25 ) ); ASSERT_EQ( val3, A3( 1.25, 0.25, 0.25 ) );
 	multi.get_states( 23 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 3.25 ) ); ASSERT_EQ( val2, A2( 2.25, 0.25 ) ); ASSERT_EQ( val3, A3( 1.25, 0.25, 0.25 ) );
+
+
+ }
+
+TEST( MultiNest, get_index_ncell_handling ){
+	std::ostream_iterator<uint64_t> out_it (std::cout,", ");
+	MultiNest<uint64_t,uint64_t>::Indices indices;
+
+	MultiNest<uint64_t,uint64_t> multi;
+	multi.add_nest( make_shared<NEST<1> >(4) );
+	multi.add_nest( make_shared<NEST<2> >(3) );
+	multi.add_nest( make_shared<NEST<3> >(2) );
+	ASSERT_EQ(multi.size(0),24);
+
+	typedef util::SimpleArray<1,double> A1; A1 val1;
+	typedef util::SimpleArray<2,double> A2; A2 val2;
+	typedef util::SimpleArray<3,double> A3; A3 val3;
+	std::vector<boost::any> anys(3);
+	anys[0] = &val1;
+	anys[1] = &val2;
+	anys[2] = &val3;
+
+	for(int resl = 0; resl < 3; ++resl){
+		for(int index = 0; index < multi.size(resl); ++index){
+			multi.get_states( index, resl, anys );
+			// cout << "VALS: (" << val1 << ") (" << val2 << ") (" << val3 << ")"<<endl;
+			uint64_t test_index = multi.virtual_get_index( &anys, resl );
+			ASSERT_EQ( index, test_index );
+		}
+	}
+
 
 
  }

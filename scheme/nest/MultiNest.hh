@@ -3,6 +3,7 @@
 
 #include "scheme/nest/NEST.hh"
 
+#include <math.h>
 #include <boost/assert.hpp>
 
 namespace scheme { namespace nest {
@@ -26,6 +27,7 @@ namespace scheme { namespace nest {
 		Index dim_, tot_ncells_;
 		Nests nests_;
 		Indices ncells_, ncells_pref_sum_;
+		Index max_valid_resl_;
 
 		MultiNest(){ init(); }
 		MultiNest(Nests const & nests){ init(nests); }
@@ -41,8 +43,8 @@ namespace scheme { namespace nest {
 			ncells_.resize(nests_.size());
 			ncells_pref_sum_.resize(nests_.size());
 			dim_ = 0;
-            if(nests_.size()==0) return;
 			tot_ncells_ = 1;
+            if(nests_.size()==0) return;
 			for(size_t i = 0; i < nests_.size(); ++i){
 				Nestp nest = nests_[i];
 				dim_ += nest->virtual_dim();
@@ -53,10 +55,20 @@ namespace scheme { namespace nest {
 			for(size_t i = 1; i < nests_.size(); ++i){
 				ncells_pref_sum_[i] = ncells_pref_sum_[i-1] * ncells_[i-1];
 			}
+
+			if( dim_ == 0 ){
+				max_valid_resl_ = std::numeric_limits<Index>::max();
+				return;
+			}
+			// std::cout << tot_ncells_ << " " << dim_ << std::endl;
+			Index const n_hier_bits = sizeof(BigIndex)*8 - std::ceil( log2(tot_ncells_) );
+			max_valid_resl_ = n_hier_bits / dim_;
+			// std::cout << "MultiNest max resl: " << max_valid_resl_ << std::endl;
 		}
 
 		template<class Anys>
 		bool get_states(BigIndex const & index, Index resl, Anys & anys) const {
+			BOOST_VERIFY( resl <= max_valid_resl_ );
 			BOOST_VERIFY(anys.size()==nests_.size());
 			BOOST_VERIFY( index < size(resl) );
 			BigIndex big_cell_index = index >> dim_*resl;
@@ -69,7 +81,7 @@ namespace scheme { namespace nest {
 			size_t iindex = 0;
 			for(size_t i = 0; i < nests_.size(); ++i){
 				Index cell_index = big_cell_index / ncells_pref_sum_[i] % ncells_[i];
-				// std::cout << "nest " << i << " " << cell_index << std::endl;
+				// std::cout << "MultiNest  nest " << resl << ", nest " << i << ", ci " << cell_index << ", ii " << iindex << std::endl;
 				if( ! nests_[i]->virtual_get_state( hier_indices, cell_index, iindex, resl, anys[i] ) ) return false; 
 			}
             return true;
@@ -93,6 +105,7 @@ namespace scheme { namespace nest {
 			Index resl, 
 			boost::any & result
 		){
+			BOOST_VERIFY( resl <= max_valid_resl_ );
 			std::cout << "not implemented yet" << std::endl;
 			std::exit(-1);
 		}
@@ -109,6 +122,7 @@ namespace scheme { namespace nest {
 			Index resl,
 			boost::any & result
 		){
+			BOOST_VERIFY( resl <= max_valid_resl_ );
 			std::cout << "not implemented yet" << std::endl;
 			std::exit(-1);
 		}
@@ -117,6 +131,7 @@ namespace scheme { namespace nest {
 		///@return number of possible states at depth resl
 		virtual Index 
 		virtual_size(Index resl) const { 
+			BOOST_VERIFY( resl <= max_valid_resl_ );
 			Index s = (Index)size(resl);
 			BOOST_VERIFY( s <= BigIndex( std::numeric_limits<Index>::max() ) );
 			return s;
@@ -140,9 +155,48 @@ namespace scheme { namespace nest {
 
 		///@brief virtual function returning index of value (sent as boost::any)
 		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
-			std::cout << "not implemented" << std::endl;
-			std::exit(-1);
-			return 0;
+			BOOST_VERIFY( resl <= max_valid_resl_ );
+			// std::cout << "attempt to cast to vector<any> cosnt *" << std::endl;
+			std::vector<boost::any> const & anys = *boost::any_cast< std::vector<boost::any> * >(val);
+			// std::cout << "   cast success" << std::endl;
+			BOOST_VERIFY( nests_.size() == anys.size() );
+			std::vector<Index> indices, cell_indices;
+			for(int i = 0; i < nests_.size(); ++i){
+				if( nests_[i]->virtual_dim()==0 && nests_[i]->virtual_size(resl)==1 ){
+                    // if 0-dim and only one choice, take it... avoids problems with DiscreteChoiceNest
+                    cell_indices.push_back(0);
+				} else {
+					Index cell_index_tmp;
+					bool status = nests_[i]->virtual_get_indices( anys[i], resl, cell_index_tmp, indices );
+					BOOST_VERIFY( status );
+					cell_indices.push_back(cell_index_tmp);
+				}
+			}
+			BOOST_VERIFY( cell_indices.size() == nests_.size() );
+			BOOST_VERIFY( indices.size() == dim_ );
+	
+			// std::cout << "MultiNest virtual_get_index INDICES:";
+			// BOOST_FOREACH( Index i, indices ) std::cout << " " << i;
+			// std::cout << std::endl;
+			// std::cout << "MultiNest virtual_get_index CELL_INDICES:";
+			// BOOST_FOREACH( Index i, cell_indices ) std::cout << " " << i;
+			// std::cout << std::endl;
+			
+			BigIndex index = 0, cell_index = 0;
+			for(int i = 0; i <       dim_         ; ++i)      index |= util::dilate( dim_, indices[i] ) << i;
+			for(int i = 0; i < cell_indices.size(); ++i) cell_index += cell_indices[i] * ncells_pref_sum_[i];
+			return index | cell_index << ( dim_*resl );
+		}
+
+		virtual bool
+		virtual_get_indices(
+			boost::any const & val,
+			Index resl,
+			Index & cell_index_out,
+			std::vector<Index> & indices_out
+		 ) const {
+			BOOST_VERIFY( resl <= max_valid_resl_ );
+			BOOST_VERIFY(false);
 		}
 
 	};

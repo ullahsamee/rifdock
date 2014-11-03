@@ -60,7 +60,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "--gtest_filter=MultiNest\*"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--gtest_color=no"

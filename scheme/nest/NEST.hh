@@ -7,6 +7,7 @@
 #include "scheme/util/template_loop.hh"
 #include "scheme/nest/maps/UnitMap.hh"
 #include "scheme/util/meta/util.hh"
+#include "scheme/util/meta/print_type.hh"
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -53,7 +54,20 @@ namespace nest {
 		) = 0;
 
 		///@brief virtual function returning index of value (sent as boost::any)
-		virtual Index virtual_get_index( boost::any const & val, Index resl ) const = 0;
+		virtual Index
+		virtual_get_index(
+			boost::any const & val,
+			Index resl
+		) const = 0;
+
+		///@brief virtual function returning index of value (sent as boost::any)
+		virtual bool
+		virtual_get_indices(
+			boost::any const & val,
+			Index resl,
+			Index & cell_index_out,
+			std::vector<Index> & indices_out
+		 ) const = 0;
 
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
@@ -103,10 +117,16 @@ namespace nest {
 				typename Nest::Index &
 				>::value,
 			typename Nest::Index >::type
-		wrap_virtual_get_index( Nest const & nest, boost::any const & val, typename Nest::Index resl ) {
+		wrap_virtual_get_index(
+			Nest const & nest,
+			boost::any const & val,
+			typename Nest::Index resl
+		) {
 			typename Nest::Value & v( *boost::any_cast<typename Nest::Value*>(val) );
 			return nest.get_index( v, resl );
 		}
+
+		// null impl for bad param map case
 		template<class Nest>
 		typename boost::disable_if_c<
 			has_const_member_fun_value_to_params<
@@ -118,8 +138,68 @@ namespace nest {
 				typename Nest::Index &
 				>::value,
 			typename Nest::Index >::type
-		wrap_virtual_get_index( Nest const & nest, boost::any const & val, typename Nest::Index resl ) {
+		wrap_virtual_get_index(
+			Nest const & nest,
+			boost::any const & val,
+			typename Nest::Index resl
+		) {
+			std::cerr << "wrap_virtual_get_index: ParamMap type does not support lookups" << std::endl;
+			util::meta::print_type< typename Nest::ParamMapType >();
 			BOOST_VERIFY( false );
+			std::exit(-1);
+		}
+
+		template<class Nest>
+		typename boost::enable_if_c<
+			has_const_member_fun_value_to_params<
+				typename Nest::ParamMapType,
+				bool,
+				typename Nest::Value const &,
+				typename Nest::Index,
+				typename Nest::Params &,
+				typename Nest::Index &
+				>::value,
+			typename Nest::Index >::type
+		wrap_virtual_get_indices(
+			Nest const & nest,
+			boost::any const & val,
+			typename Nest::Index resl,
+			typename Nest::Index & cell_index_out,
+			std::vector< typename Nest::Index > & indices_out
+		) {
+			typename Nest::Value & v( *boost::any_cast<typename Nest::Value*>(val) );
+			typename Nest::Indices indices_tmp;
+			bool const status = nest.get_indicies( v, resl, indices_tmp, cell_index_out );
+			for(int i = 0; i < Nest::DIMENSION; ++i){
+				// std::cout << "wrap_virtual_get_indices " <<  indices_tmp[i] << std::endl;
+				indices_out.push_back( indices_tmp[i] );
+			}
+			return status;
+		}
+
+		// null impl for bad param map case
+		template<class Nest>
+		typename boost::disable_if_c<
+			has_const_member_fun_value_to_params<
+				typename Nest::ParamMapType,
+				bool,
+				typename Nest::Value const &,
+				typename Nest::Index,
+				typename Nest::Params &,
+				typename Nest::Index &
+				>::value,
+			typename Nest::Index >::type
+		wrap_virtual_get_indices(
+			Nest const & nest,
+			boost::any const & val,
+			typename Nest::Index resl,
+			typename Nest::Index & cell_index_out,
+			std::vector< typename Nest::Index > & indices_out
+		) {
+			std::cerr << "wrap_virtual_get_indices: ParamMap type does not support lookups" << std::endl;
+			util::meta::print_type< typename Nest::ParamMapType >();
+			BOOST_VERIFY( false );
+			std::exit(-1);
 		}
 	}
 
@@ -232,12 +312,14 @@ namespace nest {
 		///@returns true iff Value v is in a valid bin
 		bool get_indicies(Value const & v, Index resl, Indices & indices_out, Index & cell_index_out) const {
 			assert(resl<=MAX_RESL_ONE_CELL); // not rigerous check if Ncells > 1
+			// std::cout << "NEST::get_indicies val= " << v << std::endl;
 			Params params;
 			if( ! this->value_to_params( v, resl, params, cell_index_out ) ) return false;
 			Float scale = Float(ONE<<resl);
 			for(size_t i = 0; i < DIM; ++i){
 				// this min for bounds check kinda sucks, but it's necessary if you want to allow points on the boundary
 				indices_out[i] = std::min(((ONE<<resl)-1),static_cast<Index>(params[i]*scale));
+				// std::cout << "NEST::get_indicies, indices_out " << indices_out[i] << std::endl;
 			}
 			return true;
 		}
@@ -372,6 +454,16 @@ namespace nest {
 		virtual	Index virtual_get_index( boost::any const & val, Index resl ) const {
 			return impl::wrap_virtual_get_index( *this, val, resl );
 		}
+	
+		virtual bool virtual_get_indices(
+			boost::any const & val,
+			Index resl,
+			Index & cell_index_out,
+			std::vector<Index> & indices_out
+		 ) const {
+    		return impl::wrap_virtual_get_indices( *this, val, resl, cell_index_out, indices_out );
+		}
+
 
 	};
 
@@ -470,6 +562,15 @@ namespace nest {
 		///@brief virtual function returning index of value (sent as boost::any)
 		virtual Index virtual_get_index( boost::any const & val, Index resl ) const {
             return impl::wrap_virtual_get_index( *this, val, resl );
+		}
+
+		virtual bool virtual_get_indices(
+			boost::any const & val,
+			Index resl,
+			Index & cell_index_out,
+			std::vector<Index> & indices_out
+		 ) const {
+    		return impl::wrap_virtual_get_indices( *this, val, resl, cell_index_out, indices_out );
 		}
 
 	};

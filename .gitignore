@@ -34,3 +34,5 @@ Makefile
 /.DS_Store
 
 .DS_Store
+
+ide/Scheme.xcodeproj/project.xcworkspace
