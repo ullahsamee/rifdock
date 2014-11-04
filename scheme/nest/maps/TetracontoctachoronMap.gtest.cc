@@ -23,7 +23,7 @@ using std::cout;
 using std::endl;
 
 
-TEST(TetracontoctachoronMap,cell_lookup){
+TEST( TetracontoctachoronMap , cell_lookup ){
 	// HecatonicosachoronMap<> map;
 	// HecatonicosachoronMap<>::Params p;
 	// for( size_t i = 0; i < 60; ++i){
@@ -49,11 +49,31 @@ TEST(TetracontoctachoronMap,cell_lookup){
 			}
 		}
 	}
+}
+
+TEST( TetracontoctachoronMap , nside_cell_lookup ){
+	int MAX_NSIDE = 11;
+	#ifdef NDEBUG
+	MAX_NSIDE = 23;
+	#endif
+	for(int nside = 1; nside <= MAX_NSIDE; ++nside){
+		NEST<3,Matrix3d,TetracontoctachoronMap> nest(nside);
+		uint64_t nfail = 0;
+		for(int i = 0; i < (int)nest.size(0); ++i){
+			if( nest.set_state(i,0) ){
+				size_t ilookup = nest.get_index( nest.value(), 0 );
+				nfail += ( i != ilookup );
+			}
+		}
+		double frac_fail = (double)nfail / (double)nest.size(0);
+		// cout << nside << " " << frac_fail << endl;
+		ASSERT_LE( frac_fail, 0.15 );
+	}
 
 }
 
 
-TEST(TetracontoctachoronMap,covering){
+TEST( TetracontoctachoronMap , covering ){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 5;
 	int ITERS = 50*1000;
@@ -103,7 +123,58 @@ TEST(TetracontoctachoronMap,covering){
 
 }
 
-TEST(TetracontoctachoronMap,DISABLED_visualize){
+TEST( TetracontoctachoronMap , nside_covering ){
+	// cout << "QuaternionMap Covrad" << endl;
+	int MAX_NSIDE = 15;
+	int ITERS = 50*1000;
+	#ifdef NDEBUG
+		MAX_NSIDE = 25;
+		ITERS *= 20;
+	#endif
+
+	// boost::random::mt19937 rng((unsigned int)time(0));
+	boost::random::mt19937 rng(0);
+	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
+
+
+	cout << "nside              N     covrad     avgrad    cov/avg  overcover     avgcov  fracused" << endl;
+	for(int nside = 1; nside <= MAX_NSIDE; ++nside){
+		NEST<3,Matrix3d,TetracontoctachoronMap> nest(nside);
+
+		double maxdiff=0, avgdiff=0;
+		for(int i = 0; i <= ITERS; ++i){
+			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
+			q.normalize();
+			size_t index = nest.get_index(q.matrix(),0);
+			// cout << "index: " << index << " sample: " << q.coeffs().transpose() << endl;
+			ASSERT_TRUE( nest.set_state( index , 0 ) );
+			Eigen::Quaterniond qcen( nest.value() );
+			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
+			avgdiff += q.angularDistance(qcen);
+		}
+		avgdiff /= ITERS;
+		// size_t count = nest.size(0);
+		size_t count = 0; for(size_t i = 0; i < nest.size(0)/24; ++i) if(nest.set_state(i,0)) ++count;
+		count *= 24;
+		double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
+		double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;		
+		printf("%3i %16lu %10.5f %10.5f %10.5f %10.5f %10.5f %7.5f\n", 
+			nside,
+			count,
+			maxdiff*180.0/M_PI,
+			avgdiff*180.0/M_PI,
+			maxdiff/avgdiff,
+			volfrac,
+			avgfrac,
+			(double)count / nest.size(0)
+		);
+		std::cout.flush();
+	}
+
+}
+
+TEST( TetracontoctachoronMap , DISABLED_visualize ){
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
