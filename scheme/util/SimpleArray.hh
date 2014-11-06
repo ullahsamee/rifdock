@@ -102,6 +102,10 @@ struct SimpleArray {
 	template<class F2> SimpleArray<N,F> & operator/=(F2 const & o){ for(int i=0;i<N;++i) D[i] /= o; return *this; }
 	template<class F2> SimpleArray<N,F> & operator+=(F2 const & o){ for(int i=0;i<N;++i) D[i] += o; return *this; }
 	template<class F2> SimpleArray<N,F> & operator-=(F2 const & o){ for(int i=0;i<N;++i) D[i] -= o; return *this; }
+	SimpleArray<N,F> & operator*=(THIS const & o){ for(int i=0;i<N;++i) D[i] *= o[i]; return *this; }
+	SimpleArray<N,F> & operator/=(THIS const & o){ for(int i=0;i<N;++i) D[i] /= o[i]; return *this; }
+	SimpleArray<N,F> & operator+=(THIS const & o){ for(int i=0;i<N;++i) D[i] += o[i]; return *this; }
+	SimpleArray<N,F> & operator-=(THIS const & o){ for(int i=0;i<N;++i) D[i] -= o[i]; return *this; }
 };
 template<int N, class F>
 std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){

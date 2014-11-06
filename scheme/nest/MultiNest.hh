@@ -32,6 +32,8 @@ namespace scheme { namespace nest {
 		MultiNest(){ init(); }
 		MultiNest(Nests const & nests){ init(nests); }
 
+		Index max_valid_resl() const { return max_valid_resl_; }
+
 		void add_nest( Nestp nestp ){
 			nests_.push_back(nestp);
 			init();
