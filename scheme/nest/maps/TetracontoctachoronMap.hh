@@ -192,7 +192,7 @@ namespace scheme { namespace nest { namespace maps {
 					  3.64786 ,
 					  3.44081 
 				};
-				return covrad[nside_-1];
+				return covrad[nside_-1] * M_PI / 180.0;
 			}
 			assert(nside_==1);
 			static Float const covrad[6] = {
@@ -203,7 +203,7 @@ namespace scheme { namespace nest { namespace maps {
 				  5.31355, 
 				  2.66953 
 			};
-			return covrad[resl];
+			return covrad[resl] * M_PI / 180.0;
 		}
 
 		///@brief maximum distance from the bin center which must be within the bin

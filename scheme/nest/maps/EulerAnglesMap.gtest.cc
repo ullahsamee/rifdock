@@ -19,7 +19,7 @@ namespace scheme { namespace nest { namespace maps { namespace test {
 using std::cout;
 using std::endl;
 
-TEST(EulerAnglesMap,DISABLED_covering){
+TEST( EulerAnglesMap, DISABLED_covering ){
 	using namespace Eigen;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
@@ -59,7 +59,7 @@ TEST(EulerAnglesMap,DISABLED_covering){
 }
 
 
-TEST(EulerAnglesMap,DISABLED_shapes){
+TEST( EulerAnglesMap, DISABLED_shapes ){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
@@ -119,7 +119,7 @@ TEST(EulerAnglesMap,DISABLED_shapes){
 
 }
 
-TEST(TetracontoctachoronMap,DISABLED_visualize){
+TEST( EulerAnglesMap, DISABLED_visualize ){
 	using namespace Eigen;
 
 	boost::random::mt19937 rng((unsigned int)time(0));

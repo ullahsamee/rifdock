@@ -59,8 +59,8 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=MultiNest\*"
-            isEnabled = "NO">
+            argument = "--gtest_filter=Rotation1DMap.*"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--gtest_color=no"

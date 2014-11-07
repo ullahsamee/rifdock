@@ -22,7 +22,8 @@
 // #include "scheme/nest/maps/HecatonicosachoronMap.gtest.cc"
 // #include "scheme/nest/maps/QuaternionMap.gtest.cc"
 // #include "scheme/nest/maps/EulerAnglesMap.gtest.cc"
-#include "scheme/nest/maps/TetracontoctachoronMap.gtest.cc"
+// #include "scheme/nest/maps/TetracontoctachoronMap.gtest.cc"
+#include "scheme/nest/maps/Rotation1DMap.gtest.cc"
 
 // #include "scheme/numeric/geom_4d.gtest.cc"
 // #include "scheme/numeric/bcc_lattice.gtest.cc"

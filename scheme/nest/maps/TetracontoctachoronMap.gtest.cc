@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-namespace scheme { namespace nest { namespace maps {
+namespace scheme { namespace nest { namespace maps { namespace test {
 
 using namespace Eigen;
 using std::cout;
@@ -227,4 +227,4 @@ TEST( TetracontoctachoronMap , DISABLED_visualize ){
 }
 
 
-}}}
+}}}}
