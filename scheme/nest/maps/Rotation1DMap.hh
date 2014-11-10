@@ -12,7 +12,7 @@
 namespace scheme { namespace nest { namespace maps {
 
 	template<
-		int DIM=3,
+		int DIM=1,
 		class Value=Eigen::Matrix3d,
 		class Index=uint64_t,
 		class Float=double
@@ -71,6 +71,25 @@ namespace scheme { namespace nest { namespace maps {
 			return true;
 		}
 
+		void get_axis_angle_and_flip( Value value, Eigen::Vector3d & ax, Float & ang, bool & doflip ) const {
+			Eigen::AngleAxis<Float> aa(value);
+			ang = aa.angle();
+			ax = aa.axis();
+			if( ax.dot(axis) < 0 ){ ax = -ax; ang = -ang; }
+			doflip = false;
+			if( fabs(ang) > 0.00001 && ax.dot(axis) < 0.999 ){
+				doflip = true;
+				value = value * flip.transpose();
+				Eigen::AngleAxis<Float> aa(value);
+				ax = aa.axis();
+				ang = aa.angle();
+				if( ax.dot(axis) < 0 ){ ax = -ax; ang = -ang; }
+				// std::cout << ax.transpose() << " / " << axis.transpose() << " / " << ang*180/M_PI << std::endl;
+				// std::cout << value << std::endl;
+			}
+
+		}
+
 		///@brief sets params/cell_index from value
 		///@note necessary for value lookup and neighbor lookup
 		bool value_to_params(
@@ -83,22 +102,11 @@ namespace scheme { namespace nest { namespace maps {
 			BOOST_ASSERT( fabs(axis.norm()-1.0) < 0.00001 );
 			BOOST_ASSERT( lb < ub );
 
-			Eigen::AngleAxis<Float> aa(value);
-			Eigen::Vector3d vax = aa.axis();
-			Float ang = aa.angle();
-			if( vax.dot(axis) < 0 ){ vax = -vax; ang = -ang; }
+			Float ang;
+			bool doflip;
+			Eigen::Vector3d vax;
+			get_axis_angle_and_flip( value0, vax, ang, doflip );
 
-			bool doflip = false;
-			if( fabs(ang) > 0.00001 && vax.dot(axis) < 0.999 ){
-				doflip = true;
-				value = value * flip.transpose();
-				Eigen::AngleAxis<Float> aa(value);
-				vax = aa.axis();
-				ang = aa.angle();
-				if( vax.dot(axis) < 0 ){ vax = -vax; ang = -ang; }
-				// std::cout << vax.transpose() << " / " << axis.transpose() << " / " << ang*180/M_PI << std::endl;
-				// std::cout << value << std::endl;
-			}
 			BOOST_ASSERT( fabs(ang) < 0.00001 || vax.dot(axis) > 0.99999 );
 			if( ang >  M_PI ) ang -= 2.0*M_PI;
 			if( ang < -M_PI ) ang += 2.0*M_PI;			
