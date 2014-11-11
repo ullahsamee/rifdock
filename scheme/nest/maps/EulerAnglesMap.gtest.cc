@@ -27,12 +27,12 @@ TEST( EulerAnglesMap, DISABLED_covering ){
 
 	cout << "EulerAnglesMap Covrad" << endl;
 	int NRES = 7;
-	// int const ITERS = 1000000;
-	int ITERS = 1000000;	
+	// int const NITER = 1000000;
+	int NITER = 1000000;	
 	NEST<3,Matrix3d,EulerAnglesMap> nest;
 	for(int r = 1; r <= NRES; ++r){
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 			q.normalize();
 			Matrix3d m = nest.set_and_get( nest.get_index(q.matrix(),r) , r );
@@ -47,7 +47,7 @@ TEST( EulerAnglesMap, DISABLED_covering ){
 			avgdiff += q.angularDistance(qcen);
 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		// size/2 because half samples are ignored
 		double volfrac = (double)nest.size(r)/2*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
 		double avgfrac = (double)nest.size(r)/2*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
@@ -65,55 +65,55 @@ TEST( EulerAnglesMap, DISABLED_shapes ){
 	boost::uniform_real<> uniform;
 
 	/// inspect maxdiff/avgdiff for some simple shapes
-	int ITERS = 100000;
+	int NITER = 100000;
 	{
 		util::SimpleArray<3,double> b(1,1,1);
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			util::SimpleArray<3,double> samp(uniform(rng),uniform(rng),uniform(rng));
 			samp = (samp-0.5) * b;
 			if(samp.norm() > 0.5){ --i; continue; }
 			avgdiff += samp.norm();
 			maxdiff = std::max(samp.norm(),maxdiff);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		cout << "sphere: " << maxdiff / avgdiff << endl;
 	}
 	{
 		util::SimpleArray<3,double> b(1,1,1);
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			util::SimpleArray<3,double> samp(uniform(rng),uniform(rng),uniform(rng));
 			samp = (samp-0.5) * b;
 			avgdiff += samp.norm();
 			maxdiff = std::max(samp.norm(),maxdiff);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		cout << "square: " << maxdiff / avgdiff << endl;
 	}
 	{
 		util::SimpleArray<3,double> b(2,1,1);
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			util::SimpleArray<3,double> samp(uniform(rng),uniform(rng),uniform(rng));
 			samp = (samp-0.5) * b;
 			avgdiff += samp.norm();
 			maxdiff = std::max(samp.norm(),maxdiff);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		cout << "rect211: " << maxdiff / avgdiff << endl;
 	}
 	{
 		util::SimpleArray<3,double> b(1,1,1), cen(0.135022,0.135022,0.135022);
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			util::SimpleArray<3,double> samp(uniform(rng),uniform(rng),uniform(rng));
 			samp = (samp-0.5) * b;
 			if( samp.sum() < 0 ){ --i; continue; }
 			avgdiff += (samp-cen).norm();
 			maxdiff = std::max((samp-cen).norm(),maxdiff);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		cout << "triang: " << maxdiff / avgdiff << endl;
 	}
 

@@ -54,7 +54,7 @@ void test_map(Map & h){
 	int MAXIDX = 10*1000*1000;
 	int NFILL = MAXIDX/10;
 	int NROW = 5;
-	int ITERS = 10*1000*1000 / NROW;
+	int NITER = 10*1000*1000 / NROW;
 
 	// boost::random::mt19937 rng((unsigned int)time(0));
 	boost::random::mt19937 rng((unsigned int)0);	
@@ -64,13 +64,13 @@ void test_map(Map & h){
 
 	boost::timer::cpu_timer t;
 	size_t count = 0;
-	for(size_t i = 0; i < ITERS; ++i){
+	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(rng);
 		for(size_t j = 0; j < NROW; ++j){
 			if( h.find(ri+j) != h.end() ) count += h[ri+j];
 		}
 	}
-	cout << "rate " << (double)1000000000*ITERS*NROW/(double)t.elapsed().wall << " " << (double)count / ITERS << endl;
+	cout << "rate " << (double)1000000000*NITER*NROW/(double)t.elapsed().wall << " " << (double)count / NITER << endl;
 }
 
 template<class MAP1, class MAP2>
@@ -81,7 +81,7 @@ void test_map(
 	int MAXIDX = 100*1000*1000;
 	int NFILL = MAXIDX/10;
 	int NROW = 1;
-	int ITERS = 100*1000*1000 / NROW;
+	int NITER = 100*1000*1000 / NROW;
 
 	// boost::random::mt19937 rng((unsigned int)time(0));
 	boost::random::mt19937 rng((unsigned int)0);	
@@ -94,7 +94,7 @@ void test_map(
 	}
 
 	std::vector<size_t> ridx;
-	for(size_t i = 0; i < ITERS; ++i)
+	for(size_t i = 0; i < NITER; ++i)
 		ridx.push_back( randindex(rng) );
 
 	boost::timer::cpu_timer tm;
@@ -104,7 +104,7 @@ void test_map(
 			if( m.find(ri+j) != m.end() ) mcount += m[ri+j];
 		}
 	}
-	cout << lm << " rate " << (double)1000000000*ITERS*NROW/(double)tm.elapsed().wall << endl;
+	cout << lm << " rate " << (double)1000000000*NITER*NROW/(double)tm.elapsed().wall << endl;
 
 	boost::timer::cpu_timer tn;
 	size_t ncount = 0;
@@ -113,7 +113,7 @@ void test_map(
 			if( n.find(ri+j) != n.end() ) ncount += n[ri+j];
 		}
 	}
-	cout << ln << " rate " << (double)1000000000*ITERS*NROW/(double)tn.elapsed().wall << endl;
+	cout << ln << " rate " << (double)1000000000*NITER*NROW/(double)tn.elapsed().wall << endl;
 
 	cout << mcount << endl;
 	ASSERT_EQ( mcount, ncount );

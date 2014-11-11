@@ -76,9 +76,9 @@ TEST( TetracontoctachoronMap , nside_cell_lookup ){
 TEST( TetracontoctachoronMap , covering ){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 5;
-	int ITERS = 50*1000;
+	int NITER = 10*1000;
 	#ifdef NDEBUG
-		ITERS *= 20;
+		NITER *= 50;
 	#endif
 
 	// boost::random::mt19937 rng((unsigned int)time(0));
@@ -93,7 +93,7 @@ TEST( TetracontoctachoronMap , covering ){
 
 
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i <= ITERS; ++i){
+		for(int i = 0; i <= NITER; ++i){
 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 			q.normalize();
 			size_t index = nest.get_index(q.matrix(),r);
@@ -103,7 +103,7 @@ TEST( TetracontoctachoronMap , covering ){
 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 			avgdiff += q.angularDistance(qcen);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		// size_t count = nest.size(r);
 		size_t count = 0; for(size_t i = 0; i < nest.size(r)/24; ++i) if(nest.set_state(i,r)) ++count;
 		count *= 24;
@@ -125,11 +125,11 @@ TEST( TetracontoctachoronMap , covering ){
 
 TEST( TetracontoctachoronMap , nside_covering ){
 	// cout << "QuaternionMap Covrad" << endl;
-	int MAX_NSIDE = 15;
-	int ITERS = 50*1000;
+	int MAX_NSIDE = 10;
+	int NITER = 10*1000;
 	#ifdef NDEBUG
 		MAX_NSIDE = 25;
-		ITERS *= 20;
+		NITER *= 50;
 	#endif
 
 	// boost::random::mt19937 rng((unsigned int)time(0));
@@ -143,7 +143,7 @@ TEST( TetracontoctachoronMap , nside_covering ){
 		NEST<3,Matrix3d,TetracontoctachoronMap> nest(nside);
 
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i <= ITERS; ++i){
+		for(int i = 0; i <= NITER; ++i){
 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 			q.normalize();
 			size_t index = nest.get_index(q.matrix(),0);
@@ -153,7 +153,7 @@ TEST( TetracontoctachoronMap , nside_covering ){
 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 			avgdiff += q.angularDistance(qcen);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		// size_t count = nest.size(0);
 		size_t count = 0; for(size_t i = 0; i < nest.size(0)/24; ++i) if(nest.set_state(i,0)) ++count;
 		count *= 24;

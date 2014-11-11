@@ -73,7 +73,7 @@ TEST(bcc_lattice,centers_map){
 template<int N, class F, class S>
 F
 test_bcc_performance(
-	int NSAMP,
+	size_t NSAMP,
 	S const Nside,
 	F const Width
 ){
@@ -115,14 +115,18 @@ test_bcc_performance(
 	return maxdiff;
 }
 
-TEST(bcc_lattice,DISABLED_performance){
+TEST(bcc_lattice,performance){
+	size_t NITER = 50*1000;
+	#ifdef NDEBUG
+	NITER *= 50;
+	#endif
 	size_t Nside = 100;
 	double Width = 10.0;
-	double const R3test = test_bcc_performance<3,double,uint64_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<4,double,uint64_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<5,double,uint64_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<6,double,uint64_t>( 10000000, Nside, Width );
-	                      test_bcc_performance<7,double,uint64_t>( 10000000, Nside, Width );
+	double const R3test = test_bcc_performance<3,double,uint64_t>( NITER, Nside, Width );
+	                      test_bcc_performance<4,double,uint64_t>( NITER, Nside, Width );
+	                      test_bcc_performance<5,double,uint64_t>( NITER, Nside, Width );
+	                      test_bcc_performance<6,double,uint64_t>( NITER, Nside, Width );
+	                      test_bcc_performance<7,double,uint64_t>( NITER, Nside, Width );
 	double const R3 = std::pow(2.0,-5.0/3.0)*sqrt(5) / std::pow(2.0,1.0/3.0) * Width / Nside;
 	ASSERT_LE( R3test     , R3 );
 	ASSERT_GT( R3test*1.1 , R3 );	
@@ -173,7 +177,7 @@ TEST(bcc_lattice,inradius){
 
 template<int N, class F, class S> 
 F 
-test_bcc_neighbors( int NSAMP ){
+test_bcc_neighbors( size_t NSAMP ){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
 	boost::random::mt19937 rng((unsigned int)time(0));
@@ -206,6 +210,7 @@ test_bcc_neighbors( int NSAMP ){
 	if(N==3) inrad = 0.433015;
 	// F const radius = 1.9*inrad;
 	for(F radius = 0; radius < 3.0*inrad; radius += inrad/10.0){
+	// F radius = 2.1*inrad; {
 
 		int sum_in_nbrs=0, sum_in_nbrs_we=0;
 		for(int i = 0; i < NSAMP; ++i){
@@ -226,32 +231,33 @@ test_bcc_neighbors( int NSAMP ){
 				}
 			}
 		}
-
-		// uncomment fto print report
-		// int sum_in_nbrs_cubic=0;
-		// for(int i = 0; i < NSAMP; ++i){
-		// 	// pick random point in i0 cell
-		// 	V cen; for(int j = 0; j < N; ++j) cen[j] = (runif(rng)-0.5);
-		// 	BOOST_VERIFY( cubic[cen] == i0cubic );
-
-		// 	V samp;
-		// 	for(int j = 0; j < N; ++j) samp[j] = rnorm(rng);
-		// 	samp *= (radius/inrad*0.5/samp.norm());
-		// 	S index = cubic[samp+cen];
-		// 	// if( index == i0 ){ --i; continue; }
-		// 	if( std::find( nbrs_cubic.begin(), nbrs_cubic.end(), index ) != nbrs_cubic.end() ){
-		// 		++sum_in_nbrs_cubic;
-		// 	}
-		// }
-		// printf("%i %7.3f %9.7f %9.7f %9.7f\n",
-		// 	N,
-		// 	radius/inrad,
-		// 	(F)sum_in_nbrs/NSAMP,
-		// 	(F)sum_in_nbrs_we/NSAMP,
-		// 	(F)sum_in_nbrs_cubic/NSAMP			
-		// );
-
 		if( (F)sum_in_nbrs_we/NSAMP > 0.99 ) maxrad_99 = radius;
+
+		// uncomment for print report
+		if( fabs( radius - 2.0*inrad ) > 0.001 ) continue;
+		int sum_in_nbrs_cubic=0;
+		for(int i = 0; i < NSAMP; ++i){
+			// pick random point in i0 cell
+			V cen; for(int j = 0; j < N; ++j) cen[j] = (runif(rng)-0.5);
+			BOOST_VERIFY( cubic[cen] == i0cubic );
+
+			V samp;
+			for(int j = 0; j < N; ++j) samp[j] = rnorm(rng);
+			samp *= (radius/inrad*0.5/samp.norm());
+			S index = cubic[samp+cen];
+			// if( index == i0 ){ --i; continue; }
+			if( std::find( nbrs_cubic.begin(), nbrs_cubic.end(), index ) != nbrs_cubic.end() ){
+				++sum_in_nbrs_cubic;
+			}
+		}
+		printf("%i %7.3f %9.7f %9.7f %9.7f\n",
+			N,
+			radius/inrad,
+			(F)sum_in_nbrs/NSAMP,
+			(F)sum_in_nbrs_we/NSAMP,
+			(F)sum_in_nbrs_cubic/NSAMP			
+		);
+
 	}
 
 	// ///////////////////////////////////////////////////////////////////
@@ -276,6 +282,10 @@ test_bcc_neighbors( int NSAMP ){
 }
 
 TEST(bcc_lattice,neighbors){
+	size_t NITER = 500;
+	#ifdef NDEBUG
+	NITER *= 50;
+	#endif
 	// for(int i = 3; i < 8; ++i){
 	// 	int nc = std::pow(3,i);
 	// 	int nbccFC = 1+2*i+std::pow(2,i);
@@ -287,11 +297,16 @@ TEST(bcc_lattice,neighbors){
 	// Nnbrs: 5 cubic  243 bccFC  43 bccFCE  83
 	// Nnbrs: 6 cubic  729 bccFC  77 bccFCE 137
 	// Nnbrs: 7 cubic 2187 bccFC 143 bccFCE 227
-	ASSERT_LE( 0.76, (test_bcc_neighbors<3,double,uint64_t>(5000)) );
-	ASSERT_LE( 0.69, (test_bcc_neighbors<4,double,uint64_t>(5000)) );
-	ASSERT_LE( 0.64, (test_bcc_neighbors<5,double,uint64_t>(5000)) );
-	ASSERT_LE( 0.59, (test_bcc_neighbors<6,double,uint64_t>(5000)) );
-	ASSERT_LE( 0.54, (test_bcc_neighbors<7,double,uint64_t>(5000)) );
+	double v1 = test_bcc_neighbors<3,double,uint64_t>(NITER);
+	double v2 = test_bcc_neighbors<4,double,uint64_t>(NITER);
+	double v3 = test_bcc_neighbors<5,double,uint64_t>(NITER);
+	double v4 = test_bcc_neighbors<6,double,uint64_t>(NITER);
+	double v5 = test_bcc_neighbors<7,double,uint64_t>(NITER);
+	EXPECT_LE( 0.76, v1 );
+	EXPECT_LE( 0.69, v2 );
+	EXPECT_LE( 0.64, v3 );
+	EXPECT_LE( 0.59, v4 );
+	EXPECT_LE( 0.54, v5 );
 	// cout << test_bcc_neighbors<3,double,size_t>(1000000) << endl; // 0.779427
 	// cout << test_bcc_neighbors<4,double,size_t>(1000000) << endl; // 0.75
 	// cout << test_bcc_neighbors<5,double,size_t>(1000000) << endl; // 0.7
@@ -358,7 +373,7 @@ TEST(bcc_lattice,neighbors){
 
 template<int N, class F, class S> 
 F 
-test_bcc_children( int NSAMP ){
+test_bcc_children( size_t NSAMP ){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
 	boost::random::mt19937 rng((unsigned int)time(0));
@@ -413,17 +428,17 @@ test_bcc_children( int NSAMP ){
 }
 
 TEST(bcc_lattice,children){
-	int ITERS = 10*1000;
+	int NITER = 5*1000;
 	#ifdef NDEBUG
-	ITERS *= 30;
+	NITER *= 30;
 	#endif
 
 	cout << "BCC               DIM Nfc   frac_fc  Nfce  frac_fce" << std::endl;
-	test_bcc_children<3,double,uint64_t>( ITERS );
-	test_bcc_children<4,double,uint64_t>( ITERS );
-	test_bcc_children<5,double,uint64_t>( ITERS );
-	test_bcc_children<6,double,uint64_t>( ITERS );
-	test_bcc_children<7,double,uint64_t>( ITERS );
+	test_bcc_children<3,double,uint64_t>( NITER );
+	test_bcc_children<4,double,uint64_t>( NITER );
+	test_bcc_children<5,double,uint64_t>( NITER );
+	test_bcc_children<6,double,uint64_t>( NITER );
+	test_bcc_children<7,double,uint64_t>( NITER );
 }
 
 

@@ -42,29 +42,29 @@ TEST( geom_4d , tetracontoctachoron_cell_lookup )
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 500*1000;
+	int NITER = 200*1000;
 	#ifdef NDEBUG
-		NSAMP *= 30;
+		NITER *= 50;
 	#endif
 
-	std::vector<V4> samp(NSAMP);
-	std::vector<Index> cell(NSAMP),cell2(NSAMP);
+	std::vector<V4> samp(NITER);
+	std::vector<Index> cell(NITER),cell2(NITER);
 
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		V4 quat(rnorm(mt),rnorm(mt),rnorm(mt),rnorm(mt));
 		samp[i] = quat.normalized();
 	}
 		// V4 const quat_pos = quat.cwiseAbs();
 
 	boost::timer::cpu_timer naive;
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		// (t24*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
 		(t24*samp[i]).maxCoeff(&cell[i]);		
 	}
-	cout << "bt24 naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 naive rate:  " << (Float)NITER / naive.elapsed().wall * 1000000000.0 << endl;
 
 	boost::timer::cpu_timer clever;
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		numeric::get_cell_48cell( samp[i], cell2[i] );
 		// this is slower !?!
 		// Float mx = std::max(std::max(hyperface_dist,corner_dist),edge_dist);
@@ -72,9 +72,9 @@ TEST( geom_4d , tetracontoctachoron_cell_lookup )
 
 
 	}
-	cout << "bt24 clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 clever rate: " << (double)NITER / clever.elapsed().wall * 1000000000.0 << endl;
 
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		if( cell[i] != cell2[i] ){
 			ASSERT_FLOAT_EQ(
 			     t24.row(cell [i]).dot(samp[i]) ,
@@ -119,34 +119,34 @@ TEST( geom_4d , tetracontoctachoron_half_cell_lookup )
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
-	int NSAMP = 500*1000;
+	int NITER = 200*1000;
 	#ifdef NDEBUG
-		NSAMP *= 40;
+		NITER *= 50;
 	#endif
 
-	std::vector<V4> samp(NSAMP);
-	std::vector<Index> cell(NSAMP),cell2(NSAMP);
+	std::vector<V4> samp(NITER);
+	std::vector<Index> cell(NITER),cell2(NITER);
 
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		V4 quat(rnorm(mt),rnorm(mt),rnorm(mt),rnorm(mt));
 		samp[i] = quat.normalized();
 	}
 		// V4 const quat_pos = quat.cwiseAbs();
 
 	boost::timer::cpu_timer naive;
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		// (t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
 		(t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);		
 	}
-	cout << "hbt24 naive rate:  " << (Float)NSAMP / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 naive rate:  " << (Float)NITER / naive.elapsed().wall * 1000000000.0 << endl;
 
 	boost::timer::cpu_timer clever;
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		numeric::get_cell_48cell_half( samp[i], cell2[i] );
 	}
-	cout << "hbt24 clever rate: " << (double)NSAMP / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 clever rate: " << (double)NITER / clever.elapsed().wall * 1000000000.0 << endl;
 
-	for(int i = 0; i < NSAMP; ++i){
+	for(int i = 0; i < NITER; ++i){
 		// if( cell[i] > 11 ) continue;
 		// if( cell[i] < 12 ) ASSERT_EQ( cell[i], cell2[i] );
 		if( cell[i] != cell2[i] ){

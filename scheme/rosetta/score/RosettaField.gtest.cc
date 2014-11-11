@@ -66,9 +66,9 @@ using std::endl;
 
 TEST(RosettaField,DISABLED_test_btn){
 
-	int ITERS = 1000;
+	int NITER = 1000;
 	#ifdef NDEBUG
-	ITERS *= 40;
+	NITER *= 40;
 	#endif
 
 	typedef util::SimpleArray<3,float> F3;
@@ -101,7 +101,7 @@ TEST(RosettaField,DISABLED_test_btn){
 
 		boost::random::mt19937 rng((unsigned int)time(0));
 		boost::uniform_real<> uniform;
-		for(int i = 0; i < ITERS; ++i){
+		for(int i = 0; i < NITER; ++i){
 			F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rc.ub_-rc.lb_) + rc.lb_;
 			ASSERT_LE( brc[idx], rc[idx] );
 		}

@@ -614,7 +614,7 @@ TEST(hecatonicosachoron,cell_lookup){
 TEST(hecatonicosachoron,DISABLED_covering){
 	// cout << "QuaternionMap Covrad" << endl;
 	int NRES = 8;
-	int ITERS = 1000*1000;
+	int NITER = 1000*1000;
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
@@ -623,7 +623,7 @@ TEST(hecatonicosachoron,DISABLED_covering){
 	NEST<3,Matrix3d,HecatonicosachoronMap> nest;
 	for(int r = 0; r <= NRES; ++r){
 		double maxdiff=0, avgdiff=0;
-		for(int i = 0; i <= ITERS; ++i){
+		for(int i = 0; i <= NITER; ++i){
 			Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 			q.normalize();
 			// cout << q << endl;
@@ -631,7 +631,7 @@ TEST(hecatonicosachoron,DISABLED_covering){
 			maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 			avgdiff += q.angularDistance(qcen);
 		}
-		avgdiff /= ITERS;
+		avgdiff /= NITER;
 		size_t count = 0; for(size_t i = 0; i < nest.size(r)/60; ++i) if(nest.set_state(i,r)) ++count;
 		count *= 60;
 		// size_t count = nest.size(r);

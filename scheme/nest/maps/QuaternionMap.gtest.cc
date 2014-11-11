@@ -105,11 +105,11 @@ TEST(QuaternionMap,DISABLED_covering){
 	{
 		cout << "QuaternionMap Covrad" << endl;
 		int NRES = 7;
-		int ITERS = 1000000;
+		int NITER = 1000000;
 		NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
 		for(int r = 1; r <= NRES; ++r){
 			double maxdiff=0, avgdiff=0;
-			for(int i = 0; i <= ITERS; ++i){
+			for(int i = 0; i <= NITER; ++i){
 				Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
 				q.normalize();
 				// cout << q << endl;
@@ -117,7 +117,7 @@ TEST(QuaternionMap,DISABLED_covering){
 				maxdiff = std::max(maxdiff,q.angularDistance(qcen));
 				avgdiff += q.angularDistance(qcen);
 			}
-			avgdiff /= ITERS;
+			avgdiff /= NITER;
 			size_t count = 0; for(size_t i = 0; i < nest.size(r); ++i) if(nest.set_state(i,r)) ++count;
 			double volfrac = (double)count*(maxdiff*maxdiff*maxdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;
 			double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff)*4.0/3.0*M_PI / 8.0 / M_PI / M_PI;		
