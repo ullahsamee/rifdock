@@ -16,7 +16,7 @@ namespace scheme { namespace nest { namespace maps {
 	using std::cout;
 	using std::endl;
 
-	template<class Float> Float cell_width(){ return 0.766; }
+	template<class Float> Float cell_width(){ return 2.0*sqrt(2.0)-2.0; }
 
 	template<class Q> Q to_half_cell(Q const & q){ return q.w()>=0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()); }
 
@@ -47,8 +47,10 @@ namespace scheme { namespace nest { namespace maps {
 		Index nside_;
 		Float one_over_nside_;
 
-		TetracontoctachoronMap() : nside_(1), one_over_nside_(1.0) {}
-		TetracontoctachoronMap(Index nside) : nside_(nside), one_over_nside_(1.0/nside) {}
+		TetracontoctachoronMap() { init(1); }
+		TetracontoctachoronMap(Index nside) { init(nside); }
+
+		void init(uint64_t nside){ nside_ = nside; one_over_nside_ = 1.0/nside_; }
 
 		///@brief sets value to parameters without change
 		///@return false iff invalid parameters
@@ -69,26 +71,38 @@ namespace scheme { namespace nest { namespace maps {
 			p[1] += one_over_nside_ * (Float)( cell_index /  nside_         % nside_ );
 			p[2] += one_over_nside_ * (Float)( cell_index / (nside_*nside_) % nside_ );
 
-			assert( p[0] >= 0.0 && p[0] <= 1.0 );
-			assert( p[1] >= 0.0 && p[1] <= 1.0 );
-			assert( p[2] >= 0.0 && p[2] <= 1.0 );						
+			// if( !( p[0] >= 0.0 && p[0] <= 1.0 ) ) cout << "BAD param val: " << p[0] << endl;
+			// if( !( p[1] >= 0.0 && p[1] <= 1.0 ) ) cout << "BAD param val: " << p[1] << endl;
+			// if( !( p[2] >= 0.0 && p[2] <= 1.0 ) ) cout << "BAD param val: " << p[2] << endl;						
+
+			assert( p[0] >= -0.00001 && p[0] <= 1.00001 );
+			assert( p[1] >= -0.00001 && p[1] <= 1.00001 );
+			assert( p[2] >= -0.00001 && p[2] <= 1.00001 );
+			p[0] = fmax(0.0,p[0]);
+			p[1] = fmax(0.0,p[1]);
+			p[2] = fmax(0.0,p[2]);
+			p[0] = fmin(1.0,p[0]);
+			p[1] = fmin(1.0,p[1]);
+			p[2] = fmin(1.0,p[2]);
 
 			// std::cout << cell_index << " " << p << " " << p << std::endl;			
 			// static int count = 0; if( ++count > 30 ) std::exit(-1);
 
-			p = w*(p-0.5);
+			p = w*(p-0.5); // now |p| < sqrt(2)-1
 
 			// if( resl > 3 ){
 				Float corner_dist = fabs(p[0])+fabs(p[1])+fabs(p[2]);
-				Float delta = sqrt(w*w*w) / (Float)(1<<resl);
+				Float delta = sqrt(3.0) / 2.0 / w / (Float)(1<<resl);
 			// // static int count = 0;
    			// //          std::cout << corner_dist << "    " << p << " " << p << std::endl;
 		   //          if(++count > 100) std::exit(-1);
-			 	if( corner_dist - delta > 0.925 ) return false;
+			 	if( corner_dist - delta > 1.0 ) return false; // TODO make this check more rigerous???
 			// }
 
-			Eigen::Quaternion<Float> q( sqrt(1.0-p.squaredNorm()), p[0], p[1], p[2] );
-			assert( fabs(q.squaredNorm()-1.0) < 0.000001 );
+			// Eigen::Quaternion<Float> q( sqrt(1.0-p.squaredNorm()), p[0], p[1], p[2] );
+			// assert( fabs(q.squaredNorm()-1.0) < 0.000001 );
+			Eigen::Quaternion<Float> q( 1.0, p[0], p[1], p[2] );
+			q.normalize();
 
 			q = hbt24_cellcen<Float>( h48_cell_index ) * q;
 
@@ -123,9 +137,9 @@ namespace scheme { namespace nest { namespace maps {
 
 			// // cout << "      get p  " << q.x() << " " << q.y() << " " << q.z() << endl;
 
-			params[0] = q.x()/cell_width<Float>() + 0.5;
-			params[1] = q.y()/cell_width<Float>() + 0.5;			
-			params[2] = q.z()/cell_width<Float>() + 0.5;
+			params[0] = q.x()/q.w()/cell_width<Float>() + 0.5;
+			params[1] = q.y()/q.w()/cell_width<Float>() + 0.5;			
+			params[2] = q.z()/q.w()/cell_width<Float>() + 0.5;
 
 			Indices ci = params * nside_;
 			cell_index = ci[0] + ci[1]*nside_ + ci[2]*nside_*nside_;
@@ -135,6 +149,13 @@ namespace scheme { namespace nest { namespace maps {
 			assert( params[1] >= 0.0 && params[1] <= 1.0 );
 			assert( params[2] >= 0.0 && params[2] <= 1.0 );						
 
+			// just for testing...
+			// params[0] = fmax(0.000001,params[0]);
+			// params[1] = fmax(0.000001,params[1]);
+			// params[2] = fmax(0.000001,params[2]);
+			// params[0] = fmin(0.999999,params[0]);
+			// params[1] = fmin(0.999999,params[1]);
+			// params[2] = fmin(0.999999,params[2]);
 
 			cell_index += h48_cell_index * nside_*nside_*nside_;
 
@@ -166,32 +187,36 @@ namespace scheme { namespace nest { namespace maps {
 			BOOST_VERIFY( resl < 6 );
 			if( resl == 0 ){
 				static Float const covrad[25] = {
-					 62.76235 ,
-					 38.63604 ,
-					 26.71264 ,
-					 20.62393 ,
-					 17.02567 ,
-					 14.25487 ,
-					 12.42992 ,
-					 11.02897 ,
-					  9.62588 ,
-					  8.70544 ,
-					  7.82964 ,
-					  7.28521 ,
-					  6.62071 ,
-					  6.13243 ,
-					  5.81918 ,
-					  5.44871 ,
-					  5.14951 ,
-					  4.82331 ,
-					  4.52938 ,
-					  4.31905 ,
-					  4.07469 ,
-					  3.93772 ,
-					  3.77275 ,
-					  3.64786 ,
-					  3.44081 
+					 62.76235 , // 1
+					 38.63604 , // 2
+					 26.71264 , // 3
+					 20.62393 , // 4
+					 17.02567 , // 5
+					 14.25487 , // 6
+					 12.42992 , // 7
+					 11.02897 , // 8
+					  9.62588 , // 9
+					  8.70544 , // 10
+					  7.82964 , // 11
+					  7.28521 , // 12
+					  6.62071 , // 13
+					  6.13243 , // 14
+					  5.81918 , // 15
+					  5.44871 , // 16
+					  5.14951 , // 17
+					  4.82331 , // 18
+					  4.52938 , // 19
+					  4.31905 , // 20
+					  4.07469 , // 21
+					  3.93772 , // 22
+					  3.77275 , // 23
+					  3.64786 , // 24
+					  3.44081   // 25
 				};
+				if(nside_ > 25){
+					std::cerr << "TetracontoctachoronMap::bin_circumradius > 25 not implemented" << std::endl;
+					std::exit(-1);
+				}
 				return covrad[nside_-1] * M_PI / 180.0;
 			}
 			assert(nside_==1);

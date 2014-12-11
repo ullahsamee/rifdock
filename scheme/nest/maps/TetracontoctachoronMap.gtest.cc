@@ -174,7 +174,7 @@ TEST( TetracontoctachoronMap , nside_covering ){
 
 }
 
-TEST( TetracontoctachoronMap , DISABLED_visualize ){
+TEST( TetracontoctachoronMap , DISABLED_DISABLED_visualize ){
 
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
@@ -223,6 +223,69 @@ TEST( TetracontoctachoronMap , DISABLED_visualize ){
 		out.close();
 		cout << r << " " << count2 / (double)count1 << endl;
 	}
+
+}
+
+TEST( TetracontoctachoronMap , check_unit ){
+
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::normal_distribution<> gauss;
+	boost::uniform_real<> uniform;
+
+	TetracontoctachoronMap<> map;
+
+	scheme::util::SimpleArray<24,int> cellcount(0);
+
+	// std::ofstream out("bt24_unit.pdb");
+	Vector3d lb(9e9,9e9,9e9), ub(-9e9,-9e9,-9e9);
+	double lbcorner = 9e9, ubcorner = -9e9;
+	for(int i = 0; i < 20000; ++i){
+
+		Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
+		qrand.normalize();
+
+		uint64_t cell_index;
+		TetracontoctachoronMap<>::Params params(12345);
+		map.value_to_params( qrand.matrix(), 0, params, cell_index );
+		cellcount[cell_index]++;
+		if( cell_index != 0 ) continue;
+
+		Vector3d p(params[0],params[1],params[2]);
+		lb[0] = fmin(lb[0],p[0]);
+		lb[1] = fmin(lb[1],p[1]);
+		lb[2] = fmin(lb[2],p[2]);
+		ub[0] = fmax(ub[0],p[0]);
+		ub[1] = fmax(ub[1],p[1]);
+		ub[2] = fmax(ub[2],p[2]);
+		lbcorner = fmin( lbcorner, p[0]+p[1]+p[2] );
+		ubcorner = fmax( ubcorner, p[0]+p[1]+p[2] );		
+
+		// io::dump_pdb_atom(out, "O" ,i/1000, 100*p);
+
+	}
+	// out.close();
+	// cout << cellcount << endl;
+
+	// cout << "bt24 unit lb: " << lb.transpose() << endl;
+	// cout << "bt24 unit ub: " << ub.transpose() << endl;	
+	ASSERT_LE( lb[0], 0.03 );
+	ASSERT_LE( lb[1], 0.03 );
+	ASSERT_LE( lb[2], 0.03 );		
+	ASSERT_GE( lb[0], 0.00 );
+	ASSERT_GE( lb[1], 0.00 );
+	ASSERT_GE( lb[2], 0.00 );		
+	ASSERT_LE( ub[0], 1.00 );
+	ASSERT_LE( ub[1], 1.00 );
+	ASSERT_LE( ub[2], 1.00 );		
+	ASSERT_GE( ub[0], 0.97 );
+	ASSERT_GE( ub[1], 0.97 );
+	ASSERT_GE( ub[2], 0.97 );
+
+	EXPECT_GE( ubcorner , 1.5 + 0.5/(sqrt(2.0)-1.0) -0.2 );
+	EXPECT_LE( ubcorner , 1.5 + 0.5/(sqrt(2.0)-1.0) );
+	EXPECT_LE( lbcorner , 1.5 - 0.5/(sqrt(2.0)-1.0) +0.2 );
+	EXPECT_GE( lbcorner , 1.5 - 0.5/(sqrt(2.0)-1.0) );
+	// ASSERT_GE( ubcorner ,  );
 
 }
 

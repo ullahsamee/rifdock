@@ -108,7 +108,7 @@ struct SimpleArray {
 	SimpleArray<N,F> & operator-=(THIS const & o){ for(int i=0;i<N;++i) D[i] -= o[i]; return *this; }
 };
 template<int N, class F>
-std::ostream & operator<<(std::ostream & out,SimpleArray<N,F> const & a){
+std::ostream & operator<<( std::ostream & out, SimpleArray<N,F> const & a ){
 	for(int i=0;i<N;++i) out << a[i] << " ";
 	return out;
 }

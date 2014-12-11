@@ -37,8 +37,10 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	typedef util::SimpleArray<4,S> I;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> rnorm;
+	boost::uniform_real<> runif;
 
-	BCC<4,F,S> bcc(I(Nside),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
+	BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
+	// BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
 	// BCC<4,F,S> bcc(I(Nside),V( -2.0 ),V( 2.0 ) );
 	// cout << bcc.lower_ << endl;
 	// cout << bcc.width_ << endl;
@@ -78,7 +80,7 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 
 }
 
-void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
+void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	typedef double F;
 	typedef uint64_t S;
 	typedef util::SimpleArray<4,F> V;
@@ -87,9 +89,12 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 	typedef util::SimpleArray<3,S> I3;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> rnorm;
-	BCC<3,F,S> bcc(I3(Nside),V3( -1.0/Nside ),V3( 1.0+1.0/Nside ));
-	// BCC<3,F,S> bcc(I(Nside),V( 0.0 ),V( 1.0));	
-	// BCC<3,F,S> bcc(I(Nside),V(-1.0 ),V( 2.0));
+
+	// BCC<3,F,S> bcc(I3(Nside),V3( 0.0 ),V3( 1.0));	
+	// BCC<3,F,S> bcc(I3(3*Nside),V3(-1.0 ),V3( 2.0));
+
+	BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
+	// Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
 
 	nest::maps::TetracontoctachoronMap<> map;
 	typedef nest::maps::TetracontoctachoronMap<3,V>::Params Params;
@@ -111,11 +116,18 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 		Params params; uint64_t cell_index;
 		map.value_to_params( q.matrix(), 0, params, cell_index );
 		size_t index_bcc = bcc[params];
+		assert( index_bcc < bcc.size() );
 		idx_seen.insert(index_bcc);
 		// size_t index = index_bcc + bcc.size()*cell_index;
 		Params pcenter = bcc[index_bcc];
+		// if( !( pcenter[0] >= 0.0 && pcenter[0] <= 1.0 ) ) cout << "bad cell cen " << Nside << " " << pcenter << endl;
+		// if( !( pcenter[1] >= 0.0 && pcenter[1] <= 1.0 ) ) cout << "bad cell cen " << Nside << " " << pcenter << endl;
+		// if( !( pcenter[2] >= 0.0 && pcenter[2] <= 1.0 ) ) cout << "bad cell cen " << Nside << " " << pcenter << endl;				
+		// assert( pcenter[0] >= 0.0 && pcenter[0] <= 1.0 );
+		// assert( pcenter[1] >= 0.0 && pcenter[1] <= 1.0 );
+		// assert( pcenter[2] >= 0.0 && pcenter[2] <= 1.0 );				
 		Eigen::Matrix3d mcenter;
-		map.params_to_value( pcenter, cell_index, 0, mcenter );
+		assert( map.params_to_value( pcenter, cell_index, 0, mcenter ) );
 		Eigen::Quaterniond qcenter(mcenter);
 		V center;
 		for(int i = 0; i < 4; ++i) center[i] = qcenter.coeffs()[i];
@@ -138,7 +150,7 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 	double volfrac = (double)count*(maxdiff*maxdiff*maxdiff) * 4.0/3.0*M_PI / 8.0/M_PI/M_PI;
 	double avgfrac = (double)count*(avgdiff*avgdiff*avgdiff) * 4.0/3.0*M_PI / 8.0/M_PI/M_PI;
 	// cout << "RESOL         COUNT   CovRad      AvgRad     mx/avg   VolFrac      AvgFrac" << endl;
-	printf("%2lu %16lu %10.5f %10.5f %10.5f %10.5f %10.5f\n", 
+	printf("%2lu %16lu %10.5f %10.5f %10.5f %10.5f %10.5f \n", 
 				Nside, count, maxdiff*180.0/M_PI, avgdiff*180.0/M_PI, maxdiff/avgdiff, volfrac, avgfrac );
 
 	// ASSERT_LE( volfrac , 3.5 );
@@ -146,12 +158,12 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP ){
 }
 
 
-int const NSAMP = 1*1000*1000;
+int const NSAMP = 200*1000;
 
 TEST(bcc_lattice,DISABLED_orientatin_coverage_4d){
-	cout << "RESOL         COUNT   CovRad      AvgRad     mx/avg   VolFrac      AvgFrac" << endl;
-	for(int i = 2; i < 20; ++i){
-		test_orientatin_coverage_4d(  i , NSAMP );
+	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
+	for(int i = 1; i < 20; ++i){
+		test_orientatin_coverage_4d(  3*i , NSAMP );
 	}
 	// 	test_orientatin_coverage_4d(   8 , NSAMP );
 	// 	test_orientatin_coverage_4d(  16 , NSAMP );
@@ -160,10 +172,12 @@ TEST(bcc_lattice,DISABLED_orientatin_coverage_4d){
 	// 	// test_orientatin_coverage_4d( 128 , NSAMP );
 }
 
-TEST(bcc_lattice,DISABLED_orientatin_coverage_3d_bt24){
-	cout << "RESOL         COUNT   CovRad      AvgRad     mx/avg   VolFrac      AvgFrac" << endl;
-	for(int i = 2; i < 20; ++i){
-		test_orientatin_coverage_3d_bt24(  i , NSAMP );
+TEST(bcc_lattice,orientatin_coverage_3d_bt24){
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> runif;
+	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
+	for(int i = 1; i < 11; ++i){
+		test_orientatin_coverage_3d_bt24( i , NSAMP );  std::cout.flush();
 	}
 	// test_orientatin_coverage_3d_bt24(  4 , NSAMP );
 	// test_orientatin_coverage_3d_bt24(  8 , NSAMP );
@@ -171,6 +185,55 @@ TEST(bcc_lattice,DISABLED_orientatin_coverage_3d_bt24){
 	// test_orientatin_coverage_3d_bt24( 32 , NSAMP );
 	// test_orientatin_coverage_3d_bt24( 64 , NSAMP );
 }
+
+
+// CUBIC:
+// RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac
+//  1               24   62.74152   40.73375    1.54028    1.67189    0.45752 
+//  2              192   39.31569   20.63676    1.90513    3.29102    0.47595 
+//  3              648   26.76186   13.82667    1.93552    3.50312    0.48312 
+//  4             1536   20.19943   10.38852    1.94440    3.57059    0.48572 
+//  5             3000   16.18746    8.31584    1.94658    3.58912    0.48660 
+//  6             5184   13.55390    6.92925    1.95604    3.64074    0.48647 
+//  7             8232   11.62521    5.94226    1.95636    3.64787    0.48718 
+//  8            12288   10.10018    5.19960    1.94249    3.57108    0.48722 
+//  9            17496    9.04248    4.62274    1.95609    3.64865    0.48749 
+// 10            23880    8.11903    4.15979    1.95179    3.60478    0.48482 
+
+// BCC
+// RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac
+//  1              216   49.63837   31.72439    1.56468    7.45139    1.94520 
+//  2              840   25.97057   16.08611    1.61447    4.15006    0.98620 
+//  3             1992   17.41470   10.70403    1.62693    2.96735    0.68907 
+//  4             4344   13.12570    8.04887    1.63075    2.77069    0.63889 
+//  5             7992   10.50987    6.44961    1.62954    2.61685    0.60477 
+//  6            12648    8.74000    5.37186    1.62700    2.38170    0.55300 
+//  7            19752    7.50751    4.60429    1.63055    2.35738    0.54379 
+//  8            28824    6.55751    4.03079    1.62686    2.29246    0.53242 
+//  9            40536    5.84932    3.58299    1.63252    2.28817    0.52591 
+// 10            53832    5.27287    3.22479    1.63510    2.22594    0.50919 
+
+//CUBIC  1               24   62.74152   40.73375    1.54028    1.67189    0.45752 
+// BCC   1              216   49.63837   31.72439    1.56468    7.45139    1.94520 
+//CUBIC  2              192   39.31569   20.63676    1.90513    3.29102    0.47595 
+//CUBIC  3              648   26.76186   13.82667    1.93552    3.50312    0.48312 
+// BCC   2              840   25.97057   16.08611    1.61447    4.15006    0.98620 
+//CUBIC  4             1536   20.19943   10.38852    1.94440    3.57059    0.48572 
+// BCC   3             1992   17.41470   10.70403    1.62693    2.96735    0.68907 
+//CUBIC  5             3000   16.18746    8.31584    1.94658    3.58912    0.48660 
+//CUBIC  6             5184   13.55390    6.92925    1.95604    3.64074    0.48647 
+// BCC   4             4344   13.12570    8.04887    1.63075    2.77069    0.63889 
+//CUBIC  7             8232   11.62521    5.94226    1.95636    3.64787    0.48718 
+// BCC   5             7992   10.50987    6.44961    1.62954    2.61685    0.60477 
+//CUBIC  8            12288   10.10018    5.19960    1.94249    3.57108    0.48722 
+//CUBIC  9            17496    9.04248    4.62274    1.95609    3.64865    0.48749 
+// BCC   6            12648    8.74000    5.37186    1.62700    2.38170    0.55300 
+//CUBIC 10            23880    8.11903    4.15979    1.95179    3.60478    0.48482 
+// BCC   7            19752    7.50751    4.60429    1.63055    2.35738    0.54379 
+// BCC   8            28824    6.55751    4.03079    1.62686    2.29246    0.53242 
+// BCC   9            40536    5.84932    3.58299    1.63252    2.28817    0.52591 
+// BCC  10            53832    5.27287    3.22479    1.63510    2.22594    0.50919 
+
 
 // conclusion, use 4D for covering > ~15°, and bt24 3D for < ~15°
 // or figure out how to better optimize 48-cell based lookup, esp. at low grid number
@@ -193,28 +256,6 @@ TEST(bcc_lattice,DISABLED_orientatin_coverage_3d_bt24){
 // 17            10921   10.36544    5.81305    1.78313    3.43049    0.60507
 // 18            13046    9.84143    5.49671    1.79042    3.50738    0.61111
 // 19            15131    9.12415    5.15155    1.77114    3.24172    0.58346
-// [       OK ] bcc_lattice.orientatin_coverage_4d (5256 ms)
-// [ RUN      ] bcc_lattice.orientatin_coverage_3d_bt24
-// RESOL         COUNT   CovRad      AvgRad     mx/avg   VolFrac      AvgFrac
-//  2              216   52.18960   36.09369    1.44595    8.66037    2.86470
-//  3              648   30.72092   18.29302    1.67938    5.29918    1.11883
-//  4             1992   21.30586   12.53629    1.69953    5.43398    1.10695
-//  5             3768   15.59875    9.39145    1.66095    4.03377    0.88032
-//  6             6648   12.17794    7.43833    1.63719    3.38644    0.77170
-//  7            11016   10.10831    6.16428    1.63982    3.20916    0.72778
-//  8            17232    8.61811    5.23222    1.64712    3.11102    0.69619
-//  9            23784    7.49805    4.54899    1.64829    2.82788    0.63148
-// 10            33432    6.68782    4.01809    1.66443    2.82064    0.61172
-// 11            43632    5.92284    3.59687    1.64667    2.55697    0.57268
-// 12            57720    5.32703    3.25537    1.63638    2.46101    0.56164
-// 13            73128    4.88102    2.97284    1.64187    2.39854    0.54191
-// 14            93312    4.49436    2.73480    1.64340    2.38931    0.53832
-// 15           115176    4.12394    2.53137    1.62913    2.27839    0.52694
-// 16           140904    3.85766    2.35500    1.63807    2.28152    0.51907
-// 17           170496    3.59167    2.20211    1.63101    2.22810    0.51353
-// 18           204600    3.35699    2.06766    1.62357    2.18316    0.51012
-// 19           242784    3.20765    1.94856    1.64616    2.26001    0.50663
-
 
 }}}
 

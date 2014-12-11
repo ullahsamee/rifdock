@@ -8,6 +8,7 @@
 // #include "scheme/util/SimpleArray.gtest.cc"
 
 // #include "scheme/numeric/euler_angles.gtest.cc"
+// #include "scheme/numeric/FixedPoint.gtest.cc"
 
 // #include "scheme/dock/fftdock.gtest.cc"
 
@@ -26,7 +27,7 @@
 // #include "scheme/nest/maps/Rotation1DMap.gtest.cc"
 
 // #include "scheme/numeric/geom_4d.gtest.cc"
-#include "scheme/numeric/bcc_lattice.gtest.cc"
+// #include "scheme/numeric/bcc_lattice.gtest.cc"
 // #include "scheme/numeric/bcc_lattice_orientation.gtest.cc"
 
 // #include "scheme/util/meta/util.gtest.cc"
@@ -55,6 +56,8 @@
 // #include "scheme/chemical/ligand_factory.gtest.cc"
 
 // #include "scheme/objective/methods/hbond_5dof.gtest.cc"
+
+#include "scheme/objective/hash/XformMap.gtest.cc"
 
 int main(int argc, char **argv)
 {

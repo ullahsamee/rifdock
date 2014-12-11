@@ -4,6 +4,8 @@
 #include "scheme/util/SimpleArray.hh"
 #include "scheme/util/template_loop.hh"
 
+#include <iostream>
+
 namespace scheme { namespace numeric {
 
 template< int DIM, class Float, class Index = uint64_t >
@@ -22,10 +24,18 @@ struct BCC {
 		Sizes const & sizes,
 		Floats lower=Floats(0), 
 		Floats upper=Floats(1)
-	) :
-		sizes_(sizes),
-		lower_(lower)
-	{
+	){
+		init( sizes, lower, upper );
+	}
+
+	template<class Sizes>
+	void init(
+		Sizes const & sizes,
+		Floats lower, 
+		Floats upper
+	){
+		sizes_= sizes;
+		lower_ = lower;
 		for(size_t i = 0; i < DIM; ++i)
 			sizes_prefsum_[i] = sizes_.prod(i);
 		width_ = (upper-lower_)/sizes_.template cast<Float>();
@@ -44,6 +54,14 @@ struct BCC {
 	) const {
 		bool odd = index & 1;
 		Indices indices = ( (index>>1) / sizes_prefsum_ ) % sizes_;
+		return this->get_center(indices,odd);
+	}
+
+	Floats
+	get_center(
+		Indices const & indices,
+		bool const & odd
+	) const {
 		return lower_cen_ + width_ * indices.template cast<Float>() + (odd? half_width_ : 0);
 	}
 
@@ -120,6 +138,11 @@ struct BCC {
 		}
 	}
 };
+
+template< int DIM, class Float, class Index = uint64_t >
+std::ostream & operator<<( std::ostream & out, BCC<DIM,Float,Index> const & bcc ){
+	return out << "lb " << bcc.lower_ << " w " << bcc.width_ ;
+}
 
 
 template< int DIM, class Float, class Index = uint64_t >

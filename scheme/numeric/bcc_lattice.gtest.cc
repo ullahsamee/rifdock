@@ -282,7 +282,7 @@ test_bcc_neighbors( size_t NSAMP ){
 }
 
 TEST(bcc_lattice,neighbors){
-	size_t NITER = 500;
+	size_t NITER = 1000;
 	#ifdef NDEBUG
 	NITER *= 50;
 	#endif
