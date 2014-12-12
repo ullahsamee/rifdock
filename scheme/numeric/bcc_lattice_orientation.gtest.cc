@@ -93,8 +93,8 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	// BCC<3,F,S> bcc(I3(Nside),V3( 0.0 ),V3( 1.0));	
 	// BCC<3,F,S> bcc(I3(3*Nside),V3(-1.0 ),V3( 2.0));
 
-	BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
-	// Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
+	// BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
+	Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
 
 	nest::maps::TetracontoctachoronMap<> map;
 	typedef nest::maps::TetracontoctachoronMap<3,V>::Params Params;
@@ -158,12 +158,12 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 }
 
 
-int const NSAMP = 200*1000;
+int const NSAMP = 1*1000*1000;
 
-TEST(bcc_lattice,DISABLED_orientatin_coverage_4d){
+TEST( bcc_lattice, DISABLED_orientatin_coverage_4d ){
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
-	for(int i = 1; i < 20; ++i){
-		test_orientatin_coverage_4d(  3*i , NSAMP );
+	for(int i = 1; i < 100; ++i){
+		test_orientatin_coverage_4d(  i , NSAMP );
 	}
 	// 	test_orientatin_coverage_4d(   8 , NSAMP );
 	// 	test_orientatin_coverage_4d(  16 , NSAMP );
@@ -172,11 +172,11 @@ TEST(bcc_lattice,DISABLED_orientatin_coverage_4d){
 	// 	// test_orientatin_coverage_4d( 128 , NSAMP );
 }
 
-TEST(bcc_lattice,orientatin_coverage_3d_bt24){
+TEST( bcc_lattice, DISABLED_orientatin_coverage_3d_bt24 ){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> runif;
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
-	for(int i = 1; i < 11; ++i){
+	for(int i = 1; i < 65; ++i){
 		test_orientatin_coverage_3d_bt24( i , NSAMP );  std::cout.flush();
 	}
 	// test_orientatin_coverage_3d_bt24(  4 , NSAMP );

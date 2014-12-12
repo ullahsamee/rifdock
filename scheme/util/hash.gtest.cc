@@ -51,26 +51,32 @@ struct SegmentedMap {
 
 template<class Map>
 void test_map(Map & h){
-	int MAXIDX = 10*1000*1000;
-	int NFILL = MAXIDX/10;
-	int NROW = 5;
-	int NITER = 10*1000*1000 / NROW;
+	int64_t MAXIDX = 430l*1000*1000l;
+	int64_t NFILL = MAXIDX/100;
+	int64_t NROW = 1;
+	int64_t NITER = 10*1000*1000 / NROW;
 
-	// boost::random::mt19937 rng((unsigned int)time(0));
-	boost::random::mt19937 rng((unsigned int)0);	
+	// boost::random::mt19937 rng((unsigned int64_t)time(0));
+	boost::random::mt19937 rng((uint64_t)0);	
 	boost::random::uniform_int_distribution<> randindex(0,MAXIDX);
+	// h.resize(NFILL/2);
 
-	for(int i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
+	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
+	cout << "done fill " 
+	     << (double)h.size()/1000000 << "M  "
+	     << (double)h.bucket_count()/1000000000 * sizeof(typename Map::value_type) << "GB  " 
+	     << (double)h.size() / h.bucket_count()
+	     << endl;	     	     
 
 	boost::timer::cpu_timer t;
 	size_t count = 0;
 	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(rng);
 		for(size_t j = 0; j < NROW; ++j){
-			if( h.find(ri+j) != h.end() ) count += h[ri+j];
+			if( h.find(ri+j) != h.end() ) count += h[ri+j][0];
 		}
 	}
-	cout << "rate " << (double)1000000000*NITER*NROW/(double)t.elapsed().wall << " " << (double)count / NITER << endl;
+	cout << "rate " << (double)t.elapsed().wall/NITER*NROW << "ns, nonsense: " << (double)count / NITER << endl;
 }
 
 template<class MAP1, class MAP2>
@@ -78,16 +84,16 @@ void test_map(
 	MAP1 & m, std::string lm,
 	MAP2 & n, std::string ln
 ){
-	int MAXIDX = 100*1000*1000;
-	int NFILL = MAXIDX/10;
-	int NROW = 1;
-	int NITER = 100*1000*1000 / NROW;
+	int64_t MAXIDX = 10*1000*1000;
+	int64_t NFILL = MAXIDX/10;
+	int64_t NROW = 1;
+	int64_t NITER = 100*1000*1000 / NROW;
 
-	// boost::random::mt19937 rng((unsigned int)time(0));
-	boost::random::mt19937 rng((unsigned int)0);	
+	// boost::random::mt19937 rng((unsigned int64_t)time(0));
+	boost::random::mt19937 rng((uint64_t)0);	
 	boost::random::uniform_int_distribution<> randindex(0,MAXIDX);
 
-	for(int i = 0; i < NFILL; ++i){
+	for(int64_t i = 0; i < NFILL; ++i){
 		size_t ri = randindex(rng);
 		m[ri] = 1;
 		n[ri] = 1;
@@ -104,7 +110,7 @@ void test_map(
 			if( m.find(ri+j) != m.end() ) mcount += m[ri+j];
 		}
 	}
-	cout << lm << " rate " << (double)1000000000*NITER*NROW/(double)tm.elapsed().wall << endl;
+	cout << lm << " rate " << (double)tm.elapsed().wall/NITER*NROW << "ns" << endl;
 
 	boost::timer::cpu_timer tn;
 	size_t ncount = 0;
@@ -113,7 +119,7 @@ void test_map(
 			if( n.find(ri+j) != n.end() ) ncount += n[ri+j];
 		}
 	}
-	cout << ln << " rate " << (double)1000000000*NITER*NROW/(double)tn.elapsed().wall << endl;
+	cout << ln << " rate " << (double)tn.elapsed().wall/NITER*NROW << "ns" << endl;
 
 	cout << mcount << endl;
 	ASSERT_EQ( mcount, ncount );
@@ -130,30 +136,36 @@ void test_map(
 
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
-TEST(test_hash,DISABLED_segmented_map){
-	SegmentedMap<size_t,float,GoogleDense,2> m;
+TEST(test_hash, DISABLED_sparse_vs_dense){
+	SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
 
-	google::dense_hash_map<size_t,float> n;
-	n.set_empty_key(std::numeric_limits<size_t>::max());
+	google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > d;
+	d.set_empty_key(std::numeric_limits<uint64_t>::max());
 
-	test_map(n,"google_dense",m,"segment_gdh ");
+	google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > s;
+
+	// test_map(n,"google_dense",m,"segment_gdh ");
+	cout << "====================== DENSE ======================" << endl;
+	test_map(d); d.clear();
+	cout << "====================== SPARSE =====================" << endl;
+	test_map(s); s.clear();
 }
 
 
 
 
 // TEST(test_hash,std_unordered_map){
-// 	std::unordered_map<int,int> h;
+// 	std::unordered_map<int64_t,int64_t> h;
 // 	test_map(h);
 // }
 
 // TEST(test_hash,boost_unordered_map){
-// 	boost::unordered_map<int,int> h;
+// 	boost::unordered_map<int64_t,int64_t> h;
 // 	test_map(h);
 // }
 
 // TEST(test_hash,std_map){
-// 	std::map<int,int> h;
+// 	std::map<int64_t,int64_t> h;
 // 	test_map(h);
 // }
 

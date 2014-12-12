@@ -90,7 +90,7 @@ TEST( Rotation1DMap , basic_test ){
 TEST( Rotation1DMap , lookup ){
 	int NITER = 1000;
 	#ifdef NDEBUG
-	NITER *= 30
+	NITER *= 30;
 	#endif
 
 	NEST<1,Matrix3d,Rotation1DMap> nest;
@@ -128,7 +128,7 @@ TEST( Rotation1DMap , lookup ){
 TEST( Rotation1DMap , lookup_flip ){
 	int NITER = 1000;
 	#ifdef NDEBUG
-	NITER *= 30
+	NITER *= 30;
 	#endif
 
 	NEST<1,Matrix3d,Rotation1DMap> nest;

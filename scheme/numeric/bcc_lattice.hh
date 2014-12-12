@@ -161,10 +161,20 @@ struct Cubic {
 		Sizes const & sizes,
 		Floats lower=Floats(0), 
 		Floats upper=Floats(1)
-	) :
-		sizes_(sizes),
-		lower_(lower)
+	)
 	{
+		init(sizes,lower,upper);
+	}
+
+	template<class Sizes>
+	void
+	init(
+		Sizes const & sizes,
+		Floats lower=Floats(0), 
+		Floats upper=Floats(1)
+	){		
+		sizes_ = sizes;
+		lower_ = lower;
 		for(size_t i = 0; i < DIM; ++i)
 			sizes_prefsum_[i] = sizes_.prod(i);
 		width_ = (upper-lower_)/sizes_.template cast<Float>();
@@ -182,6 +192,13 @@ struct Cubic {
 		Index index
 	) const {
 		Indices indices = ( index / sizes_prefsum_ ) % sizes_;
+		return get_center(indices);
+	}
+
+	Floats 
+	get_center(
+		Indices const & indices
+	) const {
 		return lower_cen_ + width_ * indices.template cast<Float>();
 	}
 
