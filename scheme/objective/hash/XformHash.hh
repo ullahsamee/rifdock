@@ -404,6 +404,139 @@ struct XformHash_bt24_BCC3 {
 	Key approx_size() const { return (ori_grid_.sizes_[0]-1)*(ori_grid_.sizes_[1]-1)*(ori_grid_.sizes_[2]-1)*2 * cart_grid_.size() * 24; }
 };
 
+// TODO: make _Zorder version of XformHash_bt24_BCC6
+template< class Xform >
+struct XformHash_bt24_BCC6 {
+	typedef uint64_t Key;
+	typedef typename Xform::Scalar Float;
+	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::numeric::BCC< 6, Float, uint64_t > Grid;
+	typedef scheme::util::SimpleArray<3,Float> F3;
+	typedef scheme::util::SimpleArray<3,uint64_t> I3;
+	typedef scheme::util::SimpleArray<6,Float> F6;
+	typedef scheme::util::SimpleArray<6,uint64_t> I6;
+
+	Float grid_size_;
+	Float grid_spacing_;
+	OriMap ori_map_;
+	Grid grid_;
+
+	XformHash_bt24_BCC6( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
+	{
+		cart_resl /= 0.85; // TODO: HACK multiplier!
+		// bcc orientation grid covering radii
+		static float const covrad[64] = {
+		                     49.66580,25.99805,17.48845,13.15078,10.48384, 8.76800, 7.48210, 6.56491, 5.84498, 5.27430, 4.78793, 4.35932,
+		                      4.04326, 3.76735, 3.51456, 3.29493, 3.09656, 2.92407, 2.75865, 2.62890, 2.51173, 2.39665, 2.28840, 2.19235,
+		                      2.09949, 2.01564, 1.94154, 1.87351, 1.80926, 1.75516, 1.69866, 1.64672, 1.59025, 1.54589, 1.50077, 1.46216,
+		                      1.41758, 1.38146, 1.35363, 1.31630, 1.28212, 1.24864, 1.21919, 1.20169, 1.17003, 1.14951, 1.11853, 1.09436,
+		                      1.07381, 1.05223, 1.02896, 1.00747, 0.99457, 0.97719, 0.95703, 0.93588, 0.92061, 0.90475, 0.89253, 0.87480,
+		                      0.86141, 0.84846, 0.83677, 0.82164 };
+		uint64_t ori_nside = 1;
+		while( covrad[ori_nside-1]*1.45 > ang_resl && ori_nside < 62 ) ++ori_nside; // TODO: HACK multiplier!
+		// std::cout << "requested ang_resl: " << ang_resl << " got " << covrad[ori_nside-1] << std::endl;
+		if( 2*(int)(cart_bound/cart_resl) > 8192 ){
+			throw std::out_of_range("can have at most 8192 cart cells!");
+		}
+		I6 nside;
+		nside[0] = nside[1] = nside[2] = 2.0*cart_bound/cart_resl;
+		nside[3] = nside[4] = nside[5] = ori_nside+2;
+		F6 lb,ub;
+		lb[0] = lb[1] = lb[2] = -cart_bound;
+		ub[0] = ub[1] = ub[2] =  cart_bound;
+		lb[3] = lb[4] = lb[5] =     -1.0/ori_nside;
+		ub[3] = ub[4] = ub[5] =  1.0+1.0/ori_nside;
+		grid_.init( nside, lb, ub );
+	}
+
+	Key get_key( Xform const & x ) const {
+		Eigen::Matrix3d rotation;
+		for(int i = 0; i < 9; ++i) rotation.data()[i] = x.data()[i];
+
+		uint64_t cell_index;
+		F3 params;
+		// ori_map_.value_to_params( rotation, 0, params, cell_index );
+		{ // from TetracontoctachoronMap.hh
+			Eigen::Quaternion<Float> q(rotation);
+
+			numeric::get_cell_48cell_half( q.coeffs(), cell_index );
+
+			q = nest::maps::hbt24_cellcen<Float>( cell_index ).inverse() * q;
+			q = nest::maps::to_half_cell(q);
+
+			params[0] = q.x()/q.w()/nest::maps::cell_width<Float>() + 0.5;
+			params[1] = q.y()/q.w()/nest::maps::cell_width<Float>() + 0.5;			
+			params[2] = q.z()/q.w()/nest::maps::cell_width<Float>() + 0.5;
+
+			assert( params[0] >= 0.0 && params[0] <= 1.0 );
+			assert( params[1] >= 0.0 && params[1] <= 1.0 );
+			assert( params[2] >= 0.0 && params[2] <= 1.0 );						
+
+		}
+		assert( cell_index < 24 );
+		assert( 0.0 <= params[0] && params[0] <= 1.0 );
+		assert( 0.0 <= params[1] && params[1] <= 1.0 );
+		assert( 0.0 <= params[2] && params[2] <= 1.0 );
+		
+		F6 params6;
+		params6[0] = x.translation()[0];
+		params6[1] = x.translation()[1];
+		params6[2] = x.translation()[2];
+		params6[3] = params[0];
+		params6[4] = params[1];
+		params6[5] = params[2];				
+
+		return cell_index<<59 | grid_[params6];
+	}
+
+	Xform get_center(Key key) const {
+		Key cell_index = key >> 59;
+		F6 params6 = grid_[ key & (((Key)1<<59)-(Key)1) ];
+
+		F3 params;
+		params[0] = params6[3];
+		params[1] = params6[4];
+		params[2] = params6[5];
+		Eigen::Matrix3d m;
+		// ori_map_.params_to_value( params, cell_index, 0, m );
+		{
+			Float const & w(nest::maps::cell_width<Float>());
+
+			assert( params[0] >= -0.00001 && params[0] <= 1.00001 );
+			assert( params[1] >= -0.00001 && params[1] <= 1.00001 );
+			assert( params[2] >= -0.00001 && params[2] <= 1.00001 );
+			params[0] = fmax(0.0,params[0]);
+			params[1] = fmax(0.0,params[1]);
+			params[2] = fmax(0.0,params[2]);
+			params[0] = fmin(1.0,params[0]);
+			params[1] = fmin(1.0,params[1]);
+			params[2] = fmin(1.0,params[2]);
+
+			// std::cout << cell_index << " " << p << " " << p << std::endl;			
+			// static int count = 0; if( ++count > 30 ) std::exit(-1);
+
+			params = w*(params-0.5); // now |params| < sqrt(2)-1
+
+			// Eigen::Quaternion<Float> q( sqrt(1.0-p.squaredNorm()), p[0], p[1], p[2] );
+			// assert( fabs(q.squaredNorm()-1.0) < 0.000001 );
+			Eigen::Quaternion<Float> q( 1.0, params[0], params[1], params[2] );
+			q.normalize();
+
+			q = nest::maps::hbt24_cellcen<Float>( cell_index ) * q;
+
+			m = q.matrix();
+		}
+		Xform center( m );
+		center.translation()[0] = params6[0];
+		center.translation()[1] = params6[1];
+		center.translation()[2] = params6[2];				
+
+		return center;
+	}
+
+	Key approx_size() const { return grid_.size() * 24; }
+};
+
 template< class Xform >
 struct XformHash_bt24_Cubic_Zorder {
 	typedef uint64_t Key;

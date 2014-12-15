@@ -39,6 +39,7 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	boost::normal_distribution<> rnorm;
 	boost::uniform_real<> runif;
 
+	// Cubic<4,F,S> bcc(I(Nside),V(-1),V(1.0));
 	BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
 	// BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
 	// BCC<4,F,S> bcc(I(Nside),V( -2.0 ),V( 2.0 ) );
@@ -88,13 +89,14 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	typedef util::SimpleArray<3,F> V3;
 	typedef util::SimpleArray<3,S> I3;
 	boost::random::mt19937 rng((unsigned int)time(0));
+	// boost::random::mt19937 rng((unsigned int)0);
 	boost::normal_distribution<> rnorm;
 
 	// BCC<3,F,S> bcc(I3(Nside),V3( 0.0 ),V3( 1.0));	
 	// BCC<3,F,S> bcc(I3(3*Nside),V3(-1.0 ),V3( 2.0));
 
-	// BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
-	Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
+	BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
+	// Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
 
 	nest::maps::TetracontoctachoronMap<> map;
 	typedef nest::maps::TetracontoctachoronMap<3,V>::Params Params;
@@ -113,6 +115,7 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 
 		Eigen::Quaterniond q;
 		for(int i = 0; i < 4; ++i) q.coeffs()[i] = sample[i];
+
 		Params params; uint64_t cell_index;
 		map.value_to_params( q.matrix(), 0, params, cell_index );
 		size_t index_bcc = bcc[params];
@@ -127,11 +130,13 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 		// assert( pcenter[1] >= 0.0 && pcenter[1] <= 1.0 );
 		// assert( pcenter[2] >= 0.0 && pcenter[2] <= 1.0 );				
 		Eigen::Matrix3d mcenter;
-		assert( map.params_to_value( pcenter, cell_index, 0, mcenter ) );
+		// cout << pcenter << " " << cell_index << endl;
+		bool params_to_value_returns_success = map.params_to_value( pcenter, cell_index, 0, mcenter );
+		assert( params_to_value_returns_success );
+
 		Eigen::Quaterniond qcenter(mcenter);
 		V center;
 		for(int i = 0; i < 4; ++i) center[i] = qcenter.coeffs()[i];
-
 
 		Eigen::Quaterniond samp(sample[0],sample[1],sample[2],sample[3]);
 		Eigen::Quaterniond cen (center[0],center[1],center[2],center[3]);
@@ -157,13 +162,18 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 
 }
 
+#ifdef NDEBUG
+int NSAMP = 600*1000;
+int NSIDE = 17;
+#else
+int NSAMP = 30*1000;
+int NSIDE = 6;
+#endif
 
-int const NSAMP = 1*1000*1000;
-
-TEST( bcc_lattice, DISABLED_orientatin_coverage_4d ){
+TEST( bcc_lattice, orientatin_coverage_4d ){
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
-	for(int i = 1; i < 100; ++i){
-		test_orientatin_coverage_4d(  i , NSAMP );
+	for(int i = 1; i < NSIDE; ++i){
+		test_orientatin_coverage_4d(  i , NSAMP ); std::cout.flush();
 	}
 	// 	test_orientatin_coverage_4d(   8 , NSAMP );
 	// 	test_orientatin_coverage_4d(  16 , NSAMP );
@@ -172,12 +182,12 @@ TEST( bcc_lattice, DISABLED_orientatin_coverage_4d ){
 	// 	// test_orientatin_coverage_4d( 128 , NSAMP );
 }
 
-TEST( bcc_lattice, DISABLED_orientatin_coverage_3d_bt24 ){
+TEST( bcc_lattice, orientatin_coverage_3d_bt24 ){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> runif;
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
-	for(int i = 1; i < 65; ++i){
-		test_orientatin_coverage_3d_bt24( i , NSAMP );  std::cout.flush();
+	for(int i = 1; i < NSIDE; ++i){
+		test_orientatin_coverage_3d_bt24( i , NSAMP ); std::cout.flush();
 	}
 	// test_orientatin_coverage_3d_bt24(  4 , NSAMP );
 	// test_orientatin_coverage_3d_bt24(  8 , NSAMP );
