@@ -60,22 +60,13 @@ rand_xform(
 template<
 	template<class X> class XformHash
 >
-void test_xform_hash_perf(double cart_resl, unsigned int seed = 0){
+void test_xform_hash_perf( double cart_resl, double ang_resl, int const N2=100*1000, unsigned int seed = 0){
 	boost::random::mt19937 rng((unsigned int)time(0) + seed);
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
 
-
-	int const N1 = 1;
-	int const N2 = 300*1000;
-
-	for(int j = 0; j < N1; ++j){
 		double time_key = 0.0, time_cen = 0.0;
-
-		// double cart_resl = 0.5;
 		double cart_resl2 = cart_resl*cart_resl;
-		// double  ang_resl  = runif(rng)*10+5.0;
-		double  ang_resl  = std::max( 3.2, cart_resl * 20.0 );
 		double  ang_resl2 = ang_resl* ang_resl;
 
 		XformHash<Xform> xm( cart_resl, ang_resl, 512.0 );
@@ -104,7 +95,7 @@ void test_xform_hash_perf(double cart_resl, unsigned int seed = 0){
 		idx_seen.set_empty_key(999999999999);
 		for(int i = 0; i < N2; ++i) idx_seen.insert(keys[i]);
 
-		double covrad = 0;
+		double covrad=0, max_dt=0, max_da=0;
 		for(int i = 0; i < N2; ++i){
 			Xform l = centers[i].inverse() * samples[i];
 			double dt = l.translation().norm();
@@ -115,31 +106,47 @@ void test_xform_hash_perf(double cart_resl, unsigned int seed = 0){
 			// double da = Eigen::AngleAxisd(l.rotation()).angle()*180.0/M_PI;
 			double err = sqrt( da*da/ang_resl2*cart_resl2 + dt*dt );
 			covrad = fmax(covrad,err);
+			max_dt = fmax(max_dt,dt);
+			max_da = fmax(max_da,da);
 			ASSERT_LT( dt, cart_resl );
 			ASSERT_LT( da,  ang_resl );
 		}
 
-		double tot_cell_vol = covrad*covrad*covrad*covrad*covrad*covrad * xm.approx_size();
-		printf( "resl %7.3f/%7.3f covrad %7.3f tot_vol %10.3fT %8lu runtime %7.3fns \n", 
-			cart_resl, ang_resl, covrad, tot_cell_vol/1000000000000.0, idx_seen.size(), time_key/N2 );
+		// double tot_cell_vol = covrad*covrad*covrad*covrad*covrad*covrad * xm.approx_size();
+		printf( " %5.3f/%5.1f cr %5.3f dt %5.3f da %6.3f %7.3fns \n", 
+			cart_resl, ang_resl, covrad/cart_resl, max_dt/cart_resl, max_da/ang_resl, time_key/N2 );
 
-	}
 	// cout << " rate " << N1*N2/time_key << "  " << N1*N2/time_cen << endl;
 }
 
-TEST( XformMap, DISABLED_preformance ){
+TEST( XformHash, XformHash_Quat_BCC7_Zorder ){
+	unsigned int s = 0;
+	int N = 100*1000;
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 4.00 , 30.0, N, ++s );
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 2.00 , 20.0, N, ++s );
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 1.00 , 15.0, N, ++s );
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 0.50 , 10.0, N, ++s );
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 0.25 ,  5.0, N, ++s );
+	cout << "XformHash_Quat_BCC7_Zorder"; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder >( 0.11 ,  3.3, N, ++s );
+
+
+
+
+}
+
+TEST( XformHash, DISABLED_preformance ){
 
 	cout << "XformHash_Quat_BCC7        "; test_xform_hash_perf< XformHash_Quat_BCC7         >( 2.0 , 1 );
 	cout << "XformHash_Quat_BCC7_Zorder "; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder  >( 2.0 , 2 );
 	cout << "XformHash_bt24_BCC3        "; test_xform_hash_perf< XformHash_bt24_BCC3         >( 2.0 , 3 );
 	cout << "XformHash_bt24_BCC3_Zorder "; test_xform_hash_perf< XformHash_bt24_BCC3_Zorder  >( 2.0 , 4 );
-	cout << "XformHash_bt24_Cubic_Zorder"; test_xform_hash_perf< XformHash_bt24_Cubic_Zorder >( 2.0, 5 );
+	cout << "XformHash_bt24_Cubic_Zorder"; test_xform_hash_perf< XformHash_bt24_Cubic_Zorder >( 2.0 , 5 );
 
 	cout << "XformHash_Quat_BCC7        "; test_xform_hash_perf< XformHash_Quat_BCC7         >( 0.25 , 1 );
 	cout << "XformHash_Quat_BCC7_Zorder "; test_xform_hash_perf< XformHash_Quat_BCC7_Zorder  >( 0.25 , 2 );
 	cout << "XformHash_bt24_BCC3        "; test_xform_hash_perf< XformHash_bt24_BCC3         >( 0.25 , 3 );
 	cout << "XformHash_bt24_BCC3_Zorder "; test_xform_hash_perf< XformHash_bt24_BCC3_Zorder  >( 0.25 , 4 );
-	cout << "XformHash_bt24_Cubic_Zorder"; test_xform_hash_perf< XformHash_bt24_Cubic_Zorder >( 0.25, 5 );
+	cout << "XformHash_bt24_Cubic_Zorder"; test_xform_hash_perf< XformHash_bt24_Cubic_Zorder >( 0.25 , 5 );
 
 }
 

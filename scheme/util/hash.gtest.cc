@@ -14,7 +14,7 @@
 #include <boost/unordered_map.hpp>
 #include <map>
 
-namespace scheme { namespace util {
+namespace scheme { namespace util { namespace test_hash {
 
 using std::cout;
 using std::endl;
@@ -49,80 +49,84 @@ struct SegmentedMap {
 	}
 };
 
+
 template<class Map>
-void test_map(Map & h){
-	int64_t MAXIDX = 430l*1000*1000l;
-	int64_t NFILL = MAXIDX/100;
-	int64_t NROW = 1;
-	int64_t NITER = 10*1000*1000 / NROW;
+void test_map( Map * hp, int64_t MAXIDX, int64_t NSAMP ){
+	Map & h(*hp);
+
+	int64_t NROW=1;
+	NSAMP /= NROW;
 
 	// boost::random::mt19937 rng((unsigned int64_t)time(0));
 	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<> randindex(0,MAXIDX);
+	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	// h.resize(NFILL/2);
+
+	boost::timer::cpu_timer t;
+	size_t count = 0;
+	for(size_t i = 0; i < NSAMP; ++i){
+		size_t ri = randindex(rng);
+		for(size_t j = 0; j < NROW; ++j){
+			typename Map::const_iterator iter = h.find(ri+j);
+			count += iter==h.end() ? 0.0 : iter->second[0];
+		}
+	}
+
+	if( count == 0 ) cout << "ERROR!!" << endl;
+	cout << "rate "  << NSAMP << " " << NROW << " " << MAXIDX << " " << (double)t.elapsed().wall/NSAMP/NROW << "ns, nonsense: " << (double)count/NSAMP << endl;
+}
+
+
+template<class Map>
+void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
+	int64_t NFILL = MAXIDX/sparsity;
+
+	boost::random::mt19937 rng((uint64_t)0);	
+	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
 	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
 	cout << "done fill " 
+	     << MAXIDX << " " 
+	     << (double)h.size()/1000000 << "M  "
+	     << (double)h.bucket_count()/1000000000 * sizeof(typename Map::value_type) << "GB  " 
+	     << (double)h.size() / h.bucket_count()
+	     << endl;
+}
+
+
+template<class Map>
+void fill_and_test_map(Map * hp){
+	Map & h(*hp);
+	int64_t MAXIDX = 3000ll*1000ll*1000ll;
+	int64_t NFILL = MAXIDX/100ll;
+	int64_t NROW = 1;
+	int64_t NSAMP = 10ll*1000ll*1000ll / NROW;
+
+	boost::random::mt19937 rng((uint64_t)0);	
+	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	// h.resize(NFILL/2);
+
+	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
+	cout << "done fill " 
+	     << MAXIDX << " "
 	     << (double)h.size()/1000000 << "M  "
 	     << (double)h.bucket_count()/1000000000 * sizeof(typename Map::value_type) << "GB  " 
 	     << (double)h.size() / h.bucket_count()
 	     << endl;	     	     
 
+	boost::random::mt19937 rng2((uint64_t)0);	
+
 	boost::timer::cpu_timer t;
 	size_t count = 0;
-	for(size_t i = 0; i < NITER; ++i){
-		size_t ri = randindex(rng);
+	for(size_t i = 0; i < NSAMP; ++i){
+		size_t ri = randindex(rng2);
 		for(size_t j = 0; j < NROW; ++j){
-			if( h.find(ri+j) != h.end() ) count += h[ri+j][0];
+			typename Map::const_iterator iter = h.find(ri+j);
+			count += iter==h.end() ? 0.0 : iter->second[0];
 		}
 	}
-	cout << "rate " << (double)t.elapsed().wall/NITER*NROW << "ns, nonsense: " << (double)count / NITER << endl;
-}
-
-template<class MAP1, class MAP2>
-void test_map(
-	MAP1 & m, std::string lm,
-	MAP2 & n, std::string ln
-){
-	int64_t MAXIDX = 10*1000*1000;
-	int64_t NFILL = MAXIDX/10;
-	int64_t NROW = 1;
-	int64_t NITER = 100*1000*1000 / NROW;
-
-	// boost::random::mt19937 rng((unsigned int64_t)time(0));
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<> randindex(0,MAXIDX);
-
-	for(int64_t i = 0; i < NFILL; ++i){
-		size_t ri = randindex(rng);
-		m[ri] = 1;
-		n[ri] = 1;
-	}
-
-	std::vector<size_t> ridx;
-	for(size_t i = 0; i < NITER; ++i)
-		ridx.push_back( randindex(rng) );
-
-	boost::timer::cpu_timer tm;
-	size_t mcount = 0;
-	BOOST_FOREACH(size_t ri,ridx){
-		for(size_t j = 0; j < NROW; ++j){
-			if( m.find(ri+j) != m.end() ) mcount += m[ri+j];
-		}
-	}
-	cout << lm << " rate " << (double)tm.elapsed().wall/NITER*NROW << "ns" << endl;
-
-	boost::timer::cpu_timer tn;
-	size_t ncount = 0;
-	BOOST_FOREACH(size_t ri,ridx){
-		for(size_t j = 0; j < NROW; ++j){
-			if( n.find(ri+j) != n.end() ) ncount += n[ri+j];
-		}
-	}
-	cout << ln << " rate " << (double)tn.elapsed().wall/NITER*NROW << "ns" << endl;
-
-	cout << mcount << endl;
-	ASSERT_EQ( mcount, ncount );
+	cout << "rate " << NSAMP << " " << NROW << " " << MAXIDX << " " << (double)t.elapsed().wall/NSAMP/NROW << "ns, nonsense: " << (double)count / NSAMP << endl;
 }
 
 // 100M 1/10 nrow 1
@@ -137,37 +141,94 @@ void test_map(
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
 TEST(test_hash, DISABLED_sparse_vs_dense){
-	SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
+	// SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
 
 	google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > d;
 	d.set_empty_key(std::numeric_limits<uint64_t>::max());
 
-	google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > s;
+	// google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > s;
 
-	// test_map(n,"google_dense",m,"segment_gdh ");
+	// fill_and_test_map(n,"google_dense",m,"segment_gdh ");
 	cout << "====================== DENSE ======================" << endl;
-	test_map(d); d.clear();
-	cout << "====================== SPARSE =====================" << endl;
-	test_map(s); s.clear();
+
+	int64_t MAXIDX = 3000ll*1000ll*1000ll;
+	int64_t NSAMP = 10ll*1000ll*1000ll;
+	fill_map( d, MAXIDX, 100 );
+	test_map( &d, MAXIDX, NSAMP );
+	d.clear();
+
+	fill_and_test_map(&d);
+	d.clear();
+
+	// cout << "====================== SPARSE =====================" << endl;
+	// fill_and_test_map(s); s.clear();
+
 }
 
+
+
+template<class MAP1, class MAP2>
+void test_2map(
+	MAP1 & m, std::string lm,
+	MAP2 & n, std::string ln
+){
+	int64_t MAXIDX = 10*1000*1000;
+	int64_t NFILL = MAXIDX/10;
+	int64_t NROW = 1;
+	int64_t NSAMP = 100*1000*1000 / NROW;
+
+	// boost::random::mt19937 rng((unsigned int64_t)time(0));
+	boost::random::mt19937 rng((uint64_t)0);	
+	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+
+	for(int64_t i = 0; i < NFILL; ++i){
+		size_t ri = randindex(rng);
+		m[ri] = 1;
+		n[ri] = 1;
+	}
+
+	std::vector<size_t> ridx;
+	for(size_t i = 0; i < NSAMP; ++i)
+		ridx.push_back( randindex(rng) );
+
+	boost::timer::cpu_timer tm;
+	size_t mcount = 0;
+	BOOST_FOREACH(size_t ri,ridx){
+		for(size_t j = 0; j < NROW; ++j){
+			if( m.find(ri+j) != m.end() ) mcount += m[ri+j];
+		}
+	}
+	cout << lm << " rate " << (double)tm.elapsed().wall/NSAMP*NROW << "ns" << endl;
+
+	boost::timer::cpu_timer tn;
+	size_t ncount = 0;
+	BOOST_FOREACH(size_t ri,ridx){
+		for(size_t j = 0; j < NROW; ++j){
+			if( n.find(ri+j) != n.end() ) ncount += n[ri+j];
+		}
+	}
+	cout << ln << " rate " << (double)tn.elapsed().wall/NSAMP*NROW << "ns" << endl;
+
+	cout << mcount << endl;
+	ASSERT_EQ( mcount, ncount );
+}
 
 
 
 // TEST(test_hash,std_unordered_map){
 // 	std::unordered_map<int64_t,int64_t> h;
-// 	test_map(h);
+// 	fill_and_test_map(h);
 // }
 
 // TEST(test_hash,boost_unordered_map){
 // 	boost::unordered_map<int64_t,int64_t> h;
-// 	test_map(h);
+// 	fill_and_test_map(h);
 // }
 
 // TEST(test_hash,std_map){
 // 	std::map<int64_t,int64_t> h;
-// 	test_map(h);
+// 	fill_and_test_map(h);
 // }
 
 
-}}
+}}}

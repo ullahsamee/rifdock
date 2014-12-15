@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=Rotation1DMap.*"
+            argument = "--gtest_filter=FixedPoint.*"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

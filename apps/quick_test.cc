@@ -2,13 +2,14 @@
 
 // include desired tests here:
 
-#include "scheme/util/hash.gtest.cc"
+// #include "scheme/util/hash.gtest.cc"
+// #include "scheme/util/hash_thread.gtest.cc"
 // #include "scheme/util/StoragePolicy.gtest.cc"
 // #include "scheme/util/template_loop.gtest.cc" // 3.5 vs 2.2 wo Eigen
 // #include "scheme/util/SimpleArray.gtest.cc"
 
 // #include "scheme/numeric/euler_angles.gtest.cc"
-// #include "scheme/numeric/FixedPoint.gtest.cc"
+#include "scheme/numeric/FixedPoint.gtest.cc"
 // #include "scheme/numeric/xform_perf.gtest.cc"
 
 // #include "scheme/dock/fftdock.gtest.cc"
@@ -58,7 +59,7 @@
 
 // #include "scheme/objective/methods/hbond_5dof.gtest.cc"
 
-#include "scheme/objective/hash/XformMap.gtest.cc"
+// #include "scheme/objective/hash/XformHash.gtest.cc"
 
 int main(int argc, char **argv)
 {

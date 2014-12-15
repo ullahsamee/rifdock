@@ -57,7 +57,10 @@ rand_xform(
 // TEST( XformMap, basic_test ){
 template< class Xform >
 void test_xform_perf(){
-	int NSAMP = 10*1000*1000;
+	int NSAMP = 100*1000;
+	#ifdef NDEBUG
+	NSAMP = 10*1000*1000;
+	#endif
 	boost::random::mt19937 rng;
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
