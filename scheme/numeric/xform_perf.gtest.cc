@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "scheme/numeric/rand_xform.hh"
+
 #include <Eigen/Geometry>
 
 #include <boost/random/uniform_real.hpp>
@@ -15,44 +17,6 @@ using std::endl;
 typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 // typedef Eigen::Affine3d Xform;
 
-template<class T>
-void
-rand_xform(
-	boost::random::mt19937 & rng,
-	boost::uniform_real<> & runif,
-	boost::normal_distribution<> & rnorm,
-	Eigen::Transform<T,3,Eigen::Affine> & x
-){
-	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
-	qrand.normalize();
-	Eigen::Matrix3d m = qrand.matrix();
-
-	x.data()[3] = 0; x.data()[7] = 0; x.data()[11] = 0; x.data()[15] = 1;
-	for(int i = 0; i <  3; ++i) x.data()[i] = m.data()[i-0];
-	for(int i = 4; i <  7; ++i) x.data()[i] = m.data()[i-1];
-	for(int i = 8; i < 11; ++i) x.data()[i] = m.data()[i-2];
-	x.data()[12] = runif(rng)*512.0-256.0;
-	x.data()[13] = runif(rng)*512.0-256.0;
-	x.data()[14] = runif(rng)*512.0-256.0;
-}
-
-template<class T>
-void
-rand_xform(
-	boost::random::mt19937 & rng,
-	boost::uniform_real<> & runif,
-	boost::normal_distribution<> & rnorm,
-	Eigen::Transform<T,3,Eigen::AffineCompact> & x
-){
-	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
-	qrand.normalize();
-	Eigen::Matrix3d m = qrand.matrix();
-
-	for(int i = 0; i < 9; ++i) x.data()[i] = m.data()[i];
-	x.data()[ 9] = runif(rng)*512.0-256.0;
-	x.data()[10] = runif(rng)*512.0-256.0;
-	x.data()[11] = runif(rng)*512.0-256.0;
-}
 
 // TEST( XformMap, basic_test ){
 template< class Xform >
@@ -62,10 +26,8 @@ void test_xform_perf(){
 	NSAMP = 10*1000*1000;
 	#endif
 	boost::random::mt19937 rng;
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
 	Xform x,sum = Xform::Identity();
-	rand_xform(rng,runif,rnorm,x);
+	rand_xform(rng,x);
 
 	boost::timer::cpu_timer t;
 	for(int i = 0; i < NSAMP; ++i){

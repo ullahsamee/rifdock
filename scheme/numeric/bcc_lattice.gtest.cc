@@ -52,6 +52,13 @@ TEST(bcc_lattice,centers_map){
 	typedef util::SimpleArray<3,double> V;
 	typedef util::SimpleArray<3,uint64_t> I;
 
+	// {
+	// 	BCC<3,double> bcc(I(2,2,2),V(0,0,0),V(1,1,1));
+	// 	for(int i = 0; i < bcc.size(); ++i)
+	// 		cout << i << "\t" << bcc[i] << endl;
+
+	// }
+
 	BCC<3,double> bcc(I(3,5,7),V(0,0,0),V(6,10,14));
 
 	// std::ofstream out("test.pdb");

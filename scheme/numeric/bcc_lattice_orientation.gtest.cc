@@ -40,12 +40,9 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	boost::uniform_real<> runif;
 
 	// Cubic<4,F,S> bcc(I(Nside),V(-1),V(1.0));
-	BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
 	// BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
-	// BCC<4,F,S> bcc(I(Nside),V( -2.0 ),V( 2.0 ) );
-	// cout << bcc.lower_ << endl;
-	// cout << bcc.width_ << endl;
-	// cout << bcc.lower_+bcc.width_*Nside << endl;
+	BCC<4,F,S> bcc(I(Nside+1),V(-1.0-2.0/Nside),V(1.0));
+
 
 	google::dense_hash_set<size_t> idx_seen;
 	idx_seen.set_empty_key(999999999999);
@@ -67,7 +64,7 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	avgdiff /= NSAMP;
 	size_t count = idx_seen.size();
 	double xcov = (double)NSAMP/count;
-	if(xcov < 50){
+	if(xcov < 40){
 		cout << "volfrac will be low if xcov < 50 or so... (not enough samples)" << endl;
 		cout << "idxfrac: " << (double)count / (Nside*Nside*Nside*Nside) << " xcov " << xcov << endl;
 	}
@@ -95,7 +92,7 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	// BCC<3,F,S> bcc(I3(Nside),V3( 0.0 ),V3( 1.0));	
 	// BCC<3,F,S> bcc(I3(3*Nside),V3(-1.0 ),V3( 2.0));
 
-	BCC<3,F,S> bcc(I3(Nside+2),V3( -1.0/Nside ),V3( 1.0 + 1.0/Nside ));
+	BCC<3,F,S> bcc(I3(Nside+1),V3( -1.0/Nside ),V3( 1.0 ));
 	// Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
 
 	nest::maps::TetracontoctachoronMap<> map;
@@ -164,7 +161,7 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 
 #ifdef NDEBUG
 int NSAMP = 600*1000;
-int NSIDE = 17;
+int NSIDE = 12;
 #else
 int NSAMP = 30*1000;
 int NSIDE = 6;
@@ -172,8 +169,8 @@ int NSIDE = 6;
 
 TEST( bcc_lattice, orientatin_coverage_4d ){
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
-	for(int i = 1; i < NSIDE; ++i){
-		test_orientatin_coverage_4d(  i , NSAMP ); std::cout.flush();
+	for(int i = 3; i < 3*NSIDE-3; i+=3){
+		test_orientatin_coverage_4d(  i , 6*NSAMP ); std::cout.flush();
 	}
 	// 	test_orientatin_coverage_4d(   8 , NSAMP );
 	// 	test_orientatin_coverage_4d(  16 , NSAMP );

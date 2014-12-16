@@ -11,7 +11,7 @@
 // #include "scheme/numeric/euler_angles.gtest.cc"
 // #include "scheme/numeric/FixedPoint.gtest.cc"
 // #include "scheme/numeric/xform_perf.gtest.cc"
-
+// #include "scheme/numeric/rand_xform.gtest.cc"
 // #include "scheme/dock/fftdock.gtest.cc"
 
 // #include "scheme/nest/NEST.gtest.cc" // 4.479 vs. 3.0 wo Eigen
@@ -30,8 +30,7 @@
 
 // #include "scheme/numeric/geom_4d.gtest.cc"
 // #include "scheme/numeric/bcc_lattice.gtest.cc"
-
-#include "scheme/numeric/bcc_lattice_orientation.gtest.cc"
+// #include "scheme/numeric/bcc_lattice_orientation.gtest.cc"
 
 // #include "scheme/util/meta/util.gtest.cc"
 // #include "scheme/util/container/ContainerInteractions.gtest.cc"
@@ -61,6 +60,7 @@
 // #include "scheme/objective/methods/hbond_5dof.gtest.cc"
 
 // #include "scheme/objective/hash/XformHash.gtest.cc"
+#include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
 
 int main(int argc, char **argv)
 {

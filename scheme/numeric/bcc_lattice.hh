@@ -8,13 +8,13 @@
 
 namespace scheme { namespace numeric {
 
-template< int DIM, class Float, class Index = uint64_t >
+template< int DIM, class Float = double, class Index = uint64_t >
 struct BCC {
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Floats;
 	BOOST_STATIC_ASSERT(DIM > 2);
 
-	Indices sizes_, sizes_prefsum_;
+	Indices nside_, nside_prefsum_;
 	Floats lower_, width_, lower_cen_, half_width_;
 
 	BCC(){}
@@ -34,18 +34,18 @@ struct BCC {
 		Floats lower, 
 		Floats upper
 	){
-		sizes_= sizes;
+		nside_= sizes;
 		lower_ = lower;
 		for(size_t i = 0; i < DIM; ++i)
-			sizes_prefsum_[i] = sizes_.prod(i);
-		width_ = (upper-lower_)/sizes_.template cast<Float>();
+			nside_prefsum_[i] = nside_.prod(i);
+		width_ = (upper-lower_)/nside_.template cast<Float>();
 		half_width_ = width_ / 2.0;
 		lower_cen_ = lower_ + half_width_;
 	}
 
 	Index
 	size() const { 
-		return sizes_.prod()*2;
+		return nside_.prod()*2;
 	}
 
 	Floats 
@@ -53,7 +53,7 @@ struct BCC {
 		Index index
 	) const {
 		bool odd = index & 1;
-		Indices indices = ( (index>>1) / sizes_prefsum_ ) % sizes_;
+		Indices indices = ( (index>>1) / nside_prefsum_ ) % nside_;
 		return this->get_center(indices,odd);
 	}
 
@@ -84,7 +84,7 @@ struct BCC {
 	) const {
 		bool odd;
 		Indices indices = get_indices(value,odd);
-		Index index = (sizes_prefsum_*indices).sum();
+		Index index = (nside_prefsum_*indices).sum();
 		return (index<<1) + odd;
 	}
 
@@ -92,17 +92,17 @@ struct BCC {
 	void neighbors(Index index, Iiter iter, bool edges=false, bool edges2=false) const {
 		*iter++ = index;
 		bool odd = index & 1;
-		Indices indices = ( (index>>1) / sizes_prefsum_ ) % sizes_;
+		Indices indices = ( (index>>1) / nside_prefsum_ ) % nside_;
 		// std::cout << indices << std::endl;
 		for(Index i = 0; i < DIM; ++i){
 			indices[i] += 1;
 			// std::cout << indices << " " << i1 << std::endl;			
-			if( (indices<sizes_).sum()==DIM )
-				*iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+			if( (indices<nside_).sum()==DIM )
+				*iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 			indices[i] -= 2;
 			// std::cout << indices << " " << i2 << std::endl;
-			if( (indices<sizes_).sum()==DIM )
-				*iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+			if( (indices<nside_).sum()==DIM )
+				*iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 			indices[i] += 1; // reset
 		}
 		odd = !odd;
@@ -111,8 +111,8 @@ struct BCC {
 			Indices corner(indices);
 			for(int d = 0; d < DIM; ++d) corner[d] += ((i>>d)&1)? sodd : 0;
 			// std::cout << corner << std::endl;
-			if( (corner<sizes_).sum()==DIM )
-				*iter++ = (sizes_prefsum_*corner).sum()<<1 | odd;
+			if( (corner<nside_).sum()==DIM )
+				*iter++ = (nside_prefsum_*corner).sum()<<1 | odd;
 		}
 		if(edges){
 			odd = !odd;
@@ -121,16 +121,16 @@ struct BCC {
 				indices[i] += 1;
 				indices[j] += 1; // +1,+1
 				// std::cout << indices << " " << i1 << std::endl;			
-				if( (indices<sizes_).sum()==DIM ) *iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+				if( (indices<nside_).sum()==DIM ) *iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 				indices[i] -= 2; // -1,+1
 				// std::cout << indices << " " << i2 << std::endl;
-				if( (indices<sizes_).sum()==DIM ) *iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+				if( (indices<nside_).sum()==DIM ) *iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 				indices[j] -= 2; // -1,-1
 				// std::cout << indices << " " << i2 << std::endl;
-				if( (indices<sizes_).sum()==DIM ) *iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+				if( (indices<nside_).sum()==DIM ) *iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 				indices[i] += 2; // +1,-1
 				// std::cout << indices << " " << i2 << std::endl;
-				if( (indices<sizes_).sum()==DIM ) *iter++ = (sizes_prefsum_*indices).sum()<<1 | odd;
+				if( (indices<nside_).sum()==DIM ) *iter++ = (nside_prefsum_*indices).sum()<<1 | odd;
 				// reset
 				indices[i] -= 1;
 				indices[j] += 1;
@@ -151,7 +151,7 @@ struct Cubic {
 	typedef util::SimpleArray<DIM,Float> Floats;
 	BOOST_STATIC_ASSERT(DIM > 2);
 
-	Indices sizes_, sizes_prefsum_;
+	Indices nside_, nside_prefsum_;
 	Floats lower_, width_, lower_cen_, half_width_;
 
 	Cubic(){}
@@ -173,25 +173,25 @@ struct Cubic {
 		Floats lower=Floats(0), 
 		Floats upper=Floats(1)
 	){		
-		sizes_ = sizes;
+		nside_ = sizes;
 		lower_ = lower;
 		for(size_t i = 0; i < DIM; ++i)
-			sizes_prefsum_[i] = sizes_.prod(i);
-		width_ = (upper-lower_)/sizes_.template cast<Float>();
+			nside_prefsum_[i] = nside_.prod(i);
+		width_ = (upper-lower_)/nside_.template cast<Float>();
 		half_width_ = width_ / 2.0;
 		lower_cen_ = lower_ + half_width_;
 	}
 
 	Index
 	size() const { 
-		return sizes_.prod();
+		return nside_.prod();
 	}
 
 	Floats 
 	operator[](
 		Index index
 	) const {
-		Indices indices = ( index / sizes_prefsum_ ) % sizes_;
+		Indices indices = ( index / nside_prefsum_ ) % nside_;
 		return get_center(indices);
 	}
 
@@ -215,19 +215,19 @@ struct Cubic {
 		Floats const & value
 	) const {
 		Indices indices = get_indices(value);
-		return (sizes_prefsum_*indices).sum();
+		return (nside_prefsum_*indices).sum();
 	}
 
 	template<class Iiter>
 	void neighbors(Index index, Iiter iter, bool=false) const {
-		Indices idx0 = ( index / sizes_prefsum_ ) % sizes_;
+		Indices idx0 = ( index / nside_prefsum_ ) % nside_;
 		Indices threes(1);
 		for(int d = 1; d < DIM; ++d) threes[d] = 3*threes[d-1];
 		for(int i = 0; i < threes[DIM-1]*3; ++i){
 			Indices idx(idx0);
 			for(int d = 0; d < DIM; ++d) idx[d] += ((i/threes[d]) % 3) - 1;
 			// std::cout << i << " " << (idx-idx0).template cast<int>()+1 << std::endl;
-			if( (idx<sizes_).sum()==DIM ) *iter++ = (sizes_prefsum_*idx).sum();
+			if( (idx<nside_).sum()==DIM ) *iter++ = (nside_prefsum_*idx).sum();
 		}
 	}
 };
