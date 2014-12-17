@@ -41,7 +41,7 @@ TEST( rand_xform, cart_correctness ){
 TEST( rand_xform, ori_correctness ){
 	int NSAMP = 10;
 	#ifdef NDEBUG
-	NSAMP = 1000
+	NSAMP = 1000;
 	#endif
 
 	boost::random::mt19937 rng((unsigned int)time(0) + 934875);

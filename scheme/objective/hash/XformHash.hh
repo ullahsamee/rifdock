@@ -66,6 +66,7 @@ struct XformHash_Quat_BCC7 {
 		Eigen::Matrix<Float,3,3> rotation;
 		for(int i = 0; i < 9; ++i) rotation.data()[i] = x.data()[i];
 		Eigen::Quaternion<Float> q( rotation );
+		q = nest::maps::to_half_cell(q);
 		F7 f7;
 		f7[0] = x.translation()[0];
 		f7[1] = x.translation()[1];
@@ -94,11 +95,11 @@ struct XformHash_Quat_BCC7 {
 	Key approx_size() const { return grid_.size(); }
 
 	Key approx_nori() const {
-		static int const nori[62] = {
-		  0, 53,   134,   189,   436,   622,   899,  1606,  1996,  2303,  3410,  4502,  5510,  6284,  8285, 10098, 11634, 13352, 
-		  16065, 18538, 21205, 23953, 28212, 31593, 35653, 38748, 43980, 48801, 54661, 58271, 65655, 72114, 79038, 84326, 93094,
-		 101191,109680,116143,127688,137387,146325,155608,168954,180147,192798,202438,218861,231649,246830,257380,275655,292355,
-		 309321,321798,343505,362585,381254,396135,420820,442324,464576,480460 };
+		static int const nori[63] = {
+			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
+			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
+			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
+		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
 		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
 	}
 
@@ -151,7 +152,9 @@ struct XformHash_Quat_BCC7_Zorder {
 		// cart_grid_.init(  I3(2.0*cart_bound/cart_resl), F3(-cart_bound), F3(cart_bound) );
 		// ori_grid_.init(  I3(ori_nside+2), F3(-1.0/ori_nside), F3(1.0+1.0/ori_nside) );
 		I7 nside;
-		nside[0] = nside[1] = nside[2] = 2.0*cart_bound/cart_resl;
+		nside[0] = nside[1] = nside[2] = 2 * (int)(cart_bound/cart_resl)+1;
+		if( ori_nside % 2 == 0 )
+			nside[0] = nside[1] = nside[2] = nside[0]+1; // allows repr of 0,0,0... sometimes
 		nside[3] = nside[4] = nside[5] = nside[6] = ori_nside+1;
 		F7 lb,ub;
 		lb[0] = lb[1] = lb[2] = -cart_bound;
@@ -159,13 +162,13 @@ struct XformHash_Quat_BCC7_Zorder {
 		lb[3] = lb[4] = lb[5] = lb[6] = -1.0-2.0/ori_nside;
 		ub[3] = ub[4] = ub[5] = ub[6] =  1.0;
 		grid_.init( nside, lb, ub );
-
 	}
 
 	Key get_key( Xform const & x ) const {
 		Eigen::Matrix<Float,3,3> rotation;
 		for(int i = 0; i < 9; ++i) rotation.data()[i] = x.data()[i];
 		Eigen::Quaternion<Float> q( rotation );
+		q = nest::maps::to_half_cell(q);
 		F7 f7;
 		f7[0] = x.translation()[0];
 		f7[1] = x.translation()[1];
@@ -202,7 +205,7 @@ struct XformHash_Quat_BCC7_Zorder {
 		i7[3] =  util::undilate<7>( key>>4 ) & 63;
 		i7[4] =  util::undilate<7>( key>>5 ) & 63;
 		i7[5] =  util::undilate<7>( key>>6 ) & 63;
-		i7[6] =  util::undilate<7>( key>>7 ) & 63;	
+		i7[6] =  util::undilate<7>( key>>7 ) & 63;
 		// std::cout << i7 << std::endl << std::endl;							
 		F7 f7 = grid_.get_center(i7,odd);
 		// std::cout << f7 << std::endl;
@@ -230,15 +233,65 @@ struct XformHash_Quat_BCC7_Zorder {
 	Key approx_size() const { return grid_.size(); }
 
 	Key approx_nori() const {
-		static int const nori[62] = {
-		  0, 53,   134,   189,   436,   622,   899,  1606,  1996,  2303,  3410,  4502,  5510,  6284,  8285, 10098, 11634, 13352, 
-		  16065, 18538, 21205, 23953, 28212, 31593, 35653, 38748, 43980, 48801, 54661, 58271, 65655, 72114, 79038, 84326, 93094,
-		 101191,109680,116143,127688,137387,146325,155608,168954,180147,192798,202438,218861,231649,246830,257380,275655,292355,
-		 309321,321798,343505,362585,381254,396135,420820,442324,464576,480460 };
+		static int const nori[63] = {
+			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
+			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
+			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
+		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
 		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
 	}
 
 	Float ang_width() const { return grid_.width_[3]; }
+
+	Key asym_key(Key key, Key & isym) const {
+		// get o,w,x,y,z for orig key
+		Key o = key & 1;
+		Key w =  util::undilate<7>( key>>4 ) & 63;
+		Key x =  util::undilate<7>( key>>5 ) & 63;
+		Key y =  util::undilate<7>( key>>6 ) & 63;
+		Key z =  util::undilate<7>( key>>7 ) & 63;
+		// std::cout << grid_.nside_[3]-o <<" " << o << "    " << w << "\t" << x << "\t" << y << "\t" << z << std::endl;
+		// move to primaary
+		Key nside1 = grid_.nside_[3]-o;
+		isym = /*(w>nside1/2)<<3 |*/ (x<=nside1/2&&nside1!=2*x)<<2 | (y<=nside1/2&&nside1!=2*y)<<1 | (z<=nside1/2&&nside1!=2*z)<<0;
+		assert( w >= nside1/2 );
+		// w = w > nside1/2 ? w : nside1-w;
+		x = x > nside1/2 ? x : nside1-x;
+		y = y > nside1/2 ? y : nside1-y;
+		z = z > nside1/2 ? z : nside1-z;				
+		// make new key
+		Key k = key & ~ORI_MASK;
+		k = k | o;
+		k = k | util::dilate<7>( w ) << 4;
+		k = k | util::dilate<7>( x ) << 5;
+		k = k | util::dilate<7>( y ) << 6;
+		k = k | util::dilate<7>( z ) << 7;
+		return k;
+	}
+	Key sym_key(Key key, Key isym) const {
+		// get o,w,x,y,z for orig key
+		Key o = key & 1;
+		Key w =  util::undilate<7>( key>>4 ) & 63;
+		Key x =  util::undilate<7>( key>>5 ) & 63;
+		Key y =  util::undilate<7>( key>>6 ) & 63;
+		Key z =  util::undilate<7>( key>>7 ) & 63;
+		// std::cout << grid_.nside_[3]-o <<" " << o << "    " << w << "\t" << x << "\t" << y << "\t" << z << std::endl;
+		// move to isym
+		Key nside1 = grid_.nside_[3]-o;
+		// w = (isym>>3)&1 ? w : nside1-w;
+		x = (isym>>2)&1 ? nside1-x : x;
+		y = (isym>>1)&1 ? nside1-y : y;
+		z = (isym>>0)&1 ? nside1-z : z;
+		// make new key
+		Key k = key & ~ORI_MASK;
+		k = k | o;
+		k = k | util::dilate<7>( w ) << 4;
+		k = k | util::dilate<7>( x ) << 5;
+		k = k | util::dilate<7>( y ) << 6;
+		k = k | util::dilate<7>( z ) << 7;
+		return k;
+	}
+	Key num_key_symmetries() const { return 16; }
 
 };
 

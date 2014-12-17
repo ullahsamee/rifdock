@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=FixedPoint.*"
+            argument = "--gtest_filter=XformHash.XformHash_Quat_BCC7_Zorder_cart_shift"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
