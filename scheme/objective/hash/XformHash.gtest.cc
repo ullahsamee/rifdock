@@ -114,14 +114,14 @@ TEST( XformHash_Quat_BCC7_Zorder, num_ori_cells ){
 	// }
 }
 
-TEST( XformHash_bt24_BCC6, DISABLED_________________num_ori_cells ){
-	for(int i = 19; i < 65; ++i){
-		double xcov;
-		int num_ori_cells = get_num_ori_cells<XformHash_bt24_BCC6>( i, xcov );
-		printf("XformHash_bt24_BCC6 %2d %7d %8.3f\n",i, num_ori_cells, xcov );
-		std::cout.flush();
-	}
-}
+// TEST( XformHash_bt24_BCC6, num_ori_cells ){
+// 	for(int i = 19; i < 65; ++i){
+// 		double xcov;
+// 		int num_ori_cells = get_num_ori_cells<XformHash_bt24_BCC6>( i, xcov );
+// 		printf("XformHash_bt24_BCC6 %2d %7d %8.3f\n",i, num_ori_cells, xcov );
+// 		std::cout.flush();
+// 	}
+// }
 
 
 template< template<class X> class XformHash >
@@ -266,6 +266,12 @@ TEST( XformHash, XformHash_Quat_BCC7_Zorder_cart_shift ){
 			ASSERT_LE( (Vector3d(x+0.5,y+0.5,z+0.5)-v).squaredNorm(), 0.00001 );
 		}}}
 	}
+	XformHash_Quat_BCC7_Zorder<Xform> h( 0.1+runif(rng), 11.0, 300.0*runif(rng)+100.0 );
+	ASSERT_EQ( h.cart_shift_key( 3450, 0, 0, 0, 0 ) , 3450 );
+	ASSERT_EQ( h.cart_shift_key( 3450, 0, 0, 0, 1 ) , 3451 );
+	ASSERT_EQ( h.cart_shift_key( 3451, 0, 0, 0, 0 ) , 3451 );
+	ASSERT_EQ( h.cart_shift_key( 3451, 0, 0, 0, 1 ) , 3450 );
+
 }
 
 

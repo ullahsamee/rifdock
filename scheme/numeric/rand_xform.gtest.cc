@@ -29,7 +29,7 @@ TEST( rand_xform, cart_correctness ){
 	Xform x;
 
 	for(int i = 0; i < NSAMP; ++i){
-		rand_xform( rng, x, cart_bound, 0.0 );
+		rand_xform_quat( rng, x, cart_bound, 0.0 );
 		EXPECT_LE( x.translation().norm(), cart_bound );
 		max_cart = std::max( max_cart, x.translation().norm() );
 	}
@@ -54,7 +54,7 @@ TEST( rand_xform, ori_correctness ){
 
 		Xform x;
 		for(int i = 0; i < 1000; ++i){
-			rand_xform( rng, x, 0.0, quat_bound );
+			rand_xform_quat( rng, x, 0.0, quat_bound );
 			double ang = Eigen::AngleAxisd( x.rotation() ).angle() * 180.0 / M_PI;
 			max_ang = std::max( max_ang, ang );
 			ASSERT_LE( ang, ANG );

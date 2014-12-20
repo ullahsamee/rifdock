@@ -16,7 +16,8 @@ template<class T>
 void
 rand_xform(
 	boost::random::mt19937 & rng,
-	Eigen::Transform<T,3,Eigen::Affine> & x
+	Eigen::Transform<T,3,Eigen::Affine> & x,
+	T cart_bound = 512.0
 ){
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
@@ -28,16 +29,17 @@ rand_xform(
 	for(int i = 0; i <  3; ++i) x.data()[i] = m.data()[i-0];
 	for(int i = 4; i <  7; ++i) x.data()[i] = m.data()[i-1];
 	for(int i = 8; i < 11; ++i) x.data()[i] = m.data()[i-2];
-	x.data()[12] = runif(rng)*512.0-256.0;
-	x.data()[13] = runif(rng)*512.0-256.0;
-	x.data()[14] = runif(rng)*512.0-256.0;
+	x.data()[12] = runif(rng) * cart_bound - cart_bound/2.0;
+	x.data()[13] = runif(rng) * cart_bound - cart_bound/2.0;
+	x.data()[14] = runif(rng) * cart_bound - cart_bound/2.0;
 }
 
 template<class T>
 void
 rand_xform(
 	boost::random::mt19937 & rng,
-	Eigen::Transform<T,3,Eigen::AffineCompact> & x
+	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
+	T cart_bound = 512.0
 ){
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
@@ -46,9 +48,9 @@ rand_xform(
 	Eigen::Matrix3d m = qrand.matrix();
 	for(int i = 0; i < 9; ++i) x.data()[i] = m.data()[i];
 
-	x.data()[ 9] = runif(rng)*512.0-256.0;
-	x.data()[10] = runif(rng)*512.0-256.0;
-	x.data()[11] = runif(rng)*512.0-256.0;
+	x.data()[ 9] = runif(rng) * cart_bound - cart_bound/2.0;
+	x.data()[10] = runif(rng) * cart_bound - cart_bound/2.0;
+	x.data()[11] = runif(rng) * cart_bound - cart_bound/2.0;
 }
 
 template<class Float>
@@ -63,7 +65,7 @@ Float deg2quat(Float deg){
 
 template<class T>
 void
-rand_xform(
+rand_xform_quat(
 	boost::random::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	double cart_bound, double quat_bound

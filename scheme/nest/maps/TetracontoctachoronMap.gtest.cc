@@ -174,57 +174,57 @@ TEST( TetracontoctachoronMap , nside_covering ){
 
 }
 
-TEST( TetracontoctachoronMap , DISABLED_DISABLED_visualize ){
+// TEST( TetracontoctachoronMap , visualize ){
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+// 	boost::random::mt19937 rng((unsigned int)time(0));
+// 	boost::normal_distribution<> gauss;
+// 	boost::uniform_real<> uniform;
 
-	Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
-	// Quaterniond qrand( 1,0,0,0 );
-	qrand.normalize();
-	Vector3d X = qrand*Vector3d(1,0  ,0  );
-	Vector3d Y = qrand*Vector3d(0,1.2,0  );
-	Vector3d Z = qrand*Vector3d(0,0  ,1.4);
+// 	Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
+// 	// Quaterniond qrand( 1,0,0,0 );
+// 	qrand.normalize();
+// 	Vector3d X = qrand*Vector3d(1,0  ,0  );
+// 	Vector3d Y = qrand*Vector3d(0,1.2,0  );
+// 	Vector3d Z = qrand*Vector3d(0,0  ,1.4);
 
-	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
-	// size_t beg = 0;
-	// while(!nest.set_state(beg,10)) beg = std::max<size_t>(uniform(rng)*(nest.size(10)-1000),0);
+// 	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
+// 	// size_t beg = 0;
+// 	// while(!nest.set_state(beg,10)) beg = std::max<size_t>(uniform(rng)*(nest.size(10)-1000),0);
 
-	for(size_t r = 0; r <= 8; ++r){
-		int N = 8*8*8;
-		// int beg = std::max( 0, (int)nest.size(r)/12 - N/2 );
-		int beg = 0;
-		std::ofstream out(("tcoc_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
-		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
-		int count1 = 0, count2 = 0;
-		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
-		// continue;
-		// for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){
-		for(size_t i = beg; i < nest.size(r); ++i){		
-			++count1;
-			if( nest.set_state(i,r) ){
-				++count2;
-				if( count1 > N) break;
-				Matrix3d m = nest.value();
-				// cout << r << " " << i << " " << q.coeffs().transpose() << endl;
-				Vector3d ximg = m * X;
-				Vector3d yimg = m * Y;
-				Vector3d zimg = m * Z;;
-				// cout << r << " " << nest.cell_index(i,r) << endl;
-				// out << "MODEL" << std::endl;
-				// io::dump_pdb_atom(out,  "Z" ,count2,Vector3d(0,0,0));
-				io::dump_pdb_atom(out, "O" ,count2,50*ximg);
-				io::dump_pdb_atom(out, "NI",count2,50*yimg);
-				io::dump_pdb_atom(out, "N" ,count2,50*zimg);
-				// out << "ENDMDL" << std::endl;				 
-			}
-		}
-		out.close();
-		cout << r << " " << count2 / (double)count1 << endl;
-	}
+// 	for(size_t r = 0; r <= 8; ++r){
+// 		int N = 8*8*8;
+// 		// int beg = std::max( 0, (int)nest.size(r)/12 - N/2 );
+// 		int beg = 0;
+// 		std::ofstream out(("tcoc_"+boost::lexical_cast<std::string>(r)+".pdb").c_str());
+// 		io::dump_pdb_atom(out,  "Z" ,0,Vector3d(0,0,0));
+// 		int count1 = 0, count2 = 0;
+// 		// cout << r << " " << nest.size(r) << " " << (beg>>(4*(10-r))) << endl;
+// 		// continue;
+// 		// for(size_t i = beg>>(4*(10-r)); i < nest.size(r); ++i){
+// 		for(size_t i = beg; i < nest.size(r); ++i){		
+// 			++count1;
+// 			if( nest.set_state(i,r) ){
+// 				++count2;
+// 				if( count1 > N) break;
+// 				Matrix3d m = nest.value();
+// 				// cout << r << " " << i << " " << q.coeffs().transpose() << endl;
+// 				Vector3d ximg = m * X;
+// 				Vector3d yimg = m * Y;
+// 				Vector3d zimg = m * Z;;
+// 				// cout << r << " " << nest.cell_index(i,r) << endl;
+// 				// out << "MODEL" << std::endl;
+// 				// io::dump_pdb_atom(out,  "Z" ,count2,Vector3d(0,0,0));
+// 				io::dump_pdb_atom(out, "O" ,count2,50*ximg);
+// 				io::dump_pdb_atom(out, "NI",count2,50*yimg);
+// 				io::dump_pdb_atom(out, "N" ,count2,50*zimg);
+// 				// out << "ENDMDL" << std::endl;				 
+// 			}
+// 		}
+// 		out.close();
+// 		cout << r << " " << count2 / (double)count1 << endl;
+// 	}
 
-}
+// }
 
 TEST( TetracontoctachoronMap , check_unit ){
 

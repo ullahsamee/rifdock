@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=XformHash.XformHash_Quat_BCC7_Zorder_cart_shift"
+            argument = "--gtest_filter=XformHashNeighbors.Quat_BCC7_Zorder_check_rotations"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

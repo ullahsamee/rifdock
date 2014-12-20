@@ -119,10 +119,9 @@ struct XformHash_Quat_BCC7_Zorder {
 	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
 
 	static Key const ORI_MASK = ~ BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001110 );
+	static Key const ORI_MASK_NO0 = ~ BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001111 );
+	static Key const CART_MASK_NO0 = BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001110 );
 
-	Float grid_size_;
-	Float grid_spacing_;
-	OriMap ori_map_;
 	Grid grid_;
 
 	Float cart_spacing() const { return grid_.width_[0]; }
@@ -162,6 +161,7 @@ struct XformHash_Quat_BCC7_Zorder {
 		lb[3] = lb[4] = lb[5] = lb[6] = -1.0-2.0/ori_nside;
 		ub[3] = ub[4] = ub[5] = ub[6] =  1.0;
 		grid_.init( nside, lb, ub );
+		// std::cout << "NSIDE " << nside << std::endl;
 	}
 
 	Key get_key( Xform const & x ) const {
@@ -180,7 +180,8 @@ struct XformHash_Quat_BCC7_Zorder {
 		// std::cout << f7 << std::endl;		
 		bool odd;
 		I7 i7 = grid_.get_indices( f7, odd );
-		// std::cout << std::endl << (i7[0]>>6) << " " << (i7[1]>>6) << " " << (i7[2]>>6) << " " << i7[3] << " " << i7[4] << " " << i7[5] << " " << i7[6] << " " << std::endl;
+		// std::cout << std::endl << (i7[0]>>6) << " " << (i7[1]>>6) << " " << (i7[2]>>6) << " " << i7[3] << " " << i7[4] << " " 
+			// << i7[5] << " " << i7[6] << " " << std::endl;
 		// std::cout << std::endl << i7 << std::endl;
 		Key key = odd;
 		key = key | (i7[0]>>6)<<57; 
@@ -197,7 +198,7 @@ struct XformHash_Quat_BCC7_Zorder {
 	}
 
 	Xform get_center(Key key) const {
-		bool odd = key & 1;
+		bool odd = key & (Key)1;
 		I7 i7;
 		i7[0] = (util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6;
 		i7[1] = (util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6;
@@ -211,6 +212,7 @@ struct XformHash_Quat_BCC7_Zorder {
 		// std::cout << f7 << std::endl;
 		Eigen::Quaternion<Float> q( f7[3], f7[4], f7[5], f7[6] );
 		q.normalize();
+		// q = nest::maps::to_half_cell(q); // should be un-necessary
 		Xform center( q.matrix() );
 		center.translation()[0] = f7[0];
 		center.translation()[1] = f7[1];
@@ -218,15 +220,19 @@ struct XformHash_Quat_BCC7_Zorder {
 		return center;
 	}
 
-	Key cart_shift_key(Key key, int dx, int dy, int dz) const {
+	Key cart_shift_key(Key key, int dx, int dy, int dz, Key d_o=0) const {
+		Key o = key%2;
 		Key x = (util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6;
 		Key y = (util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6;
 		Key z = (util::undilate<7>( key>>3 ) & 63) | ((key>>43)&127)<<6;
 		x += dx; y += dy; z += dz;
+		o ^= d_o;
 		key &= ORI_MASK; // zero cart parts of key
-		key = key | (x>>6)<<57 | util::dilate<7>( x & 63 ) << 1; 
-		key = key | (y>>6)<<50 | util::dilate<7>( y & 63 ) << 2; 
-		key = key | (z>>6)<<43 | util::dilate<7>( z & 63 ) << 3;
+		key &= ~(Key)1; // zero even/odd
+		key |= o;
+		key |= (x>>6)<<57 | util::dilate<7>( x & 63 ) << 1; 
+		key |= (y>>6)<<50 | util::dilate<7>( y & 63 ) << 2; 
+		key |= (z>>6)<<43 | util::dilate<7>( z & 63 ) << 3;
 		return key;
 	}
 
@@ -241,21 +247,29 @@ struct XformHash_Quat_BCC7_Zorder {
 		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
 	}
 
+	Float cart_width() const { return grid_.width_[0]; }
 	Float ang_width() const { return grid_.width_[3]; }
 
 	Key asym_key(Key key, Key & isym) const {
 		// get o,w,x,y,z for orig key
-		Key o = key & 1;
+		Key o = key & (Key)1;
 		Key w =  util::undilate<7>( key>>4 ) & 63;
 		Key x =  util::undilate<7>( key>>5 ) & 63;
 		Key y =  util::undilate<7>( key>>6 ) & 63;
 		Key z =  util::undilate<7>( key>>7 ) & 63;
 		// std::cout << grid_.nside_[3]-o <<" " << o << "    " << w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 		// move to primaary
-		Key nside1 = grid_.nside_[3]-o;
+        assert(o==0||o==1);
+		Key nside1 = grid_.nside_[3] - o;
 		isym = /*(w>nside1/2)<<3 |*/ (x<=nside1/2&&nside1!=2*x)<<2 | (y<=nside1/2&&nside1!=2*y)<<1 | (z<=nside1/2&&nside1!=2*z)<<0;
 		assert( w >= nside1/2 );
 		// w = w > nside1/2 ? w : nside1-w;
+
+		// std::cout << "FX " << (x <= nside1/2) << " " << (2*x==nside1) << std::endl;
+		// std::cout << "FY " << (y <= nside1/2) << " " << (2*y==nside1) << std::endl;
+		// std::cout << "FZ " << (z <= nside1/2) << " " << (2*z==nside1) << std::endl;
+
+
 		x = x > nside1/2 ? x : nside1-x;
 		y = y > nside1/2 ? y : nside1-y;
 		z = z > nside1/2 ? z : nside1-z;				
@@ -270,14 +284,15 @@ struct XformHash_Quat_BCC7_Zorder {
 	}
 	Key sym_key(Key key, Key isym) const {
 		// get o,w,x,y,z for orig key
-		Key o = key & 1;
+		Key o = key & (Key)1;
 		Key w =  util::undilate<7>( key>>4 ) & 63;
 		Key x =  util::undilate<7>( key>>5 ) & 63;
 		Key y =  util::undilate<7>( key>>6 ) & 63;
 		Key z =  util::undilate<7>( key>>7 ) & 63;
 		// std::cout << grid_.nside_[3]-o <<" " << o << "    " << w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 		// move to isym
-		Key nside1 = grid_.nside_[3]-o;
+		Key nside1 = grid_.nside_[3] - o;
+		assert( w >= nside1/2 );
 		// w = (isym>>3)&1 ? w : nside1-w;
 		x = (isym>>2)&1 ? nside1-x : x;
 		y = (isym>>1)&1 ? nside1-y : y;
@@ -292,6 +307,20 @@ struct XformHash_Quat_BCC7_Zorder {
 		return k;
 	}
 	Key num_key_symmetries() const { return 16; }
+
+	void print_key(Key key) const {
+		bool odd = key & (Key)1;
+		I7 i7;
+		i7[0] = (util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6;
+		i7[1] = (util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6;
+		i7[2] = (util::undilate<7>( key>>3 ) & 63) | ((key>>43)&127)<<6;
+		i7[3] =  util::undilate<7>( key>>4 ) & 63;
+		i7[4] =  util::undilate<7>( key>>5 ) & 63;
+		i7[5] =  util::undilate<7>( key>>6 ) & 63;
+		i7[6] =  util::undilate<7>( key>>7 ) & 63;
+		std::cout << i7 << " " << odd << std::endl;
+
+	}
 
 };
 
@@ -408,8 +437,8 @@ struct XformHash_bt24_BCC3_Zorder {
 		ori_indices[1] = util::undilate<6>( (key>>3)&((1ull<<36)-1) ) & 63;
 		ori_indices[2] = util::undilate<6>( (key>>4)&((1ull<<36)-1) ) & 63;
 
-		bool  ori_odd = key & 1;
-		bool cart_odd = key & 2;
+		bool  ori_odd = key & (Key)1;
+		bool cart_odd = key & (Key)2;
 
 		F3 trans = cart_grid_.get_center(cart_indices,cart_odd);
 		F3 params = ori_grid_.get_center(ori_indices,ori_odd);
@@ -880,8 +909,8 @@ struct XformHash_Quatgrid_Cubic {
 		ori_indices[1] = util::undilate<6>( (key>>3)&((1ull<<36)-1) ) & 63;
 		ori_indices[2] = util::undilate<6>( (key>>4)&((1ull<<36)-1) ) & 63;
 
-		bool  ori_odd = key & 1;
-		bool cart_odd = key & 2;
+		bool  ori_odd = key & (Key)1;
+		bool cart_odd = key & (Key)2;
 
 		F3 trans = cart_grid_.get_center(cart_indices,cart_odd);
 		F3 params = ori_grid_.get_center(ori_indices,ori_odd);
