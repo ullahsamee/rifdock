@@ -4,12 +4,11 @@
 #include "scheme/numeric/rand_xform.hh"
 #include <Eigen/Geometry>
 
-#include <google/dense_hash_set>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/timer/timer.hpp>
-#include <google/dense_hash_set>
+#include <sparsehash/dense_hash_set>
 
 namespace scheme { namespace objective { namespace hash { namespace xhtest {
 
