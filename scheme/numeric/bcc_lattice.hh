@@ -17,6 +17,13 @@ struct BCC {
 	Indices nside_, nside_prefsum_;
 	Floats lower_, width_, lower_cen_, half_width_;
 
+	bool operator!=(BCC<DIM,Float,Index> const & o) const { return !(*this==o); }
+	bool operator==(BCC<DIM,Float,Index> const & o) const {
+		return nside_ == o.nside_
+		    && lower_ == o.lower_
+		    && width_ == o.width_;
+	}
+
 	BCC(){}
 
 	template<class Sizes>
@@ -139,7 +146,7 @@ struct BCC {
 	}
 };
 
-template< int DIM, class Float, class Index = uint64_t >
+template< int DIM, class Float, class Index >
 std::ostream & operator<<( std::ostream & out, BCC<DIM,Float,Index> const & bcc ){
 	return out << "lb " << bcc.lower_ << " w " << bcc.width_ ;
 }

@@ -19,14 +19,6 @@ using std::endl;
 typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 // typedef Eigen::Affine3d Xform;
 
-TEST( FOO, BAR ){
-	ASSERT_EQ( -0.0, 0.0 );
-	ASSERT_EQ( nest::maps::to_half_cell(Eigen::Quaterniond( -1, 1, 1, 1 ) ).w(), 1.0 );
-	ASSERT_EQ( nest::maps::to_half_cell(Eigen::Quaterniond(  0,-1, 1, 1 ) ).x(), 1.0 );
-	ASSERT_EQ( nest::maps::to_half_cell(Eigen::Quaterniond(  0, 0,-1, 1 ) ).y(), 1.0 );
-	ASSERT_EQ( nest::maps::to_half_cell(Eigen::Quaterniond(  0, 0, 0,-1 ) ).z(), 1.0 );
-}
-
 template<class XH>
 void get_neighbors_ref(
 	XH const & xh,
@@ -47,13 +39,14 @@ void get_neighbors_ref(
 
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
+	typedef uint64_t Key;
 	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
 	boost::uniform_real<> runif;
 	using namespace Eigen;
 	for(int j = 0; j < 10000; ++j){
 		for(int i = 2; i < 10; ++i){
 			XformHash_Quat_BCC7_Zorder<Xform> xh( 0.1+runif(rng), i, runif(rng)*400.0+2.0 );
-			uint64_t k0 = xh.grid_[util::SimpleArray<7,double>(0.0)];
+			Key k0 = xh.grid_[util::SimpleArray<7,double>(0.0)];
 			ASSERT_EQ( k0%2, (i+1)%2 );
 			util::SimpleArray<7,double> f7 = xh.grid_[k0];
 			for(int k = 0; k < 7; ++k) ASSERT_NEAR( f7[k], 0.0, 0.000001 );
@@ -72,8 +65,9 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_refllection_symmetry ){
 	using namespace Eigen;
+	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
-	typedef util::SimpleArray<7,uint64_t> I7;	
+	typedef util::SimpleArray<7,Key> I7;	
 	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
@@ -95,7 +89,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_refllection_symmetry ){
 			z /= l;
 			assert( fabs(w*w+x*x+y*y+z*z - 1.0) < 0.00001 );
 
-			std::vector<uint64_t> i(16);
+			std::vector<Key> i(16);
 			i[ 0] = xh.grid_[ F7( a,b,c, +w,+x,+y,+z ) ];
 			i[ 1] = xh.grid_[ F7( a,b,c, +w,+x,+y,-z ) ];
 			i[ 2] = xh.grid_[ F7( a,b,c, +w,+x,-y,+z ) ];
@@ -142,14 +136,14 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_refllection_symmetry ){
 
 			// if( iter1+iter2 == 0 ){
 			// 	for(int j=0; j<8; ++j){
-			// 		Xform xf = Xform( nest::maps::to_half_cell( Quaterniond(f[j][3],f[j][4],f[j][5],f[j][6]) ).matrix());
+			// 		Xform xf = Xform( numeric::to_half_cell( Quaterniond(f[j][3],f[j][4],f[j][5],f[j][6]) ).matrix());
 			// 		for(int k=0;k<3;++k) xf.translation()[k] = f[j][k];
-			// 		uint64_t k = xh.get_key( xf );
-			// 		uint64_t o = k & 1;
-			// 		uint64_t w =  util::undilate<7>( k>>4 ) & 63;
-			// 		uint64_t x =  util::undilate<7>( k>>5 ) & 63;
-			// 		uint64_t y =  util::undilate<7>( k>>6 ) & 63;
-			// 		uint64_t z =  util::undilate<7>( k>>7 ) & 63;
+			// 		Key k = xh.get_key( xf );
+			// 		Key o = k & 1;
+			// 		Key w =  util::undilate<7>( k>>4 ) & 63;
+			// 		Key x =  util::undilate<7>( k>>5 ) & 63;
+			// 		Key y =  util::undilate<7>( k>>6 ) & 63;
+			// 		Key z =  util::undilate<7>( k>>7 ) & 63;
 			// 		std::cout << xh.grid_.nside_[3]-o <<" " << o << "    " << w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 			// 	}
 			// }
@@ -166,8 +160,9 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 	#endif
 
 	using namespace Eigen;
+	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
-	typedef util::SimpleArray<7,uint64_t> I7;	
+	typedef util::SimpleArray<7,Key> I7;	
 	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
 	boost::uniform_real<> runif;
 
@@ -178,8 +173,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 		for(int i = 0; i < NSAMP; ++i){
 			Xform x; numeric::rand_xform(rng,x);
 			// while( fabs(Quaterniond(x.rotation()).w()) > 0.01 ) numeric::rand_xform(rng,x);
-			uint64_t key = xh.get_key(x);
-			uint64_t akey,ksym;
+			Key key = xh.get_key(x);
+			Key akey,ksym;
 			akey = xh.asym_key(key,ksym);
 			bool fx = (ksym>>2)&1;
 			bool fy = (ksym>>1)&1;
@@ -188,22 +183,22 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 			// cout << "TEST FY " << fy << endl;
 			// cout << "TEST FZ " << fz << endl;
 			// 	{
-			// 		uint64_t k = key;
-			// 		uint64_t o = k & 1;
-			// 		uint64_t w =  util::undilate<7>( k>>4 ) & 63;
-			// 		uint64_t x =  util::undilate<7>( k>>5 ) & 63;
-			// 		uint64_t y =  util::undilate<7>( k>>6 ) & 63;
-			// 		uint64_t z =  util::undilate<7>( k>>7 ) & 63;
+			// 		Key k = key;
+			// 		Key o = k & 1;
+			// 		Key w =  util::undilate<7>( k>>4 ) & 63;
+			// 		Key x =  util::undilate<7>( k>>5 ) & 63;
+			// 		Key y =  util::undilate<7>( k>>6 ) & 63;
+			// 		Key z =  util::undilate<7>( k>>7 ) & 63;
 			// 		std::cout << "KEY  " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    " 
 			// 		<< w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 			// 	}
 			// 	{
-			// 		uint64_t k = akey;
-			// 		uint64_t o = k & 1;
-			// 		uint64_t w =  util::undilate<7>( k>>4 ) & 63;
-			// 		uint64_t x =  util::undilate<7>( k>>5 ) & 63;
-			// 		uint64_t y =  util::undilate<7>( k>>6 ) & 63;
-			// 		uint64_t z =  util::undilate<7>( k>>7 ) & 63;
+			// 		Key k = akey;
+			// 		Key o = k & 1;
+			// 		Key w =  util::undilate<7>( k>>4 ) & 63;
+			// 		Key x =  util::undilate<7>( k>>5 ) & 63;
+			// 		Key y =  util::undilate<7>( k>>6 ) & 63;
+			// 		Key z =  util::undilate<7>( k>>7 ) & 63;
 			// 		std::cout << "ASYM " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    " 
 			// 		<< w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 			// 	}
@@ -221,8 +216,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 			Quaterniond qa( xa.rotation() );
 			// cout << qc.coeffs().transpose() << endl;
 			// cout << qa.coeffs().transpose() << endl << endl;
-			qc = nest::maps::to_half_cell(qc);
-			qa = nest::maps::to_half_cell(qa);
+			qc = numeric::to_half_cell(qc);
+			qa = numeric::to_half_cell(qa);
 			// cout << qc.coeffs().transpose() << endl;
 			// cout << qa.coeffs().transpose() << endl << endl;
 			ASSERT_NEAR( qc.w(),              qa.w()  , 0.000001 );
@@ -240,6 +235,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 // this test is fucked.... can't get 0-registration correct...
 // thinking ori + cart_shift should still work correctly.. will test that
 TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
+	typedef uint64_t Key;
 	int NSAMP = 5;
 	double THRESH = 0.01;
 	#ifdef NDEBUG
@@ -260,7 +256,7 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 		for(int i = 0; i < NSAMP; ++i){
 			// cout << "TEST ITER " << i << endl;
 			Xform x0; numeric::rand_xform(rng,x0,10.0);
-			uint64_t key0 = xh.get_key(x0);
+			Key key0 = xh.get_key(x0);
 			Xform cen0 = xh.get_center(key0);
 			ASSERT_EQ( xh.get_key(cen0), key0 );
 			Xform x1(cen0);
@@ -273,7 +269,7 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 				x1.translation()[1] += xh.cart_width()/2.0;
 				x1.translation()[2] += xh.cart_width()/2.0;								
 			}
-			uint64_t key1 = xh.get_key(x1);
+			Key key1 = xh.get_key(x1);
 			cout << x0.translation().transpose() << endl;
 			cout << x1.translation().transpose() << endl;			
 			xh.print_key(key0);
@@ -282,12 +278,12 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 			Xform cen1 = xh.get_center(key1);
 
 			std::vector<Eigen::Vector3d> vnbrs,vsamp;
-			std::set<uint64_t> nbrs_set, nbrs_set_ori, nbrs_set_cart;
+			std::set<Key> nbrs_set, nbrs_set_ori, nbrs_set_cart;
 			Eigen::Vector3d nbrcen(0,0,0);
 			std::vector< util::SimpleArray<3,int16_t> > shifts = nb.get_cart_shifts();
 			for(int j =0; j < shifts.size(); ++j){
-				uint64_t nbkey0 = xh.cart_shift_key( key0, shifts[j][0], shifts[j][1], shifts[j][2], 0 );
-				uint64_t nbkey1 = xh.cart_shift_key( key1, shifts[j][0], shifts[j][1], shifts[j][2], 1 );
+				Key nbkey0 = xh.cart_shift_key( key0, shifts[j][0], shifts[j][1], shifts[j][2], 0 );
+				Key nbkey1 = xh.cart_shift_key( key1, shifts[j][0], shifts[j][1], shifts[j][2], 1 );
 				nbrs_set.insert( nbkey0 );
 				nbrs_set.insert( nbkey1 );				
 				vnbrs.push_back( xh.get_center(nbkey0).translation() );
@@ -303,7 +299,7 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 			}
 
 			cout << "NBRS SET ORI: " << endl;
-			for(std::set<uint64_t>::const_iterator i = nbrs_set_ori.begin(); i != nbrs_set_ori.end(); ++i){
+			for(std::set<Key>::const_iterator i = nbrs_set_ori.begin(); i != nbrs_set_ori.end(); ++i){
 				cout << "       ";
 				cout << ( util::undilate<7>( (*i)>>4 ) & 63 ) << " ";
 				cout << ( util::undilate<7>( (*i)>>5 ) & 63 ) << " ";
@@ -317,7 +313,7 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 			int nfail=0;
 			for(int j = 0; j < 1000*NSAMP; ++j){
 				Xform p; numeric::rand_xform_quat(rng,p,cart_bound,0.0);
-				uint64_t nk = xh.get_key( p*cen0 );
+				Key nk = xh.get_key( p*cen0 );
 				vsamp.push_back( xh.get_center(nk).translation() );
 				bool fail = nbrs_set.find(nk) == nbrs_set.end();
 				nfail += fail;
@@ -353,6 +349,7 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
 }
 
 TEST( XformHashNeighbors, DISABLED_________Quat_BCC7_Zorder_check_ori_neighbors ){
+	typedef uint64_t Key;
 	int NSAMP = 5;
 	double THRESH = 0.01;
 	#ifdef NDEBUG
@@ -375,30 +372,30 @@ TEST( XformHashNeighbors, DISABLED_________Quat_BCC7_Zorder_check_ori_neighbors 
 			// cout << "TEST ITER " << i << endl;
 			Xform x; numeric::rand_xform(rng,x);
 			x.translation()[0] = x.translation()[1] = x.translation()[2] = 0.0;
-			uint64_t key = xh.get_key(x);
+			Key key = xh.get_key(x);
 			Xform c = xh.get_center( key );
 
-			std::vector<uint64_t> const & nbrs = nb.get_ori_neighbors( key );
-			google::dense_hash_set<uint64_t> nbrs_set;
+			std::vector<Key> const & nbrs = nb.get_ori_neighbors( key );
+			google::dense_hash_set<Key> nbrs_set;
 			nbrs_set.set_empty_key(9999999999);
 			Eigen::Vector4d qpass(0,0,0,0), qfail(0,0,0,0);
 			int opass=0,ofail=0;
 			for(int j =0; j < nbrs.size(); ++j) nbrs_set.insert( nbrs[j] );
 			int nfail = 0;
-			std::vector<uint64_t> fails,passes;
+			std::vector<Key> fails,passes;
 			for(int j = 0; j < 300*NSAMP; ++j){
 				Xform p; numeric::rand_xform_quat(rng,p,cart_bound,quat_bound);
 				p.translation()[0] = p.translation()[1] = p.translation()[2] = 0.0;
-				uint64_t nk = xh.get_key( p*c ) & xh.ORI_MASK;
-				// nk = nk | (uint64_t)1; // debug... this makes it correct much more of the time....
+				Key nk = xh.get_key( p*c ) & xh.ORI_MASK;
+				// nk = nk | (Key)1; // debug... this makes it correct much more of the time....
 				bool fail = nbrs_set.find(nk) == nbrs_set.end();
 				nfail += fail;
-				uint64_t k = nk;
-				uint64_t o = k & 1;
-				uint64_t w =  util::undilate<7>( k>>4 ) & 63;
-				uint64_t x =  util::undilate<7>( k>>5 ) & 63;
-				uint64_t y =  util::undilate<7>( k>>6 ) & 63;
-				uint64_t z =  util::undilate<7>( k>>7 ) & 63;
+				Key k = nk;
+				Key o = k & 1;
+				Key w =  util::undilate<7>( k>>4 ) & 63;
+				Key x =  util::undilate<7>( k>>5 ) & 63;
+				Key y =  util::undilate<7>( k>>6 ) & 63;
+				Key z =  util::undilate<7>( k>>7 ) & 63;
 
 				if( fail ){ qfail += Eigen::Vector4d( w,x,y,z ); ofail += o; fails.push_back(nk); }
 				else      { qpass += Eigen::Vector4d( w,x,y,z ); opass += o; passes.push_back(nk); }
@@ -431,11 +428,12 @@ TEST( XformHashNeighbors, DISABLED_________Quat_BCC7_Zorder_check_ori_neighbors 
 }
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
+	typedef uint64_t Key;
 	int NSAMP = 5;
 	double THRESH = 0.003;
 	#ifdef NDEBUG
 	NSAMP = 10;
-	THRESH = 0.001;
+	THRESH = 0.002;
 	#endif
 	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
 	boost::uniform_real<> runif;
@@ -447,38 +445,45 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		double quat_bound=numeric::deg2quat(ang_bound);
 		// XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 5.0+runif(rng)*10.0, 10+runif(rng)*200.0 );
 		XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 10.0 );
-		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb( cart_bound, ang_bound, xh, NSAMP*100.0 );
+		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb( cart_bound, ang_bound, xh, NSAMP*50.0 );
 
 		for(int iter2 = 0; iter2 < NSAMP; ++iter2){
 			Xform x; numeric::rand_xform(rng,x);
-			uint64_t key = xh.get_key(x);
+			Key key = xh.get_key(x);
 			Xform c = xh.get_center( key );
 			// xh.print_key(key);
-			int ix = (int)((util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6);
-			int iy = (int)((util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6);
-			int iz = (int)((util::undilate<7>( key>>3 ) & 63) | ((key>>43)&127)<<6);
+			// int ix = (int)((util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6);
+			// int iy = (int)((util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6);
+			// int iz = (int)((util::undilate<7>( key>>3 ) & 63) | ((key>>43)&127)<<6);
 
-			std::set<uint64_t> nbrs_set; {
-				std::vector<uint64_t> const & ori_nbrs = nb.get_ori_neighbors( key );
-				std::vector< util::SimpleArray<3,int16_t> > shifts = nb.get_cart_shifts();
-				for(int j =0; j < ori_nbrs.size(); ++j){
-					uint64_t ori_key = ori_nbrs[j];
-					ori_key = xh.cart_shift_key( ori_key, ix, iy, iz );
-					// xh.print_key( ori_key );
-					for(int k=0; k < shifts.size(); ++k){
-						uint64_t nbkey0 = xh.cart_shift_key( ori_key, shifts[k][0], shifts[k][1], shifts[k][2], 0 );
-						uint64_t nbkey1 = xh.cart_shift_key( ori_key, shifts[k][0], shifts[k][1], shifts[k][2], 1 );
-						nbrs_set.insert( nbkey0 );
-						nbrs_set.insert( nbkey1 );
-					}
+			std::set<Key> nbrs_set; {
+
+				XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> >::crappy_iterator itr = nb.neighbors_begin(key);
+				XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> >::crappy_iterator end = nb.neighbors_end(key);
+				for( ; itr != end; ++itr){
+					nbrs_set.insert( *itr );
 				}
+
+				// std::vector<Key> const & ori_nbrs = nb.get_ori_neighbors( key );
+				// std::vector< util::SimpleArray<3,int16_t> > shifts = nb.get_cart_shifts();
+				// for(int j =0; j < ori_nbrs.size(); ++j){
+				// 	Key ori_key = ori_nbrs[j];
+				// 	ori_key = xh.cart_shift_key( ori_key, ix, iy, iz );
+				// 	// xh.print_key( ori_key );
+				// 	for(int k=0; k < shifts.size(); ++k){
+				// 		Key nbkey0 = xh.cart_shift_key( ori_key, shifts[k][0], shifts[k][1], shifts[k][2], 0 );
+				// 		Key nbkey1 = xh.cart_shift_key( ori_key, shifts[k][0], shifts[k][1], shifts[k][2], 1 );
+				// 		nbrs_set.insert( nbkey0 );
+				// 		nbrs_set.insert( nbkey1 );
+				// 	}
+				// }
 				// cout << nbrs_set.size() << " " << ori_nbrs.size() << " " << shifts.size() << endl;
 			}
 			
 			int nfail = 0;
 			for(int j = 0; j < 300*NSAMP; ++j){
 				Xform p; numeric::rand_xform_quat(rng,p,cart_bound,quat_bound);
-				uint64_t nk = xh.get_key( c*p );
+				Key nk = xh.get_key( c*p );
 				// Xform ncen = xh.get_center( nk );
 				bool fail = nbrs_set.find(nk) == nbrs_set.end();
 				nfail += fail;
@@ -493,6 +498,31 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 			ASSERT_LE( failfrac, THRESH );
 
 		}
+
+		std::ofstream out( "test.sxhn", std::ios::binary );
+		nb.save( out );
+		out.close();
+
+		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb2( cart_bound, ang_bound, xh, NSAMP*50.0 );
+		std::ifstream in( "test.sxhn", std::ios::binary );
+		ASSERT_TRUE( nb2.load( in ) );
+		in.close(); 
+
+		// XformHash const hasher_;
+		// std::map< Key, std::vector<Key> > ori_cache_;
+		// double cart_bound_, ang_bound_, quat_bound_;
+		// int nsamp_;
+		// std::vector< util::SimpleArray<3,int16_t> > cart_shifts_;
+		ASSERT_EQ( nb.hasher_, nb2.hasher_ );
+		ASSERT_EQ( nb.cart_bound_, nb2.cart_bound_ );				
+		ASSERT_EQ( nb.ang_bound_, nb2.ang_bound_ );
+		ASSERT_EQ( nb.quat_bound_, nb2.quat_bound_ );		
+		ASSERT_EQ( nb.nsamp_, nb2.nsamp_ );		
+		ASSERT_EQ( nb.ori_cache_.size(), nb2.ori_cache_.size() );		
+		ASSERT_EQ( nb.cart_shifts_.size(), nb2.cart_shifts_.size() );	
+		ASSERT_EQ( nb.ori_cache_, nb2.ori_cache_ );
+		ASSERT_EQ( nb.cart_shifts_, nb2.cart_shifts_ );		
+
 	}
 }
 

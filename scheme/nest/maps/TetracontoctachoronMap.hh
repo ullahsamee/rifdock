@@ -18,20 +18,6 @@ namespace scheme { namespace nest { namespace maps {
 
 	template<class Float> Float cell_width(){ return 2.0*sqrt(2.0)-2.0; }
 
-	static bool is_not_0(float  a){ return fabs(a) > 0.0001; } // need something higher than numeric_limits::epsilon
-	static bool is_not_0(double a){ return fabs(a) > 0.00000001; }	
-	template<class Q> Q to_half_cell(Q const & q){
-		return is_not_0(q.w()) ? ( q.w()>0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()) ) : (
-					// q
-		       		is_not_0(q.x()) ? ( q.x()>0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()) ) : (
-			       		is_not_0(q.y()) ? ( q.y()>0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()) ) : (
-				       		( q.z()>0 ? q : Q(-q.w(),-q.x(),-q.y(),-q.z()) )
-				       	)
-		       		)
-               );
-
-	}
-
 	template<class Float, class Index>
 	Eigen::Map<Eigen::Quaternion<Float>const> hbt24_cellcen(Index const & i){
 		// Float const * tmp = numeric::get_raw_48cell_half<Float>() + 4*i;
@@ -132,7 +118,7 @@ namespace scheme { namespace nest { namespace maps {
 			Index & cell_index
 		) const {
 			Quaternion<Float> q(value);
-			// q = to_half_cell(q);
+			// q = numeric::to_half_cell(q);
 			// // cout << "get q  " << q.coeffs().transpose() << endl;
 
 			Index h48_cell_index;
@@ -140,7 +126,7 @@ namespace scheme { namespace nest { namespace maps {
 
 			q = hbt24_cellcen<Float>( h48_cell_index ).inverse() * q;
 
-			q = to_half_cell(q);
+			q = numeric::to_half_cell(q);
 
 			// // cout << q.w() << endl;
 			// assert( q.w() > 0.7 );

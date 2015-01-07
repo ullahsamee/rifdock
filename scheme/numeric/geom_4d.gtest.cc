@@ -20,6 +20,15 @@ using namespace Eigen;
 using std::cout;
 using std::endl;
 
+TEST( geom_4d, quat_half_cell ){
+	ASSERT_EQ( -0.0, 0.0 );
+	ASSERT_EQ( numeric::to_half_cell(Eigen::Quaterniond( -1, 1, 1, 1 ) ).w(), 1.0 );
+	ASSERT_EQ( numeric::to_half_cell(Eigen::Quaterniond(  0,-1, 1, 1 ) ).x(), 1.0 );
+	ASSERT_EQ( numeric::to_half_cell(Eigen::Quaterniond(  0, 0,-1, 1 ) ).y(), 1.0 );
+	ASSERT_EQ( numeric::to_half_cell(Eigen::Quaterniond(  0, 0, 0,-1 ) ).z(), 1.0 );
+}
+
+
 
 TEST( geom_4d , tetracontoctachoron_cell_lookup )
 {
