@@ -53,16 +53,6 @@ rand_xform(
 	x.data()[11] = runif(rng) * cart_bound - cart_bound/2.0;
 }
 
-template<class Float>
-Float rad2quat(Float rad){
-	return sqrt( 1.0 - cos( rad/2.0 )*cos( rad/2.0 ) );
-}
-template<class Float>
-Float deg2quat(Float deg){
-	Float rad = deg*M_PI/180.0;
-	return rad2quat(rad);
-}
-
 template<class T>
 void
 rand_xform_quat(

@@ -4,6 +4,7 @@
 #include "scheme/util/SimpleArray.hh"
 #include "scheme/util/dilated_int.hh"
 #include "scheme/nest/maps/TetracontoctachoronMap.hh"
+#include "scheme/numeric/util.hh"
 #include "scheme/numeric/bcc_lattice.hh"
 
 #include <bitset>
@@ -214,8 +215,8 @@ struct XformHash_Quat_BCC7_Zorder {
 		return key;								
 	}
 
-	Xform get_center(Key key) const {
-		bool odd = key & (Key)1;
+	I7 get_indices(Key key, bool & odd) const {
+		odd = key & (Key)1;
 		I7 i7;
 		i7[0] = (util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6;
 		i7[1] = (util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6;
@@ -224,6 +225,12 @@ struct XformHash_Quat_BCC7_Zorder {
 		i7[4] =  util::undilate<7>( key>>5 ) & 63;
 		i7[5] =  util::undilate<7>( key>>6 ) & 63;
 		i7[6] =  util::undilate<7>( key>>7 ) & 63;
+		return i7;		
+	}
+
+	Xform get_center(Key key) const {
+		bool odd;
+		I7 i7 = get_indices(key,odd);
 		// std::cout << i7 << std::endl << std::endl;							
 		F7 f7 = grid_.get_center(i7,odd);
 		// std::cout << f7 << std::endl;
@@ -326,17 +333,24 @@ struct XformHash_Quat_BCC7_Zorder {
 	Key num_key_symmetries() const { return 16; }
 
 	void print_key(Key key) const {
-		bool odd = key & (Key)1;
-		I7 i7;
-		i7[0] = (util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6;
-		i7[1] = (util::undilate<7>( key>>2 ) & 63) | ((key>>50)&127)<<6;
-		i7[2] = (util::undilate<7>( key>>3 ) & 63) | ((key>>43)&127)<<6;
-		i7[3] =  util::undilate<7>( key>>4 ) & 63;
-		i7[4] =  util::undilate<7>( key>>5 ) & 63;
-		i7[5] =  util::undilate<7>( key>>6 ) & 63;
-		i7[6] =  util::undilate<7>( key>>7 ) & 63;
+		bool odd;
+		I7 i7 = get_indices(key,odd);
 		std::cout << i7 << " " << odd << std::endl;
+	}
 
+	F7 lever_coord( Key key, Float lever_dist, F7 const & ref ) const {
+		bool odd;
+		I7 i7 = get_indices(key,odd);
+		F7 f7 = grid_.get_center(i7,odd);
+		Eigen::Quaternion<Float> q( f7[3], f7[4], f7[5], f7[6] );
+		q.normalize();
+		Eigen::Quaternion<Float> qref( ref[3], ref[4], ref[5], ref[6] );
+		bool const neg = q.dot( qref ) < 0.0;
+		f7[3] = ( neg? -q.w() : q.w() ) * lever_dist * 2.0;
+		f7[4] = ( neg? -q.x() : q.x() ) * lever_dist * 2.0;
+		f7[5] = ( neg? -q.y() : q.y() ) * lever_dist * 2.0;
+		f7[6] = ( neg? -q.z() : q.z() ) * lever_dist * 2.0;
+		return f7;
 	}
 
 };

@@ -31,7 +31,7 @@ TEST( XformMap, stores_correctly ){
 		Xform x;
 		numeric::rand_xform( rng, x, 256.0 );
 		double val = runif(rng);
-		xmap[x] = val;
+		xmap.insert(x,val);
 		dat.push_back( std::make_pair(x,val) );
 	}
 
@@ -68,6 +68,85 @@ TEST( XformMap, stores_correctly ){
 		// cout << x.translation().transpose() << " " << v << endl;
 	}
 
+
+}
+
+double get_ident_lever_dis( Xform x, double lever_dis ){
+	util::SimpleArray<7,double> x_lever_coord;
+	x_lever_coord[0] = x.translation()[0];
+	x_lever_coord[1] = x.translation()[1];
+	x_lever_coord[2] = x.translation()[2];
+	Eigen::Matrix<double,3,3> rot;
+	get_transform_rotation( x, rot );
+	Eigen::Quaternion<double> q(rot);
+	bool neg = q.w()<0.0;
+	x_lever_coord[3] = ( neg? -q.w() : q.w() ) * 2.0 * lever_dis;
+	x_lever_coord[4] = ( neg? -q.x() : q.x() ) * 2.0 * lever_dis;
+	x_lever_coord[5] = ( neg? -q.y() : q.y() ) * 2.0 * lever_dis;
+	x_lever_coord[6] = ( neg? -q.z() : q.z() ) * 2.0 * lever_dis;
+	util::SimpleArray<7,double> ident(0,0,0,lever_dis*2.0,0,0,0);
+	return (x_lever_coord-ident).norm();
+}
+
+TEST( XformMap, insert_sphere ){
+	int NSAMP2 = 10000;
+
+	typedef XformMap< Xform, double, 0 > XMap;
+	boost::random::mt19937 rng((unsigned int)time(0) + 3457820);
+	boost::uniform_real<> runif;
+	Xform x;
+	double cart_resl = 1.0;
+	double lever = 3.0;
+	double ang_resl = cart_resl/lever*180.0/M_PI;
+	XMap xmap( 1.00, ang_resl );
+	double rad = 3.0;
+	cout << "cart_resl " << cart_resl << " ang_resl " << ang_resl << " lever " << lever << " sphere rad " << rad << endl;
+	double angrad = rad/lever*180.0/M_PI;
+	double quatrad = numeric::deg2quat(angrad);
+	numeric::rand_xform( rng, x, 256.0 );
+	XformHashNeighbors< XMap::Hasher > nbcache( rad, angrad, xmap.hasher_, 500.0 );
+	int nbitercount = xmap.insert_sphere( x, rad, lever, 12345.0, nbcache );
+	cout << nbitercount << " " << xmap.count(12345.0) << " " << xmap.total_size()-(float)xmap.count(0) << " " << (float)xmap.count(0) / xmap.total_size() << " " << xmap.map_.size() << endl;
+	int n_cart_fail=0, n_rot_fail=0, n_both_fail=0;
+	int n_lever_false_pos=0, n_lever_false_neg=0, n_within=0, n_without=0;
+	for(int i = 0; i < NSAMP2; ++i){
+		Xform p;
+		numeric::rand_xform_quat(rng, p, rad, 0.0 );
+		if( xmap[ x*p ] != 12345.0 ) ++n_cart_fail;
+
+		numeric::rand_xform_quat(rng, p, 0.0, quatrad );
+		if( xmap[ x*p ] != 12345.0 ) ++n_rot_fail;		
+
+		double split1 = runif(rng);
+		double split2 = sqrt( 1.0 - split1*split1 );
+		numeric::rand_xform_quat(rng, p, split1*rad, split2*quatrad );
+		if( xmap[ x*p ] != 12345.0 ) ++n_both_fail;		
+
+		numeric::rand_xform_quat(rng, p, 1.5*split1*rad, 1.5*split2*quatrad );
+		// numeric::rand_xform_quat(rng, p, rad, quatrad );		
+		if( get_ident_lever_dis(p,lever) < rad ){
+			++n_within;
+			if( xmap[ x*p ] != 12345.0 ) ++n_lever_false_neg;
+		} else {
+			++n_without;
+			if( xmap[ x*p ] == 12345.0 ) ++n_lever_false_pos;
+		}
+
+
+	}
+	cout << "CART FAIL FRAC " << (float)n_cart_fail/NSAMP2 << endl;
+	cout << "ROT  FAIL FRAC " << (float)n_rot_fail/NSAMP2  << endl;	
+	cout << "BOTH FAIL FRAC " << (float)n_both_fail/NSAMP2 << endl;	
+
+	cout << "FALSE POS " << (float)n_lever_false_pos/n_without << endl;
+	cout << "FALSE NEG " << (float)n_lever_false_neg/n_within	
+	      << ",  FRAC " << (float)n_within/NSAMP2 << endl;
+
+	ASSERT_LT( (float)n_cart_fail/NSAMP2, 0.03 );
+	ASSERT_LT( (float)n_rot_fail/NSAMP2, 0.03 );	
+	ASSERT_LT( (float)n_both_fail/NSAMP2, 0.005 );
+	ASSERT_LT( (float)n_lever_false_pos/n_without, 0.30 );
+	ASSERT_LT( (float)n_lever_false_neg/n_within , 0.01 );
 
 }
 

@@ -64,8 +64,7 @@ struct XformMap {
 		}
 	}
 
-	Val & operator[]( Xform const & x ){
-		Key k = hasher_.get_key( x );
+	bool insert( Key k, Val val ){
 		Key k0 = k >> ArrayBits;
 		Key k1 = k & (((Key)1<<ArrayBits)-1);
 		typename Map::iterator iter = map_.find(k0);
@@ -73,23 +72,75 @@ struct XformMap {
 			ValArray aval(0);
 			iter = map_.insert( std::make_pair(k0,aval) ).first; // TODO: should check for failuer here
 		}
-		return iter->second[k1];
+		iter->second[k1] = val;
 	}
-	Val operator[]( Xform const & x ) const {
-		Key k = hasher_.get_key( x );
+	bool insert( Xform const & x, Val val ){
+		return this->insert( hasher_.get_key( x ), val );
+	}
+	Val operator[]( Key k ) const {
 		Key k0 = k >> ArrayBits;
 		Key k1 = k & (((Key)1<<ArrayBits)-1);
 		typename Map::const_iterator iter = map_.find(k0);
 		if( iter == map_.end() ){ return 0.0; }
 		return iter->second[k1];
+		// return ( iter == map_.end() ) ? 0.0 : iter->second[k1];
+	}
+	Val operator[]( Xform const & x ) const {
+		return this->operator[]( hasher_.get_key( x ) );
 	}
 
-	void insert_sphere(
+	int insert_sphere(
 		Xform const & x,
+		Float lever_radius,
+		Float lever_dis,
 		Val value,
-		XformHashNeighbors<Hasher> & cache
+		XformHashNeighbors<Hasher> & nbcache
 	){
-		// TODO
+		Float thresh2 = lever_radius + cart_resl_/2.0;
+		thresh2 = thresh2 * thresh2;
+		Key key = hasher_.get_key( x );
+		util::SimpleArray<7,Float> x_lever_coord;
+		x_lever_coord[0] = x.translation()[0];
+		x_lever_coord[1] = x.translation()[1];
+		x_lever_coord[2] = x.translation()[2];
+		Eigen::Matrix<Float,3,3> rot;
+		get_transform_rotation( x, rot );
+		Eigen::Quaternion<Float> q(rot);
+		x_lever_coord[3] = q.w() * 2.0 * lever_dis;
+		x_lever_coord[4] = q.x() * 2.0 * lever_dis;
+		x_lever_coord[5] = q.y() * 2.0 * lever_dis;
+		x_lever_coord[6] = q.z() * 2.0 * lever_dis;
+		typename XformHashNeighbors<Hasher>::crappy_iterator itr = nbcache.neighbors_begin(key);
+		typename XformHashNeighbors<Hasher>::crappy_iterator end = nbcache.neighbors_end(key);
+		int nbcount=0, count=0;
+
+		for( ; itr != end; ++itr){
+			Key nbkey = *itr;
+			util::SimpleArray<7,Float> nb_lever_coord = hasher_.lever_coord( nbkey, lever_dis, x_lever_coord );
+			// std::cerr << "NB_KEY " << nbkey << " " << (nb_lever_coord-x_lever_coord).norm() << std::endl;
+			// std::cerr << x_lever_coord << std::endl;
+			// std::cerr << nb_lever_coord << std::endl;
+			if( (nb_lever_coord-x_lever_coord).squaredNorm() <= thresh2 ){
+				insert( nbkey, value );
+				++nbcount;
+			}
+			++count;
+		}
+		return nbcount;
+		// std::cout << (float)nbcount / count << std::endl;
+
+	}
+
+	size_t total_size() const { return map_.size()*(1<<ArrayBits); }
+
+	size_t count( Val val ) const {
+		int count = 0;
+		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
+			for(int j = 0; j < (1<<ArrayBits); ++j){
+				if( i->second[j] == val ) ++count;
+			}
+		}
+		return count;
 	}
 
 	bool save( std::ostream & out ) {
@@ -114,6 +165,8 @@ struct XformMap {
 		// std::cout << "SIZE " << s << std::endl;
 		out.write( (char*)&s, sizeof(size_t) );
 		out.write( hasher_.name().c_str(), hasher_.name().size()*sizeof(char) );
+		int tmp = ArrayBits;
+		out.write( (char*)&tmp, sizeof(int) );
 		out.write( (char*)&cart_resl_, sizeof(Float) );
 		out.write( (char*)&ang_resl_, sizeof(Float) );		
 		out.write( (char*)&cart_bound_, sizeof(Float) );		
@@ -146,6 +199,13 @@ struct XformMap {
 			std::cerr << "XformMap::load, hasher type mismatch, expected " << hasher_.name() << " got "  << buf << std::endl;
 			return false;
 		}
+		int tmparraybits;
+		in.read( (char*)&tmparraybits, sizeof(int) );
+		if( ArrayBits != tmparraybits ){
+			std::cerr << "XformMap::load, ArrayBits, expected " << ArrayBits << " got "  << tmparraybits << std::endl;
+			return false;
+		}
+
 		Float cart_resl, ang_resl, cart_bound;
 		in.read((char*)&cart_resl,sizeof(Float));
 		in.read((char*)&ang_resl,sizeof(Float));

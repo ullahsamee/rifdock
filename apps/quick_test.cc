@@ -60,8 +60,8 @@
 // #include "scheme/objective/methods/hbond_5dof.gtest.cc"
 
 // #include "scheme/objective/hash/XformHash.gtest.cc"
-#include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
-// #include "scheme/objective/hash/XformMap.gtest.cc"
+// #include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
+#include "scheme/objective/hash/XformMap.gtest.cc"
 
 int main(int argc, char **argv)
 {

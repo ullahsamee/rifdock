@@ -1,6 +1,7 @@
 #ifndef INCLUDED_numeric_util_HH
 #define INCLUDED_numeric_util_HH
 
+#include <math.h>
 #include <limits>
 
 namespace scheme { namespace numeric {
@@ -24,6 +25,18 @@ max2(
 	mx1 = vector.maxCoeff(&argmax_1);
 	vector[argmax_1] = -std::numeric_limits<typename Vector::Scalar>::max();
 	mx2 = vector.maxCoeff(&argmax_2);
+}
+
+
+
+template<class Float>
+Float rad2quat(Float rad){
+	return sqrt( 1.0 - cos( rad/2.0 )*cos( rad/2.0 ) );
+}
+template<class Float>
+Float deg2quat(Float deg){
+	Float rad = deg*M_PI/180.0;
+	return rad2quat(rad);
 }
 
 

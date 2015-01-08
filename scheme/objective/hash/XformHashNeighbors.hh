@@ -49,7 +49,7 @@ private:
     friend class boost::iterator_core_access;
     void increment(){
     	++i3;
-    	if( i3 == 2                ){ i3 = 0; ++i2; }
+    	if( i3 == 2                 ){ i3 = 0; ++i2; }
     	if( i2 == shifts_->size()   ){ i2 = 0; ++i1; }
     	if( i1 == ori_nbrs_->size() ){ end = true; }
     }
@@ -64,6 +64,10 @@ private:
     	std::cerr << "will needs to implement XformHashNeighborIterator comparison" << std::endl;
     }
 };
+template< class XformHash >
+std::ostream & operator<<( std::ostream & out, XformHashNeighborIterator<XformHash> const & i ){
+	return out << "XformHashNeighborIterator( " << i.i1 << " " << i.i2 << " " << i.i3 << " " << i.end << " )";
+}
 
 
 
@@ -82,19 +86,26 @@ struct XformHashNeighbors {
 	std::vector< util::SimpleArray<3,int16_t> > cart_shifts_;
 
 
-	XformHashNeighbors( Float cart_bound, Float ang_bound, XformHash xh, double xcov_target=100.0 ) : hasher_(xh) {
+	XformHashNeighbors(
+		Float cart_bound,
+		Float ang_bound, // degrees
+		XformHash xh,
+		double xcov_target=100.0
+	) : hasher_(xh) {
 		cart_bound_ = cart_bound;
 		ang_bound_ = ang_bound;
 		quat_bound_ = numeric::deg2quat(ang_bound);
 		Float ang_nside = 2.0 * quat_bound_ / hasher_.ang_width();
 		nsamp_ = ang_nside*ang_nside*ang_nside*3.0*xcov_target; // ~100 fold coverage
-		std::cout << "XformHashNeighbors aw=" << hasher_.ang_width() << ", quat_bound=" << quat_bound_ << " ang_nside=" << ang_nside << " nsamp=" << nsamp_ << std:: endl;
 		fill_cart_shifts();
+		std::cout << "XformHashNeighbors aw=" << hasher_.ang_width() << ", quat_bound=" << quat_bound_ 
+		          << " ang_nside=" << ang_nside << " nsamp=" << nsamp_ << " cart_shifts=" << cart_shifts_.size() << std:: endl;
 	}
 
 	void fill_cart_shifts(){
 		Float thresh = cart_bound_+hasher_.cart_width();
 		int16_t di = std::ceil( cart_bound_ / hasher_.cart_width() ) ;
+		assert( di >= 0 );
 		for(int16_t i = -di; i <= di; ++i){
 		for(int16_t j = -di; j <= di; ++j){
 		for(int16_t k = -di; k <= di; ++k){					
@@ -128,6 +139,7 @@ struct XformHashNeighbors {
 		if( ori_cache_.find(ori_key) == ori_cache_.end() ){
 			Key ksym, asym_key = hasher_.asym_key( ori_key, ksym );
 			// if( asym_key==ori_key ){
+			// TODO: figure out how to get quat key symmetries working
 			if( true ){
 				// std::cout << "get_asym nbrs the hard way, store in " << ori_key << std::endl;
 				boost::random::mt19937 rng((unsigned int)time(0) + 23058704);
@@ -141,6 +153,7 @@ struct XformHashNeighbors {
 					// assert( ( nbkey & ~XformHash::ORI_MASK ) == 0 );
 					keys.insert(nbkey);
 				}
+				assert( keys.size() > 0 );
 				ori_cache_.insert( std::make_pair( ori_key, std::vector<Key>(keys.size()) ) );
 				std::copy(keys.begin(),keys.end(),ori_cache_[ori_key].begin());
 
