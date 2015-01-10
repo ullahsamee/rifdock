@@ -53,13 +53,13 @@ struct XformMap {
 	ElementSerializer element_serializer_;
     Float cart_resl_, ang_resl_, cart_bound_;
 
-	XformMap( Float cart_resl=-1, Float ang_resl=-1, Float cart_bound=512.0 )
+	XformMap( Float cart_resl=-1.0, Float ang_resl=-1.0, Float cart_bound=512.0 )
 	{
 		map_.set_empty_key( std::numeric_limits<Key>::max() );
 		cart_resl_ = cart_resl;
 		ang_resl_ = ang_resl;
 		cart_bound_ = cart_bound;
-		if( cart_resl_ != -1 && ang_resl != -1 ){
+		if( cart_resl_ != -1.0 && ang_resl != -1.0 ){
 			hasher_.init( cart_resl, ang_resl, cart_bound );
 		}
 	}
@@ -69,7 +69,7 @@ struct XformMap {
 		Key k1 = k & (((Key)1<<ArrayBits)-1);
 		typename Map::iterator iter = map_.find(k0);
 		if( iter == map_.end() ){
-			ValArray aval(0);
+			ValArray aval(0.0);
 			iter = map_.insert( std::make_pair(k0,aval) ).first; // TODO: should check for failuer here
 		}
 		iter->second[k1] = val;

@@ -4,7 +4,10 @@
 #include <boost/multi_array.hpp>
 #include "scheme/util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
+
+#ifdef CEREAL
 #include <cereal/access.hpp>
+#endif
 //#include <boost/serialization/access.hpp>
 //#include <boost/serialization/split_member.hpp>
 
@@ -68,8 +71,10 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 		return lb_==o.lb_ && ub_==o.ub_ && cs_==o.cs_ && (BASE const &)o == (BASE const &)*this;
 	}
 
+	#ifdef CEREAL
 	// friend class boost::serialization::access;
     friend class cereal::access; // befriend the cereal version of access
+    #endif
 
     template<class Archive> void save(Archive & ar, const unsigned int ) const {
         ar & lb_;

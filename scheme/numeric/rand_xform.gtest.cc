@@ -2,7 +2,7 @@
 
 #include "scheme/numeric/rand_xform.hh"
 #include "scheme/numeric/bcc_lattice.hh"
-
+#include "scheme/numeric/util.hh"
 #include <boost/timer/timer.hpp>
 #include <map>
 
@@ -50,7 +50,7 @@ TEST( rand_xform, ori_correctness ){
 	for(int a = 0; a < NSAMP; ++a){
 
 		double ANG = 0.1 + runif(rng)*119.8;
-		double quat_bound=deg2quat(ANG) , max_ang=0.0;
+		double quat_bound=numeric::deg2quat(ANG) , max_ang=0.0;
 
 		Xform x;
 		for(int i = 0; i < 1000; ++i){

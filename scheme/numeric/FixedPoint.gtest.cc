@@ -12,16 +12,16 @@ TEST( FixedPoint, test ){
 	typedef FixedPoint<-17> Fm17;
 	Fm17 f;
 
-	for(double d = 0; d > -15.0; d -= 0.1){
+	for(float d = 0; d > -15.0; d -= 0.1){
 		f = d;
-		ASSERT_EQ( (double)f, (int)(d*-17.0)/-17.0 );
+		ASSERT_FLOAT_EQ( (float)f, (int)(d*-17.0)/-17.0 );
 	}
 
 	f = -999.0;
-	ASSERT_EQ( (double)f, -255.0/17.0 );	
+	ASSERT_FLOAT_EQ( (float)f, -255.0/17.0 );	
 
 	f = 1.0;
-	ASSERT_EQ( (double)f, 0.0 );
+	ASSERT_FLOAT_EQ( (float)f, 0.0 );
 
 }
 

@@ -8,12 +8,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/exception/all.hpp>
 
+#ifdef CEREAL
+
 #include <cereal/archives/binary.hpp>
 //#include <boost/archive/binary_oarchive.hpp>
 //#include <boost/archive/binary_iarchive.hpp>
 //#include <boost/serialization/vector.hpp>
 #include <cereal/types/vector.hpp>
 
+#endif
 
 namespace scheme { namespace io {
 

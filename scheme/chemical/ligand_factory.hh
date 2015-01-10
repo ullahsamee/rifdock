@@ -30,20 +30,19 @@ template<class Atom, class AtypeMap = RosettaAtypeMap>
 struct LigandFactory {
 
 	Atom make_atom_pdbline(std::string const & _line, int atype = -1){
-		using namespace boost;
 		/*
 ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	*/
-		std::string line = trim_copy(_line);
+		std::string line = boost::trim_copy(_line);
 		int const N = (int)line.size();
 		BOOST_VERIFY( N > 53 );
-		double x = lexical_cast<double>( trim_copy( line.substr(28,10) ) );
-		double y = lexical_cast<double>( trim_copy( line.substr(38,8) ) );
-		double z = lexical_cast<double>( trim_copy( line.substr(46,8) ) );
-		std::string atomname = trim_copy( line.substr(12,4) );
-		std::string resname  = trim_copy( line.substr(16,4) );
-		std::string elem = ""; if(N > 68) elem = trim_copy( line.substr(68) );
-		float occ  = 1.0; if(N > 58) occ  = lexical_cast<float>( trim_copy( line.substr(54,6) ) );
-		float bfac = 0.0; if(N > 64) bfac = lexical_cast<float>( trim_copy( line.substr(60,6) ) );
+		double x = boost::lexical_cast<double>( boost::trim_copy( line.substr(28,10) ) );
+		double y = boost::lexical_cast<double>( boost::trim_copy( line.substr(38,8) ) );
+		double z = boost::lexical_cast<double>( boost::trim_copy( line.substr(46,8) ) );
+		std::string atomname = boost::trim_copy( line.substr(12,4) );
+		std::string resname  = boost::trim_copy( line.substr(16,4) );
+		std::string elem = ""; if(N > 68) elem = boost::trim_copy( line.substr(68) );
+		float occ  = 1.0; if(N > 58) occ  = boost::lexical_cast<float>( boost::trim_copy( line.substr(54,6) ) );
+		float bfac = 0.0; if(N > 64) bfac = boost::lexical_cast<float>( boost::trim_copy( line.substr(60,6) ) );
 		if(atype==-1){
 			atype = AtypeMap::get_atom_type(resname,atomname);
 			// BOOST_VERIFY(atype >= 0);
@@ -55,8 +54,8 @@ ATOM      1  N1  BTN X   1       0.696 -12.422   3.375  1.00 20.00           N 	
 			atomname,
 			resname,
 			line[21],
-			lexical_cast<int>( trim_copy( line.substr(22,6) ) ),
-			lexical_cast<int>( trim_copy( line.substr( 6,6) ) ),
+			boost::lexical_cast<int>( boost::trim_copy( line.substr(22,6) ) ),
+			boost::lexical_cast<int>( boost::trim_copy( line.substr( 6,6) ) ),
 			elem,
 			line.substr(0,6)=="HETATM",
 			occ,

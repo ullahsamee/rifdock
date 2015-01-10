@@ -19,8 +19,10 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#ifdef CEREAL
 #include <cereal/access.hpp>
 #include <cereal/types/memory.hpp>
+#endif
 // #include <boost/serialization/access.hpp>
 // #include <boost/serialization/shared_ptr.hpp>
 
@@ -44,6 +46,7 @@ namespace impl {
 	template< class ActorContainer >
 	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
 		typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
+		Conformation(){}
 		template<class Actor>
 		void add_actor(Actor const & a){
 			this->template get<Actor>().insert(this->template get<Actor>().end(),a);
@@ -82,12 +85,14 @@ namespace impl {
 
 		Conformation const & conformation() const { return *conformation_; }
 
+		#ifdef CEREAL
 	    // friend class boost::serialization::access;
 	    friend class cereal::access;
     	template<class Archive> void serialize(Archive & ar, const unsigned int ){
 	    	ar & position_;
 	    	// ar & conformation_; // TODO: must switch this to std::shared_ptr!
 	    }
+	    #endif
 
 	    bool operator==(THIS const & o) const { return position_==o.position_ && *conformation_==*o.conformation_; }
 
@@ -148,6 +153,7 @@ namespace impl {
 		std::vector<Position> symframes_; // w/o identity
 		Index n_sym_bodies_;
 
+		#ifdef CEREAL
 	    // friend class boost::serialization::access;
 	    friend class cereal::access;
     	template<class Archive> void serialize(Archive & ar, const unsigned int ){
@@ -155,6 +161,7 @@ namespace impl {
 		    ar & symframes_;
 		    ar & n_sym_bodies_;
 	    }
+	    #endif
 	    bool operator==(THIS const & o) const {
 	    	return bodies_==o.bodies_ && symframes_==o.symframes_ && n_sym_bodies_==o.n_sym_bodies_;
 	    }
