@@ -4,10 +4,12 @@
 #include "scheme/types.hh"
 #include <cmath>
 #include <boost/assert.hpp>
-// #include <boost/serialization/access.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_arithmetic.hpp>
+#include <boost/static_assert.hpp>
 
 #ifdef CEREAL
+// #include <boost/serialization/access.hpp>
 #include <cereal/access.hpp>
 #endif
 

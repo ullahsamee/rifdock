@@ -80,7 +80,7 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	}
 
 }
-TEST(QuaternionMap,DISABLED_covering){
+TEST( QuaternionMap, covering ){
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::normal_distribution<> gauss;
 	boost::uniform_real<> uniform;
@@ -104,8 +104,8 @@ TEST(QuaternionMap,DISABLED_covering){
 	// test cov rad
 	{
 		cout << "QuaternionMap Covrad" << endl;
-		int NRES = 7;
-		int NITER = 1000000;
+		int NRES = 6;
+		int NITER = 50000;
 		NEST<4,Eigen::Quaterniond,QuaternionMap> nest;
 		for(int r = 1; r <= NRES; ++r){
 			double maxdiff=0, avgdiff=0;

@@ -28,19 +28,22 @@ struct FieldCache3D : VoxelArray<3,Float> {
 		F2 const & ub,
 		F3 const & cs,
 		std::string const & cache_loc=""
-	) : BASE(lb,ub,cs), cache_loc_(cache_loc) {
+	) : BASE(lb,ub,cs), cache_loc_(cache_loc)
+	{
 		typename BASE::Indices extents;
 		for(size_t i = 0; i < BASE::DIM; ++i) extents[i] = this->shape()[i];
-		if( io::read_cache(cache_loc_,*this) ){
-			bool extents_eq = true;
-			for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
-			if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ){
-				std::cout << "EXTENTS EQ, USING CACHE" << std::endl;
-				return;
-			}
-			std::cout << "Warning, FieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
-			this->resize(extents);
-		} // else {
+		#ifdef CEREAL
+			if( io::read_cache(cache_loc_,*this) ){
+				bool extents_eq = true;
+				for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
+				if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ){
+					std::cout << "EXTENTS EQ, USING CACHE" << std::endl;
+					return;
+				}
+				std::cout << "Warning, FieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
+				this->resize(extents);
+			} // else {
+		#endif
 		// 	std::cout << "NO CACHE" << std::endl;
 		// }
 		// TODO: this should probable be based on integer indices...
@@ -49,7 +52,9 @@ struct FieldCache3D : VoxelArray<3,Float> {
 		for(Float h = this->lb_[2]+this->cs_[2]/2.0; h < this->ub_[2]+this->cs_[2]/2.0; h += this->cs_[2]){
 			this->operator[]( Float3(f,g,h) ) = field(f,g,h);
 		}}}
-		io::write_cache(cache_loc_,*this);
+		#ifdef CEREAL
+			io::write_cache(cache_loc_,*this);
+		#endif
 	}
 
 };
@@ -89,13 +94,15 @@ struct BoundingFieldCache3D : VoxelArray<3,Float> {
 		Float3 ub = ref.ub_+spread;
 		typename BASE::Indices extents;
 		for(size_t i = 0; i < BASE::DIM; ++i) extents[i] = this->shape()[i];
-		if( io::read_cache(cache_loc_,*this) ){
-			bool extents_eq = true;
-			for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
-			if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ) return;
-			std::cout << "Warning, BoundingFieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
-			this->resize(extents);
-		}
+		#ifdef CEREAL
+			if( io::read_cache(cache_loc_,*this) ){
+				bool extents_eq = true;
+				for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
+				if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ) return;
+				std::cout << "Warning, BoundingFieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
+				this->resize(extents);
+			}
+		#endif
 		// size_t ncalls = 0;
 		for(Float f = this->lb_[0]+this->cs_[0]/2.0; f < this->ub_[0]+this->cs_[0]/2.0; f += this->cs_[0]){
 		for(Float g = this->lb_[1]+this->cs_[1]/2.0; g < this->ub_[1]+this->cs_[1]/2.0; g += this->cs_[1]){
@@ -103,7 +110,9 @@ struct BoundingFieldCache3D : VoxelArray<3,Float> {
 			// ++ncalls;
 			this->operator[]( Float3(f,g,h) ) = calc_val(Float3(f,g,h));
 		}}}
-		io::write_cache(cache_loc_,*this);
+		#ifdef CEREAL
+			io::write_cache(cache_loc_,*this);
+		#endif
 	}
 	Float calc_val(Float3 const & f3) const {
 		Float3 beg = ref_.lb_.max(f3-spread_);

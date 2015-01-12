@@ -140,30 +140,30 @@ void fill_and_test_map(Map * hp){
 
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
-TEST(test_hash, DISABLED_sparse_vs_dense){
-	// SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
+// TEST(test_hash, DISABLED_sparse_vs_dense){
+// 	// SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
 
-	google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > d;
-	d.set_empty_key(std::numeric_limits<uint64_t>::max());
+// 	google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > d;
+// 	d.set_empty_key(std::numeric_limits<uint64_t>::max());
 
-	// google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > s;
+// 	// google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > s;
 
-	// fill_and_test_map(n,"google_dense",m,"segment_gdh ");
-	cout << "====================== DENSE ======================" << endl;
+// 	// fill_and_test_map(n,"google_dense",m,"segment_gdh ");
+// 	cout << "====================== DENSE ======================" << endl;
 
-	int64_t MAXIDX = 3000ll*1000ll*1000ll;
-	int64_t NSAMP = 10ll*1000ll*1000ll;
-	fill_map( d, MAXIDX, 100 );
-	test_map( &d, MAXIDX, NSAMP );
-	d.clear();
+// 	int64_t MAXIDX = 3000ll*1000ll*1000ll;
+// 	int64_t NSAMP = 10ll*1000ll*1000ll;
+// 	fill_map( d, MAXIDX, 100 );
+// 	test_map( &d, MAXIDX, NSAMP );
+// 	d.clear();
 
-	fill_and_test_map(&d);
-	d.clear();
+// 	fill_and_test_map(&d);
+// 	d.clear();
 
-	// cout << "====================== SPARSE =====================" << endl;
-	// fill_and_test_map(s); s.clear();
+// 	// cout << "====================== SPARSE =====================" << endl;
+// 	// fill_and_test_map(s); s.clear();
 
-}
+// }
 
 
 

@@ -59,7 +59,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=XformHashNeighbors.Quat_BCC7_Zorder_check_rotations"
+            argument = "--gtest_filter=*FieldCache*"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument

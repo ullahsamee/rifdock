@@ -23,7 +23,7 @@ namespace bf = boost::fusion;
 namespace mpl = boost::mpl;
 
 
-TEST(ContainerInstanceMap,basic_test){
+TEST( ContainerInstanceMap, basic_test ){
 	ContainerInstanceMap< m::vector<
 		std::vector<int>,
 		std::vector<char> 
@@ -38,7 +38,7 @@ TEST(ContainerInstanceMap,basic_test){
 	ASSERT_EQ( cmap.get<char>().at(1), 'h' );
 }
 
-TEST(ContainerInstanceMap,vector_default_test){
+TEST( ContainerInstanceMap, vector_default_test ){
 	ContainerInstanceMap< m::vector<
 		int, // defaults to vector<int>
 		char // defaults to vector<char>
@@ -51,7 +51,7 @@ TEST(ContainerInstanceMap,vector_default_test){
 	ASSERT_EQ( cmap.get<char>().at(1), 'h' );
 }
 
-TEST(ContainerInstanceMap,vector_default_set_test){
+TEST( ContainerInstanceMap, vector_default_set_test ){
 	ContainerInstanceMap< m::vector<
 		int, // defaults to vector<int>
 		std::set<char> 
@@ -66,7 +66,7 @@ TEST(ContainerInstanceMap,vector_default_set_test){
 	ASSERT_EQ( tmp.find('b'), tmp.end() );
 }
 
-TEST(ContainerInstanceMap,simple_array_test){
+TEST( ContainerInstanceMap, simple_array_test ){
 	ContainerInstanceMap< m::vector<
 		SimpleArray<2,int>,
 		SimpleArray<2,size_t>
@@ -80,29 +80,33 @@ TEST(ContainerInstanceMap,simple_array_test){
 	ASSERT_EQ( tmp.at(1), (size_t)2 );
 }
 
-TEST(ContainerInstanceMap,serialization_SimpleArray){
-	ContainerInstanceMap< m::vector<
-		SimpleArray<2,int>,
-		SimpleArray<2,size_t>
-	> > cmap;
-	cmap.get<int>().at(0) = -1;
-	cmap.get<int>().at(1) = -2;
-	cmap.get<size_t>()[0] = 1;
-	cmap.get<size_t>()[1] = 2;
-	ASSERT_EQ( cmap, io::test_serialization(cmap) );
+TEST( ContainerInstanceMap, serialization_SimpleArray ){
+	#ifdef CEREAL
+		ContainerInstanceMap< m::vector<
+			SimpleArray<2,int>,
+			SimpleArray<2,size_t>
+		> > cmap;
+		cmap.get<int>().at(0) = -1;
+		cmap.get<int>().at(1) = -2;
+		cmap.get<size_t>()[0] = 1;
+		cmap.get<size_t>()[1] = 2;
+		ASSERT_EQ( cmap, io::test_serialization(cmap) );
+	#endif
 }
 
-TEST(ContainerInstanceMap,serialization_vector){
-	ContainerInstanceMap< m::vector<
-		std::vector<int>,
-		std::vector<size_t>
-	> > cmap;
-	cmap.get<int>().push_back(-1);
-	cmap.get<int>().push_back(6);
-	cmap.get<int>().push_back(7);		
-	cmap.get<size_t>().push_back(3);
-	cmap.get<size_t>().push_back(924);
-	ASSERT_TRUE( cmap == io::test_serialization(cmap) );
+TEST( ContainerInstanceMap, serialization_vector ){
+	#ifdef CEREAL
+		ContainerInstanceMap< m::vector<
+			std::vector<int>,
+			std::vector<size_t>
+		> > cmap;
+		cmap.get<int>().push_back(-1);
+		cmap.get<int>().push_back(6);
+		cmap.get<int>().push_back(7);		
+		cmap.get<size_t>().push_back(3);
+		cmap.get<size_t>().push_back(924);
+		ASSERT_TRUE( cmap == io::test_serialization(cmap) );
+	#endif
 }
 
 }

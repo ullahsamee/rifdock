@@ -313,7 +313,7 @@ TEST(bcc_lattice,neighbors){
 	EXPECT_LE( 0.69, v2 );
 	EXPECT_LE( 0.64, v3 );
 	EXPECT_LE( 0.59, v4 );
-	EXPECT_LE( 0.53, v5 );
+	EXPECT_LE( 0.51, v5 );
 	// cout << test_bcc_neighbors<3,double,size_t>(1000000) << endl; // 0.779427
 	// cout << test_bcc_neighbors<4,double,size_t>(1000000) << endl; // 0.75
 	// cout << test_bcc_neighbors<5,double,size_t>(1000000) << endl; // 0.7

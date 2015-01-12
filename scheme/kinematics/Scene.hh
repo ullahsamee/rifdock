@@ -62,10 +62,11 @@ namespace impl {
 	struct BodyTplt {
 		typedef BodyTplt<_Conformation,_Position,Index> THIS;
 		typedef _Conformation Conformation;
+		typedef _Conformation ConformationConst; // TODO: fix this, requires figuring out Cereal load_and_construct
 		typedef _Position Position;
 
 		BodyTplt() : position_(), conformation_() {}
-		BodyTplt(shared_ptr<Conformation const> c) : position_(),conformation_(c) {}
+		BodyTplt(shared_ptr<ConformationConst> c) : position_(),conformation_(c) {}
 
 		template<class Actor> 
 		Actor
@@ -86,19 +87,19 @@ namespace impl {
 		Conformation const & conformation() const { return *conformation_; }
 
 		#ifdef CEREAL
-	    // friend class boost::serialization::access;
-	    friend class cereal::access;
-    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
-	    	ar & position_;
-	    	// ar & conformation_; // TODO: must switch this to std::shared_ptr!
-	    }
+		    // friend class boost::serialization::access;
+		    friend class cereal::access;
+	    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+		    	ar & position_;
+		    	ar & conformation_;
+		    }
 	    #endif
 
 	    bool operator==(THIS const & o) const { return position_==o.position_ && *conformation_==*o.conformation_; }
 
 	 private:
 		Position position_;
-		shared_ptr<Conformation const> conformation_;
+		shared_ptr<ConformationConst> conformation_;
 	 };
 
 	using m::true_;
@@ -125,6 +126,40 @@ namespace impl {
 
 }
 
+template<
+	class _Position,
+	class _Index = size_t
+>
+struct SceneBase {
+	typedef _Index Index;
+	typedef _Position Position;
+
+	// members
+		std::vector<Position> symframes_; // include identity at first position
+		Index n_sym_bodies_, n_bodies_;
+
+	SceneBase() : n_bodies_(0), n_sym_bodies_(0), symframes_(1,Position::Identity()) {}
+
+	virtual void set_position( Index i, Position const & newp ) = 0;
+	virtual Position position( Index i ) const = 0;
+
+	// symmetry stuff, doesn't need to be Conformation-sepcific
+		void update_symmetry( Index nbodies ){
+			n_bodies_ = nbodies;
+			n_sym_bodies_ = n_bodies_*((Index)symframes_.size());
+		}
+		Index sym_index_map(Index & i) const {
+			Index isym = i / n_bodies_;
+			i = i % n_bodies_;
+			return isym;
+		}
+		void set_symmetry(std::vector<Position> const & sym){ symframes_ = sym; update_symmetry(n_bodies_); }
+		void add_symframe(Position const & symframe){ symframes_.push_back(symframe); update_symmetry(n_bodies_); }
+		std::vector<Position> const & symframes() const { return symframes_; }
+		Index nbodies() const { return n_sym_bodies_; }
+		Index nbodies_asym() const { return n_bodies_; }
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////// Scene / //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -137,12 +172,13 @@ namespace impl {
 		class _Position,
 		class _Index = size_t
 	>
-	struct Scene {
+	struct Scene : public SceneBase<_Position,_Index> {
 		
 		typedef Scene<_ActorContainers,_Position,_Index> THIS;
 		typedef _Position Position;
 		typedef _Index Index;
 		typedef impl::Conformation<_ActorContainers> Conformation;
+		typedef impl::Conformation<_ActorContainers> ConformationConst;
 		typedef typename Conformation::Actors Actors;
 		typedef impl::BodyTplt<Conformation,Position,Index> Body;
 		typedef std::vector<Body> Bodies;
@@ -150,76 +186,64 @@ namespace impl {
 		typedef m::true_ UseVisitor;
 
 		Bodies bodies_;
-		std::vector<Position> symframes_; // w/o identity
-		Index n_sym_bodies_;
+
+
+		Scene(Index nbodies=0) : SceneBase<Position,Index>() {
+			for(Index i=0; i<nbodies; ++i) add_body();
+			this->update_symmetry( (Index)bodies_.size() );
+		}
+
+		
+		virtual Position position(Index i) const {
+			Index isym = this->sym_index_map(i);
+			// if( isym == 0 )	return                    bodies_.at(i).position();
+			/*else*/ return this->symframes_.at(isym) * bodies_.at(i).position();
+		}
+		virtual void set_position(Index i, Position const & newp){
+			assert(i < bodies_.size());
+			bodies_[i].set_position(newp);
+		}
 
 		#ifdef CEREAL
-	    // friend class boost::serialization::access;
-	    friend class cereal::access;
-    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
-	    	ar & bodies_;
-		    ar & symframes_;
-		    ar & n_sym_bodies_;
-	    }
+		    // friend class boost::serialization::access;
+		    friend class cereal::access;
+	    	template<class Archive> void serialize(Archive & ar, const unsigned int ){
+		    	ar & bodies_;
+			    ar & this->symframes_;
+		   		ar & this->n_sym_bodies_;
+		   		ar & this->n_bodies_;
+	    	}
 	    #endif
 	    bool operator==(THIS const & o) const {
-	    	return bodies_==o.bodies_ && symframes_==o.symframes_ && n_sym_bodies_==o.n_sym_bodies_;
+	    	return bodies_==o.bodies_ && this->symframes_==o.symframes_ && this->n_sym_bodies_==o.n_sym_bodies_;
 	    }
-
-
-		void update(){
-			n_sym_bodies_ = (Index)bodies_.size()*((Index)symframes_.size()+1);
-		}
-		Index sym_index_map(Index & i) const {
-			Index isym = i / bodies_.size();
-			i = i % bodies_.size();
-			return isym;
-		}
-
-		Scene(Index nbodies=0) { for(Index i=0; i<nbodies; ++i) add_body(); update(); }
-
-		void set_symmetry(std::vector<Position> const & sym){ symframes_ = sym; update(); }
-		void add_symframe(Position const & symframe){ symframes_.push_back(symframe); update(); }
-		std::vector<Position> const & symframes() const { return symframes_; }
 
 
 		/// mutators
-		void add_body(){ bodies_.push_back( make_shared<Conformation const>() ); update(); }
-		void add_body(shared_ptr<Conformation const> const & c){ bodies_.push_back(c); update(); }
-		void add_body(Body const & b){ bodies_.push_back(b); update(); }
-		void set_body(Index i, shared_ptr<Conformation const> const & c){ bodies_[i] = c; }
+		void add_body(){ bodies_.push_back( make_shared<ConformationConst>() ); this->update_symmetry( (Index)bodies_.size() ); }
+		void add_body(shared_ptr<ConformationConst> const & c){ bodies_.push_back(c); this->update_symmetry( (Index)bodies_.size() ); }
+		void add_body(Body const & b){ bodies_.push_back(b); this->update_symmetry( (Index)bodies_.size() ); }
+		void set_body(Index i, shared_ptr<ConformationConst> const & c){ bodies_[i] = c; }
 		void set_body(Index i, Body const & b){ bodies_[i] = b; }
 		Conformation & mutable_conformation_asym(Index i) { return const_cast<Conformation&>(bodies_.at(i).conformation()); }
 
 
 		Conformation const & conformation(Index i) const { return bodies_.at(i%bodies_.size()).conformation(); }
 		// Body const & body       (Index i) const { return bodies_.at(i); }
-		Position position(Index i) const {
-			Index isym = sym_index_map(i);
-			if( isym == 0 )	return              bodies_.at(i).position();
-			else return symframes_.at(isym-1) * bodies_.at(i).position();
-		}
-		void set_position(Index i, Position const & newp){
-			assert(i < bodies_.size());
-			bodies_[i].set_position(newp);
-		}
 
 		/// mainly internal use
 		Bodies const & __bodies_unsafe__() const { return bodies_; }
-		std::vector<Position> & __symframes_unsafe__(){ return symframes_; }		
+		std::vector<Position> & __symframes_unsafe__(){ return this->symframes_; }		
 
 		Position const & __position_unsafe_asym__(Index i) const { return bodies_[i].position(); }
 		Position       & __position_unsafe_asym__(Index i)       { return bodies_[i].position(); }
 		Position const __position_unsafe__(Index i) const { 
-			Index isym = sym_index_map(i);
-			if( isym == 0 )	return bodies_[i].position();
-			else return symframes_[isym-1] * bodies_[i].position();
+			Index isym = this->sym_index_map(i);
+			// if( isym == 0 )	return bodies_[i].position();
+			/*else*/ return this->symframes_[isym] * bodies_[i].position();
 		}
 		Conformation const & __conformation_unsafe_asym__(Index i) const { return bodies_[i].conformation(); }
 		Conformation const & __conformation_unsafe__(Index i) const { return bodies_[i%bodies_.size()].conformation(); }
-
-		Index nbodies() const { return n_sym_bodies_; }
-		Index nbodies_asym() const { return bodies_.size(); }
 
 		template<class Actor>
 		Actor get_actor(Index ib, Index ia) const {
@@ -282,7 +306,7 @@ namespace impl {
 			typedef typename f::result_of::value_at_key<Conformation,Actor>::type Container;
 			Index const NBOD = (Index)bodies_.size();
 			bool const symmetric = impl::get_Symmetric_true_<Visitor>::type::value;
-			Index const NSYM = symmetric ? (Index)symframes_.size()+1 : 1;
+			Index const NSYM = symmetric ? (Index)this->symframes_.size() : 1;
 			for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
 				Conformation const & c = conformation(i1);
 				Position     const & p =     position(i1);
@@ -318,7 +342,7 @@ namespace impl {
 			ContRange range;
 
 			Index const NBOD = (Index)bodies_.size();
-			Index const NSYM = (Index)symframes_.size()+1;
+			Index const NSYM = (Index)this->symframes_.size();
 			for(Index i1 = 0; i1 < NBOD*NSYM; ++i1){
 				Conformation const & c1 = conformation(i1);
 				Position     const & p1 =     position(i1);
@@ -565,7 +589,7 @@ namespace impl {
 		}
 		///@brief for symmetry, if either body not in asym unit, weight should be 0.5
 		double get_weight_from_placeholder(std::pair<std::pair<Index,Index>,std::pair<Index,Index> > const & ph ) const {
-			return ( ph.first.first < nbodies_asym() && ph.first.second < nbodies_asym() ) ? 1.0 : 0.5;
+			return ( ph.first.first < this->nbodies_asym() && ph.first.second < this->nbodies_asym() ) ? 1.0 : 0.5;
 		}
 
 

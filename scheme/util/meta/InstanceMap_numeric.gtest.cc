@@ -54,10 +54,12 @@ TEST(NumericInstanceMap,basic_test){
 }
 
 TEST(NumericInstanceMap,serialization){
-	using namespace dummy;
-	typedef NumericInstanceMap<m::vector<T,U,V>, m::always<double> > NMAP;
-	NMAP imap(1,2,3);
-	ASSERT_EQ( imap, io::test_serialization(imap) );
+	#ifdef CEREAL
+		using namespace dummy;
+		typedef NumericInstanceMap<m::vector<T,U,V>, m::always<double> > NMAP;
+		NMAP imap(1,2,3);
+		ASSERT_EQ( imap, io::test_serialization(imap) );
+	#endif
 }
 
 

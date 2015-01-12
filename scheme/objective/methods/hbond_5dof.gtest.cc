@@ -37,7 +37,7 @@ void dump_pdb(std::vector<T> const & v,std::string fname){
 	out.close();
 }
 
-TEST(hbond_5dof,DISABLED_test){
+TEST( hbond_5dof, DISABLED_test ){
 	using namespace Eigen;
 	typedef Transform<double,3,AffineCompact> Xform;
 	typedef Vector3d Position;

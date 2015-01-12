@@ -106,7 +106,8 @@ TEST( XformMap, insert_sphere ){
 	numeric::rand_xform( rng, x, 256.0 );
 	XformHashNeighbors< XMap::Hasher > nbcache( rad, angrad, xmap.hasher_, 500.0 );
 	int nbitercount = xmap.insert_sphere( x, rad, lever, 12345.0, nbcache );
-	cout << nbitercount << " " << xmap.count(12345.0) << " " << xmap.total_size()-(float)xmap.count(0) << " " << (float)xmap.count(0) / xmap.total_size() << " " << xmap.map_.size() << endl;
+	cout << nbitercount << " " << xmap.count(12345.0) << " " << xmap.total_size()-(float)xmap.count(0) 
+	     << " " << (float)xmap.count(0) / xmap.total_size() << " " << xmap.map_.size() << endl;
 	int n_cart_fail=0, n_rot_fail=0, n_both_fail=0;
 	int n_lever_false_pos=0, n_lever_false_neg=0, n_within=0, n_without=0;
 	for(int i = 0; i < NSAMP2; ++i){
@@ -144,7 +145,7 @@ TEST( XformMap, insert_sphere ){
 
 	ASSERT_LT( (float)n_cart_fail/NSAMP2, 0.03 );
 	ASSERT_LT( (float)n_rot_fail/NSAMP2, 0.03 );	
-	ASSERT_LT( (float)n_both_fail/NSAMP2, 0.005 );
+	ASSERT_LT( (float)n_both_fail/NSAMP2, 0.01 );
 	ASSERT_LT( (float)n_lever_false_pos/n_without, 0.30 );
 	ASSERT_LT( (float)n_lever_false_neg/n_within , 0.01 );
 

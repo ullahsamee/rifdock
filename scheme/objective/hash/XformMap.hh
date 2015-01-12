@@ -70,9 +70,12 @@ struct XformMap {
 		typename Map::iterator iter = map_.find(k0);
 		if( iter == map_.end() ){
 			ValArray aval(0.0);
-			iter = map_.insert( std::make_pair(k0,aval) ).first; // TODO: should check for failuer here
+            std::pair< typename Map::iterator, bool > result = map_.insert( std::make_pair(k0,aval) ); // TODO: should check for failuer here
+            if( !result.second ) return false;
+            iter = result.first;
 		}
 		iter->second[k1] = val;
+        return true;
 	}
 	bool insert( Xform const & x, Val val ){
 		return this->insert( hasher_.get_key( x ), val );

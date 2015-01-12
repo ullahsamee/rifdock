@@ -64,11 +64,11 @@ using std::endl;
 // ATOM  C3  CH1   X   0.06
 
 
-TEST(RosettaField,DISABLED_test_btn){
+TEST( RosettaField, test_btn ){
 
-	int NITER = 1000;
+	int NITER = 50;
 	#ifdef NDEBUG
-	NITER *= 40;
+	NITER *= 100;
 	#endif
 
 	typedef util::SimpleArray<3,float> F3;
@@ -120,15 +120,15 @@ TEST(RosettaField,DISABLED_test_btn){
 		// }
 		// cout << rc.num_elements() << " " << (float)naz/rc.num_elements() << " " << (float)nbz/rc.num_elements() << endl;
 
-	std::ofstream out("/tmp/btn1.dat");
-	cout << rc.shape()[0] << " " << rc.shape()[1] << " " << rc.shape()[2] << endl;
-	for(size_t i = 0; i < rc.num_elements(); ++i) out << rc.data()[i] << endl;
-	out.close();
+	// std::ofstream out("/tmp/btn1.dat");
+	// cout << rc.shape()[0] << " " << rc.shape()[1] << " " << rc.shape()[2] << endl;
+	// for(size_t i = 0; i < rc.num_elements(); ++i) out << rc.data()[i] << endl;
+	// out.close();
 
-	std::ofstream out2("/tmp/btn2.dat");
-	cout << brc.shape()[0] << " " << brc.shape()[1] << " " << brc.shape()[2] << endl;
-	for(size_t i = 0; i < brc.num_elements(); ++i) out2 << brc.data()[i] << endl;
-	out2.close();
+	// std::ofstream out2("/tmp/btn2.dat");
+	// cout << brc.shape()[0] << " " << brc.shape()[1] << " " << brc.shape()[2] << endl;
+	// for(size_t i = 0; i < brc.num_elements(); ++i) out2 << brc.data()[i] << endl;
+	// out2.close();
 
 
 }

@@ -193,30 +193,32 @@ TEST(Scene,test_fixed_actor){
 
 }
 
-TEST(Scene,DISABLED_serialization){ // TODO: cereal & boost::shared_ptr hate each other...
-	typedef std::pair<ADI,FixedActor> I;
-	Config c;
-	ObjFixedADI o1;
-	ObjADIFixed o2;
-	objective::ObjectiveVisitor<ObjFixedADI,Config> visitor1(o1,c);
-	objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
+TEST( Scene, serialization ){
+	#ifdef CEREAL
+		typedef std::pair<ADI,FixedActor> I;
+		Config c;
+		ObjFixedADI o1;
+		ObjADIFixed o2;
+		objective::ObjectiveVisitor<ObjFixedADI,Config> visitor1(o1,c);
+		objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
 
-	typedef m::vector< ADI, FixedActor > Actors;
-	typedef Scene<Actors,X1dim,uint32_t> Scene;
+		typedef m::vector< ADI, FixedActor > Actors;
+		typedef Scene<Actors,X1dim,uint32_t> Scene;
 
-	Scene scene(2);
-	scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
-	scene.mutable_conformation_asym(1).add_actor(ADI(1,0));	
-	scene.set_position(0,X1dim( 0));
-	scene.set_position(1,X1dim( 0));
+		Scene scene(2);
+		scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
+		scene.mutable_conformation_asym(1).add_actor(ADI(1,0));	
+		scene.set_position(0,X1dim( 0));
+		scene.set_position(1,X1dim( 0));
 
-	ASSERT_TRUE( scene == io::test_serialization(scene) );
+		Scene scene2 = io::test_serialization(scene);
+		ASSERT_TRUE( scene == scene2 );
 
-	Scene scene2 = scene;
-	scene.set_position(0,X1dim(1));
+		Scene scene3 = scene;
+		scene.set_position(0,X1dim(1));
 
-	ASSERT_FALSE( scene == scene2 );
-
+		ASSERT_FALSE( scene == scene3 );
+	#endif
 
 }
 

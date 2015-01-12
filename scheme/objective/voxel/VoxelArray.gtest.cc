@@ -65,19 +65,21 @@ TEST(VoxelArray,bounds3d){
 }
 
 TEST(VoxelArray,io){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	#ifdef CEREAL
+		boost::random::mt19937 rng((unsigned int)time(0));
+		boost::uniform_real<> uniform;
 
-	VoxelArray<3,double> a(-6,7,1.6345);
-	for(size_t i = 0; i < a.num_elements(); ++i) a.data()[i] = uniform(rng);
+		VoxelArray<3,double> a(-6,7,1.6345);
+		for(size_t i = 0; i < a.num_elements(); ++i) a.data()[i] = uniform(rng);
 
-	VoxelArray<3,double> b(-6,7,1.6354);
-	ASSERT_NE( a, b );
-	b = a;
-	ASSERT_EQ( a, b );
-	for(size_t i = 0; i < b.num_elements(); ++i) b.data()[i] = 0;
+		VoxelArray<3,double> b(-6,7,1.6354);
+		ASSERT_NE( a, b );
+		b = a;
+		ASSERT_EQ( a, b );
+		for(size_t i = 0; i < b.num_elements(); ++i) b.data()[i] = 0;
 
-	ASSERT_EQ( a , io::test_serialization(a) );
+		ASSERT_EQ( a , io::test_serialization(a) );
+	#endif
 }
 
 }}}}
