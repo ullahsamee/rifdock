@@ -16,8 +16,8 @@ cmake_minimum_required (VERSION 2.6)
 # SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -w -O0 -DDEBUG" )
 # SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -w -O0 -DDEBUG" )
 
-SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -DCXX11 -w -O2 -DDEBUG -ffast-math" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -DCXX11 -w -O2 -DDEBUG -ffast-math" )
+SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
 
 add_subdirectory(external/gmock)
 include_directories("external")

@@ -16,9 +16,9 @@ using std::cout;
 using std::endl;
 
 
-	template< class C, class P, class I >
-	std::ostream & operator<<(std::ostream & out, impl::BodyTplt<C,P,I> const & b){
-		return out << "Body( " << b.position() << ", " << &b.conformation() << " )";
+	template< class C, class I >
+	std::ostream & operator<<(std::ostream & out, impl::BodyTplt<C,I> const & b){
+		return out << "Body( " << &b.conformation() << " )";
 	}
 
 	template<class A,class P,class I>

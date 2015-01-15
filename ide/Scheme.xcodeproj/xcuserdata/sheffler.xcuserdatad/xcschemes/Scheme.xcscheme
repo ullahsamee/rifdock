@@ -59,8 +59,8 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--gtest_filter=*FieldCache*"
-            isEnabled = "NO">
+            argument = "--gtest_filter=bcc_lattice.neighbors"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--gtest_color=no"

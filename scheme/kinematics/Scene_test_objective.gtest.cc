@@ -213,7 +213,7 @@ void performance_test_helper(Scene const & scene, Visitor & visitor){
 
 
 
-TEST( SceneObjective, DISABLED_performance ){
+TEST( SceneObjective, DISABLED_big_scene_performance ){
 // TEST(SceneObjective,performance){
 	// TODO: speed up SceneIter iteration 
 	//       iteration seems to take about 100 cycles per score call overhead

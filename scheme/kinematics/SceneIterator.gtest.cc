@@ -355,6 +355,8 @@ using numeric::X1dim;
 		ASSERT_EQ( adcbeg, adcend );
 		
 		s.add_body();
+		ASSERT_EQ( s.bodies_.size(), 1 );
+		ASSERT_EQ( s.positions_.size(), 1 );
 		
 		tie(adibeg,adiend) = s.get_actors<ADI>();
 		tie(adcbeg,adcend) = s.get_actors<ADC>();
@@ -362,6 +364,9 @@ using numeric::X1dim;
 		ASSERT_EQ( adcbeg, adcend );
 
 		s.add_body();
+
+		ASSERT_EQ( s.bodies_.size(), 2 );
+		ASSERT_EQ( s.positions_.size(), 2 );		
 		
 		tie(adibeg,adiend) = s.get_actors<ADI>();
 		tie(adcbeg,adcend) = s.get_actors<ADC>();

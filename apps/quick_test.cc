@@ -42,9 +42,11 @@
 // #include "scheme/objective/voxel/VoxelArray.gtest.cc"
 // #include "scheme/objective/voxel/FieldCache.gtest.cc"
 
-#include "scheme/kinematics/Scene.gtest.cc"
-#include "scheme/kinematics/Scene_test_eigen.gtest.cc"
-#include "scheme/kinematics/SceneIterator.gtest.cc"
+// #include "scheme/kinematics/Scene.gtest.cc"
+// #include "scheme/kinematics/Scene_test_eigen.gtest.cc"
+// #include "scheme/kinematics/SceneIterator.gtest.cc"
+#include "scheme/kinematics/Director.gtest.cc"
+
 
 // #include "scheme/io/dump_pdb_atom.gtest.cc"
 

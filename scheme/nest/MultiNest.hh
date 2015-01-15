@@ -201,6 +201,8 @@ namespace scheme { namespace nest {
 			BOOST_VERIFY(false);
 		}
 
+		size_t size() const { return nests_.size(); }
+
 	};
 
 

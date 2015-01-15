@@ -36,7 +36,7 @@ struct XfromMapSerializer {
 template<
 	class Xform,
 	class Val=numeric::FixedPoint<-17>,
-	int ArrayBits=7,
+	int ArrayBits=4,
 	// template<class X> class _Hasher = XformHash_bt24_BCC6_Zorder >
 	template<class X> class _Hasher = XformHash_Quat_BCC7_Zorder ,
 	class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Val >
@@ -63,6 +63,8 @@ struct XformMap {
 			hasher_.init( cart_resl, ang_resl, cart_bound );
 		}
 	}
+
+	void clear() { map_.clear(); }
 
 	bool insert( Key k, Val val ){
 		Key k0 = k >> ArrayBits;
@@ -95,7 +97,7 @@ struct XformMap {
 	int insert_sphere(
 		Xform const & x,
 		Float lever_radius,
-		Float lever_dis,
+		Float lever_bound,
 		Val value,
 		XformHashNeighbors<Hasher> & nbcache
 	){
@@ -109,17 +111,17 @@ struct XformMap {
 		Eigen::Matrix<Float,3,3> rot;
 		get_transform_rotation( x, rot );
 		Eigen::Quaternion<Float> q(rot);
-		x_lever_coord[3] = q.w() * 2.0 * lever_dis;
-		x_lever_coord[4] = q.x() * 2.0 * lever_dis;
-		x_lever_coord[5] = q.y() * 2.0 * lever_dis;
-		x_lever_coord[6] = q.z() * 2.0 * lever_dis;
+		x_lever_coord[3] = q.w() * 2.0 * lever_bound;
+		x_lever_coord[4] = q.x() * 2.0 * lever_bound;
+		x_lever_coord[5] = q.y() * 2.0 * lever_bound;
+		x_lever_coord[6] = q.z() * 2.0 * lever_bound;
 		typename XformHashNeighbors<Hasher>::crappy_iterator itr = nbcache.neighbors_begin(key);
 		typename XformHashNeighbors<Hasher>::crappy_iterator end = nbcache.neighbors_end(key);
 		int nbcount=0, count=0;
 
 		for( ; itr != end; ++itr){
 			Key nbkey = *itr;
-			util::SimpleArray<7,Float> nb_lever_coord = hasher_.lever_coord( nbkey, lever_dis, x_lever_coord );
+			util::SimpleArray<7,Float> nb_lever_coord = hasher_.lever_coord( nbkey, lever_bound, x_lever_coord );
 			// std::cerr << "NB_KEY " << nbkey << " " << (nb_lever_coord-x_lever_coord).norm() << std::endl;
 			// std::cerr << x_lever_coord << std::endl;
 			// std::cerr << nb_lever_coord << std::endl;
@@ -141,6 +143,15 @@ struct XformMap {
 		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
 			for(int j = 0; j < (1<<ArrayBits); ++j){
 				if( i->second[j] == val ) ++count;
+			}
+		}
+		return count;
+	}
+	size_t count_not( Val val ) const {
+		int count = 0;
+		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
+			for(int j = 0; j < (1<<ArrayBits); ++j){
+				if( i->second[j] != val ) ++count;
 			}
 		}
 		return count;

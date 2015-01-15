@@ -18,7 +18,7 @@ struct FixedPoint {
 	void operator =(float d){ data_ = std::max( (int)NL::min(), std::min( (int)NL::max(), (int)(d*(float)Divisor) ) ); }
 	// void operator =(float  d){ (Data)(data_ = d*(float )Divisor); }
 	// operator float(){ return (double)data_/(double)Divisor; }
-	operator float (){ return (float )data_/(float )Divisor; }
+	operator float () const { return (float )data_/(float )Divisor; }
 	// operator int(){ return (int)data_; }
 };
 
