@@ -3,46 +3,118 @@
 
 #include "scheme/objective/voxel/FieldCache.hh"
 #include "scheme/rosetta/score/AnalyticEvaluation.hh"
-#include "scheme/rosetta/score/EtableParams_init.hh"
+#include "scheme/rosetta/score/EtableParams.hh"
 #include "scheme/types.hh"
 #include <vector>
 #include <boost/foreach.hpp>
 
 namespace scheme { namespace rosetta { namespace score {
 
-template<class Atom>
+template< class Atom, class EtableInit >
 struct RosettaField {
+	typedef util::SimpleArray<3,int> I3;
+	typedef util::SimpleArray<3,float> F3;	
 	EtableParams<float> params;
 	std::vector<Atom> atoms_;
-	RosettaField() { init_EtableParams(params); }
-	RosettaField(std::vector<Atom> const & atm) : atoms_(atm) { init_EtableParams(params); }
-	void add_atom(Atom const & a) { atoms_.push_back(a); }
-	float compute_rosetta_energy(float x, float y, float z, int atype) const {
-		float atr=0,rep=0,sol=0;
-		BOOST_FOREACH(Atom const & a,atoms_){
-			EtableParamsOnePair<float> const & p = params.params_for_pair(a.type(),atype);
-			float const dx = x-a.position()[0];
-			float const dy = y-a.position()[1];
-			float const dz = z-a.position()[2];
-			float const dis2 = dx*dx+dy*dy+dz*dz;
-			float const dis = std::sqrt(dis2);
-			float const inv_dis2 = 1.0f/dis2;
-			float atr0,rep0,sol0;
-			lj_evaluation( p, dis, dis2, inv_dis2, atr0, rep0);
-			lk_evaluation( p, dis, inv_dis2, sol0 ); 
-			atr += atr0;
-			rep += rep0;
-			sol += sol0;
+	boost::multi_array< std::vector<Atom> , 3 > atom_bins_;
+	F3 atom_bins_lb_, atom_bins_ub_;
+	I3 atom_bins_dim_;
+	RosettaField() { EtableInit::init_EtableParams(params); }
+	RosettaField(std::vector<Atom> const & atm) : atoms_(atm) { EtableInit::init_EtableParams(params); init_atom_bins(); }
+
+	void init_atom_bins(){
+		atom_bins_lb_.fill(9e9);
+		atom_bins_ub_.fill(-9e9);		
+		BOOST_FOREACH( Atom const & a, atoms_ ){ 
+			atom_bins_lb_ = atom_bins_lb_.min(a.position());
+			atom_bins_ub_ = atom_bins_ub_.max(a.position());
 		}
-		return 0.8*atr+0.44*rep+0.75*sol;
+		// std::cout << atom_bins_lb_ << std::endl;
+		// std::cout << atom_bins_ub_ << std::endl;		
+		atom_bins_dim_[0] = std::ceil ( (atom_bins_ub_[0] - atom_bins_lb_[0]) / 6.0 );
+		atom_bins_dim_[1] = std::ceil ( (atom_bins_ub_[1] - atom_bins_lb_[1]) / 6.0 );
+		atom_bins_dim_[2] = std::ceil ( (atom_bins_ub_[2] - atom_bins_lb_[2]) / 6.0 );
+		atom_bins_.resize( atom_bins_dim_ );
+		BOOST_FOREACH( Atom const & a, atoms_ ){ 
+			I3 i = position_to_atombin(a.position());
+			// std::cout << "add atom " << i << std::endl;
+			atom_bins_(i).push_back(a);
+		}
+
+		int tot = 0;
+		for( int i = 0; i < atom_bins_.num_elements(); ++i){
+			tot += atom_bins_.data()[i].size();
+		}
+		BOOST_VERIFY( tot == atoms_.size() );
 	}
+	I3 position_to_atombin( F3 p ) const {
+		I3 i = ( p - atom_bins_lb_ ) / 6.0;
+		// std::cout << p << std::endl;
+		// std::cout << i << std::endl;
+		return i;
+	}
+
+
+	float compute_rosetta_energy_one( Atom const & a, float x, float y, float z, int atype) const {
+		float const dx = x-a.position()[0];
+		float const dy = y-a.position()[1];
+		float const dz = z-a.position()[2];
+		float const dis2 = dx*dx+dy*dy+dz*dz;
+		if( dis2 > 36.0 ) return 0; //  103s vs 53s
+		float const dis = std::sqrt(dis2);
+		float const inv_dis2 = 1.0f/dis2;
+		float atr0,rep0,sol0;
+		EtableParamsOnePair<float> const & p = params.params_for_pair(a.type(),atype);
+		lj_evaluation( p, dis, dis2, inv_dis2, atr0, rep0);
+		lk_evaluation( p, dis, inv_dis2, sol0 ); 
+		return 0.8*atr0 + 0.44*rep0 + 0.75*sol0;
+	}
+
+	float compute_rosetta_energy_safe(float x, float y, float z, int atype) const {
+		float E = 0;
+		BOOST_FOREACH(Atom const & a,atoms_){
+			E += compute_rosetta_energy_one( a, x, y, z, atype );
+		}
+		return E;
+	}
+
+	float compute_rosetta_energy(float x, float y, float z, int atype) const {
+		I3 i = position_to_atombin( F3(x,y,z) );
+		I3 lb = I3(  0, 0, 0 ).max( i-1 );
+		I3 ub = atom_bins_dim_.min( i+2 );			
+		// std::cout << lb << " " << i << " " << ub << std::endl;
+		BOOST_VERIFY( lb[0] <= ub[0] );
+		BOOST_VERIFY( lb[1] <= ub[1] );
+		BOOST_VERIFY( lb[2] <= ub[2] );				
+		float E = 0;
+		I3 ii;
+		for( ii[0] = lb[0]; ii[0] < ub[0]; ++ii[0] ){
+		for( ii[1] = lb[1]; ii[1] < ub[1]; ++ii[1] ){
+		for( ii[2] = lb[2]; ii[2] < ub[2]; ++ii[2] ){
+			// std::cout << i << " " << ii << " " << std::endl;			
+			BOOST_FOREACH(Atom const & a, atom_bins_(ii) ){
+				E += compute_rosetta_energy_one( a, x, y, z, atype );
+			}
+		}}}
+		return E;
+	}
+
+	template<class F>
+	float compute_rosetta_energy( F const & f, int atype ) const {
+		return compute_rosetta_energy( f[0], f[1], f[2], atype );
+	}
+	template<class F>
+	float compute_rosetta_energy_safe( F const & f, int atype ) const {
+		return compute_rosetta_energy_safe( f[0], f[1], f[2], atype );
+	}
+
 };
 
-template<class Atom>
+template< class Atom, class EtableInit >
 struct RosettaFieldAtype : objective::voxel::Field3D<float> {
-	RosettaField<Atom> const & rf_;
+	RosettaField<Atom,EtableInit> const & rf_;
 	int atype_;
-	RosettaFieldAtype(RosettaField<Atom> const & rf, int atype) : rf_(rf),atype_(atype) {}
+	RosettaFieldAtype(RosettaField<Atom,EtableInit> const & rf, int atype) : rf_(rf),atype_(atype) {}
 	float operator()(float x, float y, float z) const {
 		return rf_.compute_rosetta_energy(x,y,z,atype_);
 	}

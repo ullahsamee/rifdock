@@ -309,7 +309,7 @@ TEST(bcc_lattice,neighbors){
 	double v3 = test_bcc_neighbors<5,double,uint64_t>(NITER);
 	double v4 = test_bcc_neighbors<6,double,uint64_t>(NITER);
 	double v5 = test_bcc_neighbors<7,double,uint64_t>(NITER);
-	EXPECT_LE( 0.76, v1 ); // these are total approximations
+	EXPECT_LE( 0.73, v1 ); // these are total approximations
 	EXPECT_LE( 0.69, v2 ); // these are total approximations
 	EXPECT_LE( 0.64, v3 ); // these are total approximations
 	EXPECT_LE( 0.57, v4 ); // these are total approximations

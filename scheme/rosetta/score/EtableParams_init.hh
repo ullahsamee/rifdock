@@ -6,10 +6,13 @@
 
 namespace scheme { namespace rosetta { namespace score {
 
+struct EtableParamsInit {
 ///@brief horrible function to fill horrible rosetta datastructure of LJ/LK params
-void init_EtableParams(
+static void init_EtableParams(
 	std::vector<EtableParamsOnePair<float> > & analytic_parameters
 );
+
+};
 
 }}}
 

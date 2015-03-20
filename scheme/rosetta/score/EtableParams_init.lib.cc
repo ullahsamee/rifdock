@@ -6,7 +6,7 @@ namespace scheme { namespace rosetta { namespace score {
 
 ///@brief horrible function to fill horrible rosetta datastructure of LJ/LK params
 void 
-init_EtableParams(
+EtableParamsInit::init_EtableParams(
 	std::vector<EtableParamsOnePair<float> > & analytic_parameters
 ){
 	typedef CubicPolynomialParamsBase<float> CubicPolynomial;

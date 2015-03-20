@@ -14,6 +14,7 @@ template<
 struct SceneBase {
 	typedef _Index Index;
 	typedef _Position Position;
+	typedef SceneBase<Position,Index> THIS;
 
 	// members
 		std::vector<Position> symframes_; // include identity at first position
@@ -21,6 +22,8 @@ struct SceneBase {
 		std::vector<Position> positions_;
 
 	SceneBase() : n_bodies_(0), n_sym_bodies_(0), symframes_(1,Position::Identity()) {}
+
+	virtual ~SceneBase(){}
 
 	// void set_position( Index i, Position const & newp ){ positions_.at(i) = newp; }
 	// Position position( Index i ) const { return positions_.at(i); }
@@ -48,6 +51,9 @@ struct SceneBase {
 		std::vector<Position> const & symframes() const { return symframes_; }
 		Index nbodies() const { return n_sym_bodies_; }
 		Index nbodies_asym() const { return n_bodies_; }
+
+		virtual shared_ptr<THIS> clone() const = 0;
+
 };
 
 

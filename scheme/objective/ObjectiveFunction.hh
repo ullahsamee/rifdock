@@ -364,10 +364,11 @@ struct ObjectiveFunction {
 	///@param Config override default Config
 	///@return a NumericInstanceMap of ResultTypes defined by Objectives
 	template<class InteractionSource>
-	Results 
+	void
 	operator()(
 		InteractionSource const & source,
-		Config const & config
+		Config const & config,
+		Results & results
 	) const {
 		// make sure we only operate on interactions contained in source
 		typedef typename impl::get_InteractionTypes_void<InteractionSource>::type SourceInteractionTypes;
@@ -380,7 +381,6 @@ struct ObjectiveFunction {
 				>
 			>::type
 			MutualInteractionTypes;
-		Results results;
 		BOOST_STATIC_ASSERT( m::size<MutualInteractionTypes>::value );
 		#ifdef DEBUG_IO
 			std::cout << "ObjectiveFunction operator()" << std::endl;
@@ -393,6 +393,20 @@ struct ObjectiveFunction {
 				Config
 			>( source, objective_map_, results, config )
 		);
+	}
+
+	///@brief evaluate a InteractionSource with specified Config
+	///@param InteractionSource must implement the InteractionSource concept
+	///@param Config override default Config
+	///@return a NumericInstanceMap of ResultTypes defined by Objectives
+	template<class InteractionSource>
+	Results 
+	operator()(
+		InteractionSource const & source,
+		Config const & config
+	) const {
+		Results results;
+		this->template operator()<InteractionSource>(source,config,results);
 		return results * weights_;
 	}
 

@@ -17,11 +17,15 @@ struct TestScene : public SceneBase<X1dim>
 {
 
 	TestScene() : SceneBase<X1dim>() {}
+	virtual ~TestScene(){}
 
 	void add_position( X1dim const & x ) {
 		this->positions_.push_back(x);
 		update_symmetry(positions_.size());
 	}
+
+	virtual shared_ptr<SceneBase<X1dim> > clone() const { return make_shared<TestScene>(*this); }
+
 
 };
 
@@ -79,6 +83,12 @@ TEST( Director, basic_test ){
 	cout << "set_scene rate: " << (double)count / t.elapsed().wall*1000000000.0 << " / sec " << endl;
 
 
+	shared_ptr<SceneBase<X1dim> > test = scene.clone();
+	// cout << test->position(0) << " " << scene.position(0) << endl;
+	ASSERT_EQ( test->position(0)[0] , scene.position(0)[0] );	
+	test->set_position(0,0);
+	// cout << test->position(0) << " " << scene.position(0) << endl;	
+	ASSERT_NE( test->position(0)[0] , scene.position(0)[0] );
 }
 
 }

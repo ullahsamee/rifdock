@@ -3,6 +3,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
+#include "scheme/rosetta/score/EtableParams_init.hh"
 #include "scheme/rosetta/score/RosettaField.hh"
 #include "scheme/objective/voxel/FieldCache.hh"
 #include "scheme/actor/Atom.hh"
@@ -64,7 +65,46 @@ using std::endl;
 // ATOM  C3  CH1   X   0.06
 
 
-TEST( RosettaField, test_btn ){
+TEST( RosettaField, test_faster_atombin_calc ){
+	int NITER = 100000;
+
+	typedef util::SimpleArray<3,float> F3;
+	typedef actor::Atom<F3> Atom;
+	std::vector<Atom> atoms;
+	F3 delta;
+	for( delta[0] = -18; delta[0] <= 18; delta[0]+=6.0 ){
+	for( delta[1] = -18; delta[1] <= 18; delta[1]+=6.0 ){
+	for( delta[2] = -18; delta[2] <= 18; delta[2]+=6.0 ){			
+		atoms.push_back( Atom( F3( 0.696,-12.422,3.375) + delta, 7  ));
+		atoms.push_back( Atom( F3( 0.576, -9.666,5.336) + delta, 17 ));
+		atoms.push_back( Atom( F3(-0.523,-10.824,6.189) + delta, 3  ));
+		atoms.push_back( Atom( F3(-1.324,-12.123,4.201) + delta, 7  ));
+		atoms.push_back( Atom( F3(-0.608,-12.327,3.072) + delta, 3  ));
+		atoms.push_back( Atom( F3(-1.125,-12.422,1.933) + delta, 13 ));
+		atoms.push_back( Atom( F3(-0.470,-12.087,5.377) + delta, 3  ));
+		atoms.push_back( Atom( F3( 0.953,-12.267,4.780) + delta, 6  ));
+		atoms.push_back( Atom( F3( 1.765,-11.040,5.134) + delta, 4  ));
+		atoms.push_back( Atom( F3(-1.836,-10.395,6.850) + delta, 4  ));
+	}}}
+
+	RosettaField<Atom,EtableParamsInit> rf(atoms);
+
+	boost::random::mt19937 rng((unsigned int)time(0));
+	boost::uniform_real<> uniform;
+	for(int i = 0; i < NITER; ++i){
+		F3 testp = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rf.atom_bins_ub_-rf.atom_bins_lb_+12) + rf.atom_bins_lb_ - 6.0;
+		// cout << "TEST ITER " << i << " " << testp << endl;
+		// F3 testp( 0, -11, 5 );
+		float test1 = rf.compute_rosetta_energy( testp, 5 );
+		float test2 = rf.compute_rosetta_energy_safe( testp, 5 );
+		ASSERT_NEAR( test1, test2, 0.001 );
+	}
+
+}
+
+
+
+TEST( RosettaField, DISABLED_test_btn ){
 
 	int NITER = 50;
 	#ifdef NDEBUG
@@ -85,7 +125,13 @@ TEST( RosettaField, test_btn ){
 	atoms.push_back( Atom( F3( 1.765,-11.040,5.134), 4  ));
 	atoms.push_back( Atom( F3(-1.836,-10.395,6.850), 4  ));
 
-	RosettaField<Atom> rf(atoms);
+	RosettaField<Atom,EtableParamsInit> rf(atoms);
+
+	// some simple spot checks... not vetted... checks for changes only
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0,   0, 0, 5 ), 0 );
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -10, 4, 5 ), 276.20059 );
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -16, 7, 4 ), -0.010869551 );
+
 	F3 lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);
 	BOOST_FOREACH(Atom const & a,rf.atoms_){ 
 		lb = lb.min(a.position());
@@ -95,7 +141,7 @@ TEST( RosettaField, test_btn ){
 	// cout << "UB " << ub << endl;
 
 	for(int atype = 1; atype <= 25; ++atype){
-		RosettaFieldAtype<Atom> rfa(rf,1);
+		RosettaFieldAtype<Atom,EtableParamsInit> rfa(rf,1);
 		objective::voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,1.0);
 		objective::voxel::BoundingFieldCache3D<float> brc(rc,2.0,1.0);
 
@@ -109,7 +155,7 @@ TEST( RosettaField, test_btn ){
 	}
 
 //	int atype = 1;
-	RosettaFieldAtype<Atom> rfa(rf,1);
+	RosettaFieldAtype<Atom,EtableParamsInit> rfa(rf,1);
 	objective::voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,0.25);
 	objective::voxel::BoundingFieldCache3D<float> brc(rc,1.0,0.25);
 
@@ -132,6 +178,7 @@ TEST( RosettaField, test_btn ){
 
 
 }
+
 
 
 }}}}

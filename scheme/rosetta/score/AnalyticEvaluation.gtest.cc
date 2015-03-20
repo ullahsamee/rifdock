@@ -12,7 +12,7 @@ using std::endl;
 
 TEST(RosettaEtable,init_params){
 	EtableParams<float> params;
-	init_EtableParams(params);
+	EtableParamsInit::init_EtableParams(params);
 	ASSERT_EQ( params.size(), 325ul );
 
 	double sol,atr,rep;

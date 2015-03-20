@@ -168,8 +168,8 @@ TEST(Scene,test_fixed_actor){
 	typedef Scene<Actors,X1dim,uint32_t> Scene;
 
 	Scene scene(2);
-	scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
-	scene.mutable_conformation_asym(1).add_actor(ADI(1,0));	
+	scene.add_actor( 0, FixedActor(1.0));
+	scene.add_actor( 1, ADI(1,0));	
 
 	scene.set_position(0,X1dim( 0));
 	scene.set_position(1,X1dim( 0));

@@ -171,6 +171,42 @@ TEST( InstanceMap, serialization ){
 	#endif
 }
 
+
+TEST( InstanceMap, subtyping ){
+
+
+	typedef mpl::vector<int,char,float> Types;
+	typedef mpl::vector<int> Types_int;
+
+	{
+		typedef InstanceMap<Types,mpl::_1> TEST;
+		TEST imap;
+		BOOST_STATIC_ASSERT( mpl::size<TEST>::value == mpl::size<Types>::value );
+		BOOST_STATIC_ASSERT( bf::result_of::has_key<TEST,int>::value );
+		ASSERT_TRUE( bf::has_key<int>(imap) );
+		BOOST_STATIC_ASSERT( boost::is_same<int,
+			bf::result_of::value_at_key<TEST,int>::type >::value );
+		BOOST_STATIC_ASSERT( boost::is_same<char,
+			bf::result_of::value_at_key<TEST,char>::type >::value );
+		imap.get<int>() = 1;
+		imap.get<char>() = 'C';	
+		imap.get<float>() = 1.2345f;
+		ASSERT_EQ( imap.get<int>(), 1 );
+		ASSERT_EQ( imap.get<char>(), 'C' );
+		ASSERT_EQ( imap.get<float>(), 1.2345f );
+		// bf::for_each((TEST::Base&)imap,PrintInstanceType());
+
+
+		typename TEST::Base & test1 = static_cast< typename TEST::Base & >( imap );
+
+		// typename boost::fusion::detail::map_impl<0> & test2 = static_cast< boost::fusion::detail::map_impl<0> & >( imap );
+
+
+	}
+
+
+}
+
 }
 }
 }

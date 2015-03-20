@@ -4,6 +4,7 @@
 #include <boost/multi_array.hpp>
 #include "scheme/util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
+#include <boost/assert.hpp>
 
 #ifdef CEREAL
 #include <cereal/access.hpp>
@@ -15,7 +16,7 @@ namespace scheme { namespace objective { namespace voxel {
 
 
 
-template<size_t _DIM,class _Float=float>
+template< size_t _DIM, class _Float=float >
 struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	BOOST_STATIC_ASSERT(_DIM>0);
 	typedef boost::multi_array<_Float,_DIM> BASE;
@@ -46,6 +47,14 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 		return ind;
 	}
 
+	Bounds indices_to_center( Indices const & idx ) const {
+		Bounds c;
+		for(int i = 0; i < DIM; ++i){
+			c[i] = (idx[i]+0.5)*cs_[i] + lb_[i];
+		}
+		return c;
+	}
+
 	template<class Floats>
 	typename boost::disable_if< boost::is_arithmetic<Floats>, Float const & >::type
 	operator[](Floats const & floats) const { return this->operator()(floats_to_index(floats)); }
@@ -53,6 +62,13 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	template<class Floats>
 	typename boost::disable_if< boost::is_arithmetic<Floats>, Float & >::type
 	operator[](Floats const & floats){ return this->operator()(floats_to_index(floats)); }	
+	
+	Float at( Float f, Float g, Float h ) const {
+		Indices idx = floats_to_index(Bounds(f,g,h));
+		if( idx[0] < this->shape()[0] && idx[1] < this->shape()[1] && idx[2] < this->shape()[2] )
+			return this->operator()(idx);
+		else return 0.0;
+	}
 
 	// void write(std::ostream & out) const { 
 	// 	out.write( (char const*)&lb_, sizeof(Bounds) );
@@ -77,6 +93,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
     #endif
 
     template<class Archive> void save(Archive & ar, const unsigned int ) const {
+    	BOOST_VERIFY( boost::is_pod<Float>::type::value );
         ar & lb_;
         ar & ub_;
         ar & cs_;
@@ -84,6 +101,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
         for(size_t i = 0; i < this->num_elements(); ++i) ar & this->data()[i];
     }
     template<class Archive> void load(Archive & ar, const unsigned int ){
+    	BOOST_VERIFY( boost::is_pod<Float>::type::value );
         ar & lb_;
         ar & ub_;
         ar & cs_;
@@ -91,6 +109,28 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
         for(size_t i = 0; i < DIM; ++i) ar & extents[i];
         this->resize(extents);
         for(size_t i = 0; i < this->num_elements(); ++i) ar & this->data()[i];
+    }
+    void save( std::ostream & out ) const {
+    	BOOST_VERIFY( boost::is_pod<Float>::type::value );
+  		out.write( (char*)&lb_, sizeof(Bounds) );
+  		out.write( (char*)&ub_, sizeof(Bounds) );
+  		out.write( (char*)&cs_, sizeof(Bounds) );  		  		
+        for(size_t i = 0; i < DIM; ++i){
+        	out.write( (char*)(&(this->shape()[i])), sizeof(typename BASE::size_type) );
+        }
+        for(size_t i = 0; i < this->num_elements(); ++i) out.write( (char*)(&(this->data()[i])), sizeof(Float) );
+    }
+  	void load( std::istream & in ){
+    	BOOST_VERIFY( boost::is_pod<Float>::type::value );
+  		in.read( (char*)&lb_, sizeof(Bounds) );
+  		in.read( (char*)&ub_, sizeof(Bounds) );
+  		in.read( (char*)&cs_, sizeof(Bounds) );  		  		
+        Indices extents;
+        for(size_t i = 0; i < DIM; ++i){
+        	in.read( (char*)(&(extents[i])), sizeof(typename BASE::size_type) );
+        }
+        this->resize(extents);
+        for(size_t i = 0; i < this->num_elements(); ++i) in.read( (char*)(&(this->data()[i])), sizeof(Float) );
     }
     // BOOST_SERIALIZATION_SPLIT_MEMBER()
 

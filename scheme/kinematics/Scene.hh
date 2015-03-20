@@ -131,10 +131,11 @@ namespace impl {
 	template<
 		class _ActorContainers,
 		class _Position,
-		class _Index = size_t
+		class _Index = uint64_t
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
 		
+		typedef SceneBase<_Position,_Index> BASE;
 		typedef Scene<_ActorContainers,_Position,_Index> THIS;
 		typedef _Position Position;
 		typedef _Index Index;
@@ -148,13 +149,17 @@ namespace impl {
 
 		Bodies bodies_;
 
-
 		Scene(Index nbodies=0) : SceneBase<Position,Index>() {
 			for(Index i=0; i<nbodies; ++i) add_body();
 			this->update_symmetry( (Index)bodies_.size() );
 		}
 
-		
+		virtual ~Scene(){}
+
+		virtual shared_ptr<BASE> clone() const {
+			return make_shared<THIS>(*this);
+		}
+
 		// virtual Position position(Index i) const {
 		// 	Index isym = this->sym_index_map(i);
 		// 	// if( isym == 0 )	return                    bodies_.at(i).position();
@@ -229,6 +234,16 @@ namespace impl {
 		template<class Actor>
 		Actor get_actor(Index ib, Index ia) const {
 			return Actor( conformation(ib).template get<Actor>().at(ia), this->position(ib) );
+		}
+
+		template<class Actor>
+		void add_actor(Index ib, Actor const & a) {
+			mutable_conformation_asym(ib).template add_actor<Actor>(a);
+		}
+
+		template<class Actor>
+		size_t num_actors(Index ib) {
+			return mutable_conformation_asym(ib).template get<Actor>().size();
 		}
 
 		//////////////////////////// actor iteration //////////////////////////////////

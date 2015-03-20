@@ -4,8 +4,13 @@
 #include "scheme/objective/voxel/VoxelArray.hh"
 #include "scheme/io/cache.hh"
 // #include <boost/exception/all.hpp>
+#include <exception>
 
 namespace scheme { namespace objective { namespace voxel {
+
+struct FieldException : public std::runtime_error {
+	FieldException(std::string m) : std::runtime_error(m.c_str()) {}
+};
 
 template<class Float=float>
 struct Field3D {
@@ -16,6 +21,7 @@ template<class Float=float>
 struct FieldCache3D : VoxelArray<3,Float> {
 	typedef VoxelArray<3,Float> BASE;
 	typedef typename BASE::Bounds Float3;
+	typedef typename VoxelArray<3,Float>::Indices Indices;
 
 	std::string cache_loc_;
 
@@ -27,7 +33,8 @@ struct FieldCache3D : VoxelArray<3,Float> {
 		F1 const & lb,
 		F2 const & ub,
 		F3 const & cs,
-		std::string const & cache_loc=""
+		std::string const & cache_loc="",
+		bool no_init = false
 	) : BASE(lb,ub,cs), cache_loc_(cache_loc)
 	{
 		typename BASE::Indices extents;
@@ -38,6 +45,7 @@ struct FieldCache3D : VoxelArray<3,Float> {
 				for(size_t i = 0; i < BASE::DIM; ++i) extents_eq &= extents[i] == this->shape()[i];
 				if( Float3(lb)==this->lb_ && Float3(ub)==this->ub_ && Float3(cs)==this->cs_ && extents_eq ){
 					std::cout << "EXTENTS EQ, USING CACHE" << std::endl;
+					check_against_field( field );
 					return;
 				}
 				std::cout << "Warning, FieldCache3D bad cache " << cache_loc_ << " bounds mismatch, recomputing..." << std::endl;
@@ -46,15 +54,42 @@ struct FieldCache3D : VoxelArray<3,Float> {
 		#endif
 		// 	std::cout << "NO CACHE" << std::endl;
 		// }
-		// TODO: this should probable be based on integer indices...
-		for(Float f = this->lb_[0]+this->cs_[0]/2.0; f < this->ub_[0]+this->cs_[0]/2.0; f += this->cs_[0]){
-		for(Float g = this->lb_[1]+this->cs_[1]/2.0; g < this->ub_[1]+this->cs_[1]/2.0; g += this->cs_[1]){
-		for(Float h = this->lb_[2]+this->cs_[2]/2.0; h < this->ub_[2]+this->cs_[2]/2.0; h += this->cs_[2]){
-			this->operator[]( Float3(f,g,h) ) = field(f,g,h);
-		}}}
+		if( !no_init ){
+			// TODO: this should probable be based on integer indices...
+			for(int i = 0; i < this->shape()[0]; ++i){
+			for(int j = 0; j < this->shape()[1]; ++j){
+			for(int k = 0; k < this->shape()[2]; ++k){							
+				Float3 cen = this->indices_to_center( Indices(i,j,k) );
+				this->operator[]( cen ) = field( cen[0], cen[1], cen[2] );
+			}}}
+		}
 		#ifdef CEREAL
 			io::write_cache(cache_loc_,*this);
 		#endif
+
+	}
+
+	void check_against_field( Field3D<Float> const & field, bool permissive=false ) const {
+		{
+			// sanity check
+			// std::exit(-1);
+			// std::cout << this->shape()[0] << std::endl;
+			// std::cout << this->shape()[1] << std::endl;
+			// std::cout << this->shape()[2] << std::endl;						
+			for(int i = 0; i < this->shape()[0]; i += 8){
+			for(int j = 0; j < this->shape()[1]; j += 8){
+			for(int k = 0; k < this->shape()[2]; k += 8){							
+				Float3 cen = this->indices_to_center( Indices(i,j,k) );
+				Float test1 = this->operator[]( cen );
+				Float test2 = field( cen[0], cen[1], cen[2] );
+				if( fabs(test1-test2) > 0.001 ){
+					std::cout << "FIELD MISMATCH stored: " << test1 << " recalculated: " << test2 << std::endl;
+					if(!permissive) throw FieldException("field check fails");
+				} else {
+					// std::cout << "check pass" << std::endl;
+				}
+			}}}
+		}
 	}
 
 };

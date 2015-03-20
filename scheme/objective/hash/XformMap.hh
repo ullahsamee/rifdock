@@ -157,7 +157,7 @@ struct XformMap {
 		return count;
 	}
 
-	bool save( std::ostream & out ) {
+	bool save( std::ostream & out, std::string const & description ) {
 		// no way to check if the stream was opened binary!
 		// if( ! (out.flags() & std::ios::binary) ){
 		// 	std::cerr << "XformMap::save must be binary ostream" << std::endl;
@@ -170,6 +170,7 @@ struct XformMap {
 		oss << "Hasher: " << hasher_.name() << std::endl;
 		oss << "Cart Resolution: " << cart_resl_ << std::endl;
 		oss << "Angular Resolution: " << ang_resl_ << std::endl;
+		oss << "User Description: " << description << std::endl;
 		oss << "=========== begin binary data ===========" << std::endl;
 		size_t s = oss.str().size();
 		out.write((char*)&s,sizeof(size_t));

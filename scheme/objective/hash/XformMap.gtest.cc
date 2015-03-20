@@ -22,12 +22,14 @@ typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 
 
 TEST( XformMap, stores_correctly ){
+	int NSAMP = 100000;
+
 	boost::random::mt19937 rng((unsigned int)time(0) + 296720384);
 	boost::uniform_real<> runif;
 
-	XformMap< Xform, double > xmap( 0.5, 10.0 );
+	XformMap< Xform, double, 0 > xmap( 0.5, 10.0 );
 	std::vector< std::pair<Xform,double> > dat;
-	for(int i = 0; i < 1000; ++i){
+	for(int i = 0; i < NSAMP; ++i){
 		Xform x;
 		numeric::rand_xform( rng, x, 256.0 );
 		double val = runif(rng);
@@ -35,25 +37,29 @@ TEST( XformMap, stores_correctly ){
 		dat.push_back( std::make_pair(x,val) );
 	}
 
-	XformMap< Xform, double > const & xmap_test( xmap );
+	XformMap< Xform, double, 0 > const & xmap_test( xmap );
+
+	boost::timer::cpu_timer t;
+
 	for(int i = 0; i < dat.size(); ++i){
 		Xform const & x = dat[i].first;
 		double const v = dat[i].second;
-		ASSERT_EQ( xmap_test[x], v );
+		EXPECT_EQ( xmap_test[x], v );
 		// cout << x.translation().transpose() << " " << v << endl;
 	}
+	cout << "XformMap " << NSAMP << " lookup rate: " << (double)NSAMP / t.elapsed().wall*1000000000.0 << " /sec ";
 
 	// { // no way to check if stream in binary!
 	// 	std::cout << "following failure message is expected" << std::endl;
 	// 	std::ofstream out("test.sxm" );// , std::ios::binary );
-	// 	ASSERT_FALSE( xmap.save( out ) );
+	// 	ASSERT_FALSE( xmap.save( out, "foo" ) );
 	// 	out.close();
 	// }
 	std::ofstream out("test.sxm" , std::ios::binary );
-	ASSERT_TRUE( xmap.save( out ) );
+	ASSERT_TRUE( xmap.save( out, "foo" ) );
 	out.close();
 
-	XformMap< Xform, double > xmap_loaded;
+	XformMap< Xform, double, 0 > xmap_loaded;
 	std::ifstream in( "test.sxm"  , std::ios::binary );
 	ASSERT_TRUE( xmap_loaded.load( in ) );
 	in.close();

@@ -16,8 +16,11 @@ cmake_minimum_required (VERSION 2.6)
 # SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -w -O0 -DDEBUG" )
 # SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -w -O0 -DDEBUG" )
 
-SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
+#SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
+
+SET( CMAKE_CXX_FLAGS         "-w -O3 -DDEBUG -ffast-math" )
+SET( CMAKE_EXE_LINKER_FLAGS  "-w -O3 -DDEBUG -ffast-math" )
 
 add_subdirectory(external/gmock)
 include_directories("external")
@@ -25,6 +28,7 @@ include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
 include_directories("/usr/local/include/eigen3")
 include_directories("/usr/local/include")
+include_directories("/usr/local/boost/include")
 
 list( APPEND LIB_CC scheme/rosetta/score/EtableParams_init.lib.cc scheme/rosetta/atype_map.lib.cc scheme/chemical/ligand_factory.lib.cc )
 
@@ -47,11 +51,14 @@ list(APPEND CMAKE_LIBRARY_PATH /usr/lib64)
 include_directories(".")
 link_directories(${CMAKE_LIBRARY_PATH})
 
+add_library( scheme ${LIB_CC} )
+
+
 project (main_test)
 add_executable(main_test apps/main_test.cc ${L1} ${L2} ${L3} ${L4} ${L5} )
-target_link_libraries(main_test ${EXTRA_LIBS} )
+target_link_libraries(main_test scheme ${EXTRA_LIBS} )
 
 
 project (quick_test)
-add_executable(quick_test apps/quick_test.cc ${LIB_CC} )
-target_link_libraries(quick_test ${EXTRA_LIBS})
+add_executable(quick_test apps/quick_test.cc  )
+target_link_libraries(quick_test scheme ${EXTRA_LIBS})
