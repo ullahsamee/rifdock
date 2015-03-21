@@ -64,6 +64,10 @@ namespace actor {
 
 			V t = m * V(-0.865810,-1.764143,1.524857) + ca; // average 'CEN' icoor
 
+			// std::cout << e1 << std::endl;
+			// std::cout << e2 << std::endl;
+			// std::cout << e3 << std::endl;						
+
 			position_.setIdentity();
 			position_.rotate( m );
 			position_.translation()[0] = t[0];

@@ -104,7 +104,7 @@ TEST( RosettaField, test_faster_atombin_calc ){
 
 
 
-TEST( RosettaField, DISABLED_test_btn ){
+TEST( RosettaField, test_btn ){
 
 	int NITER = 50;
 	#ifdef NDEBUG
