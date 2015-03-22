@@ -10,7 +10,55 @@
 namespace scheme {
 namespace actor {
 
+
+template<class _Position>
+struct SimpleAtom {
+	typedef _Position Position;
+
+	SimpleAtom() : 
+	    position_(0,0,0),
+	    type_(0)
+	{}
+
+	template<class P>
+	SimpleAtom(
+		P const & p,
+		int type = 0
+	) : position_(p[0],p[1],p[2]),
+	    type_(type)
+	{}
+
+	template<class Xform>
+	SimpleAtom(SimpleAtom const & a,Xform const & moveby){
+		position_ = moveby*a.position();
+		type_ = a.type_;
+	}
+
+	int type() const { return type_; }
+	void set_type(int i){ type_ = i; }
+
+	Position const & position() const { return position_; }
+
+	template<class P>
+	void set_position( P const & pos ) { position_[0] = pos[0]; position_[1] = pos[1]; position_[2] = pos[2]; }
+	
+	bool operator==(SimpleAtom<Position> const & o) const {
+		return numeric::approx_eq(o.position_,position_) && o.type_==type_; }
+
+private:
+	int type_;
+	Position position_;
+};
+
+
+template<class P>
+std::ostream & operator<<(std::ostream & out,SimpleAtom<P> const & x){
+	return out << "SimpleAtom( " << x.position() << ", " << x.type() << " )";
+}
+
 using chemical::AtomData;
+
+
 
 template<class _Position>
 struct Atom {
@@ -22,8 +70,9 @@ struct Atom {
 	    data_(scheme::make_shared<AtomData>()) {}
 	    // data_(new AtomData) {}	    
 
+	template<class P>
 	Atom(
-		Position const &    p,
+		P const &    p,
 		int                 type     = 0,
 		std::string const & atomname = AtomData::default_atomname(),        
 		std::string const & resname  = AtomData::default_resname(),       
@@ -34,7 +83,7 @@ struct Atom {
 		bool                ishet    = AtomData::default_ishet(),     
 		float               occ      = AtomData::default_occ(),   
 		float               bfac     = AtomData::default_bfac()
-	) : position_(p),
+	) : position_(p[0],p[1],p[2]),
 	    type_(type),
 	    data_(scheme::make_shared<AtomData>( //TODO: why do I need scheme:: here?
 	    // data_(new AtomData(
@@ -58,7 +107,8 @@ struct Atom {
 
 	Position const & position() const { return position_; }
 
-	void set_position( Position const & pos	){ position_ = pos; }
+	template<class P>
+	void set_position( P const & pos ) { position_[0] = pos[0]; position_[1] = pos[1]; position_[2] = pos[2]; }
 	
 	bool operator==(Atom<Position> const & o) const {
 		return numeric::approx_eq(o.position_,position_) && o.type_==type_ && o.data_==data_; }
@@ -79,6 +129,7 @@ template<class P>
 void dump_pdb(std::ostream & out,Atom<P> const & a){
 	io::dump_pdb_atom(out, a.position(), a.data() );
 }
+
 
 
 

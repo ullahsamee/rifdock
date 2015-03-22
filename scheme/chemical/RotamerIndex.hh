@@ -16,8 +16,6 @@ struct Rotamer {
 	std::string resname_;
 	std::vector<float> chi_;
 	std::vector<Atom> atoms_;
-	std::vector<AtomPT> coords_;
-	std::vector<AtomPT> coords_inv_;	
 };
 
 }
@@ -53,6 +51,9 @@ struct RotamerIndex {
 		}
 		bounds_map_[ rotamers_.back().resname_ ].second = rotamers_.size();
 	}
+
+	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
+	std::vector<Atom> const & atoms(int rotnum) const { return rotamers_.at(rotnum).atoms_; }
 
 	std::pair<size_t,size_t>
 	index_bounds( std::string const & resname ) const { 

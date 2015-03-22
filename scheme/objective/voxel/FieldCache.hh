@@ -69,7 +69,8 @@ struct FieldCache3D : VoxelArray<3,Float> {
 
 	}
 
-	void check_against_field( Field3D<Float> const & field, bool permissive=false ) const {
+	int check_against_field( Field3D<Float> const & field, bool permissive=false ) const {
+		int nerror = 0;
 		{
 			// sanity check
 			// std::exit(-1);
@@ -82,14 +83,16 @@ struct FieldCache3D : VoxelArray<3,Float> {
 				Float3 cen = this->indices_to_center( Indices(i,j,k) );
 				Float test1 = this->operator[]( cen );
 				Float test2 = field( cen[0], cen[1], cen[2] );
-				if( fabs(test1-test2) > 0.001 ){
+				if( !(fabs(test1-test2) < 0.001 || fabs(1.0-test1/test2) < 0.001) && test2 < 9e6 ){
 					std::cout << "FIELD MISMATCH stored: " << test1 << " recalculated: " << test2 << std::endl;
+					++nerror;
 					if(!permissive) throw FieldException("field check fails");
 				} else {
 					// std::cout << "check pass" << std::endl;
 				}
 			}}}
 		}
+		return nerror;
 	}
 
 };
