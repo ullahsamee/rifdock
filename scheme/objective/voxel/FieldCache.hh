@@ -128,8 +128,8 @@ struct BoundingFieldCache3D : VoxelArray<3,Float> {
 		if( ref_.cs_.norm() > spread_ )
 			std::cout << "BoundingFieldCache3D warning: spread " << spread_ 
 		              << " less than ref cell_size.norm() " << ref_.cs_.norm() << std::endl;
-		Float3 lb = ref.lb_-spread;
-		Float3 ub = ref.ub_+spread;
+//		Float3 lb = ref.lb_-spread;
+//		Float3 ub = ref.ub_+spread;
 		typename BASE::Indices extents;
 		for(size_t i = 0; i < BASE::DIM; ++i) extents[i] = this->shape()[i];
 		#ifdef CEREAL

@@ -45,10 +45,10 @@ namespace maps {
 			Index /*resl*/,
 			Value & value
 		) const {
-			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
+			for(int i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 			assert( params[0] <= (Float)num_cells_ );
-			for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
-			for(size_t i = 0; i < DIM; ++i) value[i] = params[i];
+			for(int i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
+            for(int i = 0; i < DIM; ++i) value[i] = params[i];
 			value[0] += (Float)cell_index;
 			return true;
 		}
@@ -64,9 +64,9 @@ namespace maps {
 			value_to_params_for_cell(value,resl,params,0);
 			cell_index = (Index)value[0];
 			params[0] -= (Float)cell_index;
-			for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
+			for(int i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 			assert( params[0] <= (Float)num_cells_ );
-			for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
+			for(int i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
 			return true;
 		}
 		///@brief get params repr of Value wrt cell cell_index
@@ -77,7 +77,7 @@ namespace maps {
 			Params & params,
 			Index cell_index
 		) const {
-			for(size_t i = 0; i < DIM; ++i) params[i] = value[i];
+			for(int i = 0; i < DIM; ++i) params[i] = value[i];
 			params[0] -= (Float)cell_index;
 		}
 		///@brief return the cell_index of neighboring cells within delta of value

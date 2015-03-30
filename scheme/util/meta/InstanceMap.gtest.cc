@@ -197,7 +197,7 @@ TEST( InstanceMap, subtyping ){
 		// bf::for_each((TEST::Base&)imap,PrintInstanceType());
 
 
-		typename TEST::Base & test1 = static_cast< typename TEST::Base & >( imap );
+//		typename TEST::Base & test1 = static_cast< typename TEST::Base & >( imap );
 
 		// typename boost::fusion::detail::map_impl<0> & test2 = static_cast< boost::fusion::detail::map_impl<0> & >( imap );
 

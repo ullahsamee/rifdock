@@ -138,6 +138,8 @@ struct XformMap {
 
 	size_t total_size() const { return map_.size()*(1<<ArrayBits); }
 
+	size_t mem_use() const { return map_.bucket_count()*sizeof(ValArray); }
+
 	size_t count( Val val ) const {
 		int count = 0;
 		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){

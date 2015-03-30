@@ -25,7 +25,7 @@
 // #include "scheme/nest/maps/HecatonicosachoronMap.gtest.cc"
 // #include "scheme/nest/maps/QuaternionMap.gtest.cc"
 // #include "scheme/nest/maps/EulerAnglesMap.gtest.cc"
-// #include "scheme/nest/maps/TetracontoctachoronMap.gtest.cc"
+#include "scheme/nest/maps/TetracontoctachoronMap.gtest.cc"
 // #include "scheme/nest/maps/Rotation1DMap.gtest.cc"
 
 // #include "scheme/numeric/geom_4d.gtest.cc"
@@ -55,7 +55,7 @@
 // #include "scheme/actor/BBStub.gtest.cc"
 
 // #include "scheme/rosetta/score/AnalyticEvaluation.gtest.cc"
-#include "scheme/rosetta/score/RosettaField.gtest.cc"
+// #include "scheme/rosetta/score/RosettaField.gtest.cc"
 
 // #include "scheme/chemical/ligand_factory.gtest.cc"
 
