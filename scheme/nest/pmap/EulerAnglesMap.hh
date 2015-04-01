@@ -1,18 +1,16 @@
-#ifndef INCLUDED_scheme_nest_maps_QuaternionMap_HH
-#define INCLUDED_scheme_nest_maps_QuaternionMap_HH
+#ifndef INCLUDED_scheme_nest_maps_EulerAnglesMap_HH
+#define INCLUDED_scheme_nest_maps_EulerAnglesMap_HH
 
 #include "scheme/util/SimpleArray.hh"
-#include "scheme/util/meta/util.hh"
-#include "scheme/nest/maps/util/get_quaternion_component.hh"
+#include "scheme/numeric/euler_angles.hh"
 
-#include <boost/type_traits/make_signed.hpp>
 #include <boost/static_assert.hpp>
-#include <iostream>
+// #include <iostream>
 #include <vector>
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 
 
@@ -22,52 +20,31 @@ template<
 	class Index=size_t,
 	class Float=double
 >
-struct QuaternionMap {
+struct EulerAnglesMap {
 	static int const DIMENSION = DIM;
 	typedef Value ValueType ;
 	typedef Float FloatType ;		
 	typedef Index IndexType ;		
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Params;
-	typedef typename boost::make_signed<Index>::type SignedIndex;
-	typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
 
-	BOOST_STATIC_ASSERT_MSG(DIM==4,"QuaternionMap DIM must be == 4");
+	BOOST_STATIC_ASSERT_MSG(DIM==3,"EulerAnglesMap DIM must be == 3");
 	///@brief constructor
-	QuaternionMap() {}
+	EulerAnglesMap() {}
 	///@brief
 	///@return false iff invalid parameters
 	bool params_to_value(
 		Params const & params,
 		Index /*cell_index*/,
-		Index resl,
+		Index /*resl*/,
 		Value & value
 	) const {
 		for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 		// assert( params[0] <= (Float)num_cells_ );
 		for(size_t i = 1; i < DIM; ++i) assert( params[i] <= 1.0 );
-		for(size_t i = 0; i < DIM; ++i) get_quaternion_component(value,i) = params[i];
-		if( params[0] < 0.5 ) return false; // convention is 'W' component is >= 0
-		 // cell does not intersect unit sphere
-			SignedIndex nside = 1<<resl;
-			Float const fnside = nside;
-			Float const width = 2.0 / fnside;
-			SignedIndices idxnear = ( (params-0.5) * fnside ).template cast<SignedIndex>();
-			SignedIndices idxfar  = ( (params    ) * fnside ).template cast<SignedIndex>() - (nside>>1);
-			for(size_t i = 0; i < DIM; ++i) idxfar[i] += (idxfar[i]!=idxnear[i] ? 0 : (idxfar[i]<0?-1:1) );
-			// idxfar = idxfar - (nside>>1) 
-			// std::cout << "QUAT: " << params*2.0-1.0 << std::endl;
-			// std::cout << "LO: " << idxnear << std::endl;
-			// std::cout << "HI: " << idxfar << std::endl;
-			Params lower_corner = idxnear.template cast<Float>()*width;
-			Params upper_corner = idxfar .template cast<Float>()*width;			
-			// std::cout << "corners " << lower_corner << " , " << upper_corner << std::endl;
-			if( lower_corner.squaredNorm() > 1.0 || upper_corner.squaredNorm() < 1.0 )
-				return false;
-		// now normalize and "return"
-		Params norm = (params-0.5);
-		norm = norm / norm.norm();
-		for(size_t i = 0; i < DIM; ++i ) get_quaternion_component(value,i) = norm[i];
+		if( params[2] > 0.5 ) return false; // convention is 'W' component is >= 0
+		Params euler = params*2.0*boost::math::constants::pi<Float>();
+		numeric::from_euler_angles(euler,value);
 		return true;
 	}
 	///@brief
@@ -91,12 +68,9 @@ struct QuaternionMap {
 		Params & params,
 		Index /*cell_index*/
 	) const {
-		assert( fabs(value.norm()-1.0) < 0.0001 );
-		for(size_t i = 0; i < DIM; ++i) assert( -1.0 <= get_quaternion_component(value,i) );
-		for(size_t i = 0; i < DIM; ++i) assert(  1.0 >= get_quaternion_component(value,i) );
-		for(size_t i = 0; i < DIM; ++i) params[i] = get_quaternion_component(value,i) / 2.0;
-		if( params[0] < 0 ) params = -params;
-		params = params + 0.5;
+		numeric::euler_angles(value,params);
+		// std::cout << params << std::endl;
+		params = params / 2.0 / boost::math::constants::pi<Float>();
 		for(size_t i = 0; i < DIM; ++i) assert( 0.0 <= params[i] );
 		for(size_t i = 1; i < DIM; ++i) assert( 1.0 >= params[i] );
 	}
@@ -124,7 +98,7 @@ struct QuaternionMap {
 	Float bin_inradius(Index resl) const { return 3.0/(Float)(1<<resl); }
 	///@brief cell size
 	Index num_cells() const { return 1; }
-	virtual ~QuaternionMap(){}
+	virtual ~EulerAnglesMap(){}
  private:
 };
 

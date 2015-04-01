@@ -9,7 +9,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 
 	/// @brief Parameter Mapping Policy class which represents a discrete set of choices for 0 dimensional Nests

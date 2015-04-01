@@ -7,8 +7,8 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include "scheme/nest/maps/UnitMap.hh"
-#include "scheme/nest/maps/DiscreteChoiceMap.hh"
+#include "scheme/nest/pmap/UnitMap.hh"
+#include "scheme/nest/pmap/DiscreteChoiceMap.hh"
 #include <boost/foreach.hpp>
 #include <iterator>
 
@@ -20,7 +20,7 @@ namespace nest {
 using std::cout;
 using std::endl;
 
-using namespace maps;
+using namespace pmap;
 
 TEST(NEST,concpets){
 	NEST< 1, concept::ValueArchitype, concept::ParamMapArchitype >().set_state(1,0);
@@ -66,7 +66,7 @@ TEST(NEST,map_discrete) {
 	using namespace boost::assign;
 	std::vector<double> choices;
 	choices += 42.0,152.345,8049782.83402;
-	NEST<0,double,maps::DiscreteChoiceMap,StoreValue> nest0(choices);
+	NEST<0,double,pmap::DiscreteChoiceMap,StoreValue> nest0(choices);
 	ASSERT_EQ(choices.size(),nest0.size());
 	ASSERT_EQ(choices.size(),nest0.size(0));	
 	ASSERT_EQ(choices.size(),nest0.size(3));

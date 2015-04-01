@@ -5,6 +5,7 @@
 #include "scheme/util/SimpleArray.hh"
 #include <boost/type_traits.hpp>
 #include <boost/assert.hpp>
+#include <scheme/util/assert.hh>
 
 #ifdef CEREAL
 #include <cereal/access.hpp>
@@ -122,15 +123,21 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
     }
   	void load( std::istream & in ){
     	BOOST_VERIFY( boost::is_pod<Float>::type::value );
+  		ALWAYS_ASSERT( in.good() );
   		in.read( (char*)&lb_, sizeof(Bounds) );
+  		ALWAYS_ASSERT( in.good() );
   		in.read( (char*)&ub_, sizeof(Bounds) );
-  		in.read( (char*)&cs_, sizeof(Bounds) );  		  		
+  		ALWAYS_ASSERT( in.good() );
+  		in.read( (char*)&cs_, sizeof(Bounds) );
+  		ALWAYS_ASSERT( in.good() );
         Indices extents;
         for(size_t i = 0; i < DIM; ++i){
         	in.read( (char*)(&(extents[i])), sizeof(typename BASE::size_type) );
         }
+  		ALWAYS_ASSERT( in.good() );
         this->resize(extents);
         for(size_t i = 0; i < this->num_elements(); ++i) in.read( (char*)(&(this->data()[i])), sizeof(Float) );
+  		ALWAYS_ASSERT( in.good() );
     }
     // BOOST_SERIALIZATION_SPLIT_MEMBER()
 

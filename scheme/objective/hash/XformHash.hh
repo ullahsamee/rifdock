@@ -3,7 +3,7 @@
 
 #include "scheme/util/SimpleArray.hh"
 #include "scheme/util/dilated_int.hh"
-#include "scheme/nest/maps/TetracontoctachoronMap.hh"
+#include "scheme/nest/pmap/TetracontoctachoronMap.hh"
 #include "scheme/numeric/util.hh"
 #include "scheme/numeric/bcc_lattice.hh"
 
@@ -27,7 +27,7 @@ struct XformHash_Quat_BCC7 {
 	typedef uint64_t Key;
 	typedef _Xform Xform;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<7,Float> F7;
 	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
@@ -120,7 +120,7 @@ struct XformHash_Quat_BCC7_Zorder {
 	typedef uint64_t Key;
 	typedef _Xform Xform;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<7,Float> F7;
 	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
@@ -361,7 +361,7 @@ template< class Xform >
 struct XformHash_bt24_BCC3_Zorder {
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
 	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
@@ -497,7 +497,7 @@ template< class Xform >
 struct XformHash_bt24_BCC3 {
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
 	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
@@ -591,7 +591,7 @@ template< class Xform >
 struct XformHash_bt24_BCC6 {
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 6, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
 	typedef scheme::util::SimpleArray<3,uint64_t> I3;
@@ -654,12 +654,12 @@ struct XformHash_bt24_BCC6 {
 
 			numeric::get_cell_48cell_half( q.coeffs(), cell_index );
 
-			q = nest::maps::hbt24_cellcen<Float>( cell_index ).inverse() * q;
+			q = nest::pmap::hbt24_cellcen<Float>( cell_index ).inverse() * q;
 			q = numeric::to_half_cell(q);
 
-			params[0] = q.x()/q.w()/nest::maps::cell_width<Float>() + 0.5;
-			params[1] = q.y()/q.w()/nest::maps::cell_width<Float>() + 0.5;			
-			params[2] = q.z()/q.w()/nest::maps::cell_width<Float>() + 0.5;
+			params[0] = q.x()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;			
+			params[2] = q.z()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
 
 			assert( params[0] >= 0.0 && params[0] <= 1.0 );
 			assert( params[1] >= 0.0 && params[1] <= 1.0 );
@@ -693,7 +693,7 @@ struct XformHash_bt24_BCC6 {
 		Eigen::Matrix3d m;
 		// ori_map_.params_to_value( params, cell_index, 0, m );
 		{
-			Float const & w(nest::maps::cell_width<Float>());
+			Float const & w(nest::pmap::cell_width<Float>());
 
 			assert( params[0] >= -0.00001 && params[0] <= 1.00001 );
 			assert( params[1] >= -0.00001 && params[1] <= 1.00001 );
@@ -715,7 +715,7 @@ struct XformHash_bt24_BCC6 {
 			Eigen::Quaternion<Float> q( 1.0, params[0], params[1], params[2] );
 			q.normalize();
 
-			q = nest::maps::hbt24_cellcen<Float>( cell_index ) * q;
+			q = nest::pmap::hbt24_cellcen<Float>( cell_index ) * q;
 
 			m = q.matrix();
 		}
@@ -743,7 +743,7 @@ template< class Xform >
 struct XformHash_bt24_Cubic_Zorder {
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::Cubic< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
 	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
@@ -857,7 +857,7 @@ template< class Xform >
 struct XformHash_Quatgrid_Cubic {
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::maps::TetracontoctachoronMap<> OriMap;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::Cubic< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
 	typedef scheme::util::SimpleArray<3,uint64_t> I3;	

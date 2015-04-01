@@ -9,7 +9,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 	using namespace Eigen;
 	using std::cout;

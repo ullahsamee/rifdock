@@ -18,15 +18,16 @@
 // #include "scheme/nest/NEST_neighbor.gtest.cc" // 4.567 // 3.26 wo Eigen
 // #include "scheme/nest/MultiNest.gtest.cc"
 
-// #include "scheme/nest/maps/parameter_maps.gtest.cc" // 7.546 // 4.0 wo Eigen
-// #include "scheme/nest/maps/parameter_maps_test_nbrcell.gtest.cc" // 4.472 // 3.1 wo eigen
-// #include "scheme/nest/maps/SphereDodec.gtest.cc"
-// #include "scheme/nest/maps/SphereQuad.gtest.cc"
-// #include "scheme/nest/maps/HecatonicosachoronMap.gtest.cc"
-// #include "scheme/nest/maps/QuaternionMap.gtest.cc"
-// #include "scheme/nest/maps/EulerAnglesMap.gtest.cc"
-#include "scheme/nest/maps/TetracontoctachoronMap.gtest.cc"
-// #include "scheme/nest/maps/Rotation1DMap.gtest.cc"
+// #include "scheme/nest/pmap/parameter_maps.gtest.cc" // 7.546 // 4.0 wo Eigen
+// #include "scheme/nest/pmap/parameter_maps_test_nbrcell.gtest.cc" // 4.472 // 3.1 wo eigen
+// #include "scheme/nest/pmap/SphereDodec.gtest.cc"
+// #include "scheme/nest/pmap/SphereQuad.gtest.cc"
+// #include "scheme/nest/pmap/HecatonicosachoronMap.gtest.cc"
+// #include "scheme/nest/pmap/QuaternionMap.gtest.cc"
+// #include "scheme/nest/pmap/EulerAnglesMap.gtest.cc"
+// #include "scheme/nest/pmap/TetracontoctachoronMap.gtest.cc"
+// #include "scheme/nest/pmap/Rotation1DMap.gtest.cc"
+// #include "scheme/nest/pmap/OriTransMap.gtest.cc"
 
 // #include "scheme/numeric/geom_4d.gtest.cc"
 // #include "scheme/numeric/bcc_lattice.gtest.cc"
@@ -55,7 +56,7 @@
 // #include "scheme/actor/BBStub.gtest.cc"
 
 // #include "scheme/rosetta/score/AnalyticEvaluation.gtest.cc"
-// #include "scheme/rosetta/score/RosettaField.gtest.cc"
+#include "scheme/rosetta/score/RosettaField.gtest.cc"
 
 // #include "scheme/chemical/ligand_factory.gtest.cc"
 

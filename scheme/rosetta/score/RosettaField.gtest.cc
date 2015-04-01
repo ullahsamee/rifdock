@@ -128,9 +128,9 @@ TEST( RosettaField, test_btn ){
 	RosettaField<Atom,EtableParamsInit> rf(atoms);
 
 	// some simple spot checks... not vetted... checks for changes only
-	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0,   0, 0, 5 ), 0 );
-	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -10, 4, 5 ), 276.20059 );
-	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -16, 7, 4 ), -0.010869551 );
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0,   0, 0, 5 ), 0.0f );
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -10, 4, 5 ), 266.95834f );
+	ASSERT_FLOAT_EQ( rf.compute_rosetta_energy( 0, -16, 7, 4 ), -0.034172565f );
 
 	F3 lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);
 	BOOST_FOREACH(Atom const & a,rf.atoms_){ 

@@ -23,7 +23,7 @@ struct SimpleAtom {
 	template<class P>
 	SimpleAtom(
 		P const & p,
-		int type = 0
+		int32_t type = 0
 	) : position_(p[0],p[1],p[2]),
 	    type_(type)
 	{}
@@ -46,14 +46,19 @@ struct SimpleAtom {
 		return numeric::approx_eq(o.position_,position_) && o.type_==type_; }
 
 private:
-	int type_;
 	Position position_;
+	int32_t type_;
 };
 
 
 template<class P>
 std::ostream & operator<<(std::ostream & out,SimpleAtom<P> const & x){
 	return out << "SimpleAtom( " << x.position() << ", " << x.type() << " )";
+}
+
+template<class P>
+void write_pdb( std::ostream & out, SimpleAtom<P> const & a ){
+	io::dump_pdb_atom( out, 0, a.position() );
 }
 
 using chemical::AtomData;
@@ -95,7 +100,7 @@ struct Atom {
 	// ~Atom(){ delete data_; }
 
 	template<class Xform>
-	Atom(Atom const & a,Xform const & moveby){
+	Atom( Atom const & a, Xform const & moveby ){
 		position_ = moveby*a.position();
 		type_ = a.type_;
 		data_ = a.data_;
@@ -126,7 +131,7 @@ std::ostream & operator<<(std::ostream & out,Atom<P> const & x){
 }
 
 template<class P>
-void dump_pdb(std::ostream & out,Atom<P> const & a){
+void write_pdb(std::ostream & out,Atom<P> const & a){
 	io::dump_pdb_atom(out, a.position(), a.data() );
 }
 

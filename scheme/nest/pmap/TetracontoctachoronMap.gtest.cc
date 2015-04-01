@@ -3,7 +3,7 @@
 #include "scheme/numeric/util.hh"
 #include "scheme/io/dump_pdb_atom.hh"
 
-#include "scheme/nest/maps/TetracontoctachoronMap.hh"
+#include "scheme/nest/pmap/TetracontoctachoronMap.hh"
 #include "scheme/nest/NEST.hh"
 
 #include <Eigen/Dense>
@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-namespace scheme { namespace nest { namespace maps { namespace test {
+namespace scheme { namespace nest { namespace pmap { namespace test {
 
 using namespace Eigen;
 using std::cout;

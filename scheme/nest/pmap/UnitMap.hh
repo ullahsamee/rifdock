@@ -11,7 +11,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 	///@brief Parameter to Value Map Policy Class
 	///@detail just copies the [0.0,1.0] hypercube coords to Value

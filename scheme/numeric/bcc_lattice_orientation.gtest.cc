@@ -2,7 +2,7 @@
 
 #include "scheme/numeric/bcc_lattice.hh"
 #include "scheme/io/dump_pdb_atom.hh"
-#include "scheme/nest/maps/TetracontoctachoronMap.hh"
+#include "scheme/nest/pmap/TetracontoctachoronMap.hh"
 
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real.hpp>
@@ -95,8 +95,8 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	BCC<3,F,S> bcc(I3(Nside+1),V3( -1.0/Nside ),V3( 1.0 ));
 	// Cubic<3,F,S> bcc(I3(Nside),V3(0.0),V3(1.0));
 
-	nest::maps::TetracontoctachoronMap<> map;
-	typedef nest::maps::TetracontoctachoronMap<3,V>::Params Params;
+	nest::pmap::TetracontoctachoronMap<> map;
+	typedef nest::pmap::TetracontoctachoronMap<3,V>::Params Params;
 	// cout << bcc.lower_ << endl;
 	// cout << bcc.width_ << endl;
 	// cout << bcc.lower_+bcc.width_*Nside << endl;

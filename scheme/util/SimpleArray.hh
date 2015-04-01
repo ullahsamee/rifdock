@@ -44,6 +44,10 @@ struct SimpleArray {
 		BOOST_STATIC_ASSERT(N2==N);
 		for(int i=0;i<N;++i) D[i] = a[i];
 	}
+	template<int N2>
+	SimpleArray(SimpleArray<N2,F> const & a, int ofst){
+		for(int i=0;i<N;++i) D[i] = a[i+ofst];
+	}
 	// SimpleArray() { for(size_t i = 0; i < N; ++i) D[i]=0; }
 	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }

@@ -4,6 +4,11 @@
 #include "scheme/rosetta/score/CubicPolynomial.hh"
 #include <vector>
 
+
+#include <iostream>
+#include <cstdlib>
+
+
 namespace scheme { namespace rosetta { namespace score {
 
 template<class Real>
@@ -138,7 +143,10 @@ struct EtableParams : std::vector<EtableParamsOnePair<Real> > {
 		Size i1 = atype1 < atype2 ? atype1 : atype2;
 		Size i2 = atype1 < atype2 ? atype2 : atype1;
 		Size index = (i1-1)*N_ATOMTYPES + i2 - (i1*(i1-1)/2 );
-		return this->operator[]( index );
+		if( index > 325 )
+			std::cout << atype1 << " " << atype2 << " " << index-1 << std::endl;
+		// std::exit(-1);
+		return this->at( index-1 );
 	}
 };
 

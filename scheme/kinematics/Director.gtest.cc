@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "scheme/nest/NEST.hh"
-#include "scheme/nest/maps/ScaleMap.hh"
+#include "scheme/nest/pmap/ScaleMap.hh"
 #include "scheme/kinematics/Director.hh"
 #include "scheme/numeric/X1dim.hh"
 
@@ -35,7 +35,34 @@ std::ostream & operator<<( std::ostream & out, TestScene const & s ){
 	return out;
 }
 
-TEST( Director, basic_test ){
+TEST( Director, test_NestDirector ){
+
+	typedef scheme::nest::NEST<1,X1dim> Nest1D;
+
+	TestScene scene;
+	scene.add_position(0);
+	scene.add_position(0);	
+	scene.add_position(0);	
+	scene.add_position(0);			
+
+	NestDirector< Nest1D > d0(0);
+	NestDirector< Nest1D > d2(2);	
+
+	d0.set_scene( 7, 3, scene );
+	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(0) );
+	ASSERT_EQ( X1dim(0.0)                , scene.position(1) );
+	ASSERT_EQ( X1dim(0.0)                , scene.position(2) );
+	ASSERT_EQ( X1dim(0.0)                , scene.position(3) );
+	
+	d2.set_scene( 7, 3, scene );
+	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(0) );
+	ASSERT_EQ( X1dim(0.0)                , scene.position(1) );
+	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(2) );
+	ASSERT_EQ( X1dim(0.0)                , scene.position(3) );
+
+}
+
+TEST( Director, test_TreeDirector ){
 	// cout << "Director" << endl;
 
 	TestScene scene;
@@ -56,9 +83,9 @@ TEST( Director, basic_test ){
 	root->add_position_nest(x1nest);
 	root->add_child(child);
 
-	NestDirector< numeric::X1dim > director(root);
+	TreeDirector< numeric::X1dim > director(root);
 
-	nest::NEST<2,util::SimpleArray<2>,nest::maps::ScaleMap> refnest( 
+	nest::NEST<2,util::SimpleArray<2>,nest::pmap::ScaleMap> refnest( 
 		util::SimpleArray<2>(20.0,10.0), 
 		util::SimpleArray<2>(21.0,12.0),
 		util::SimpleArray<2,uint64_t>(1,2)

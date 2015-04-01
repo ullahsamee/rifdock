@@ -242,8 +242,8 @@ namespace impl {
 		}
 
 		template<class Actor>
-		size_t num_actors(Index ib) {
-			return mutable_conformation_asym(ib).template get<Actor>().size();
+		size_t num_actors(Index ib) const {
+			return bodies_.at(ib).conformation().template get<Actor>().size();
 		}
 
 		//////////////////////////// actor iteration //////////////////////////////////
@@ -590,6 +590,31 @@ namespace impl {
 
 
 	};
+
+	template< class Scene >
+	struct ActorDumpPDB {
+		Scene const & scene;
+		std::ostream & out;
+		ActorDumpPDB(Scene const & s, std::ostream & o) : scene(s), out(o) {}
+		template<class Actor>
+		void operator()( Actor const & ){
+			typedef typename Scene::Index Index;
+			for( Index ib = 0; ib < scene.n_bodies_; ++ib ){
+				for( Index ia = 0; ia < scene.template num_actors<Actor>(ib); ++ia ){
+					Actor const & a( scene.template get_actor<Actor>(ib,ia) );
+					write_pdb( out, a );
+				}
+			}
+		}
+	};
+
+
+	template< class Scene >
+	void write_pdb( std::ostream & out, Scene const & scene ){
+		ActorDumpPDB<Scene> dumper( scene, out );
+		boost::mpl::for_each< typename Scene::Actors >( dumper );
+	}
+
 
 }
 }

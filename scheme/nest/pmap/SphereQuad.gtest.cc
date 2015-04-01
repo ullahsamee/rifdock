@@ -1,5 +1,5 @@
 
-#include "scheme/nest/maps/SphereQuad.hh"
+#include "scheme/nest/pmap/SphereQuad.hh"
 #include "scheme/nest/NEST.hh"
 #include "scheme/nest/NEST_concepts.hh"
 #include "scheme/nest/NEST_test_util.hh"
@@ -8,7 +8,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 using std::cout;
 using std::endl;

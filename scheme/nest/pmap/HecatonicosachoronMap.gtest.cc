@@ -16,7 +16,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/lexical_cast.hpp>
 
-namespace scheme { namespace nest { namespace maps { namespace hecat_test {
+namespace scheme { namespace nest { namespace pmap { namespace hecat_test {
 
 using namespace Eigen;
 using std::cout;

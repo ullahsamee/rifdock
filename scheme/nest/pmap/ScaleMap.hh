@@ -12,7 +12,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 	///@brief Parameter Mapping Policy for cartesian grids
 	///@tparam DIM the dimension number of the input parameter space
@@ -52,13 +52,16 @@ namespace maps {
 		///@brief construct with default lb, ub, bs
 		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default lb, ub
-		ScaleMap(Indices const & bs) : 
+		template< class I >
+		ScaleMap(I const & bs) : 
 			cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default bs
-		ScaleMap(Params const & lb, Params const & ub) : 
+		template< class P >
+		ScaleMap(P const & lb, P const & ub) : 
 			lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
 		///@brief construct with specified lb, ub and bs
-		ScaleMap(Params const & lb, Params const & ub, Indices const & bs) : 
+		template< class P, class I >
+		ScaleMap(P const & lb, P const & ub, I const & bs) : 
 			lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
 
 		///@brief sets up cell_size_pref_sum

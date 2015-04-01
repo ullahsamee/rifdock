@@ -3,9 +3,9 @@
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
 // #include <boost/random/uniform_real.hpp>
 // #include <boost/random/mersenne_twister.hpp>
-#include "scheme/nest/maps/UnitMap.hh"
-#include "scheme/nest/maps/ScaleMap.hh"
-#include "scheme/nest/maps/DiscreteChoiceMap.hh"
+#include "scheme/nest/pmap/UnitMap.hh"
+#include "scheme/nest/pmap/ScaleMap.hh"
+#include "scheme/nest/pmap/DiscreteChoiceMap.hh"
 #include <boost/foreach.hpp>
 #include <iterator>
 
@@ -15,7 +15,7 @@ namespace nest {
 using std::cout;
 using std::endl;
 
-using namespace maps;
+using namespace pmap;
 
 TEST(NEST_NEIGHBOR,dim2_test_case){
 	NEST<2> nest;

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "scheme/nest/NEST.hh"
-#include "scheme/nest/maps/EulerAnglesMap.hh"
+#include "scheme/nest/pmap/EulerAnglesMap.hh"
 #include "scheme/io/dump_pdb_atom.hh"
 
 #include <Eigen/Geometry>
@@ -14,7 +14,7 @@
 
 #include <fstream>
 
-namespace scheme { namespace nest { namespace maps { namespace test {
+namespace scheme { namespace nest { namespace pmap { namespace test {
 
 using std::cout;
 using std::endl;

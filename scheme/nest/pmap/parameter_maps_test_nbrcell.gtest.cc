@@ -1,5 +1,5 @@
-#include "scheme/nest/maps/UnitMap.hh"
-#include "scheme/nest/maps/ScaleMap.hh"
+#include "scheme/nest/pmap/UnitMap.hh"
+#include "scheme/nest/pmap/ScaleMap.hh"
 #include "scheme/nest/NEST.hh"
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
@@ -9,7 +9,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 
 using std::cout;

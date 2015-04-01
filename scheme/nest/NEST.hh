@@ -5,7 +5,7 @@
 #include "scheme/util/dilated_int.hh"
 #include "scheme/util/StoragePolicy.hh"
 #include "scheme/util/template_loop.hh"
-#include "scheme/nest/maps/UnitMap.hh"
+#include "scheme/nest/pmap/UnitMap.hh"
 #include "scheme/util/meta/util.hh"
 #include "scheme/util/meta/print_type.hh"
 
@@ -207,7 +207,7 @@ namespace nest {
 	/// Main NEST template
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
-	namespace maps { template< int DIM, class Value, class Index, class Float > struct UnitMap; }
+	namespace pmap { template< int DIM, class Value, class Index, class Float > struct UnitMap; }
 
 	struct Empty {};
 
@@ -222,7 +222,7 @@ namespace nest {
 	///@note floats have plenty of precision for internal parameters
 	template< int DIM,
 		class _Value = util::SimpleArray<DIM,double>,
-		template<int,class,class,class> class ParamMap = maps::UnitMap,
+		template<int,class,class,class> class ParamMap = pmap::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class _Index = uint64_t,
 		class Float = double,
@@ -252,14 +252,30 @@ namespace nest {
 
 		///@brief default ctor
 		NEST() {}
-		///@brief general constructor
-		NEST(Index num_cells) : ParamMapType(num_cells) {}
-		///@brief for supporting ParamMaps, construct with bs
-		NEST(Indices const & bs) : ParamMapType(bs) {}
-		///@brief for supporting ParamMaps, construct with default bs
-		NEST(Params const & lb, Params const & ub) : ParamMapType(lb,ub) {}
-		///@brief for supporting ParamMaps, construct with specified lb, ub and bs
-		NEST(Params const & lb, Params const & ub, Indices const & bs) : ParamMapType(lb,ub,bs) {}
+		// ///@brief general constructor
+		// NEST(Index num_cells) : ParamMapType(num_cells) {}
+		// ///@brief for supporting ParamMaps, construct with bs
+		// NEST(Indices const & bs) : ParamMapType(bs) {}
+		// ///@brief for supporting ParamMaps, construct with default bs
+		// NEST(Params const & lb, Params const & ub) : ParamMapType(lb,ub) {}
+		// ///@brief for supporting ParamMaps, construct with specified lb, ub and bs
+		// NEST(Params const & lb, Params const & ub, Indices const & bs) : ParamMapType(lb,ub,bs) {}
+
+		///@brief general constructor 1
+		template< class A >
+		NEST( A const & a ) : ParamMapType( a ) {}
+
+		///@brief general constructor 2
+		template< class A, class B >
+		NEST(A const & a, B const & b) : ParamMapType(a,b) {}
+
+		///@brief general constructor 3
+		template< class A, class B, class C >
+		NEST(A const & a, B const & b, C const & c) : ParamMapType(a,b,c) {}
+
+		///@brief general constructor 3
+		template< class A, class B, class C, class D >
+		NEST(A const & a, B const & b, C const & c, D const & d) : ParamMapType(a,b,c,d) {}
 
 		///@brief get size of NEST at depth resl
 		///@return size of NEST at resolution depth resl
@@ -408,6 +424,11 @@ namespace nest {
 			get_neighbors(indices,cell_index,resl,out);
 		}
 
+		bool
+		get_state( Index index, Index resl, Value & v ) const {
+			return set_value( index, resl, v );
+		}
+
 		///////////////////////////////////////
 		//// virtual interface functions
 		///////////////////////////////////////
@@ -416,7 +437,7 @@ namespace nest {
 		///@returns false if invalid index
 		virtual bool virtual_get_state(Index index, Index resl, boost::any & result) {
 			Value & v = *boost::any_cast<Value*>(result);
-			bool status = set_value( index, resl, v );
+			bool status = this->get_state( index, resl, v );
 			if(status) this->set_stored_value(v);
 			return status;
 		}

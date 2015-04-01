@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "scheme/nest/NEST.hh"
-#include "scheme/nest/maps/QuaternionMap.hh"
+#include "scheme/nest/pmap/QuaternionMap.hh"
 
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real.hpp>
@@ -16,7 +16,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 using std::cout;
 using std::endl;

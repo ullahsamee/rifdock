@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 
-namespace scheme { namespace nest { namespace maps {
+namespace scheme { namespace nest { namespace pmap {
 
 	template<
 		int DIM=1,

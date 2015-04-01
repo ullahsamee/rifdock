@@ -1,10 +1,10 @@
 
-#include "scheme/nest/maps/SphereDodec.hh"
+#include "scheme/nest/pmap/SphereDodec.hh"
 #include <gtest/gtest.h>
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 // TEST( SphereDodec, DISABLED_cell_centers ){
 // 	typedef SphereDodec<2> MapType;

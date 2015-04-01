@@ -1,7 +1,7 @@
 #ifndef INCLUDED_scheme_util_exit_HH
 #define INCLUDED_scheme_util_exit_HH
 
-
+#include <iostream>
 
 
 #define ALWAYS_ASSERT(_Expression) \

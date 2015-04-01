@@ -14,7 +14,7 @@
 
 #include <fstream>
 
-namespace scheme { namespace nest { namespace maps {
+namespace scheme { namespace nest { namespace pmap {
 
 using namespace Eigen;
 using std::cout;

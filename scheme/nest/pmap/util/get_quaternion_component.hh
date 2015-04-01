@@ -6,7 +6,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 
 /// all this get_quaternion_component mess is to handle eigen quaternions

@@ -10,7 +10,7 @@
 #include <iostream>
 #include <vector>
 
-namespace scheme { namespace nest { namespace maps {
+namespace scheme { namespace nest { namespace pmap {
 
 	using namespace Eigen;
 	using std::cout;
@@ -180,11 +180,8 @@ namespace scheme { namespace nest { namespace maps {
 			std::exit(-1);
 		}
 
-		///@brief aka covering radius max distance from bin center to any value within bin
-		Float bin_circumradius(Index resl) const {
-			BOOST_VERIFY( resl < 6 );
-			if( resl == 0 ){
-				static Float const covrad[25] = {
+		static Float const * get_covrad_data(){
+			static Float const covrad[25] = {
 					 62.76235 , // 1
 					 38.63604 , // 2
 					 26.71264 , // 3
@@ -211,6 +208,24 @@ namespace scheme { namespace nest { namespace maps {
 					  3.64786 , // 24
 					  3.44081   // 25
 				};
+				return covrad;
+		}
+
+		static int get_nside_for_rot_resl_deg( Float rot_resl_deg ){
+			static Float const * covrad = get_covrad_data();
+			int nside = 0;
+			while( covrad[nside] > rot_resl_deg && nside < 23 ){
+				// std::cout << nside << " " << covrad[nside] << std::endl;
+				++nside;
+			}
+			return nside+1;
+		}
+
+		///@brief aka covering radius max distance from bin center to any value within bin
+		Float bin_circumradius(Index resl) const {
+			BOOST_VERIFY( resl < 6 );
+			if( resl == 0 ){
+				static Float const * covrad = get_covrad_data();
 				if(nside_ > 25){
 					std::cerr << "TetracontoctachoronMap::bin_circumradius > 25 not implemented" << std::endl;
 					std::exit(-1);

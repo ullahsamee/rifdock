@@ -8,7 +8,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 	using std::cout;
 	using std::endl;

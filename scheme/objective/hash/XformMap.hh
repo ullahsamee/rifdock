@@ -4,7 +4,7 @@
 #include "scheme/util/SimpleArray.hh"
 #include "scheme/util/dilated_int.hh"
 #include "scheme/numeric/FixedPoint.hh"
-#include "scheme/nest/maps/TetracontoctachoronMap.hh"
+#include "scheme/nest/pmap/TetracontoctachoronMap.hh"
 #include "scheme/numeric/bcc_lattice.hh"
 #include "scheme/objective/hash/XformHash.hh"
 #include "scheme/objective/hash/XformHashNeighbors.hh"

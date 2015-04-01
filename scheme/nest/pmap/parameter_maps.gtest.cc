@@ -1,6 +1,6 @@
-#include "scheme/nest/maps/UnitMap.hh"
-#include "scheme/nest/maps/ScaleMap.hh"
-#include "scheme/nest/maps/DiscreteChoiceMap.hh"
+#include "scheme/nest/pmap/UnitMap.hh"
+#include "scheme/nest/pmap/ScaleMap.hh"
+#include "scheme/nest/pmap/DiscreteChoiceMap.hh"
 #include "scheme/nest/NEST.hh"
 #include "scheme/nest/NEST_test_util.hh"
 #include <gtest/gtest.h>
@@ -11,7 +11,7 @@
 
 namespace scheme {
 namespace nest {
-namespace maps {
+namespace pmap {
 
 
 using std::cout;
