@@ -264,26 +264,26 @@ std::ostream & operator<<(std::ostream & out, NumericInstanceMap<A,B,C> const & 
 }
 
 
-template<class A, class B, class C>
-NumericInstanceMap<A,B,C> operator*(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){
+template<class A, class B, class C, class O>
+NumericInstanceMap<A,B,C> operator*(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,O,C> const & b){
     NumericInstanceMap<A,B,C> result = a;
     result *= b;
     return result;
 }
-template<class A, class B, class C>
-NumericInstanceMap<A,B,C> operator+(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){
+template<class A, class B, class C, class O>
+NumericInstanceMap<A,B,C> operator+(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,O,C> const & b){
     NumericInstanceMap<A,B,C> result = a;
     result += b;
     return result;
 }
-template<class A, class B, class C>
-NumericInstanceMap<A,B,C> operator-(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){
+template<class A, class B, class C, class O>
+NumericInstanceMap<A,B,C> operator-(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,O,C> const & b){
     NumericInstanceMap<A,B,C> result = a;
     result -= b;
     return result;
 }
-template<class A, class B, class C>
-NumericInstanceMap<A,B,C> operator/(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,B,C> const & b){
+template<class A, class B, class C, class O>
+NumericInstanceMap<A,B,C> operator/(NumericInstanceMap<A,B,C> const & a, NumericInstanceMap<A,O,C> const & b){
     NumericInstanceMap<A,B,C> result = a;
     result /= b;
     return result;

@@ -1,7 +1,7 @@
 #ifndef INCLUDED_objective_hash_XformMap_HH
 #define INCLUDED_objective_hash_XformMap_HH
 
-#include "scheme/util/SimpleArray.hh"
+// #include "scheme/util/SimpleArray.hh"
 #include "scheme/util/dilated_int.hh"
 #include "scheme/numeric/FixedPoint.hh"
 #include "scheme/nest/pmap/TetracontoctachoronMap.hh"
@@ -17,7 +17,8 @@ namespace scheme { namespace objective { namespace hash {
 
 template< int ArrayBits, class Key, class Val >
 struct XfromMapSerializer {
-    typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
+    // typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
+  	typedef  Val  ValArray;    
 	bool operator()( std::istream * in, std::pair<Key const,ValArray> * val ) const {
 		Key & k = const_cast<Key&>( val->first );
 		in->read( (char*)&k, sizeof(Key) );
@@ -35,19 +36,22 @@ struct XfromMapSerializer {
 
 template<
 	class Xform,
-	class Val=numeric::FixedPoint<-17>,
-	int ArrayBits=4,
+	// class Val=numeric::FixedPoint<-17>,
+	// int ArrayBits=4,
+	class Val,
 	// template<class X> class _Hasher = XformHash_bt24_BCC6_Zorder >
 	template<class X> class _Hasher = XformHash_Quat_BCC7_Zorder ,
-	class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Val >
+	// class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Val >
+	class ElementSerializer = XfromMapSerializer< 0, uint64_t, Val >	
 >
 struct XformMap {
-	BOOST_STATIC_ASSERT( ArrayBits >= 0 );
+	// BOOST_STATIC_ASSERT( ArrayBits >= 0 );
 	typedef _Hasher<Xform> Hasher;
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-    typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
-    typedef google::dense_hash_map<Key,ValArray> Map;
+    // typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
+    // typedef google::dense_hash_map<Key,ValArray> Map;
+    typedef google::dense_hash_map<Key,Val> Map;    
     Hasher hasher_;
     Map map_;
 	ElementSerializer element_serializer_;
@@ -67,28 +71,32 @@ struct XformMap {
 	void clear() { map_.clear(); }
 
 	bool insert( Key k, Val val ){
-		Key k0 = k >> ArrayBits;
-		Key k1 = k & (((Key)1<<ArrayBits)-1);
-		typename Map::iterator iter = map_.find(k0);
-		if( iter == map_.end() ){
-			ValArray aval(0.0);
-            std::pair< typename Map::iterator, bool > result = map_.insert( std::make_pair(k0,aval) ); // TODO: should check for failuer here
-            if( !result.second ) return false;
-            iter = result.first;
-		}
-		iter->second[k1] = val;
-        return true;
+		map_.insert( std::make_pair(k,val) );
+		return true;
+		// Key k0 = k >> ArrayBits;
+		// Key k1 = k & (((Key)1<<ArrayBits)-1);
+		// typename Map::iterator iter = map_.find(k0);
+		// if( iter == map_.end() ){
+		// 	ValArray aval(0.0);
+  //           std::pair< typename Map::iterator, bool > result = map_.insert( std::make_pair(k0,aval) ); // TODO: should check for failuer here
+  //           if( !result.second ) return false;
+  //           iter = result.first;
+		// }
+		// iter->second[k1] = val;
+  //       return true;
 	}
 	bool insert( Xform const & x, Val val ){
 		return this->insert( hasher_.get_key( x ), val );
 	}
 	Val operator[]( Key k ) const {
-		Key k0 = k >> ArrayBits;
-		Key k1 = k & (((Key)1<<ArrayBits)-1);
-		typename Map::const_iterator iter = map_.find(k0);
-		if( iter == map_.end() ){ return 0.0; }
-		return iter->second[k1];
-		// return ( iter == map_.end() ) ? 0.0 : iter->second[k1];
+		// Key k0 = k >> ArrayBits;
+		// Key k1 = k & (((Key)1<<ArrayBits)-1);
+		// typename Map::const_iterator iter = map_.find(k0);
+		// if( iter == map_.end() ){ return Val(); }
+		// return iter->second[k1];
+		typename Map::const_iterator iter = map_.find(k);
+		if( iter == map_.end() ){ return Val(); }
+		return iter->second;
 	}
 	Val operator[]( Xform const & x ) const {
 		return this->operator[]( hasher_.get_key( x ) );
@@ -136,25 +144,30 @@ struct XformMap {
 
 	}
 
-	size_t total_size() const { return map_.size()*(1<<ArrayBits); }
+	size_t size() const { return map_.size(); }//*(1<<ArrayBits); }
+	// size_t total_size() const { return map_.size(); }//*(1<<ArrayBits); }
 
-	size_t mem_use() const { return map_.bucket_count()*sizeof(ValArray); }
+	size_t mem_use() const { return map_.bucket_count()*(sizeof(Key)+sizeof(Val)); } //*sizeof(ValArray); }
 
 	size_t count( Val val ) const {
+		// int count = 0;
+		// for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
+		// 	for(int j = 0; j < (1<<ArrayBits); ++j){
+		// 		if( i->second[j] == val ) ++count;
+		// 	}
+		// }
+		// retrn count;
+
 		int count = 0;
 		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
-			for(int j = 0; j < (1<<ArrayBits); ++j){
-				if( i->second[j] == val ) ++count;
-			}
+			if( i->second == val ) ++count;
 		}
 		return count;
+
 	}
-	size_t count_not( Val val ) const {
-		int count = 0;
+	size_t count_not( Val val ) const {		int count = 0;
 		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
-			for(int j = 0; j < (1<<ArrayBits); ++j){
-				if( i->second[j] != val ) ++count;
-			}
+			if( i->second != val ) ++count;
 		}
 		return count;
 	}
@@ -182,8 +195,8 @@ struct XformMap {
 		// std::cout << "SIZE " << s << std::endl;
 		out.write( (char*)&s, sizeof(size_t) );
 		out.write( hasher_.name().c_str(), hasher_.name().size()*sizeof(char) );
-		int tmp = ArrayBits;
-		out.write( (char*)&tmp, sizeof(int) );
+		// int tmp = ArrayBits;
+		// out.write( (char*)&tmp, sizeof(int) );
 		out.write( (char*)&cart_resl_, sizeof(Float) );
 		out.write( (char*)&ang_resl_, sizeof(Float) );		
 		out.write( (char*)&cart_bound_, sizeof(Float) );		
@@ -216,12 +229,12 @@ struct XformMap {
 			std::cerr << "XformMap::load, hasher type mismatch, expected " << hasher_.name() << " got "  << buf << std::endl;
 			return false;
 		}
-		int tmparraybits;
-		in.read( (char*)&tmparraybits, sizeof(int) );
-		if( ArrayBits != tmparraybits ){
-			std::cerr << "XformMap::load, ArrayBits, expected " << ArrayBits << " got "  << tmparraybits << std::endl;
-			return false;
-		}
+		// int tmparraybits;
+		// in.read( (char*)&tmparraybits, sizeof(int) );
+		// if( ArrayBits != tmparraybits ){
+		// 	std::cerr << "XformMap::load, ArrayBits, expected " << ArrayBits << " got "  << tmparraybits << std::endl;
+		// 	return false;
+		// }
 
 		Float cart_resl, ang_resl, cart_bound;
 		in.read((char*)&cart_resl,sizeof(Float));

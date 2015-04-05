@@ -137,7 +137,7 @@ TEST(BoundingFieldCache,test_bounding_delta){
 		// if( idx.norm() > spread+sqrt(3.0) && bf1[idx]!=0.0) cout << "FAIL0 " << idx << " " << idx.norm()-spread << endl;	
 		// not sure if cell diagonal sqrt(3) is tight bound here... seems like it should be sqrt(3)/2...
 		if( idx.norm() < spread-sqrt(3.0) ) ASSERT_EQ( bf1[idx], 1.0 );
-		if( idx.norm() > spread+sqrt(3.0) ) ASSERT_LE( bf1[idx], 0.0 ); // can be "uninitialized" vals in corners
+		if( idx.norm() > spread+sqrt(3.0) ) ASSERT_LE( bf1[idx], 0.00000000001 ); // can be "uninitialized" vals in corners
 	}
 }
 

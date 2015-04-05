@@ -6,6 +6,8 @@
 #include "scheme/objective/ObjectiveVisitor.hh"
 #include "scheme/io/cache.hh"
 
+#include "scheme/util/meta/util.hh"
+
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -26,9 +28,23 @@ template<class _Interaction>
 struct SetVisitor{
 	typedef _Interaction Interaction;
 	std::set<Interaction> set_;
-	void operator()(Interaction const & i, double =1.0){
+	
+	void operator()(
+		Interaction const & i,
+		double =1.0
+	){
 		set_.insert(i);
 	}
+
+	template< class I = Interaction >
+	typename boost::enable_if< util::meta::is_pair<I> , void >::type 
+	operator()(
+		typename I::first_type const & i,
+		typename I::second_type const & j,
+		double = 1.0){
+		set_.insert( std::make_pair(i,j) );
+	}
+
 };
 template<class _Interaction>
 struct AsymSetVisitor : SetVisitor<_Interaction> {
@@ -137,8 +153,11 @@ struct Config {};
 struct ObjADIFixed {
 	typedef std::pair<ADI,FixedActor> Interaction;
 	template<class Config>
-	double operator()(Interaction const & i, Config const& ) const {
-		return i.first.position().val_ * i.second.data_;
+	double operator()(Interaction const & i, Config const& c ) const {
+		return this->operator()( i.first, i.second,c);
+	}
+	double operator()( ADI const & i, FixedActor const & j, Config const& ) const {
+		return i.position().val_ * j.data_;
 	}
 };
 struct ObjFixedADI {
@@ -147,11 +166,17 @@ struct ObjFixedADI {
 	double operator()(Interaction const & i, Config const& ) const {
 		return i.second.position().val_ * i.first.data_;
 	}
+	double operator()( FixedActor const & i, ADI const & j, Config const& ) const {
+		return j.position().val_ * i.data_;
+	}
 };
 struct ObjFixedFixed {
 	typedef std::pair<FixedActor,FixedActor> Interaction;
 	template<class Config>
 	double operator()(Interaction const &, Config const& ) const {
+		std::exit(-1);
+	}
+	double operator()( FixedActor const & i, FixedActor const & j, Config const& ) const {
 		std::exit(-1);
 	}
 };

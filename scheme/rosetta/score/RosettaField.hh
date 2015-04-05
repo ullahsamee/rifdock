@@ -14,17 +14,24 @@ template< class Atom, class EtableInit >
 struct RosettaField {
 	typedef util::SimpleArray<3,int> I3;
 	typedef util::SimpleArray<3,float> F3;	
+	
 	EtableParams<float> params;
 	std::vector<Atom> atoms_;
 	boost::multi_array< std::vector<Atom> , 3 > atom_bins_;
 	F3 atom_bins_lb_, atom_bins_ub_;
 	I3 atom_bins_dim_;
+
 	RosettaField() { EtableInit::init_EtableParams(params); }
-	RosettaField(std::vector<Atom> const & atm) : atoms_(atm) { EtableInit::init_EtableParams(params); init_atom_bins(); }
+
+	RosettaField(
+		std::vector<Atom> const & atm
+	) : atoms_(atm) {
+		EtableInit::init_EtableParams(params); init_atom_bins();
+	}
 
 	void init_atom_bins(){
-		atom_bins_lb_.fill(9e9);
-		atom_bins_ub_.fill(-9e9);		
+		atom_bins_lb_.fill( std::numeric_limits<float>::max() );
+		atom_bins_ub_.fill( std::numeric_limits<float>::min() );		
 		BOOST_FOREACH( Atom const & a, atoms_ ){ 
 			atom_bins_lb_ = atom_bins_lb_.min(a.position());
 			atom_bins_ub_ = atom_bins_ub_.max(a.position());
@@ -63,10 +70,14 @@ struct RosettaField {
 		if( dis2 > 36.0 ) return 0; //  103s vs 53s
 		float const dis = std::sqrt(dis2);
 		float const inv_dis2 = 1.0f/dis2;
-		float atr0,rep0,sol0;
-		EtableParamsOnePair<float> const & p = params.params_for_pair(a.type(),atype);
+		float atr0=0,rep0=0,sol0=0;
+		int at = a.type();
+		bool neg_only = at < 0;
+		if( neg_only ) at = -at;
+		EtableParamsOnePair<float> const & p = params.params_for_pair( at, atype );
 		lj_evaluation( p, dis, dis2, inv_dis2, atr0, rep0);
-		lk_evaluation( p, dis, inv_dis2, sol0 ); 
+		lk_evaluation( p, dis, inv_dis2, sol0 );
+		atr0 = neg_only ? 0.0 : atr0;
 		return 0.8*atr0 + 0.44*rep0 + 0.75*sol0;
 	}
 

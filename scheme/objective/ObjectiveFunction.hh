@@ -101,6 +101,40 @@ namespace impl {
 		}
 	};
 
+	///@brief helper functor to call objective for all Interaction instances in InteractionSource
+	template<
+		class Interaction,
+		class Results,
+		class Config
+	>
+	struct EvalObjectiveSplitPair {
+		typename Interaction::first_type const & interaction_1;
+		typename Interaction::second_type const & interaction_2;		
+		Results & results;
+		Config const & config;
+		double weight;
+		EvalObjectiveSplitPair(
+			typename Interaction::first_type const & i,
+			typename Interaction::second_type const & j,			
+			Results & r,
+			Config const & c,
+			double w
+		) : interaction_1(i),interaction_2(j),results(r),config(c),weight(w) {}
+
+		template<class Objective>
+		void
+		operator()(Objective const & objective) const {
+			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
+			#ifdef DEBUG_IO
+			std::cout << "    EvalObjectiveSplitPair:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
+			#endif
+			typedef typename f::result_of::value_at_key<Results,Objective>::type Result;
+			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
+			Result result = objective( interaction_1, interaction_2, config );
+			results.template get<Objective>() += weight*result;
+		}
+	};
+
 	using m::false_;
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(DefinesInteractionWeight,false_)
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(UseVisitor,false_)
@@ -192,30 +226,46 @@ namespace impl {
 		class Config
 	>
 	struct ObjectivesVisitor {
+
 		typedef _Interaction Interaction;
 		typedef m::false_ Symmetric;
+
 		Objectives const & objectives_;
 		Results & results_;
 		Config const & config_;
+
 		ObjectivesVisitor(
 			Objectives const & o,
 			Results  & r,
 			Config const & c
 		) : objectives_(o), results_(r), config_(c){}
-		void operator()( Interaction const & interaction, double weight=1.0) {
+
+		void
+		operator()( Interaction const & interaction, double weight=1.0) {
 			f::for_each(
 				objectives_,
 				EvalObjective< Interaction, Results , Config >
 					         ( interaction, results_, config_, weight )
 			);
 		}
-		// void operator()( typename Interaction::first_type const & a1, typename Interaction::second_type const & a2, double weight=1.0) {
-		// 	f::for_each(
-		// 		objectives_,
-		// 		EvalObjective< Interaction, Results , Config >
-		// 			         ( a1, a2, results_, config_, weight )
-		// 	);
-		// }
+		#ifdef CXX11
+			template< class I = Interaction >
+		#else
+			template< class I >
+		#endif
+		typename boost::enable_if< util::meta::is_pair<I> , void >::type 
+		operator()( 
+			typename I::first_type const & a1, 
+			typename I::second_type const & a2, 
+			double weight=1.0
+		) {
+			f::for_each(
+				objectives_,
+				EvalObjectiveSplitPair< I, Results , Config >
+					         ( a1, a2, results_, config_, weight )
+			);
+		}
+
 	};
 
 	template<
@@ -290,7 +340,7 @@ struct ObjectiveConcept {
 ///@tparam Config a global config object passed to each Objective
 template<
 	typename _Objectives,
-	typename _Config = int
+	typename _Config
 	>
 struct ObjectiveFunction {
 
@@ -342,9 +392,15 @@ struct ObjectiveFunction {
 		impl::get_Result_double<m::_1>
 	> Results;
 
+	///@typedef Weights
+	typedef util::meta::NumericInstanceMap<
+		Objectives,
+		impl::get_Result_double<m::_1> // TODO: fix this to avoid weights storing extra stuff???
+	> Weights;
+
 	ObjectiveMap objective_map_;
 	Config default_config_;
-	Results weights_;
+	Weights weights_;
 
 	///@brief default c'tor, init weights_ to 1
 	ObjectiveFunction() : weights_(1.0) {}

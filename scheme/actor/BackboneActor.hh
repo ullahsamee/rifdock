@@ -14,6 +14,7 @@ namespace actor {
 
 		///@brief Position type, leave out to make actor "Fixed"
 		typedef _Position Position;
+		typedef typename Position::Scalar Float;
 		typedef BackboneActor<Position> THIS;
 
 		Position position_;
@@ -48,7 +49,7 @@ namespace actor {
 
 		template <class Vin>
 		void from_n_ca_c( Vin _n, Vin _ca, Vin _c ){
-			typedef Eigen::Vector3d V;
+			typedef Eigen::Matrix<Float,3,1> V;
 			V n (  _n[0],  _n[1],  _n[2] );
 			V ca( _ca[0], _ca[1], _ca[2] );
 			V c (  _c[0],  _c[1],  _c[2] );									
@@ -57,7 +58,7 @@ namespace actor {
 			V e3 = e1.cross( c - ca );
 			e3.normalize();
 			V e2 = e3.cross( e1 );
-			Eigen::Matrix3d m;
+			Eigen::Matrix<Float,3,3> m;
 			m(0,0) = e1[0];   m(0,1) = e2[0];   m(0,2) = e3[0];
 			m(1,0) = e1[1];   m(1,1) = e2[1];   m(1,2) = e3[1];
 			m(2,0) = e1[2];   m(2,1) = e2[2];   m(2,2) = e3[2];			

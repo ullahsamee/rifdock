@@ -130,11 +130,11 @@ struct FieldCache3D : public VoxelArray<3,Float> {
 };
 
 template<class Float> struct AggMin {
-	static Float initval() { return 9e9; }
+	static Float initval() { return std::numeric_limits<Float>::max(); }
 	static Float aggregate( Float agg, Float newval ) { return std::min(agg,newval); }
 };
 template<class Float> struct AggMax {
-	static Float initval() { return -9e9; }
+	static Float initval() { return std::numeric_limits<Float>::min(); }
 	static Float aggregate( Float agg, Float newval ) { return std::max(agg,newval); }
 };
 
@@ -195,14 +195,17 @@ struct BoundingFieldCache3D : public VoxelArray<3,Float> {
 		Float3 end = ref.ub_.min(f3+spread);
 		Float3 idx;
 		Float val = Aggregator::initval();
+		int count = 0;
 		for(idx[0] = beg[0]; idx[0] < end[0]; idx[0] += ref.cs_[0]){
 		for(idx[1] = beg[1]; idx[1] < end[1]; idx[1] += ref.cs_[1]){
 		for(idx[2] = beg[2]; idx[2] < end[2]; idx[2] += ref.cs_[2]){
-			if( (f3-idx).squaredNorm() <= spread*spread )
+			if( (f3-idx).squaredNorm() <= spread*spread ){
 				val = Aggregator::aggregate( val, ref[idx] );
+				++count;
+			}
 		}}}
 		// std::cout << f3 << " | " << beg << " => " << end << std::endl;
-		return val;
+		return count==0 ? 0.0 : val;
 	}
 };
 

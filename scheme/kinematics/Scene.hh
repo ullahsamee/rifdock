@@ -62,6 +62,10 @@ namespace impl {
 		BodyTplt() : conformation_() {}
 		BodyTplt(shared_ptr<ConformationConst> c) : conformation_(c) {}
 
+		// BodyTplt( BodyTplt const & proto ){
+		// 	conformation_ = make_shared<ConformationConst>( proto ); // NO!!! Confs are CONST
+		// }
+
 		// template<class Actor> 
 		// Actor
 		// get_actor(
@@ -101,10 +105,26 @@ namespace impl {
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(Symmetric,true_)
 	SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(RequireAbsolutePositioning,false_)
 
-	template<class Interaction>
+	template<class _Interaction>
 	struct AccessVisitor {
+		typedef _Interaction Interaction;
+
 		Interaction i_;
+		
 		void operator()( Interaction const & i, double=0 ){ i_ = i; }
+		
+		#ifdef CXX11
+			template< class I = Interaction >
+		#else
+			template< class I >
+		#endif
+		typename boost::enable_if< util::meta::is_pair<I> , void >::type 
+		operator()( 
+			typename I::first_type const & i,
+			typename I::second_type const & j,			
+			double=0
+		){ i_ = std::make_pair(i,j); }
+		
 		Interaction const & get() const { return i_; }
 	};
 
@@ -231,10 +251,20 @@ namespace impl {
 		Conformation const & __conformation_unsafe_asym__(Index i) const { return bodies_[i].conformation(); }
 		Conformation const & __conformation_unsafe__(Index i) const { return bodies_[i%bodies_.size()].conformation(); }
 
+
+
 		template<class Actor>
-		Actor get_actor(Index ib, Index ia) const {
+		typename boost::enable_if< impl::has_type_Position<Actor>, Actor >::type
+		get_actor(Index ib, Index ia) const {
 			return Actor( conformation(ib).template get<Actor>().at(ia), this->position(ib) );
 		}
+		template<class Actor>
+		typename boost::disable_if< impl::has_type_Position<Actor>, Actor >::type
+		get_actor(Index ib, Index ia) const {
+			return conformation(ib).template get<Actor>().at(ia);
+		}
+
+
 
 		template<class Actor>
 		void add_actor(Index ib, Actor const & a) {
@@ -398,7 +428,7 @@ namespace impl {
 			Actor1 a1( a1_0, p1 );
 			Actor2 a2( a2_0, p2 );
 			//TODO: wrap this call in a check for has_const_call_oper_3<Visitor,void,Actor1 const &,Actor2 const &,double>
-			visitor( std::make_pair(a1,a2), w );
+			visitor.template operator()< std::pair<Actor1,Actor2> >( a1, a2, w );
 		}
 
 		///@brief visit_2b_inner specialization handles case where Actor1 is fixed
@@ -420,7 +450,8 @@ namespace impl {
 			// cout << "FIXED Actor1" << endl;
 			Actor2 a2( a2_0, rel_pos );
 			// TODO: remove requirement to form pair; will be more efficient if fixed a1 is passet through w/o copy
-			visitor( std::make_pair(a1_0,a2), w );
+			// visitor( std::make_pair(a1_0,a2), w );
+			visitor.template operator()< std::pair<Actor1,Actor2> >( a1_0, a2, w );	
 		}
 
 		template<class Visitor, class Actor1, class Actor2>
@@ -440,7 +471,7 @@ namespace impl {
 		) const {
 			// cout << "FIXED Actor2" << endl;
 			Actor1 a1( a1_0, inverse(rel_pos) );
-			visitor( std::make_pair(a1,a2_0), w );
+			visitor.template operator()< std::pair<Actor1,Actor2> >( a1, a2_0, w );
 		}
 
 		///@brief visit_2b_inner specialization is an error and will not compile
@@ -591,27 +622,32 @@ namespace impl {
 
 	};
 
-	template< class Scene >
+	template< class Scene, class MetaData >
 	struct ActorDumpPDB {
 		Scene const & scene;
 		std::ostream & out;
-		ActorDumpPDB(Scene const & s, std::ostream & o) : scene(s), out(o) {}
+		MetaData const & meta;
+		ActorDumpPDB(
+			Scene const & s, 
+			std::ostream & o, 
+			MetaData const & m
+		) : scene(s), out(o), meta(m) {}
 		template<class Actor>
 		void operator()( Actor const & ){
 			typedef typename Scene::Index Index;
 			for( Index ib = 0; ib < scene.n_bodies_; ++ib ){
 				for( Index ia = 0; ia < scene.template num_actors<Actor>(ib); ++ia ){
 					Actor const & a( scene.template get_actor<Actor>(ib,ia) );
-					write_pdb( out, a );
+					write_pdb( out, a, meta );
 				}
 			}
 		}
 	};
 
 
-	template< class Scene >
-	void write_pdb( std::ostream & out, Scene const & scene ){
-		ActorDumpPDB<Scene> dumper( scene, out );
+	template< class Scene, class MetaData >
+	void write_pdb( std::ostream & out, Scene const & scene, MetaData const & meta ){
+		ActorDumpPDB<Scene,MetaData> dumper( scene, out, meta );
 		boost::mpl::for_each< typename Scene::Actors >( dumper );
 	}
 

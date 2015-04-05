@@ -12,6 +12,43 @@
 
 namespace scheme { namespace chemical {
 
+
+template< class _AtomData >
+struct ChemicalIndex {
+	typedef _AtomData AtomData;
+	std::vector<std::string> resnames_;
+	std::map<std::string,int> resname2num_;
+	std::vector< std::vector< AtomData > > atomdata_;
+
+	bool have_res( std::string resn ) const {
+		return resname2num_.find(resn) != resname2num_.end();
+	}
+
+	void add_res( std::string resn ){
+		if( have_res(resn) ) return;
+		resname2num_[resn] = resnames_.size();
+		resnames_.push_back(resn);
+	}
+
+	void add_atomdata( int restype, int atomnum, AtomData const & data ){
+		if( atomdata_.size() <= restype ) atomdata_.resize(restype+1);
+		if( atomdata_[restype].size() <= atomnum ) atomdata_[restype].resize(atomnum+1);		
+		atomdata_[restype][atomnum] = data;
+	}
+	void add_atomdata( std::string resname, int atomnum, AtomData const & data ){
+		add_res( resname );
+		add_atomdata( resname2num_[resname], atomnum, data );
+	}
+
+	AtomData       & atom_data( int restype, int atomnum )       { return atomdata_.at(restype).at(atomnum); }
+	AtomData const & atom_data( int restype, int atomnum ) const { return atomdata_.at(restype).at(atomnum); }	
+	AtomData       & atom_data( std::string const & resname, int atomnum )       { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }
+	AtomData const & atom_data( std::string const & resname, int atomnum ) const { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }	
+
+};
+
+
+
 namespace impl {
 
 template< class _Atom >
@@ -35,10 +72,12 @@ struct RotamerIndex {
 	typedef std::map<std::string,std::pair<int,int> > BoundsMap;
 	typedef std::vector< std::pair<int,int> > ChildMap; // index is "primary" index, not rotamer number
 
+	ChemicalIndex<AtomData> chem_index_;
+
 	std::vector< Rotamer > rotamers_;
-	std::vector< int > primary_rotamers_;
-	std::vector< int > parent_rotamer_;
-	std::vector< int > parent_primary_;
+	std::vector< int > primary_rotamers_; // rot # of non-ex rotamers
+	std::vector< int > parent_rotamer_; // 
+	std::vector< int > parent_primary_; // pri-rot # of primary parent
 	RotamerGenerator rotgen_;
 	BoundsMap bounds_map_;
 	ChildMap child_map_;
@@ -93,6 +132,13 @@ struct RotamerIndex {
 		}
 		for(int ipri = 0; ipri < child_map_.size(); ++ipri) ++child_map_[ipri].second;
 
+		for(int i = 0; i < rotamers_.size(); ++i){
+			if( chem_index_.have_res( rotamers_[i].resname_ ) ) continue;
+			for( int ia = 0; ia < rotamers_[i].atoms_.size(); ++ia ){
+				chem_index_.add_atomdata( rotamers_[i].resname_, ia, rotamers_[i].atoms_[ia].data() );
+			}
+		}		
+
 		sanity_check();
 	}
 
@@ -143,6 +189,15 @@ struct RotamerIndex {
 			}
 		}
 
+		for( int irot = 0; irot < rotamers_.size(); ++irot ){
+
+			for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
+				AtomData const & ad1( rotamers_[irot].atoms_[ia].data() );
+				AtomData const & ad2( chem_index_.atom_data( rotamers_[irot].resname_, ia ) );
+				ALWAYS_ASSERT( ad1 == ad2 );
+			}
+		}		
+
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
@@ -159,6 +214,9 @@ struct RotamerIndex {
 	child_bounds_of_primary( int ipri ) const { 
 		return child_map_.at(ipri);
 	}
+
+	bool
+	is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
 
 
 	size_t size() const { return rotamers_.size(); }

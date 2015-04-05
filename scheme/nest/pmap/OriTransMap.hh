@@ -50,9 +50,9 @@ namespace scheme { namespace nest { namespace pmap {
 			ori_map_( OriMap::get_nside_for_rot_resl_deg( rot_resl_deg ) ),
 			trans_map_( lb, ub, bs )
 		{
-			cout << "OriMap: TetracontoctachoronMap, " 
-			     << rot_resl_deg << " nside: " << ori_map_.nside_ << ", covrad: " 
-		    	 << ori_map_.bin_circumradius(0)*180.0/M_PI << ", size: " << ori_map_.num_cells() << endl;
+			// cout << "OriMap: TetracontoctachoronMap, " 
+			//      << rot_resl_deg << " nside: " << ori_map_.nside_ << ", covrad: " 
+		 //    	 << ori_map_.bin_circumradius(0)*180.0/M_PI << ", size: " << ori_map_.num_cells() << endl;
 		}
 
 

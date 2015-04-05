@@ -27,7 +27,7 @@ TEST( XformMap, stores_correctly ){
 	boost::random::mt19937 rng((unsigned int)time(0) + 296720384);
 	boost::uniform_real<> runif;
 
-	XformMap< Xform, double, 0 > xmap( 0.5, 10.0 );
+	XformMap< Xform, double> xmap( 0.5, 10.0 );
 	std::vector< std::pair<Xform,double> > dat;
 	for(int i = 0; i < NSAMP; ++i){
 		Xform x;
@@ -37,7 +37,7 @@ TEST( XformMap, stores_correctly ){
 		dat.push_back( std::make_pair(x,val) );
 	}
 
-	XformMap< Xform, double, 0 > const & xmap_test( xmap );
+	XformMap< Xform, double > const & xmap_test( xmap );
 
 	boost::timer::cpu_timer t;
 
@@ -59,7 +59,7 @@ TEST( XformMap, stores_correctly ){
 	ASSERT_TRUE( xmap.save( out, "foo" ) );
 	out.close();
 
-	XformMap< Xform, double, 0 > xmap_loaded;
+	XformMap< Xform, double > xmap_loaded;
 	std::ifstream in( "test.sxm"  , std::ios::binary );
 	ASSERT_TRUE( xmap_loaded.load( in ) );
 	in.close();
@@ -97,7 +97,8 @@ double get_ident_lever_dis( Xform x, double lever_dis ){
 TEST( XformMap, insert_sphere ){
 	int NSAMP2 = 10000;
 
-	typedef XformMap< Xform, double, 0 > XMap;
+	// typedef XformMap< Xform, double, 0 > XMap;
+	typedef XformMap< Xform, double> XMap;	
 	boost::random::mt19937 rng((unsigned int)time(0) + 3457820);
 	boost::uniform_real<> runif;
 	Xform x;
@@ -112,8 +113,8 @@ TEST( XformMap, insert_sphere ){
 	numeric::rand_xform( rng, x, 256.0 );
 	XformHashNeighbors< XMap::Hasher > nbcache( rad, angrad, xmap.hasher_, 500.0 );
 	int nbitercount = xmap.insert_sphere( x, rad, lever, 12345.0, nbcache );
-	cout << nbitercount << " " << xmap.count(12345.0) << " " << xmap.total_size()-(float)xmap.count(0) 
-	     << " " << (float)xmap.count(0) / xmap.total_size() << " " << xmap.map_.size() << endl;
+	cout << nbitercount << " " << xmap.count(12345.0) << " " << xmap.size()-(float)xmap.count(0) 
+	     << " " << (float)xmap.count(0) / xmap.size() << " " << xmap.map_.size() << endl;
 	int n_cart_fail=0, n_rot_fail=0, n_both_fail=0;
 	int n_lever_false_pos=0, n_lever_false_neg=0, n_within=0, n_without=0;
 	for(int i = 0; i < NSAMP2; ++i){

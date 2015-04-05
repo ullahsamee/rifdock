@@ -43,7 +43,7 @@
 // #include "scheme/objective/voxel/VoxelArray.gtest.cc"
 // #include "scheme/objective/voxel/FieldCache.gtest.cc"
 
-// #include "scheme/kinematics/Scene.gtest.cc"
+#include "scheme/kinematics/Scene.gtest.cc"
 // #include "scheme/kinematics/Scene_test_eigen.gtest.cc"
 // #include "scheme/kinematics/SceneIterator.gtest.cc"
 // #include "scheme/kinematics/Director.gtest.cc"
@@ -56,7 +56,7 @@
 // #include "scheme/actor/BBStub.gtest.cc"
 
 // #include "scheme/rosetta/score/AnalyticEvaluation.gtest.cc"
-#include "scheme/rosetta/score/RosettaField.gtest.cc"
+// #include "scheme/rosetta/score/RosettaField.gtest.cc"
 
 // #include "scheme/chemical/ligand_factory.gtest.cc"
 

@@ -82,9 +82,14 @@ typedef std::pair<Index2,Index2> Index4;
 		typedef std::pair<ADC,ADI> Interaction;
 		static std::string name(){ return "ScoreADCADI"; }
 		template<class Config>
-		Result operator()(Interaction const & a, Config const& ) const {
-			return 10*distance(a.first.position(),a.second.position());
+		Result operator()(ADC const & adc, ADI const & adi, Config const& ) const {
+			return 10*distance(adc.position(),adi.position());
 		}
+		template<class Config>
+		Result operator()(Interaction const & i, Config const& c ) const {
+			return this->operator()( i.first, i.second, c);
+		}
+
 	};
 	std::ostream & operator<<(std::ostream & out,ScoreADCADI const& s){ return out << s.name(); }
 

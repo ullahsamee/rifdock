@@ -45,6 +45,18 @@ struct AtomData {
 		bfac(_bfac)
 	{}
 
+	bool operator==(AtomData const & o) const {
+		return atomname == o.atomname &&
+		       resname  == o.resname  &&
+		       elem     == o.elem     &&
+		       atomnum  == o.atomnum  &&
+		       resnum   == o.resnum   &&
+		       chain    == o.chain    &&
+		       ishet    == o.ishet    &&
+		       occ      == o.occ      &&
+		       bfac     == o.bfac      ;
+
+	}
 };
 
 inline

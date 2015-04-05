@@ -10,10 +10,12 @@ namespace scheme {
 	
 	#ifdef CXX11
 		using std::shared_ptr;
+		using std::weak_ptr;
 		using std::make_shared;
 		using std::enable_shared_from_this;
 	#else
 		using boost::shared_ptr;
+		using boost::weak_ptr;
 		using boost::make_shared;
 		using boost::enable_shared_from_this;
 	#endif
