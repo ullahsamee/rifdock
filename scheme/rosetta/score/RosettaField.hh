@@ -62,7 +62,7 @@ struct RosettaField {
 	}
 
 
-	float compute_rosetta_energy_one( Atom const & a, float x, float y, float z, int atype) const {
+	float compute_rosetta_energy_one( Atom const & a, float x, float y, float z, int atype ) const {
 		float const dx = x-a.position()[0];
 		float const dy = y-a.position()[1];
 		float const dz = z-a.position()[2];

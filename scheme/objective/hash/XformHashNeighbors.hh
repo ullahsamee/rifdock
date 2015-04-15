@@ -19,8 +19,8 @@ namespace scheme { namespace objective { namespace hash {
 template< class XformHash > struct XformHashNeighbors;
 
 template< class XformHash >
-struct XformHashNeighborIterator : boost::iterator_facade<
-	XformHashNeighborIterator<XformHash>,
+struct XformHashNeighborCrappyIterator : boost::iterator_facade<
+	XformHashNeighborCrappyIterator<XformHash>,
 	typename XformHash::Key,
 	boost::forward_traversal_tag,
 	typename XformHash::Key
@@ -33,7 +33,7 @@ struct XformHashNeighborIterator : boost::iterator_facade<
 	std::vector<uint64_t> const * ori_nbrs_;
 	std::vector< util::SimpleArray<3,int16_t> > const * shifts_;
 
-	XformHashNeighborIterator( XformHashNeighbors<XformHash> & xhn, Key key, bool _end=false) : 
+	XformHashNeighborCrappyIterator( XformHashNeighbors<XformHash> & xhn, Key key, bool _end=false) : 
 		xh( &xhn.hasher_ ),
 		ori_nbrs_( &xhn.get_ori_neighbors( key ) ),
 		shifts_( &xhn.get_cart_shifts() )
@@ -58,15 +58,15 @@ private:
 		ori_key = xh->cart_shift_key( ori_key, ix, iy, iz );
 		return xh->cart_shift_key( ori_key, (*shifts_)[i2][0], (*shifts_)[i2][1], (*shifts_)[i2][2], i3 );
     }
-    bool equal( XformHashNeighborIterator<XformHash> const & o) const {
+    bool equal( XformHashNeighborCrappyIterator<XformHash> const & o) const {
     	if( end && o.end ) return true;
     	else return false;
-    	std::cerr << "will needs to implement XformHashNeighborIterator comparison" << std::endl;
+    	std::cerr << "will needs to implement XformHashNeighborCrappyIterator comparison" << std::endl;
     }
 };
 template< class XformHash >
-std::ostream & operator<<( std::ostream & out, XformHashNeighborIterator<XformHash> const & i ){
-	return out << "XformHashNeighborIterator( " << i.i1 << " " << i.i2 << " " << i.i3 << " " << i.end << " )";
+std::ostream & operator<<( std::ostream & out, XformHashNeighborCrappyIterator<XformHash> const & i ){
+	return out << "XformHashNeighborCrappyIterator( " << i.i1 << " " << i.i2 << " " << i.i3 << " " << i.end << " )";
 }
 
 
@@ -76,7 +76,7 @@ struct XformHashNeighbors {
 	typedef typename XformHash::Key Key;
 	typedef typename XformHash::Float Float;
 	typedef typename XformHash::Xform Xform;
-	typedef XformHashNeighborIterator<XformHash> crappy_iterator;
+	typedef XformHashNeighborCrappyIterator<XformHash> crappy_iterator;
 
 	XformHash const hasher_;
 	Float cart_bound_, ang_bound_, quat_bound_;

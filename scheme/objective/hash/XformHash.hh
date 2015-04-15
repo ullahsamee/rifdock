@@ -7,8 +7,6 @@
 #include "scheme/numeric/util.hh"
 #include "scheme/numeric/bcc_lattice.hh"
 
-#include <bitset>
-#include <sparsehash/dense_hash_map>
 #include <boost/utility/binary.hpp>
 
 namespace scheme { namespace objective { namespace hash {
@@ -22,97 +20,8 @@ void get_transform_rotation(
 }
 
 
-template< class _Xform >
-struct XformHash_Quat_BCC7 {
-	typedef uint64_t Key;
-	typedef _Xform Xform;
-	typedef typename Xform::Scalar Float;
-	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
-	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
-	typedef scheme::util::SimpleArray<7,Float> F7;
-	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
 
-	Float grid_size_;
-	Float grid_spacing_;
-	OriMap ori_map_;
-	Grid grid_;
 
-	static std::string name(){ return "XformHash_Quat_BCC7"; }
-
-	XformHash_Quat_BCC7( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
-	{
-		cart_resl /= sqrt(3)/2.0; // TODO: fix this number!
-		// bcc orientation grid covering radii
-		static float const covrad[99] = {
-			84.09702,54.20621,43.98427,31.58683,27.58101,22.72314,20.42103,17.58167,16.12208,14.44320,13.40178,12.15213,11.49567,
-			10.53203,10.11448, 9.32353, 8.89083, 8.38516, 7.95147, 7.54148, 7.23572, 6.85615, 6.63594, 6.35606, 6.13243, 5.90677,
-			 5.72515, 5.45705, 5.28864, 5.06335, 4.97668, 4.78774, 4.68602, 4.51794, 4.46654, 4.28316, 4.20425, 4.08935, 3.93284,
-			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266, 
-			 2.91052, 2.86858, 2.85592, 2.78403, 2.71234, 2.69544, 2.63151, 2.57503, 2.59064, 2.55367, 2.48010, 2.41046, 2.40289, 
-			 2.36125, 2.33856, 2.29815, 2.26979, 2.21838, 2.19458, 2.17881, 2.12842, 2.14030, 2.06959, 2.05272, 2.04950, 2.00790, 
-			 1.96385, 1.96788, 1.91474, 1.90942, 1.90965, 1.85602, 1.83792, 1.81660, 1.80228, 1.77532, 1.76455, 1.72948, 1.72179, 
-			 1.68324, 1.67009, 1.67239, 1.64719, 1.63832, 1.60963, 1.60093, 1.58911};
-		uint64_t ori_nside = 1;
-		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 100 ) ++ori_nside;
-
-		if( 2.0*cart_bound/cart_resl > 8192.0 ) throw std::out_of_range("too many cart cells, > 8192");
-
-		// cart_grid_.init(  I3(2.0*cart_bound/cart_resl), F3(-cart_bound), F3(cart_bound) );
-		// ori_grid_.init(  I3(ori_nside+2), F3(-1.0/ori_nside), F3(1.0+1.0/ori_nside) );
-		I7 nside;
-		nside[0] = nside[1] = nside[2] = 2.0*cart_bound/cart_resl;
-		nside[3] = nside[4] = nside[5] = nside[6] = ori_nside+2;
-		F7 ub;
-		ub[0] = ub[1] = ub[2] = cart_bound;
-		ub[3] = ub[4] = ub[5] = ub[6] = 1.0+2.0/ori_nside;
-		grid_.init( nside, -ub, ub );
-
-	}
-
-	Key get_key( Xform const & x ) const {
-		Eigen::Matrix<Float,3,3> rotation;
-		get_transform_rotation( x, rotation );
-		Eigen::Quaternion<Float> q( rotation );
-		q = numeric::to_half_cell(q);
-		F7 f7;
-		f7[0] = x.translation()[0];
-		f7[1] = x.translation()[1];
-		f7[2] = x.translation()[2];
-		f7[3] = q.w();
-		f7[4] = q.x();
-		f7[5] = q.y();
-		f7[6] = q.z();
-		// std::cout << f7 << std::endl;		
-		Key key = grid_[f7];
-		return key;								
-	}
-
-	Xform get_center(Key key) const {
-		F7 f7 = grid_[key];
-		// std::cout << f7 << std::endl;
-		Eigen::Quaternion<Float> q( f7[3], f7[4], f7[5], f7[6] );
-		q.normalize();
-		Xform center( q.matrix() );
-		center.translation()[0] = f7[0];
-		center.translation()[1] = f7[1];
-		center.translation()[2] = f7[2];
-		return center;
-	}
-
-	Key approx_size() const { return grid_.size(); }
-
-	Key approx_nori() const {
-		static int const nori[63] = {
-			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
-			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
-			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
-		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
-		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
-	}
-
-	Float ang_width() const { return grid_.with_[3]; }
-
-};
 
 
 template< class _Xform >
@@ -355,6 +264,108 @@ struct XformHash_Quat_BCC7_Zorder {
 
 };
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// EVERYTHING BELOW THIS POINT MAY BE INCOMPLETE IN SOME WAY
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+template< class _Xform >
+struct XformHash_Quat_BCC7 {
+	typedef uint64_t Key;
+	typedef _Xform Xform;
+	typedef typename Xform::Scalar Float;
+	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
+	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
+	typedef scheme::util::SimpleArray<7,Float> F7;
+	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
+
+	Float grid_size_;
+	Float grid_spacing_;
+	OriMap ori_map_;
+	Grid grid_;
+
+	static std::string name(){ return "XformHash_Quat_BCC7"; }
+
+	XformHash_Quat_BCC7( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
+	{
+		cart_resl /= sqrt(3)/2.0; // TODO: fix this number!
+		// bcc orientation grid covering radii
+		static float const covrad[99] = {
+			84.09702,54.20621,43.98427,31.58683,27.58101,22.72314,20.42103,17.58167,16.12208,14.44320,13.40178,12.15213,11.49567,
+			10.53203,10.11448, 9.32353, 8.89083, 8.38516, 7.95147, 7.54148, 7.23572, 6.85615, 6.63594, 6.35606, 6.13243, 5.90677,
+			 5.72515, 5.45705, 5.28864, 5.06335, 4.97668, 4.78774, 4.68602, 4.51794, 4.46654, 4.28316, 4.20425, 4.08935, 3.93284,
+			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266, 
+			 2.91052, 2.86858, 2.85592, 2.78403, 2.71234, 2.69544, 2.63151, 2.57503, 2.59064, 2.55367, 2.48010, 2.41046, 2.40289, 
+			 2.36125, 2.33856, 2.29815, 2.26979, 2.21838, 2.19458, 2.17881, 2.12842, 2.14030, 2.06959, 2.05272, 2.04950, 2.00790, 
+			 1.96385, 1.96788, 1.91474, 1.90942, 1.90965, 1.85602, 1.83792, 1.81660, 1.80228, 1.77532, 1.76455, 1.72948, 1.72179, 
+			 1.68324, 1.67009, 1.67239, 1.64719, 1.63832, 1.60963, 1.60093, 1.58911};
+		uint64_t ori_nside = 1;
+		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 100 ) ++ori_nside;
+
+		if( 2.0*cart_bound/cart_resl > 8192.0 ) throw std::out_of_range("too many cart cells, > 8192");
+
+		// cart_grid_.init(  I3(2.0*cart_bound/cart_resl), F3(-cart_bound), F3(cart_bound) );
+		// ori_grid_.init(  I3(ori_nside+2), F3(-1.0/ori_nside), F3(1.0+1.0/ori_nside) );
+		I7 nside;
+		nside[0] = nside[1] = nside[2] = 2.0*cart_bound/cart_resl;
+		nside[3] = nside[4] = nside[5] = nside[6] = ori_nside+2;
+		F7 ub;
+		ub[0] = ub[1] = ub[2] = cart_bound;
+		ub[3] = ub[4] = ub[5] = ub[6] = 1.0+2.0/ori_nside;
+		grid_.init( nside, -ub, ub );
+
+	}
+
+	Key get_key( Xform const & x ) const {
+		Eigen::Matrix<Float,3,3> rotation;
+		get_transform_rotation( x, rotation );
+		Eigen::Quaternion<Float> q( rotation );
+		q = numeric::to_half_cell(q);
+		F7 f7;
+		f7[0] = x.translation()[0];
+		f7[1] = x.translation()[1];
+		f7[2] = x.translation()[2];
+		f7[3] = q.w();
+		f7[4] = q.x();
+		f7[5] = q.y();
+		f7[6] = q.z();
+		// std::cout << f7 << std::endl;		
+		Key key = grid_[f7];
+		return key;								
+	}
+
+	Xform get_center(Key key) const {
+		F7 f7 = grid_[key];
+		// std::cout << f7 << std::endl;
+		Eigen::Quaternion<Float> q( f7[3], f7[4], f7[5], f7[6] );
+		q.normalize();
+		Xform center( q.matrix() );
+		center.translation()[0] = f7[0];
+		center.translation()[1] = f7[1];
+		center.translation()[2] = f7[2];
+		return center;
+	}
+
+	Key approx_size() const { return grid_.size(); }
+
+	Key approx_nori() const {
+		static int const nori[63] = {
+			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
+			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
+			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
+		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
+		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
+	}
+
+	Float ang_width() const { return grid_.with_[3]; }
+
+};
 
 
 template< class Xform >

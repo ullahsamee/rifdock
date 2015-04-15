@@ -18,10 +18,11 @@ namespace scheme { namespace nest { namespace pmap {
 		int DIM=6,
 		class Value=Eigen::Transform<double,3,Eigen::AffineCompact>,
 		class Index=uint64_t,
-		class Float=double
+		class Float=typename Value::Scalar
 	>
 	struct OriTransMap {
 		BOOST_STATIC_ASSERT_MSG(DIM==6,"RotTransMap DIM must be == 6");
+		BOOST_STATIC_ASSERT_MSG(sizeof(Value)==48||sizeof(Value)==96,"Value must be AffineCompact repr");
 
 		static int const DIMENSION = DIM;
 		typedef Value ValueType ;
@@ -40,16 +41,28 @@ namespace scheme { namespace nest { namespace pmap {
 		OriMap ori_map_;
 		TransMap trans_map_;
 
+		OriTransMap(){}
+
 		template< class P, class I >
 		OriTransMap(
 			Float rot_resl_deg,
 			P const & lb,
 			P const & ub,
 			I const & bs
-		) : 
-			ori_map_( OriMap::get_nside_for_rot_resl_deg( rot_resl_deg ) ),
-			trans_map_( lb, ub, bs )
-		{
+		){
+			init( rot_resl_deg, lb, ub, bs );
+		}
+
+		template< class P, class I >
+		void init(
+			Float rot_resl_deg,
+			P const & lb,
+			P const & ub,
+			I const & bs
+		){
+			int const ori_nside = OriMap::get_nside_for_rot_resl_deg( rot_resl_deg );
+			ori_map_.init( ori_nside );
+			trans_map_.init( lb, ub, bs );
 			// cout << "OriMap: TetracontoctachoronMap, " 
 			//      << rot_resl_deg << " nside: " << ori_map_.nside_ << ", covrad: " 
 		 //    	 << ori_map_.bin_circumradius(0)*180.0/M_PI << ", size: " << ori_map_.num_cells() << endl;
@@ -81,9 +94,41 @@ namespace scheme { namespace nest { namespace pmap {
 			return true;
 		}
 
+		///@brief sets params/cell_index from value
+		///@note necessary for value lookup and neighbor lookup
+		bool value_to_params(
+			Value const & value,
+			Index resl,
+			Params & params,
+			Index & cell_index
+		) const {
+			V v;
+			M m;
+			for( int i = 0; i < 3; ++i ){
+				v[i] = value.translation()[i];
+				for( int j = 0; j < 3; ++j ) m(i,j) = value.data()[i+3*j]; // awful....
+					// this is because v.rotation() is slow for eigen AffineCompact
+			}
+			P3 o_params, t_params;
+			Index o_ci, t_ci;
+			bool valid = ori_map_.value_to_params( m, resl, o_params, o_ci );
+			if( !valid ) return false;
+			// cout << "o_ci " << o_ci << endl;
+			trans_map_.value_to_params( v, resl, t_params, t_ci );
+			for( int i = 0; i < 3; ++i ){
+				params[i  ] = o_params[i];
+				params[i+3] = t_params[i];
+			}
+			cell_index = t_ci * ori_map_.num_cells() + o_ci;
+
+			return true;
+		}
+
 
 		///@brief cell size
 		Index num_cells() const { return ori_map_.num_cells() * trans_map_.num_cells(); }
+
+		static std::string pmap_name() { return "OriTransMap< "+OriMap::pmap_name()+", "+TransMap::pmap_name()+" >"; }
 
 	};
 

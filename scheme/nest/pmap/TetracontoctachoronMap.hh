@@ -28,12 +28,14 @@ namespace scheme { namespace nest { namespace pmap {
 
 	template<
 		int DIM=3,
-		class Value=Eigen::Matrix3d,
-		class Index=uint64_t,
-		class Float=double
+		class Value = Eigen::Matrix3d,
+		class Index = uint64_t,
+		class Float = typename Value::Scalar
 	>
 	struct TetracontoctachoronMap {
 		BOOST_STATIC_ASSERT_MSG(DIM==3,"TetracontoctachoronMap DIM must be == 3");
+
+		static std::string pmap_name() { return "TetracontoctachoronMap"; }
 
 		static int const DIMENSION = DIM;
 		typedef Value ValueType ;

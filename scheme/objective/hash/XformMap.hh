@@ -15,10 +15,10 @@ namespace scheme { namespace objective { namespace hash {
 
 
 
-template< int ArrayBits, class Key, class Val >
+template< int ArrayBits, class Key, class Value >
 struct XfromMapSerializer {
-    // typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
-  	typedef  Val  ValArray;    
+    // typedef util::SimpleArray< (1<<ArrayBits), Value >  ValArray;
+  	typedef  Value  ValArray;    
 	bool operator()( std::istream * in, std::pair<Key const,ValArray> * val ) const {
 		Key & k = const_cast<Key&>( val->first );
 		in->read( (char*)&k, sizeof(Key) );
@@ -35,23 +35,25 @@ struct XfromMapSerializer {
 
 
 template<
-	class Xform,
-	// class Val=numeric::FixedPoint<-17>,
+	class _Xform,
+	// class Value=numeric::FixedPoint<-17>,
 	// int ArrayBits=4,
-	class Val,
+	class _Value,
 	// template<class X> class _Hasher = XformHash_bt24_BCC6_Zorder >
 	template<class X> class _Hasher = XformHash_Quat_BCC7_Zorder ,
-	// class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Val >
-	class ElementSerializer = XfromMapSerializer< 0, uint64_t, Val >	
+	// class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Value >
+	class ElementSerializer = XfromMapSerializer< 0, uint64_t, _Value >	
 >
 struct XformMap {
 	// BOOST_STATIC_ASSERT( ArrayBits >= 0 );
+	typedef _Value Value;
+	typedef _Xform Xform;
 	typedef _Hasher<Xform> Hasher;
 	typedef uint64_t Key;
 	typedef typename Xform::Scalar Float;
-    // typedef util::SimpleArray< (1<<ArrayBits), Val >  ValArray;
+    // typedef util::SimpleArray< (1<<ArrayBits), Value >  ValArray;
     // typedef google::dense_hash_map<Key,ValArray> Map;
-    typedef google::dense_hash_map<Key,Val> Map;    
+    typedef google::dense_hash_map<Key,Value> Map;    
     Hasher hasher_;
     Map map_;
 	ElementSerializer element_serializer_;
@@ -70,7 +72,7 @@ struct XformMap {
 
 	void clear() { map_.clear(); }
 
-	bool insert( Key k, Val val ){
+	bool insert( Key k, Value val ){
 		map_.insert( std::make_pair(k,val) );
 		return true;
 		// Key k0 = k >> ArrayBits;
@@ -85,20 +87,20 @@ struct XformMap {
 		// iter->second[k1] = val;
   //       return true;
 	}
-	bool insert( Xform const & x, Val val ){
+	bool insert( Xform const & x, Value val ){
 		return this->insert( hasher_.get_key( x ), val );
 	}
-	Val operator[]( Key k ) const {
+	Value operator[]( Key k ) const {
 		// Key k0 = k >> ArrayBits;
 		// Key k1 = k & (((Key)1<<ArrayBits)-1);
 		// typename Map::const_iterator iter = map_.find(k0);
-		// if( iter == map_.end() ){ return Val(); }
+		// if( iter == map_.end() ){ return Value(); }
 		// return iter->second[k1];
 		typename Map::const_iterator iter = map_.find(k);
-		if( iter == map_.end() ){ return Val(); }
+		if( iter == map_.end() ){ return Value(); }
 		return iter->second;
 	}
-	Val operator[]( Xform const & x ) const {
+	Value operator[]( Xform const & x ) const {
 		return this->operator[]( hasher_.get_key( x ) );
 	}
 
@@ -106,7 +108,7 @@ struct XformMap {
 		Xform const & x,
 		Float lever_radius,
 		Float lever_bound,
-		Val value,
+		Value value,
 		XformHashNeighbors<Hasher> & nbcache
 	){
 		Float thresh2 = lever_radius + cart_resl_/2.0;
@@ -147,9 +149,9 @@ struct XformMap {
 	size_t size() const { return map_.size(); }//*(1<<ArrayBits); }
 	// size_t total_size() const { return map_.size(); }//*(1<<ArrayBits); }
 
-	size_t mem_use() const { return map_.bucket_count()*(sizeof(Key)+sizeof(Val)); } //*sizeof(ValArray); }
+	size_t mem_use() const { return map_.bucket_count()*(sizeof(Key)+sizeof(Value)); } //*sizeof(ValArray); }
 
-	size_t count( Val val ) const {
+	size_t count( Value val ) const {
 		// int count = 0;
 		// for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
 		// 	for(int j = 0; j < (1<<ArrayBits); ++j){
@@ -165,7 +167,7 @@ struct XformMap {
 		return count;
 
 	}
-	size_t count_not( Val val ) const {		int count = 0;
+	size_t count_not( Value val ) const {		int count = 0;
 		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
 			if( i->second != val ) ++count;
 		}

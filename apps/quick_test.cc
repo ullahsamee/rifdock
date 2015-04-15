@@ -43,7 +43,7 @@
 // #include "scheme/objective/voxel/VoxelArray.gtest.cc"
 // #include "scheme/objective/voxel/FieldCache.gtest.cc"
 
-#include "scheme/kinematics/Scene.gtest.cc"
+// #include "scheme/kinematics/Scene.gtest.cc"
 // #include "scheme/kinematics/Scene_test_eigen.gtest.cc"
 // #include "scheme/kinematics/SceneIterator.gtest.cc"
 // #include "scheme/kinematics/Director.gtest.cc"
@@ -63,8 +63,11 @@
 // #include "scheme/objective/methods/hbond_5dof.gtest.cc"
 
 // #include "scheme/objective/hash/XformHash.gtest.cc"
+// #include "scheme/objective/hash/XformHashFromNest.gtest.cc"
 // #include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
-// #include "scheme/objective/hash/XformMap.gtest.cc"
+#include "scheme/objective/hash/XformMap.gtest.cc"
+
+// #include "scheme/objective/storage/RotamerScores.gtest.cc"
 
 // #include "scheme/actor/BackboneActor.gtest.cc"
 

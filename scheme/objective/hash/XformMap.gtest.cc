@@ -4,11 +4,12 @@
 #include "scheme/numeric/rand_xform.hh"
 #include <Eigen/Geometry>
 
+#include <sparsehash/dense_hash_set>
+
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/timer/timer.hpp>
-#include <sparsehash/dense_hash_set>
 
 #include <fstream>
 
@@ -157,6 +158,7 @@ TEST( XformMap, insert_sphere ){
 	ASSERT_LT( (float)n_lever_false_neg/n_within , 0.015 );
 
 }
+
 
 
 }}}}

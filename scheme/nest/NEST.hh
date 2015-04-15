@@ -201,6 +201,10 @@ namespace nest {
 			BOOST_VERIFY( false );
 			std::exit(-1);
 		}
+
+
+		SCHEME_MEMBER_TYPE_DEFAULT_TEMPLATE(Scalar,double)
+
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,19 +224,27 @@ namespace nest {
 	///@tparam Float floating point type for internal parameters, default double
 	///@tparam bool is_virtual if you really want to optimize your code, you can set this to false
 	///@note floats have plenty of precision for internal parameters
-	template< int DIM,
-		class _Value = util::SimpleArray<DIM,double>,
+	template< int _DIM,
+		class _Value = util::SimpleArray<_DIM,double>,
 		template<int,class,class,class> class ParamMap = pmap::UnitMap,
 		template<class> class StoragePolicy = StoreValue,
 		class _Index = uint64_t,
-		class Float = double,
-		bool is_virtual = true
+		class _Float = typename impl::get_Scalar_double< _Value>::type,
+		bool _is_virtual = true
 	>
-	struct NEST : 
-	    public boost::mpl::if_c<is_virtual,NestBase<_Index>,Empty>::type,
-		public ParamMap<DIM,_Value,_Index,Float>, 
+	struct NEST : // policy-based design, see Modern C++ Design
+	    public boost::mpl::if_c< 
+		    	_is_virtual, 
+		    	NestBase<_Index>, 
+	    		Empty
+	    	>::type, // conditional inherit
+		public ParamMap< _DIM, _Value, _Index, _Float>, 
 	    public StoragePolicy<_Value>
 	{
+		static int const DIM = _DIM;
+		static bool const is_virtual = _is_virtual;
+
+		typedef _Float Float;		
 		typedef _Value Value;
 		typedef _Index Index;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
@@ -242,7 +254,7 @@ namespace nest {
 		typedef util::SimpleArray<DIM,Float> Params;		
 		typedef Value ValueType;
 		typedef Index IndexType;
-		typedef Float FloatType;
+		typedef _Float FloatType;
 		typedef StoragePolicy<Value> StorageType;
 		typedef ParamMap<DIM,Value,Index,Float> ParamMapType;
 
@@ -276,6 +288,7 @@ namespace nest {
 		///@brief general constructor 3
 		template< class A, class B, class C, class D >
 		NEST(A const & a, B const & b, C const & c, D const & d) : ParamMapType(a,b,c,d) {}
+
 
 		///@brief get size of NEST at depth resl
 		///@return size of NEST at resolution depth resl

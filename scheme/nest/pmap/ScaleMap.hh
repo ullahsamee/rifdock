@@ -5,6 +5,7 @@
 #include "scheme/util/SimpleArray.hh"
 #include <boost/function.hpp>
 #include <boost/type_traits/make_signed.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
 #include <boost/static_assert.hpp>
 #include <iostream>
@@ -23,9 +24,9 @@ namespace pmap {
 	///@note bounds and cell indices are represented as SimpleArrays (like params) NOT Value Types
 	template<
 		int DIM,
-		class Value=util::SimpleArray<DIM,double>,
-		class Index=uint64_t,
-		class Float=double
+		class Value = util::SimpleArray<DIM,double>,
+		class Index = uint64_t,
+		class Float = typename Value::Scalar
 	>
 	struct ScaleMap {
 		static int const DIMENSION = DIM;
@@ -49,6 +50,14 @@ namespace pmap {
 		Indices cell_sizes_pref_sum_;
 		Index num_cells_;
 	 public:
+
+	 	Params const & lower_bound() const { return lower_bound_; } 
+	 	Params const & upper_bound() const { return upper_bound_; }	 	
+	 	Params const &  cell_width() const { return cell_width_; }
+	 	Indices const & cell_sizes() const { return cell_sizes_; }
+
+		static std::string pmap_name() { return "ScaleMap<"+boost::lexical_cast<std::string>(DIM)+">"; }
+
 		///@brief construct with default lb, ub, bs
 		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default lb, ub
@@ -63,6 +72,30 @@ namespace pmap {
 		template< class P, class I >
 		ScaleMap(P const & lb, P const & ub, I const & bs) : 
 			lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
+
+		template< class I >
+		void init(I const & bs){
+			cell_sizes_ = bs; 
+			lower_bound_.fill(0);
+			upper_bound_.fill(1);
+			init();
+		}
+
+		template< class P >
+		void init(P const & lb, P const & ub){
+			lower_bound_ = lb;
+			upper_bound_ = ub;
+			cell_sizes_.fill(1);
+			init();
+		}
+
+		template< class P, class I >
+		void init(P const & lb, P const & ub, I const & bs){
+			lower_bound_ = lb;
+			upper_bound_ = ub;
+			cell_sizes_  = bs;
+			init();
+		}
 
 		///@brief sets up cell_size_pref_sum
 		void init(){

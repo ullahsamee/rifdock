@@ -20,11 +20,11 @@ namespace actor {
 		typedef std::vector<std::vector<shared_ptr< VoxelArray > > > Voxels;
 
 		// Position position_;
-		Voxels const * voxels_;
+		Voxels voxels_;
 
 		VoxelActor() {}
 
-		VoxelActor( Voxels const * v ) :  voxels_(v) {}
+		VoxelActor( Voxels const & v ) :  voxels_(v) {}
 
 		// VoxelActor( Position const & p, Voxels const * v ) :  voxels_(v) {}
 
@@ -44,7 +44,7 @@ namespace actor {
 		// Position const &
 		// position() const { return position_; }
 
-		Voxels const & voxels() const { return *voxels_; }
+		Voxels const & voxels() const { return voxels_; }
 
 		// bool operator==(THIS const & o) const { return o.position_==position_ && o.voxels_==voxels_; }
 
@@ -54,7 +54,8 @@ namespace actor {
 		///@brief necessary for testing only
 	  	template<class Archive> void serialize(Archive & ar, const unsigned int ){
 	  		// ar & position_;
-	  		ar & voxels_;
+	  		// ar & voxels_;
+			std::exit(-1);
 	  	}
 
 	};
