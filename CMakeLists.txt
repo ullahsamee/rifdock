@@ -29,6 +29,7 @@ include_directories("external/gmock/include")
 include_directories("/usr/local/include/eigen3")
 include_directories("/usr/local/include")
 include_directories("/usr/local/boost/include")
+include_directories("/local/rosetta/will_tmp/boost_1_58_0")
 
 list( APPEND LIB_CC scheme/rosetta/score/EtableParams_init.lib.cc scheme/rosetta/atype_map.lib.cc scheme/chemical/ligand_factory.lib.cc )
 
@@ -45,7 +46,7 @@ list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boo
 list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib64)
-
+list(APPEND CMAKE_LIBRARY_PATH /local/rosetta/will_tmp/boost_1_58_0/stage/lib)
 
 # include_directories("scheme")
 include_directories(".")

@@ -75,7 +75,7 @@ void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 }
 
 template<class Map>
-void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER ){
+void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost::random::mt19937 * rng0 ){
 	Map & h(*hp);
 
 	int64_t NROW=1;
@@ -83,9 +83,9 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER ){
 
 	static std::mutex m;
 
-	// boost::random::mt19937 rng((unsigned int64_t)time(0));
-	boost::random::mt19937 rng((uint64_t)0);	
 	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	boost::random::mt19937 rng( randindex( *rng0 ) );
+
 	// h.resize(NFILL/2);
 
 	boost::timer::cpu_timer t;
@@ -111,43 +111,105 @@ struct GoogleDense { template<class K, class V> struct apply { typedef google::d
 
 TEST( test_hash_thread, google_hash_thread ){
 
+ 	int64_t MAXIDX = 4000ll*1000ll*1000ll;
+ 	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
  	int maxNthread = 12;
- 	// SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
-
+ 	
+	boost::random::mt19937 rng( (unsigned int)time(0) );
  	typedef google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > D;
  	D d;
  	d.set_empty_key(std::numeric_limits<uint64_t>::max());
 
- 	// typedef std::unordered_map<uint64_t,util::SimpleArray<8,double> > D;
- 	// D d;
-
- 	// typedef google::sparse_hash_map<uint64_t,util::SimpleArray<8,double> > D;
- 	// D d;
-
- 	// test_map(n,"google_dense",m,"segment_gdh ");
  	cout << "====================== HASH_TEST ======================" << endl;
- 	int64_t MAXIDX = 4000ll*1000ll*1000ll;
- 	int64_t NSAMP0 = 50ll*1000ll*1000ll;
  	fill_map( d, MAXIDX, 100 );
 
- 	// double rt=0;
- 	// test_map<D>( &d, &rt, MAXIDX, NSAMP0 ); 
- 	// cout << "main thread: " << rt << "ns / lookup" << endl;
-
  	for(int Nthread = 1; Nthread <= maxNthread; ++Nthread){
- 		int64_t NSAMP = NSAMP0 / Nthread;
+ 		int64_t NSAMP = NSAMP_TOT / Nthread ;
  		// test_map(d); d.clear();
  		double runtime = 0.0;
  		std::vector<std::thread> t;
- 		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_map<D>, &d, &runtime, MAXIDX, NSAMP ) );
+ 		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_map<D>, &d, &runtime, MAXIDX, NSAMP, &rng ) );
  		for(int i = 0; i < Nthread; ++i) t[i].join();
  		runtime /= Nthread;
- 		printf("nthread: %5i, %7.3fns / lookup, %7.3f runtime \n", Nthread, runtime / Nthread / NSAMP, runtime*1000000.0 );
+ 		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
+ 			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
  		std::cout.flush();
  	}	
  	d.clear();
 
  }
+
+
+
+// template<class Map>
+// void test_array(
+// 	std::vector<std::pair<uint64_t,double> > * hp,
+// 	double * runtime,
+// 	int64_t NITER,
+// 	boost::random::mt19937 * rng
+// ){
+// 	Map & h(*hp);
+
+// 	int64_t NROW=1;
+// 	NITER /= NROW;
+
+// 	static std::mutex m;
+
+// 	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+// 	// h.resize(NFILL/2);
+
+// 	boost::timer::cpu_timer t;
+// 	size_t count = 0;
+// 	for(size_t i = 0; i < NITER; ++i){
+// 		size_t ri = randindex(*rng);
+// 		for(size_t j = 0; j < NROW; ++j){
+// 			typename Map::const_iterator iter = h.find(ri+j);
+// 			count += iter==h.end() ? 0.0 : iter->second[0];
+// 		}
+// 	}
+// 	double const time = (double)t.elapsed().wall;
+
+// 	m.lock();
+// 	*runtime += time;
+// 	if( count == 0 ) cout << "ERROR!!" << endl;
+// 	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+// 	m.unlock();
+// }
+
+// TEST( test_hash_thread, simple_array_thread ){
+
+//  	int maxNthread = 12;
+//  	int64_t SIZE = 100*1000*1000;
+
+//  	std::vector<std::pair<uint64_t,double> > data(SIZE);
+//  	for( int64_t i = 0; i < SIZE; ++i ){
+//  		data[i] = std::make_pair(i,(double)i);
+//  	}
+
+// 	boost::random::mt19937 rng( (unsigned int)time(0) );
+
+//  	// test_map(n,"google_dense",m,"segment_gdh ");
+//  	cout << "====================== HASH_TEST ======================" << endl;
+
+//  	// double rt=0;
+//  	// test_map<D>( &d, &rt, MAXIDX, NSAMP_TOT ); 
+//  	// cout << "main thread: " << rt << "ns / lookup" << endl;
+
+//  	for(int Nthread = 1; Nthread <= maxNthread; ++Nthread){
+//  		int64_t NSAMP = NSAMP_TOT / Nthread ;
+//  		// test_map(d); d.clear();
+//  		double runtime = 0.0;
+//  		std::vector<std::thread> t;
+//  		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_map<D>, &d, &runtime, MAXIDX, NSAMP, &rng ) );
+//  		for(int i = 0; i < Nthread; ++i) t[i].join();
+//  		runtime /= Nthread;
+//  		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
+//  			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
+//  		std::cout.flush();
+//  	}	
+//  	d.clear();
+
+//  }
 
 
 // 	// cout << "====================== SPARSE =====================" << endl;
