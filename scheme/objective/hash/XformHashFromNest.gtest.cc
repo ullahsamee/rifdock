@@ -53,7 +53,7 @@ TEST( XformHashFromNest, basic_operation ){
 	int nfail = 0;
 
 	int const resl  = 0;
-	typename Nest::Index end = std::min( xmap.hasher_.approx_size(resl), 10000ull );
+	typename Nest::Index end = std::min( (uint64_t)xmap.hasher_.approx_size(resl), (uint64_t)10000 );
 	for( typename Nest::Index i = 0; i < end; ++i ){
 		// if( ! xmap.hasher_.is_valid( i, r ) ) continue;
 		// Xform x = xmap.hasher_.get_center( i, r );

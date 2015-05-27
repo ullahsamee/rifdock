@@ -445,7 +445,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		double quat_bound=numeric::deg2quat(ang_bound);
 		// XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 5.0+runif(rng)*10.0, 10+runif(rng)*200.0 );
 		XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 10.0 );
-		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb( cart_bound, ang_bound, xh, NSAMP*50.0 );
+		typedef XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform>, true > XNB;
+		XNB nb( cart_bound, ang_bound, xh, NSAMP*50.0 );
 
 		for(int iter2 = 0; iter2 < NSAMP; ++iter2){
 			Xform x; numeric::rand_xform(rng,x);
@@ -458,11 +459,14 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 
 			std::set<Key> nbrs_set; {
 
-				XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> >::crappy_iterator itr = nb.neighbors_begin(key);
-				XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> >::crappy_iterator end = nb.neighbors_end(key);
+				XNB::crappy_iterator itr = nb.neighbors_begin(key);
+				XNB::crappy_iterator end = nb.neighbors_end(key);
+				int count = 0;
 				for( ; itr != end; ++itr){
 					nbrs_set.insert( *itr );
+					++count;
 				}
+				ASSERT_EQ( nbrs_set.size(), count );
 
 				// std::vector<Key> const & ori_nbrs = nb.get_ori_neighbors( key );
 				// std::vector< util::SimpleArray<3,int16_t> > shifts = nb.get_cart_shifts();
@@ -503,7 +507,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		nb.save( out );
 		out.close();
 
-		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb2( cart_bound, ang_bound, xh, NSAMP*50.0 );
+		XNB nb2( cart_bound, ang_bound, xh, NSAMP*50.0 );
 		std::ifstream in( "test.sxhn", std::ios::binary );
 		ASSERT_TRUE( nb2.load( in ) );
 		in.close(); 
@@ -527,19 +531,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 }
 
 
+
 }}}}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

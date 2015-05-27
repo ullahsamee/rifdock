@@ -477,9 +477,9 @@ struct XformHash_bt24_BCC3_Zorder {
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
 		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
 
-		ori_indices[0] = util::undilate<6>( (key>>2)&((1ull<<36)-1) ) & 63;
-		ori_indices[1] = util::undilate<6>( (key>>3)&((1ull<<36)-1) ) & 63;
-		ori_indices[2] = util::undilate<6>( (key>>4)&((1ull<<36)-1) ) & 63;
+		ori_indices[0] = util::undilate<6>( (key>>2)&(((uint64_t)1<<36)-1) ) & 63;
+		ori_indices[1] = util::undilate<6>( (key>>3)&(((uint64_t)1<<36)-1) ) & 63;
+		ori_indices[2] = util::undilate<6>( (key>>4)&(((uint64_t)1<<36)-1) ) & 63;
 
 		bool  ori_odd = key & (Key)1;
 		bool cart_odd = key & (Key)2;
@@ -575,7 +575,7 @@ struct XformHash_bt24_BCC3 {
 
 		Key cell_index = key >> 59;
 		Key cart_index = (key<<5)>>23;
-		Key ori_index  = key & ((1ull<<18)-1);
+		Key ori_index  = key & (((Key)1<<18)-1);
 		// std::cout << cart_index << " " << ori_index << " " << cell_index << std::endl;
 
 		F3 trans = cart_grid_[cart_index];
@@ -839,9 +839,9 @@ struct XformHash_bt24_Cubic_Zorder {
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
 		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
 
-		ori_indices[0] = util::undilate<6>( (key>>2)&((1ull<<36)-1) ) & 63;
-		ori_indices[1] = util::undilate<6>( (key>>3)&((1ull<<36)-1) ) & 63;
-		ori_indices[2] = util::undilate<6>( (key>>4)&((1ull<<36)-1) ) & 63;
+		ori_indices[0] = util::undilate<6>( (key>>2)&(((Key)1<<36)-1) ) & 63;
+		ori_indices[1] = util::undilate<6>( (key>>3)&(((Key)1<<36)-1) ) & 63;
+		ori_indices[2] = util::undilate<6>( (key>>4)&(((Key)1<<36)-1) ) & 63;
 
 		F3 trans = cart_grid_.get_center(cart_indices);
 		F3 params = ori_grid_.get_center(ori_indices);
@@ -957,9 +957,9 @@ struct XformHash_Quatgrid_Cubic {
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
 		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
 
-		ori_indices[0] = util::undilate<6>( (key>>2)&((1ull<<36)-1) ) & 63;
-		ori_indices[1] = util::undilate<6>( (key>>3)&((1ull<<36)-1) ) & 63;
-		ori_indices[2] = util::undilate<6>( (key>>4)&((1ull<<36)-1) ) & 63;
+		ori_indices[0] = util::undilate<6>( (key>>2)&(((Key)1<<36)-1) ) & 63;
+		ori_indices[1] = util::undilate<6>( (key>>3)&(((Key)1<<36)-1) ) & 63;
+		ori_indices[2] = util::undilate<6>( (key>>4)&(((Key)1<<36)-1) ) & 63;
 
 		bool  ori_odd = key & (Key)1;
 		bool cart_odd = key & (Key)2;

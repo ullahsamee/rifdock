@@ -87,8 +87,18 @@ struct XformMap {
 		// iter->second[k1] = val;
   //       return true;
 	}
-	bool insert( Xform const & x, Value val ){
+	bool insert( Xform const & x, Value const & val ){
 		return this->insert( hasher_.get_key( x ), val );
+	}
+	bool insert_min( Xform const & x, Value const & val ){
+		Key k = hasher_.get_key( x );
+		typename Map::iterator i = map_.find( k );
+		if( i == map_.end() ){
+			map_.insert( std::make_pair(k,val) );
+		} else {
+			i->second = std::min( i->second, val );
+		}
+		return true;
 	}
 	Value operator[]( Key k ) const {
 		// Key k0 = k >> ArrayBits;
@@ -106,12 +116,12 @@ struct XformMap {
 
 	int insert_sphere(
 		Xform const & x,
-		Float lever_radius,
 		Float lever_bound,
+		Float lever,
 		Value value,
 		XformHashNeighbors<Hasher> & nbcache
 	){
-		Float thresh2 = lever_radius + cart_resl_/2.0;
+		Float thresh2 = lever_bound + cart_resl_/2.0;
 		thresh2 = thresh2 * thresh2;
 		Key key = hasher_.get_key( x );
 		util::SimpleArray<7,Float> x_lever_coord;
@@ -121,23 +131,28 @@ struct XformMap {
 		Eigen::Matrix<Float,3,3> rot;
 		get_transform_rotation( x, rot );
 		Eigen::Quaternion<Float> q(rot);
-		x_lever_coord[3] = q.w() * 2.0 * lever_bound;
-		x_lever_coord[4] = q.x() * 2.0 * lever_bound;
-		x_lever_coord[5] = q.y() * 2.0 * lever_bound;
-		x_lever_coord[6] = q.z() * 2.0 * lever_bound;
+		x_lever_coord[3] = q.w() * 2.0 * lever;
+		x_lever_coord[4] = q.x() * 2.0 * lever;
+		x_lever_coord[5] = q.y() * 2.0 * lever;
+		x_lever_coord[6] = q.z() * 2.0 * lever;
 		typename XformHashNeighbors<Hasher>::crappy_iterator itr = nbcache.neighbors_begin(key);
 		typename XformHashNeighbors<Hasher>::crappy_iterator end = nbcache.neighbors_end(key);
 		int nbcount=0, count=0;
 
 		for( ; itr != end; ++itr){
 			Key nbkey = *itr;
-			util::SimpleArray<7,Float> nb_lever_coord = hasher_.lever_coord( nbkey, lever_bound, x_lever_coord );
+			util::SimpleArray<7,Float> nb_lever_coord = hasher_.lever_coord( nbkey, lever, x_lever_coord );
 			// std::cerr << "NB_KEY " << nbkey << " " << (nb_lever_coord-x_lever_coord).norm() << std::endl;
 			// std::cerr << x_lever_coord << std::endl;
 			// std::cerr << nb_lever_coord << std::endl;
 			if( (nb_lever_coord-x_lever_coord).squaredNorm() <= thresh2 ){
-				insert( nbkey, value );
-				++nbcount;
+				#ifdef USE_OPENMP
+				#pragma omp critical
+				#endif
+				{
+					insert( nbkey, value );
+					++nbcount;
+				}
 			}
 			++count;
 		}
@@ -267,6 +282,16 @@ struct XformMap {
 
 };
 
+
+template<
+	class X,
+	class V,
+	template<class C> class H,
+	class S
+>
+std::ostream & operator<< ( std::ostream & out, XformMap<X,V,H,S> const & xmap ){
+	return out << xmap.hasher_.name();
+}
 
 }}}
 

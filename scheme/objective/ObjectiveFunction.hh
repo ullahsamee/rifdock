@@ -70,6 +70,9 @@ namespace impl {
 	};
 
 	///@brief helper functor to call objective for all Interaction instances in InteractionSource
+	///@detail this one calls objective( interaction, config ) this is more general than the split pair one because it can support 
+	/// onebody or more than twobody interactions, but can be less efficient for pair interactions
+	// 
 	template<
 		class Interaction,
 		class Results,
@@ -102,14 +105,15 @@ namespace impl {
 	};
 
 	///@brief helper functor to call objective for all Interaction instances in InteractionSource
+	//@detail this one calls objective( actor1, actor2, config )
 	template<
 		class Interaction,
 		class Results,
 		class Config
 	>
 	struct EvalObjectiveSplitPair {
-		typename Interaction::first_type const & interaction_1;
-		typename Interaction::second_type const & interaction_2;		
+		typename Interaction::first_type const & actor_1;
+		typename Interaction::second_type const & actor_2;		
 		Results & results;
 		Config const & config;
 		double weight;
@@ -119,7 +123,7 @@ namespace impl {
 			Results & r,
 			Config const & c,
 			double w
-		) : interaction_1(i),interaction_2(j),results(r),config(c),weight(w) {}
+		) : actor_1(i),actor_2(j),results(r),config(c),weight(w) {}
 
 		template<class Objective>
 		void
@@ -130,7 +134,7 @@ namespace impl {
 			#endif
 			typedef typename f::result_of::value_at_key<Results,Objective>::type Result;
 			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
-			Result result = objective( interaction_1, interaction_2, config );
+			Result result = objective( actor_1, actor_2, config );
 			results.template get<Objective>() += weight*result;
 		}
 	};
@@ -161,6 +165,7 @@ namespace impl {
 	struct EvalObjectives {};
 
 
+	// this EvalObjectives is for using the Visitor method instead of iteration, faster but requires support in the InteractionSource object
 	template<
 		class InteractionSource,
 		class ObjectiveMap,
@@ -268,6 +273,8 @@ namespace impl {
 
 	};
 
+
+	// this EvalObjectives is for using iteration, in the case that the InteractionSource dosen't support visitors
 	template<
 		class InteractionSource,
 		class ObjectiveMap,

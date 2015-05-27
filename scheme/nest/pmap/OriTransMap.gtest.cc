@@ -42,7 +42,7 @@ TEST( OriTransMap, lookups_multicell_trans ){
 	// cout << nest.size(0) / (1024ull*1024*1024) << endl;
 
 	int const resl = 2;
-	int end = std::min( 1000000ull,  nest.size( resl ) );
+	int end = std::min( (int)1000000,  (int)nest.size( resl ) );
 	for(int i = 0; i < end; ++i){
 		EigenXform x;
 		if( !nest.get_state( i, resl, x ) ) continue;
@@ -60,7 +60,7 @@ TEST( OriTransMap, lookups_multicell_ori ){
 	Nest nest( 10.0, 0.0, 1.0, 1 );
 
 	int const resl = 0;
-	int end = std::min( 1000000ull,  nest.size( resl ) );
+	int end = std::min( (int)1000000,  (int)nest.size( resl ) );
 	int nfail = 0;
 	for(int i = 0; i < end; ++i){
 		EigenXform x;

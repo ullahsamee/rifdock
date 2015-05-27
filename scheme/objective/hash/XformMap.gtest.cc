@@ -18,6 +18,8 @@ namespace scheme { namespace objective { namespace hash { namespace xmtest {
 using std::cout;
 using std::endl;
 
+
+
 typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 // typedef Eigen::Affine3d Xform;
 
@@ -158,6 +160,53 @@ TEST( XformMap, insert_sphere ){
 	ASSERT_LT( (float)n_lever_false_neg/n_within , 0.015 );
 
 }
+
+
+
+
+
+
+TEST( XformMap, insert_sphere_radii_efficiency ){
+	typedef Eigen::Transform<double,3,Eigen::AffineCompact> EigenXform;
+	typedef scheme::objective::hash::XformMap< EigenXform, double > XMap;
+
+
+	boost::random::mt19937 rng((unsigned int)time(0) + 81274984);
+	float const cart_resl = 0.25;
+	float const  ang_resl = 5.0;
+	float const lever = cart_resl / ( ang_resl * M_PI / 180.0 );
+
+	XMap xmap( cart_resl, ang_resl );
+
+	for( float mult = 0.5; mult <= 2.0001; mult+=0.1 ){
+		float vol = mult*mult*mult*mult*mult*mult;
+
+		float const cart_bound = mult*cart_resl;
+		float const  ang_bound = mult*ang_resl;
+		::scheme::objective::hash::XformHashNeighbors< XMap::Hasher > nbcache0( cart_bound, ang_bound, xmap.hasher_, 100 );
+
+		float avgcount = 0;
+
+		for( int iter = 0; iter < 10; ++iter){
+			Xform x;
+			numeric::rand_xform(rng,x);
+
+			avgcount += xmap.insert_sphere( 
+					x,
+					cart_bound,
+					lever,
+					0.0,
+					nbcache0
+				);
+		}
+
+		avgcount /= 10.0;
+		cout << mult << "   \t" << avgcount << "\t " << avgcount/vol << endl;
+
+	}
+}
+
+
 
 
 

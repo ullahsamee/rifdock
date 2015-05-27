@@ -3,7 +3,7 @@
 // include desired tests here:
 
 // #include "scheme/util/hash.gtest.cc"
-// #include "scheme/util/hash_thread.gtest.cc"
+#include "scheme/util/hash_thread.gtest.cc"
 // #include "scheme/util/StoragePolicy.gtest.cc"
 // #include "scheme/util/template_loop.gtest.cc" // 3.5 vs 2.2 wo Eigen
 // #include "scheme/util/SimpleArray.gtest.cc"
@@ -65,7 +65,7 @@
 // #include "scheme/objective/hash/XformHash.gtest.cc"
 // #include "scheme/objective/hash/XformHashFromNest.gtest.cc"
 // #include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
-#include "scheme/objective/hash/XformMap.gtest.cc"
+// #include "scheme/objective/hash/XformMap.gtest.cc"
 
 // #include "scheme/objective/storage/RotamerScores.gtest.cc"
 

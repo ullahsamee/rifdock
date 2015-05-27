@@ -1,3 +1,5 @@
+#ifdef CXX11
+
 #include <gtest/gtest.h>
 
 #include <boost/random/uniform_int_distribution.hpp>
@@ -232,3 +234,6 @@ void test_2map(
 
 
 }}}
+
+#endif
+

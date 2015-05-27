@@ -8,7 +8,8 @@
 #include <fstream>
 #include "scheme/io/dump_pdb_atom.hh"
 
-#include <sparsehash/sparse_hash_map>
+#include <sparsehash/dense_hash_map>
+#include <sparsehash/dense_hash_set>
 #include <boost/random/mersenne_twister.hpp>
 #include <set>
 #include <map>
@@ -16,28 +17,35 @@
 
 namespace scheme { namespace objective { namespace hash {
 
-template< class XformHash > struct XformHashNeighbors;
 
-template< class XformHash >
+template< class XformHash, bool UNIQUE=true > struct XformHashNeighbors;
+
+
+/// may contain duplicate keys!
+template< class XformHash, bool UNIQUE >
 struct XformHashNeighborCrappyIterator : boost::iterator_facade<
-	XformHashNeighborCrappyIterator<XformHash>,
+	XformHashNeighborCrappyIterator<XformHash,UNIQUE>,
 	typename XformHash::Key,
 	boost::forward_traversal_tag,
 	typename XformHash::Key
 >
 {
+	typedef XformHashNeighborCrappyIterator<XformHash,UNIQUE> THIS;
 	typedef typename XformHash::Key Key;
-	int i1, i2, i3, ix,iy,iz;
+	int i1, i2, i3, ix, iy, iz;
 	bool end;
 	XformHash const * xh;
 	std::vector<uint64_t> const * ori_nbrs_;
 	std::vector< util::SimpleArray<3,int16_t> > const * shifts_;
+	// std::set<Key> seenit_;
+	google::dense_hash_set<Key> seenit_;
 
-	XformHashNeighborCrappyIterator( XformHashNeighbors<XformHash> & xhn, Key key, bool _end=false) : 
+	XformHashNeighborCrappyIterator( XformHashNeighbors<XformHash,UNIQUE> & xhn, Key key, bool _end=false) : 
 		xh( &xhn.hasher_ ),
 		ori_nbrs_( &xhn.get_ori_neighbors( key ) ),
 		shifts_( &xhn.get_cart_shifts() )
 	{
+		if( UNIQUE ) seenit_.set_empty_key( std::numeric_limits<Key>::max() );
 		i1 = i2 = i3 = 0;
 		end = false;
 		ix = (int)((util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6);
@@ -54,36 +62,61 @@ private:
     	if( i1 == ori_nbrs_->size() ){ end = true; }
     }
     Key dereference() const {
+    	if( end ) return std::numeric_limits<Key>::max();
 		Key ori_key = (*ori_nbrs_)[i1];
 		ori_key = xh->cart_shift_key( ori_key, ix, iy, iz );
-		return xh->cart_shift_key( ori_key, (*shifts_)[i2][0], (*shifts_)[i2][1], (*shifts_)[i2][2], i3 );
+		Key k = xh->cart_shift_key( ori_key, (*shifts_)[i2][0], (*shifts_)[i2][1], (*shifts_)[i2][2], i3 );
+		if( UNIQUE ){
+			if( seenit_.find(k) != seenit_.end() ){
+				const_cast<THIS*>(this)->increment();
+				return dereference();
+			} else {
+				const_cast<THIS*>(this)->seenit_.insert(k);
+			}		
+		}
+		return k;
     }
-    bool equal( XformHashNeighborCrappyIterator<XformHash> const & o) const {
+    bool equal( THIS const & o) const {
     	if( end && o.end ) return true;
     	else return false;
     	std::cerr << "will needs to implement XformHashNeighborCrappyIterator comparison" << std::endl;
     }
 };
-template< class XformHash >
-std::ostream & operator<<( std::ostream & out, XformHashNeighborCrappyIterator<XformHash> const & i ){
+template< class XformHash, bool UNIQUE >
+std::ostream & operator<<( std::ostream & out, XformHashNeighborCrappyIterator<XformHash,UNIQUE> const & i ){
 	return out << "XformHashNeighborCrappyIterator( " << i.i1 << " " << i.i2 << " " << i.i3 << " " << i.end << " )";
 }
 
 
+template< class H > 	
+struct InitHash {
+	static void init_hash( H & ){}
+};
 
-template< class XformHash >
+template< class K, class V >
+struct InitHash< google::dense_hash_map<K,V> > {
+	static void init_hash( google::dense_hash_map<K,V> & h ){
+		h.set_empty_key( std::numeric_limits<K>::max() );
+	}	
+};
+
+template< class XformHash, bool UNIQUE >
 struct XformHashNeighbors {
 	typedef typename XformHash::Key Key;
 	typedef typename XformHash::Float Float;
 	typedef typename XformHash::Xform Xform;
-	typedef XformHashNeighborCrappyIterator<XformHash> crappy_iterator;
+	typedef XformHashNeighborCrappyIterator<XformHash,UNIQUE> crappy_iterator;
 
 	XformHash const hasher_;
 	Float cart_bound_, ang_bound_, quat_bound_;
 	int nsamp_;
 	// google::sparse_hash_map< Key, std::vector<Key> > ori_cache_;
-	std::map< Key, std::vector<Key> > ori_cache_;
+	typedef std::map< Key, std::vector<Key> > OriCache;
+	// typedef google::dense_hash_map< Key, std::vector<Key> > OriCache;
+	OriCache ori_cache_;	
 	std::vector< util::SimpleArray<3,int16_t> > cart_shifts_;
+
+	size_t n_queries_, n_cache_miss_;
 
 
 	XformHashNeighbors(
@@ -92,14 +125,15 @@ struct XformHashNeighbors {
 		XformHash xh,
 		double xcov_target=100.0
 	) : hasher_(xh) {
+		InitHash<OriCache>::init_hash(ori_cache_);
 		cart_bound_ = cart_bound;
 		ang_bound_ = ang_bound;
 		quat_bound_ = numeric::deg2quat(ang_bound);
 		Float ang_nside = 2.0 * quat_bound_ / hasher_.ang_width();
 		nsamp_ = ang_nside*ang_nside*ang_nside*3.0*xcov_target; // ~100 fold coverage
 		fill_cart_shifts();
-		std::cout << "XformHashNeighbors aw=" << hasher_.ang_width() << ", quat_bound=" << quat_bound_ 
-		          << " ang_nside=" << ang_nside << " nsamp=" << nsamp_ << " cart_shifts=" << cart_shifts_.size() << std:: endl;
+		// std::cout << "XformHashNeighbors aw=" << hasher_.ang_width() << ", quat_bound=" << quat_bound_ 
+		          // << " ang_nside=" << ang_nside << " nsamp=" << nsamp_ << " cart_shifts=" << cart_shifts_.size() << std:: endl;
 	}
 
 	void fill_cart_shifts(){
@@ -135,8 +169,10 @@ struct XformHashNeighbors {
 	}
 
 	std::vector<Key> const & get_ori_neighbors( Key key ){
+		++n_queries_;
 		Key ori_key = key & XformHash::ORI_MASK;
 		if( ori_cache_.find(ori_key) == ori_cache_.end() ){
+			++n_cache_miss_;
 			Key ksym, asym_key = hasher_.asym_key( ori_key, ksym );
 			// if( asym_key==ori_key ){
 			// TODO: figure out how to get quat key symmetries working
@@ -154,16 +190,21 @@ struct XformHashNeighbors {
 					keys.insert(nbkey);
 				}
 				assert( keys.size() > 0 );
-				ori_cache_.insert( std::make_pair( ori_key, std::vector<Key>(keys.size()) ) );
-				std::copy(keys.begin(),keys.end(),ori_cache_[ori_key].begin());
-
-				std::ofstream out("nbrs_asym.pdb");
-				for(int i = 0; i < ori_cache_[ori_key].size(); ++i){
-					Xform x = hasher_.get_center( ori_cache_[ori_key][i] );
-					Eigen::Quaterniond q(x.rotation());
-					io::dump_pdb_atom( out, "C" ,i, 50*q.coeffs() );
+				#ifdef USE_OPENMP
+				#pragma omp critical
+				#endif
+				{
+					ori_cache_.insert( std::make_pair( ori_key, std::vector<Key>(keys.size()) ) );
+					std::copy(keys.begin(),keys.end(),ori_cache_[ori_key].begin());
 				}
-				out.close();
+
+				// std::ofstream out("nbrs_asym.pdb");
+				// for(int i = 0; i < ori_cache_[ori_key].size(); ++i){
+				// 	Xform x = hasher_.get_center( ori_cache_[ori_key][i] );
+				// 	Eigen::Quaterniond q(x.rotation());
+				// 	io::dump_pdb_atom( out, "C" ,i, 50*q.coeffs() );
+				// }
+				// out.close();
 
 			} else {
 				std::vector<Key> const & asym_nbrs = get_ori_neighbors( asym_key );
@@ -232,7 +273,7 @@ struct XformHashNeighbors {
 		// std::vector< util::SimpleArray<3,int16_t> > cart_shifts_;
 		size_t nentries = ori_cache_.size();
 		out.write( (char*)&nentries, sizeof(size_t) );
-		for(typename std::map< Key, std::vector<Key> >::iterator j = ori_cache_.begin(); j != ori_cache_.end(); ++j){
+		for(typename OriCache::iterator j = ori_cache_.begin(); j != ori_cache_.end(); ++j){
 			Key key = j->first;
 			out.write( (char*)&key, sizeof(Key) );
 			s = j->second.size();
@@ -321,6 +362,7 @@ struct XformHashNeighbors {
 
 
 };
+
 
 
 

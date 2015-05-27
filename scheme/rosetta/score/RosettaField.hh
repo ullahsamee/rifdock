@@ -73,7 +73,7 @@ struct RosettaField {
 		float atr0=0,rep0=0,sol0=0;
 		int at = a.type();
 		bool neg_only = at < 0;
-		if( neg_only ) at = -at;
+		at = abs(at);
 		EtableParamsOnePair<float> const & p = params.params_for_pair( at, atype );
 		lj_evaluation( p, dis, dis2, inv_dis2, atr0, rep0);
 		lk_evaluation( p, dis, inv_dis2, sol0 );

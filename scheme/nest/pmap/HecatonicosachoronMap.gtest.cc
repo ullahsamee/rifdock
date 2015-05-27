@@ -508,6 +508,7 @@ TEST(hecatonicosachoron,static_inv_check){
 	}
 }
 
+#ifdef CXX11
 TEST(hecatonicosachoron,neighbor_identity_rots){
 	typedef Map<Quaterniond const> QM;
 	double const * h120raw = get_h120<double>();
@@ -568,6 +569,7 @@ TEST(hecatonicosachoron,neighbor_identity_rots){
 		// break;
 	}
 }
+#endif
 
 TEST(hecatonicosachoron,cell_bounds){
 	// cout << h120_cellcen<double>(0) << endl;

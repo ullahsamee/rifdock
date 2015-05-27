@@ -1,6 +1,7 @@
 #ifndef INCLUDED_scheme_nest_maps_SphereDodec_HH
 #define INCLUDED_scheme_nest_maps_SphereDodec_HH
 
+#include <stdint.h>
 #include <Eigen/Dense>
 #include <boost/static_assert.hpp>
 #include <iostream>

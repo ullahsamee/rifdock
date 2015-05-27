@@ -49,7 +49,7 @@ TEST( BackboneActor, test_from_N_CA_C ){
 	// cout << "Uy  : " << (bb.position_.rotation() * V3(0,1,0)).transpose() << endl;	
 	// cout << "Uz  : " << (bb.position_.rotation() * V3(0,0,1)).transpose() << endl;		
 
-	V3 n_ca = ( n - ca ).normalized().transpose();
+	V3 n_ca = ( (n+c)/2.0 -ca ).normalized().transpose();
 	V3 ximg = bb.position_.rotation() * V3(1,0,0);
 
 	ASSERT_LE( (n_ca-ximg).norm(), 0.000001 );

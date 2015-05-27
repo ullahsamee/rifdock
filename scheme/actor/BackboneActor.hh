@@ -52,8 +52,9 @@ namespace actor {
 			typedef Eigen::Matrix<Float,3,1> V;
 			V n (  _n[0],  _n[1],  _n[2] );
 			V ca( _ca[0], _ca[1], _ca[2] );
-			V c (  _c[0],  _c[1],  _c[2] );									
-			V e1 = n - ca;
+			V c (  _c[0],  _c[1],  _c[2] );						
+			// V e1 = n - ca; 
+			V e1 = (c+n)/2.0 - ca; // from old motif stuff to maintain compatibility			
 			e1.normalize();
 			V e3 = e1.cross( c - ca );
 			e3.normalize();
@@ -63,7 +64,8 @@ namespace actor {
 			m(1,0) = e1[1];   m(1,1) = e2[1];   m(1,2) = e3[1];
 			m(2,0) = e1[2];   m(2,1) = e2[2];   m(2,2) = e3[2];			
 
-			V t = m * V(-0.865810,-1.764143,1.524857) + ca; // average 'CEN' icoor
+			V t = m * V( -1.952799123558066, -0.2200069625712990, 1.524857 ) + ca;
+			// V t = m * V(-0.865810,-1.764143,1.524857) + ca;// - (c+n)/2.0; // average 'CEN' icoor
 
 			// std::cout << e1 << std::endl;
 			// std::cout << e2 << std::endl;

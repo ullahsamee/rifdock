@@ -36,7 +36,7 @@ struct SetVisitor{
 		set_.insert(i);
 	}
 
-	template< class I = Interaction >
+	template< class I >
 	typename boost::enable_if< util::meta::is_pair<I> , void >::type 
 	operator()(
 		typename I::first_type const & i,
