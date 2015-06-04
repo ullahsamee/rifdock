@@ -1,4 +1,5 @@
 #ifdef CXX11
+#ifdef BENCHMARK
 
 #include <gtest/gtest.h>
 
@@ -76,7 +77,7 @@ void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 
 template<class Map>
 void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost::random::mt19937 * rng0 ){
-	Map & h(*hp);
+	Map const & h(*hp);
 
 	int64_t NROW=1;
 	NITER /= NROW;
@@ -109,11 +110,11 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost:
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
 
-TEST( test_hash_thread, google_hash_thread ){
+TEST( test_hash_thread, DISABLED_google_hash_thread ){
 
- 	int64_t MAXIDX = 4000ll*1000ll*1000ll;
+ 	int64_t MAXIDX = 2000ll*1000ll*1000ll;
  	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
- 	int maxNthread = 12;
+ 	int maxNthread = 16;
  	
 	boost::random::mt19937 rng( (unsigned int)time(0) );
  	typedef google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > D;
@@ -131,85 +132,109 @@ TEST( test_hash_thread, google_hash_thread ){
  		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_map<D>, &d, &runtime, MAXIDX, NSAMP, &rng ) );
  		for(int i = 0; i < Nthread; ++i) t[i].join();
  		runtime /= Nthread;
- 		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
+ 		printf("nthread: %5i  %7.3f ns / lookup  %7.3f s runtime  %7.3f M lookup/sec  %7.3f M lookup/sec/thread \n", 
  			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
  		std::cout.flush();
  	}	
  	d.clear();
 
  }
+// on lappy 4x haswell 2.8
+// nthread:     1  118.039 ns / lookup   11.804 s runtime    8.472 M lookup/sec    8.472 M lookup/sec/thread 
+// nthread:     2   56.901 ns / lookup    5.690 s runtime   17.575 M lookup/sec    8.787 M lookup/sec/thread 
+// nthread:     3   36.720 ns / lookup    3.672 s runtime   27.233 M lookup/sec    9.078 M lookup/sec/thread 
+// nthread:     4   32.093 ns / lookup    3.209 s runtime   31.160 M lookup/sec    7.790 M lookup/sec/thread 
+// nthread:     5   29.967 ns / lookup    2.997 s runtime   33.370 M lookup/sec    6.674 M lookup/sec/thread 
+// nthread:     6   28.283 ns / lookup    2.828 s runtime   35.357 M lookup/sec    5.893 M lookup/sec/thread 
+// nthread:     7   26.248 ns / lookup    2.625 s runtime   38.098 M lookup/sec    5.443 M lookup/sec/thread 
+// nthread:     8   25.216 ns / lookup    2.522 s runtime   39.657 M lookup/sec    4.957 M lookup/sec/thread 
+// nthread:     9   24.903 ns / lookup    2.490 s runtime   40.156 M lookup/sec    4.462 M lookup/sec/thread 
+// nthread:    10   24.859 ns / lookup    2.486 s runtime   40.227 M lookup/sec    4.023 M lookup/sec/thread 
+// nthread:    11   24.995 ns / lookup    2.500 s runtime   40.008 M lookup/sec    3.637 M lookup/sec/thread 
+// nthread:    12   25.353 ns / lookup    2.535 s runtime   39.443 M lookup/sec    3.287 M lookup/sec/thread 
+// nthread:    13   25.427 ns / lookup    2.543 s runtime   39.328 M lookup/sec    3.025 M lookup/sec/thread 
+// nthread:    14   25.538 ns / lookup    2.554 s runtime   39.158 M lookup/sec    2.797 M lookup/sec/thread 
+// nthread:    15   25.138 ns / lookup    2.514 s runtime   39.781 M lookup/sec    2.652 M lookup/sec/thread 
+// nthread:    16   24.468 ns / lookup    2.447 s runtime   40.870 M lookup/sec    2.554 M lookup/sec/thread 
 
 
 
-// template<class Map>
-// void test_array(
-// 	std::vector<std::pair<uint64_t,double> > * hp,
-// 	double * runtime,
-// 	int64_t NITER,
-// 	boost::random::mt19937 * rng
-// ){
-// 	Map & h(*hp);
+void test_array(
+	float const * const h,
+	double * runtime,
+	size_t N,
+	int64_t NITER,
+	boost::random::mt19937 * rng
+){
 
-// 	int64_t NROW=1;
-// 	NITER /= NROW;
 
-// 	static std::mutex m;
+	boost::random::uniform_int_distribution<int64_t> randindex(0,N);
+	// h.resize(NFILL/2);
 
-// 	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
-// 	// h.resize(NFILL/2);
+	boost::timer::cpu_timer t;
+	float count = 0;
+	for(size_t i = 0; i < NITER; ++i){
+		size_t ri = randindex(*rng);
+		count += h[ri];
+	}
+	double const time = (double)t.elapsed().wall;
 
-// 	boost::timer::cpu_timer t;
-// 	size_t count = 0;
-// 	for(size_t i = 0; i < NITER; ++i){
-// 		size_t ri = randindex(*rng);
-// 		for(size_t j = 0; j < NROW; ++j){
-// 			typename Map::const_iterator iter = h.find(ri+j);
-// 			count += iter==h.end() ? 0.0 : iter->second[0];
-// 		}
-// 	}
-// 	double const time = (double)t.elapsed().wall;
+	static std::mutex m;
+	m.lock();
+	*runtime += time;
+	if( count == 0 ) cout << "ERROR!!" << endl;
+	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+	m.unlock();
+}
 
-// 	m.lock();
-// 	*runtime += time;
-// 	if( count == 0 ) cout << "ERROR!!" << endl;
-// 	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
-// 	m.unlock();
-// }
+// real	8m41.960s
 
-// TEST( test_hash_thread, simple_array_thread ){
+TEST( test_hash_thread, simple_array_thread ){
 
-//  	int maxNthread = 12;
-//  	int64_t SIZE = 100*1000*1000;
+ 	int maxNthread = 8;
+ 	int64_t SIZE = 1000*1000*1000;
+ 	// int64_t SIZE = 100*100*10*5;
+ 	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
 
-//  	std::vector<std::pair<uint64_t,double> > data(SIZE);
-//  	for( int64_t i = 0; i < SIZE; ++i ){
-//  		data[i] = std::make_pair(i,(double)i);
-//  	}
+ 	std::vector<float> data(SIZE);
+ 	for( int64_t i = 0; i < SIZE; ++i ){
+ 		data[i] = (float)i;
+ 	}
+ 	cout << "done fill " << (double)SIZE*4.0/1000000000.0 << "GB" << endl;
 
-// 	boost::random::mt19937 rng( (unsigned int)time(0) );
+	boost::random::mt19937 rng( (unsigned int)time(0) );
 
-//  	// test_map(n,"google_dense",m,"segment_gdh ");
-//  	cout << "====================== HASH_TEST ======================" << endl;
+ 	// test_map(n,"google_dense",m,"segment_gdh ");
+ 	cout << "====================== ARRAY_TEST ======================" << endl;
 
-//  	// double rt=0;
-//  	// test_map<D>( &d, &rt, MAXIDX, NSAMP_TOT ); 
-//  	// cout << "main thread: " << rt << "ns / lookup" << endl;
+ 	// double rt=0;
+ 	// test_map<D>( &d, &rt, MAXIDX, NSAMP_TOT ); 
+ 	// cout << "main thread: " << rt << "ns / lookup" << endl;
 
-//  	for(int Nthread = 1; Nthread <= maxNthread; ++Nthread){
-//  		int64_t NSAMP = NSAMP_TOT / Nthread ;
-//  		// test_map(d); d.clear();
-//  		double runtime = 0.0;
-//  		std::vector<std::thread> t;
-//  		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_map<D>, &d, &runtime, MAXIDX, NSAMP, &rng ) );
-//  		for(int i = 0; i < Nthread; ++i) t[i].join();
-//  		runtime /= Nthread;
-//  		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
-//  			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
-//  		std::cout.flush();
-//  	}	
-//  	d.clear();
+ 	for(int Nthread = 1; Nthread <= maxNthread; ++Nthread){
+ 		int64_t NSAMP = NSAMP_TOT / Nthread ;
+ 		// test_map(d); d.clear();
+ 		double runtime = 0.0;
+ 		std::vector<std::thread> t;
+ 		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_array, &data[0], &runtime, SIZE, NSAMP, &rng ) );
+ 		for(int i = 0; i < Nthread; ++i) t[i].join();
+ 		runtime /= Nthread;
+ 		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
+ 			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
+ 		std::cout.flush();
+ 	}	
+ 	data.clear();
 
-//  }
+ }
+// nthread:     1,  84.195ns / lookup,   8.420s runtime,  11.877M lookup/sec,  11.877M lookup/sec/thread 
+// nthread:     2,  67.559ns / lookup,   6.756s runtime,  14.802M lookup/sec,   7.401M lookup/sec/thread 
+// nthread:     3,  51.433ns / lookup,   5.143s runtime,  19.443M lookup/sec,   6.481M lookup/sec/thread 
+// nthread:     4,  43.524ns / lookup,   4.352s runtime,  22.976M lookup/sec,   5.744M lookup/sec/thread 
+// nthread:     5,  37.039ns / lookup,   3.704s runtime,  26.998M lookup/sec,   5.400M lookup/sec/thread 
+// nthread:     6,  33.654ns / lookup,   3.365s runtime,  29.714M lookup/sec,   4.952M lookup/sec/thread 
+// nthread:     7,  31.637ns / lookup,   3.164s runtime,  31.609M lookup/sec,   4.516M lookup/sec/thread 
+// nthread:     8,  31.232ns / lookup,   3.123s runtime,  32.018M lookup/sec,   4.002M lookup/sec/thread 
+
 
 
 // 	// cout << "====================== SPARSE =====================" << endl;
@@ -364,4 +389,5 @@ TEST( test_hash_thread, google_hash_thread ){
 
 }}}
 
+#endif
 #endif
