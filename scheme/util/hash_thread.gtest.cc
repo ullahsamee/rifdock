@@ -7,6 +7,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/timer/timer.hpp>
 #include <boost/foreach.hpp>
+#include <boost/multi_array.hpp>
 
 #include <sparsehash/dense_hash_map>
 #include <sparsehash/sparse_hash_map>
@@ -19,6 +20,8 @@
 
 #include <thread>
 #include <mutex>
+
+
 
 
 namespace scheme { namespace util { namespace test_hash_thread {
@@ -188,8 +191,9 @@ void test_array(
 }
 
 // real	8m41.960s
+// 6m22.756s
 
-TEST( test_hash_thread, simple_array_thread ){
+TEST( test_hash_thread, DISABLED_simple_array_thread ){
 
  	int maxNthread = 8;
  	int64_t SIZE = 1000*1000*1000;
@@ -224,6 +228,77 @@ TEST( test_hash_thread, simple_array_thread ){
  		std::cout.flush();
  	}	
  	data.clear();
+
+ }
+
+
+
+
+void test_multiarray(
+	boost::multi_array<float,1> const * hp,
+	double * runtime,
+	int64_t NITER,
+	boost::random::mt19937 * rng
+){
+
+
+	boost::random::uniform_int_distribution<int64_t> randindex( 0, hp->shape()[0] );
+	// h.resize(NFILL/2);
+
+	boost::timer::cpu_timer t;
+	float count = 0;
+	for(size_t i = 0; i < NITER; ++i){
+		size_t ri = randindex(*rng);
+		count += (*hp)[ri];
+	}
+	double const time = (double)t.elapsed().wall;
+
+	static std::mutex m;
+	m.lock();
+	*runtime += time;
+	if( count == 0 ) cout << "ERROR!!" << endl;
+	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+	m.unlock();
+}
+
+// real	8m41.960s
+// 6m22.756s
+
+TEST( test_hash_thread, multi_array_thread ){
+
+ 	int maxNthread = 32;
+ 	int64_t SIZE = 1000*1000*1000;
+ 	// int64_t SIZE = 100*100*10*5;
+ 	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
+
+ 	boost::multi_array<float,1> data( boost::extents[SIZE] );
+
+ 	for( int64_t i = 0; i < SIZE; ++i ){
+ 		data[i] = (float)i;
+ 	}
+ 	cout << "done fill " << (double)SIZE*4.0/1000000000.0 << "GB" << endl;
+
+	boost::random::mt19937 rng( (unsigned int)time(0) );
+
+ 	// test_map(n,"google_dense",m,"segment_gdh ");
+ 	cout << "====================== MULTI_ARRAY_TEST ======================" << endl;
+
+ 	// double rt=0;
+ 	// test_map<D>( &d, &rt, MAXIDX, NSAMP_TOT ); 
+ 	// cout << "main thread: " << rt << "ns / lookup" << endl;
+
+ 	for(int Nthread = 1; Nthread <= maxNthread; ++Nthread){
+ 		int64_t NSAMP = NSAMP_TOT / Nthread ;
+ 		// test_map(d); d.clear();
+ 		double runtime = 0.0;
+ 		std::vector<std::thread> t;
+ 		for(int i = 0; i < Nthread; ++i) t.push_back( std::thread( test_multiarray, &data, &runtime, NSAMP, &rng ) );
+ 		for(int i = 0; i < Nthread; ++i) t[i].join();
+ 		runtime /= Nthread;
+ 		printf("nthread: %5i, %7.3fns / lookup, %7.3fs runtime, %7.3fM lookup/sec, %7.3fM lookup/sec/thread \n", 
+ 			Nthread, runtime / NSAMP_TOT , runtime/1000000000.0, NSAMP_TOT / runtime * 1000.0, NSAMP_TOT/runtime/Nthread*1000.0 );
+ 		std::cout.flush();
+ 	}	
 
  }
 // nthread:     1,  84.195ns / lookup,   8.420s runtime,  11.877M lookup/sec,  11.877M lookup/sec/thread 
