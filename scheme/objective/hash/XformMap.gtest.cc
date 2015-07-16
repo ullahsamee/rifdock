@@ -166,44 +166,12 @@ TEST( XformMap, insert_sphere ){
 
 
 
-TEST( XformMap, insert_sphere_radii_efficiency ){
+TEST( XformMap, test_bt24_bcc6 ){
 	typedef Eigen::Transform<double,3,Eigen::AffineCompact> EigenXform;
-	typedef scheme::objective::hash::XformMap< EigenXform, double > XMap;
+	typedef scheme::objective::hash::XformMap< EigenXform, double, XformHash_bt24_BCC6 > XMap;
 
+	XMap xmap( 1.0, 10.0 );
 
-	boost::random::mt19937 rng((unsigned int)time(0) + 81274984);
-	float const cart_resl = 0.25;
-	float const  ang_resl = 5.0;
-	float const lever = cart_resl / ( ang_resl * M_PI / 180.0 );
-
-	XMap xmap( cart_resl, ang_resl );
-
-	for( float mult = 0.5; mult <= 2.0001; mult+=0.1 ){
-		float vol = mult*mult*mult*mult*mult*mult;
-
-		float const cart_bound = mult*cart_resl;
-		float const  ang_bound = mult*ang_resl;
-		::scheme::objective::hash::XformHashNeighbors< XMap::Hasher > nbcache0( cart_bound, ang_bound, xmap.hasher_, 100 );
-
-		float avgcount = 0;
-
-		for( int iter = 0; iter < 10; ++iter){
-			Xform x;
-			numeric::rand_xform(rng,x);
-
-			avgcount += xmap.insert_sphere( 
-					x,
-					cart_bound,
-					lever,
-					0.0,
-					nbcache0
-				);
-		}
-
-		avgcount /= 10.0;
-		cout << mult << "   \t" << avgcount << "\t " << avgcount/vol << endl;
-
-	}
 }
 
 

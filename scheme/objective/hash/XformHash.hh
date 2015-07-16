@@ -616,8 +616,13 @@ struct XformHash_bt24_BCC6 {
 
 	static std::string name(){ return "XformHash_bt24_BCC6"; }
 
-	XformHash_bt24_BCC6( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
-	{
+	XformHash_bt24_BCC6(){}
+
+	XformHash_bt24_BCC6( Float cart_resl, Float ang_resl, Float cart_bound=512.0 ){
+		init( cart_resl, ang_resl, cart_bound );
+	}
+
+	void init( Float cart_resl, Float ang_resl, Float cart_bound=512.0 ){
 		// bcc orientation grid covering radii
 		static float const covrad[64] = {
 		    49.66580,25.99805,17.48845,13.15078,10.48384, 8.76800, 7.48210, 6.56491, 5.84498, 5.27430, 4.78793, 4.35932,
@@ -628,6 +633,11 @@ struct XformHash_bt24_BCC6 {
 		     0.86141, 0.84846, 0.83677, 0.82164 };
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.45 > ang_resl && ori_nside < 62 ) ++ori_nside; // TODO: HACK multiplier!
+
+		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+		std::cout << "ori_nside: " << ori_nside << std::endl;
+		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+
 		init( cart_resl, (int)ori_nside, cart_bound );
 	}
 
@@ -654,7 +664,7 @@ struct XformHash_bt24_BCC6 {
 	}
 
 	Key get_key( Xform const & x ) const {
-		Eigen::Matrix3d rotation;
+		Eigen::Matrix<Float,3,3> rotation;
 		get_transform_rotation( x, rotation );
 
 		uint64_t cell_index;

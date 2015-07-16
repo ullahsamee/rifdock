@@ -88,6 +88,18 @@ inline void dump_pdb_atom(
 	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],a);
 }
 
+template<class XYZ>
+inline void dump_pdb_atom(
+	std::ostream & out,
+	XYZ const & xyz,
+	AtomData const & a,
+	int resi
+){
+	AtomData d( a );
+	d.resnum = resi;
+	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],d);
+}
+
 template<class Atom>
 inline void dump_pdb_atom(
 	std::ostream & out,

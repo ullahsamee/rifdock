@@ -38,9 +38,9 @@ struct RosettaField {
 		}
 		// std::cout << atom_bins_lb_ << std::endl;
 		// std::cout << atom_bins_ub_ << std::endl;		
-		atom_bins_dim_[0] = std::ceil ( (atom_bins_ub_[0] - atom_bins_lb_[0]) / 6.0 );
-		atom_bins_dim_[1] = std::ceil ( (atom_bins_ub_[1] - atom_bins_lb_[1]) / 6.0 );
-		atom_bins_dim_[2] = std::ceil ( (atom_bins_ub_[2] - atom_bins_lb_[2]) / 6.0 );
+		atom_bins_dim_[0] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[0] - atom_bins_lb_[0]) / 6.0 ) );
+		atom_bins_dim_[1] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[1] - atom_bins_lb_[1]) / 6.0 ) );
+		atom_bins_dim_[2] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[2] - atom_bins_lb_[2]) / 6.0 ) );
 		atom_bins_.resize( atom_bins_dim_ );
 		BOOST_FOREACH( Atom const & a, atoms_ ){ 
 			I3 i = position_to_atombin(a.position());

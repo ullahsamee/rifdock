@@ -3,12 +3,16 @@
 
 #include "scheme/util/assert.hh"
 #include "scheme/util/str.hh"
+#include "scheme/chemical/AtomData.hh"
+#include "scheme/io/dump_pdb_atom.hh"
 
 #include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
 
 #include <string>
 #include <iostream>
 #include <map>
+#include <cmath>
 
 namespace scheme { namespace chemical {
 
@@ -19,6 +23,9 @@ struct ChemicalIndex {
 	std::vector<std::string> resnames_;
 	std::map<std::string,int> resname2num_;
 	std::vector< std::vector< AtomData > > atomdata_;
+
+	ChemicalIndex(){
+	}
 
 	bool have_res( std::string resn ) const {
 		return resname2num_.find(resn) != resname2num_.end();
@@ -54,12 +61,21 @@ namespace impl {
 template< class _Atom >
 struct Rotamer {
 	typedef _Atom Atom;
-	typedef struct { typename Atom::Position position; int32_t type; } AtomPT;
+	// typedef struct { typename Atom::Position position; int32_t type; } AtomPT;
 	std::string resname_;
 	size_t n_proton_chi_;
 	std::vector<float> chi_;
 	std::vector<Atom> atoms_;
 	std::vector<std::pair<Atom,Atom> > hbonders_;
+	int nheavyatoms;
+	uint64_t validation_hash() const {
+		uint64_t h = (uint64_t)(boost::hash<std::string>()(resname_));
+		h ^= (uint64_t)boost::hash<size_t>()(n_proton_chi_);
+		for(int i = 0; i < chi_.size(); ++i){
+			h ^= (uint64_t)boost::hash<float>()(chi_[i]);
+		}
+		return h;
+	}
 };
 
 }
@@ -94,7 +110,7 @@ struct RotamerIndex {
 		int parent_key = -1
 	){
 		Rotamer r;
-		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_ );
+		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms );
 		r.resname_ = resname;
 		r.chi_ = chi;
 		r.n_proton_chi_ = n_proton_chi;
@@ -145,7 +161,7 @@ struct RotamerIndex {
 	bool
 	sanity_check() const 
 	{
-		std::cout << "SANITY_CHECK" << std::endl;
+		// std::cout << "SANITY_CHECK" << std::endl;
 		typedef std::pair<std::string,std::pair<int,int> > TMP;
 		BOOST_FOREACH( TMP const & tmp, bounds_map_ ){
 			// std::cout << tmp.first << " " << tmp.second.first << " " << tmp.second.second << std::endl;
@@ -163,7 +179,7 @@ struct RotamerIndex {
 			for(int ichi = 0; ichi < nchi; ++ichi){
 				float child_chi = rotamers_.at(irot).chi_.at(ichi);
 				float parent_chi = rotamers_.at(ipri).chi_.at(ichi);
-				float chidiff = fabs(parent_chi-child_chi);
+				float chidiff = std::fabs(parent_chi-child_chi);
 				chidiff = std::min( chidiff, 360.0f-chidiff );
 				// std::cout << rotamers_.at(irot).resname_ << " " << ichi << " " << parent_chi << " " << child_chi << " " << chidiff << std::endl;
 				if( ichi==nchi-1 ){
@@ -193,6 +209,7 @@ struct RotamerIndex {
 
 			for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
 				AtomData const & ad1( rotamers_[irot].atoms_[ia].data() );
+				// std::cout <<  rotamers_[irot].resname_ << std::endl;
 				AtomData const & ad2( chem_index_.atom_data( rotamers_[irot].resname_, ia ) );
 				ALWAYS_ASSERT( ad1 == ad2 );
 			}
@@ -220,30 +237,91 @@ struct RotamerIndex {
 
 
 	size_t size() const { return rotamers_.size(); }
+	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
+	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
+	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
+	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }	
+	size_t nchi_noproton( size_t i ) const { return nchi(i)-nprotonchi(i); }	
+	size_t nprotonchi( size_t i ) const { return rotamers_.at(i).n_proton_chi_; }
+	float   chi( size_t i, size_t j ) const { return rotamers_.at(i).chi_.at(j); }
 
-	void dump_pdb( std::ostream & out, std::string resname="") const {
+	void dump_pdb( std::ostream & out, std::string resname="" ) const {
 		std::pair<int,int> b(0,rotamers_.size());
 		if( resname.size() ) b = index_bounds(resname);
 		int rescount = 0;
 		for(int irot = b.first; irot < b.second; ++irot){
-			std::cout << rotamers_[irot].resname_;
+			std::cout << rotamers_[irot].resname_ << " " << irot; 
 			for(int i = 0; i < rotamers_[irot].chi_.size(); ++i) std::cout << " " << rotamers_[irot].chi_[i];
 			std::cout << std::endl;
 			out << "MODEL " << rotamers_[irot].resname_ << " " << ++rescount << " " << irot << std::endl;
 			BOOST_FOREACH( Atom const & a, rotamers_[irot].atoms_ ){
 				out << scheme::io::dump_pdb_atom(a) << std::endl;
 			}
+			// out << "ENDMDL" << irot << std::endl;
+			// out << "MODEL " << rotamers_[irot].resname_ << " " << ++rescount << " " << irot << " HBONDERS" << std::endl;
 			typedef std::pair<Atom,Atom> TMP;
 			BOOST_FOREACH( TMP const & h, rotamers_[irot].hbonders_ ){
 				out << scheme::io::dump_pdb_atom(h.first) << std::endl;
 				out << scheme::io::dump_pdb_atom(h.second) << std::endl;				
 			}
-			out << "ENDMDL " << irot << std::endl;			
+			out << "ENDMDL " << irot << " HBONDERS" << std::endl;			
 		}
+	}
+
+	template< class Xform >
+	void dump_pdb( std::ostream & out, int irot, Xform x, int ires ) const {
+		for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
+			io::dump_pdb_atom( out, x*rotamers_[irot].atoms_[ia].position(), rotamers_[irot].atoms_[ia].data(), ires );
+		}
+	}
+
+
+
+	void load( std::istream & is ){
+		// read resn/chi angles and rebuild?
+	}
+
+	void save( std::ostream & os ){
+		// save only resn and chi angles?
+	}
+
+	uint64_t validation_hash() const {
+		uint64_t h = 0;
+		BOOST_FOREACH( Rotamer const & rot, rotamers_  ){
+			h ^= rot.validation_hash();
+		}
+		return h;
 	}
 
 };
 
+
+template<class A, class RG>
+std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG> const & ridx ){
+	out << "RotamerIndex:" << std::endl;
+	std::pair<int,int> ib;
+	ib=ridx.index_bounds("ALA"); out<<"    ALA "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("CYS"); out<<"    CYS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ASP"); out<<"    ASP "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLU"); out<<"    GLU "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("PHE"); out<<"    PHE "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLY"); out<<"    GLY "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("HIS"); out<<"    HIS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ILE"); out<<"    ILE "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("LYS"); out<<"    LYS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("LEU"); out<<"    LEU "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("MET"); out<<"    MET "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ASN"); out<<"    ASN "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("PRO"); out<<"    PRO "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLN"); out<<"    GLN "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ARG"); out<<"    ARG "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("SER"); out<<"    SER "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("THR"); out<<"    THR "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("VAL"); out<<"    VAL "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("TRP"); out<<"    TRP "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+ 	return out;
+}
 
 }}
 

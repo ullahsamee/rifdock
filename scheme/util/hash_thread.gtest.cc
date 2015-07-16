@@ -178,7 +178,7 @@ void test_array(
 	float count = 0;
 	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(*rng);
-		count += h[ri];
+		count += *(h+ri);
 	}
 	double const time = (double)t.elapsed().wall;
 
@@ -193,7 +193,7 @@ void test_array(
 // real	8m41.960s
 // 6m22.756s
 
-TEST( test_hash_thread, DISABLED_simple_array_thread ){
+TEST( test_hash_thread, simple_array_thread ){
 
  	int maxNthread = 8;
  	int64_t SIZE = 1000*1000*1000;
@@ -264,7 +264,7 @@ void test_multiarray(
 // real	8m41.960s
 // 6m22.756s
 
-TEST( test_hash_thread, multi_array_thread ){
+TEST( test_hash_thread, DISABLED_multi_array_thread ){
 
  	int maxNthread = 32;
  	int64_t SIZE = 1000*1000*1000;
