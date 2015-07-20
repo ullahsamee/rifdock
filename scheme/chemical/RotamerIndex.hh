@@ -88,6 +88,18 @@ struct RotamerIndex {
 	typedef std::map<std::string,std::pair<int,int> > BoundsMap;
 	typedef std::vector< std::pair<int,int> > ChildMap; // index is "primary" index, not rotamer number
 
+	size_t size() const { return rotamers_.size(); }
+	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
+	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
+	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
+	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }	
+	size_t nchi_noproton( size_t i ) const { return nchi(i)-nprotonchi(i); }	
+	size_t nprotonchi( size_t i ) const { return rotamers_.at(i).n_proton_chi_; }
+	float   chi( size_t i, size_t j ) const { return rotamers_.at(i).chi_.at(j); }
+	size_t nhbonds( size_t i ) const { return rotamers_.at(i).hbonders_.size(); }
+	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
+	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }	
+
 	ChemicalIndex<AtomData> chem_index_;
 
 	std::vector< Rotamer > rotamers_;
@@ -232,18 +244,7 @@ struct RotamerIndex {
 		return child_map_.at(ipri);
 	}
 
-	bool
-	is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
-
-
-	size_t size() const { return rotamers_.size(); }
-	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
-	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
-	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
-	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }	
-	size_t nchi_noproton( size_t i ) const { return nchi(i)-nprotonchi(i); }	
-	size_t nprotonchi( size_t i ) const { return rotamers_.at(i).n_proton_chi_; }
-	float   chi( size_t i, size_t j ) const { return rotamers_.at(i).chi_.at(j); }
+	bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
 
 	void dump_pdb( std::ostream & out, std::string resname="" ) const {
 		std::pair<int,int> b(0,rotamers_.size());
@@ -272,6 +273,13 @@ struct RotamerIndex {
 	void dump_pdb( std::ostream & out, int irot, Xform x, int ires ) const {
 		for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
 			io::dump_pdb_atom( out, x*rotamers_[irot].atoms_[ia].position(), rotamers_[irot].atoms_[ia].data(), ires );
+		}
+		typedef std::pair<Atom,Atom> TMP;
+		BOOST_FOREACH( TMP const & h, rotamers_[irot].hbonders_ ){
+			// io::dump_pdb_atom( out, x*h.first .position(), h.first .data(), ires );
+			if( h.second.type() < 0 ){ // is acceptor orbital
+				io::dump_pdb_atom( out, x*h.second.position(), h.second.data(), ires );
+			}
 		}
 	}
 
