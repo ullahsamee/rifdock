@@ -46,8 +46,8 @@ struct RotamerScore {
 
 template< int _N, class _Data = uint16_t, int _RotamerBits=9, int _Divisor=-13 >
 struct RotamerScores {
-	BOOST_STATIC_ASSERT( _N > 0   );
-	BOOST_STATIC_ASSERT( _N < 256 ); // arbitrary
+	BOOST_STATIC_ASSERT(( _N > 0   ));
+	BOOST_STATIC_ASSERT(( _N < 256 )); // arbitrary
 
 	typedef _Data Data;
 	typedef RotamerScores< _N, _Data, _RotamerBits, _Divisor > THIS;

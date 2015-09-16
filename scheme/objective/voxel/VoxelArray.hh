@@ -19,7 +19,7 @@ namespace scheme { namespace objective { namespace voxel {
 
 template< size_t _DIM, class _Float=float >
 struct VoxelArray : boost::multi_array<_Float,_DIM> {
-	BOOST_STATIC_ASSERT(_DIM>0);
+	BOOST_STATIC_ASSERT((_DIM>0));
 	typedef boost::multi_array<_Float,_DIM> BASE;
 	typedef VoxelArray<_DIM,_Float> THIS;
 	static size_t const DIM = _DIM;

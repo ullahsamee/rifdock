@@ -12,7 +12,7 @@ template< int DIM, class Float = double, class Index = uint64_t >
 struct BCC {
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Floats;
-	BOOST_STATIC_ASSERT(DIM > 2);
+	BOOST_STATIC_ASSERT((DIM > 2));
 
 	Indices nside_, nside_prefsum_;
 	Floats lower_, width_, lower_cen_, half_width_;
@@ -156,7 +156,7 @@ template< int DIM, class Float, class Index = uint64_t >
 struct Cubic {
 	typedef util::SimpleArray<DIM,Index> Indices;
 	typedef util::SimpleArray<DIM,Float> Floats;
-	BOOST_STATIC_ASSERT(DIM > 2);
+	BOOST_STATIC_ASSERT((DIM > 2));
 
 	Indices nside_, nside_prefsum_;
 	Floats lower_, width_, lower_cen_, half_width_;

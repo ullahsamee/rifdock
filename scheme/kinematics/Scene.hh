@@ -489,12 +489,12 @@ namespace impl {
 			Position const & ,
 			double 
 		) const {
-			BOOST_STATIC_ASSERT( 
+			BOOST_STATIC_ASSERT((
 				m::or_<
 					impl::has_type_Position<Actor1> ,
 					impl::has_type_Position<Actor2> 
 				>::value
-			);
+			));
 		}
 
 	/////////////////////////// interaction iteration //////////////////////////////////

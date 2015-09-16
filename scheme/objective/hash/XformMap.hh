@@ -45,7 +45,7 @@ template<
 	class ElementSerializer = XfromMapSerializer< 0, uint64_t, _Value >	
 >
 struct XformMap {
-	// BOOST_STATIC_ASSERT( ArrayBits >= 0 );
+	// BOOST_STATIC_ASSERT(( ArrayBits >= 0 ));
 	typedef _Value Value;
 	typedef _Xform Xform;
 	typedef _Hasher<Xform> Hasher;

@@ -32,7 +32,7 @@ size_t Ellipse3D::ncalls = 0;
 template<class Cache,class Field>
 double test_cache_vs_field(Cache const & cache, Field field, int nsamp=10000){
 	// cout << cache.num_elements()/1000000.0 <<"M" << endl;
-	BOOST_STATIC_ASSERT(Cache::DIM==3);
+	BOOST_STATIC_ASSERT((Cache::DIM==3));
 	typedef util::SimpleArray<3,double> F3;
 	boost::random::mt19937 rng((unsigned int)time(0));
 	boost::uniform_real<> uniform;

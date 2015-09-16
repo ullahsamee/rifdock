@@ -48,8 +48,8 @@ TEST(InstanceMap,holds_types){
 		// print_type< fusion_map_pairs<Types,_1>::type >();
 		typedef InstanceMap<Types,_1> TEST;
 		TEST imap;
-		BOOST_STATIC_ASSERT( mpl::size<TEST>::value == mpl::size<Types>::value );
-		BOOST_STATIC_ASSERT( bf::result_of::has_key<TEST,int>::value );
+		BOOST_STATIC_ASSERT(( mpl::size<TEST>::value == mpl::size<Types>::value ));
+		BOOST_STATIC_ASSERT(( bf::result_of::has_key<TEST,int>::value ));
 		ASSERT_TRUE( bf::has_key<int>(imap) );
 		BOOST_STATIC_ASSERT( boost::is_same<int,
 			bf::result_of::value_at_key<TEST,int>::type >::value );
@@ -181,8 +181,8 @@ TEST( InstanceMap, subtyping ){
 	{
 		typedef InstanceMap<Types,mpl::_1> TEST;
 		TEST imap;
-		BOOST_STATIC_ASSERT( mpl::size<TEST>::value == mpl::size<Types>::value );
-		BOOST_STATIC_ASSERT( bf::result_of::has_key<TEST,int>::value );
+		BOOST_STATIC_ASSERT(( mpl::size<TEST>::value == mpl::size<Types>::value ));
+		BOOST_STATIC_ASSERT(( bf::result_of::has_key<TEST,int>::value ));
 		ASSERT_TRUE( bf::has_key<int>(imap) );
 		BOOST_STATIC_ASSERT( boost::is_same<int,
 			bf::result_of::value_at_key<TEST,int>::type >::value );

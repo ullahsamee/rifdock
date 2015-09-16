@@ -8,6 +8,8 @@
 #include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/static_assert.hpp>
 
+#include <limits>
+
 #ifdef CEREAL
 // #include <boost/serialization/access.hpp>
 #include <cereal/access.hpp>
@@ -41,7 +43,7 @@ struct SimpleArray {
 		{ for(int i=0;i<N;++i) D[i] = a[i]; }
 	template<int N2>
 	SimpleArray(SimpleArray<N2,F> const & a){
-		BOOST_STATIC_ASSERT(N2==N);
+		BOOST_STATIC_ASSERT((N2==N));
 		for(int i=0;i<N;++i) D[i] = a[i];
 	}
 	template<int N2>
@@ -52,15 +54,15 @@ struct SimpleArray {
 	SimpleArray(){ if(init0) fill(0); }
 	// explicit SimpleArray(F const* fp){ for(size_t i = 0; i < N; ++i) D[i] = fp[i]; }
 	SimpleArray(F a){ fill(a); }
-	SimpleArray(F a, F b                                        ){ BOOST_STATIC_ASSERT(N== 2); D[0]=a;D[1]=b; }
-	SimpleArray(F a, F b, F c                                   ){ BOOST_STATIC_ASSERT(N== 3); D[0]=a;D[1]=b;D[2]=c; }
-	SimpleArray(F a, F b, F c, F d                              ){ BOOST_STATIC_ASSERT(N== 4); D[0]=a;D[1]=b;D[2]=c;D[3]=d; }
-	SimpleArray(F a, F b, F c, F d, F e                         ){ BOOST_STATIC_ASSERT(N== 5); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e; }
-	SimpleArray(F a, F b, F c, F d, F e, F f                    ){ BOOST_STATIC_ASSERT(N== 6); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g               ){ BOOST_STATIC_ASSERT(N== 7); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h          ){ BOOST_STATIC_ASSERT(N== 8); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i     ){ BOOST_STATIC_ASSERT(N== 9); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i; }
-	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i, F j){ BOOST_STATIC_ASSERT(N==10); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i;D[9]=j; }
+	SimpleArray(F a, F b                                        ){ BOOST_STATIC_ASSERT((N== 2)); D[0]=a;D[1]=b; }
+	SimpleArray(F a, F b, F c                                   ){ BOOST_STATIC_ASSERT((N== 3)); D[0]=a;D[1]=b;D[2]=c; }
+	SimpleArray(F a, F b, F c, F d                              ){ BOOST_STATIC_ASSERT((N== 4)); D[0]=a;D[1]=b;D[2]=c;D[3]=d; }
+	SimpleArray(F a, F b, F c, F d, F e                         ){ BOOST_STATIC_ASSERT((N== 5)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e; }
+	SimpleArray(F a, F b, F c, F d, F e, F f                    ){ BOOST_STATIC_ASSERT((N== 6)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g               ){ BOOST_STATIC_ASSERT((N== 7)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h          ){ BOOST_STATIC_ASSERT((N== 8)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i     ){ BOOST_STATIC_ASSERT((N== 9)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i; }
+	SimpleArray(F a, F b, F c, F d, F e, F f, F g, F h, F i, F j){ BOOST_STATIC_ASSERT((N==10)); D[0]=a;D[1]=b;D[2]=c;D[3]=d;D[4]=e;D[5]=f;D[6]=g;D[7]=h;D[8]=i;D[9]=j; }
 	F       & operator[](size_t i)       { return D[i]; }
 	F const & operator[](size_t i) const { return D[i]; }
 	F       & at(size_t i)       { BOOST_VERIFY(i < N); return D[i]; }

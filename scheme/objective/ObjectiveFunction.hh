@@ -93,7 +93,7 @@ namespace impl {
 		template<class Objective>
 		void
 		operator()(Objective const & objective) const {
-			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
+			BOOST_STATIC_ASSERT(( f::result_of::has_key<typename Results::FusionType,Objective>::value ));
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjective:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
 			#endif
@@ -128,7 +128,7 @@ namespace impl {
 		template<class Objective>
 		void
 		operator()(Objective const & objective) const {
-			BOOST_STATIC_ASSERT( f::result_of::has_key<typename Results::FusionType,Objective>::value );
+			BOOST_STATIC_ASSERT(( f::result_of::has_key<typename Results::FusionType,Objective>::value ));
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjectiveSplitPair:     Objective " << Objective::name() <<"( " << interaction  << " )" << std::endl;
 			#endif
@@ -195,7 +195,7 @@ namespace impl {
 		
 		template<class Interaction>	void
 		operator()(util::meta::type2type<Interaction>) const {
-			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
+			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));		
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectives Interaction: ";
 				util::meta::PrintType(std::cout).operator()(Interaction());
@@ -304,7 +304,7 @@ namespace impl {
 		
 		template<class Interaction>	void
 		operator()(util::meta::type2type<Interaction>) const {
-			BOOST_STATIC_ASSERT( InteractionSource::template has_interaction<Interaction>::value );		
+			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));		
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectives Interaction: ";
 				util::meta::PrintType(std::cout).operator()(Interaction());
@@ -362,7 +362,7 @@ struct ObjectiveFunction {
 		>::type
 	UniqueObjectives;
 
-	BOOST_STATIC_ASSERT( m::size<UniqueObjectives>::value == m::size<Objectives>::value );
+	BOOST_STATIC_ASSERT(( m::size<UniqueObjectives>::value == m::size<Objectives>::value ));
 
 	///@typedef unique InteractionTypes types
 	typedef typename 
@@ -416,7 +416,7 @@ struct ObjectiveFunction {
 	template<class Objective>
 	Objective &
 	get_objective(){
-		BOOST_STATIC_ASSERT( true ); // shold check that objective is actuall in Objectives...
+		BOOST_STATIC_ASSERT(( true )); // shold check that objective is actuall in Objectives...
 		return f::deref( f::find<Objective>( 
 			objective_map_.template get<typename Objective::Interaction>() 
 		));
@@ -444,7 +444,7 @@ struct ObjectiveFunction {
 				>
 			>::type
 			MutualInteractionTypes;
-		BOOST_STATIC_ASSERT( m::size<MutualInteractionTypes>::value );
+		BOOST_STATIC_ASSERT(( m::size<MutualInteractionTypes>::value ));
 		#ifdef DEBUG_IO
 			std::cout << "ObjectiveFunction operator()" << std::endl;
 		#endif

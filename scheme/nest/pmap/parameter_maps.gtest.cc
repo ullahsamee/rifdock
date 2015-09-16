@@ -214,7 +214,7 @@ TEST(NEST_ScaleMap,index_lookup_scaled){
 
 template<int DIM>
 void test_map_scale_bounds(){
-	BOOST_STATIC_ASSERT(DIM<10);
+	BOOST_STATIC_ASSERT((DIM<10));
 	util::SimpleArray<10,double> lb0(-1.3,2.2,0,-3,-5,-9.9,1.3,44,-13.3,99),ub0(1.3,4.2,1,10,-3, 9.9,4.3,44, 13.3,199);
 	util::SimpleArray<10,size_t> bs0(1,2,3,4,5,6,7,8,9,10);
 

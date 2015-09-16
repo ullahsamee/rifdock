@@ -28,8 +28,8 @@ TEST( ContainerInstanceMap, basic_test ){
 		std::vector<int>,
 		std::vector<char> 
 	> > cmap;
-	BOOST_STATIC_ASSERT( boost::is_same< std::vector<int>::value_type, int >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< impl::get_value_type_void<       int       >::type, void >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< std::vector<int>::value_type, int >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< impl::get_value_type_void<       int       >::type, void >::value ));
 	cmap.get<int>().push_back(1);
 	cmap.get<char>().push_back('c');
 	cmap.get<char>().push_back('h');

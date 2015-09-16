@@ -9,6 +9,7 @@
 #include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
+#include <cstdlib>
 #include <string>
 #include <iostream>
 #include <map>
@@ -82,7 +83,7 @@ struct Rotamer {
 
 template<class _Atom, class RotamerGenerator>
 struct RotamerIndex {
-	BOOST_STATIC_ASSERT( boost::is_same< _Atom, typename RotamerGenerator::Atom >::value );
+	BOOST_STATIC_ASSERT(( ( boost::is_same< _Atom, typename RotamerGenerator::Atom >::value ) ));
 	typedef _Atom Atom;
 	typedef impl::Rotamer<Atom> Rotamer;
 	typedef std::map<std::string,std::pair<int,int> > BoundsMap;

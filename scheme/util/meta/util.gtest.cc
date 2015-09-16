@@ -47,20 +47,20 @@ SCHEME_MEMBER_TYPE_DEFAULT_SELF_TEMPLATE(FOO)
 
 TEST(META_UTIL,member_type_default){
 
-	BOOST_STATIC_ASSERT( boost::is_same< int    , get_FOO_int<EMPTY  >::type >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< double , get_FOO_int<DOUBLE >::type >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< char   , get_FOO_int<CHAR   >::type >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< int    , get_FOO_int<EMPTY  >::type >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< double , get_FOO_int<DOUBLE >::type >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< char   , get_FOO_int<CHAR   >::type >::value ));
 
-	BOOST_STATIC_ASSERT( boost::is_same< float  , get_FOO_float<EMPTY  >::type >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< float  , get_FOO_float<EMPTY  >::type >::value ));
 
-	BOOST_STATIC_ASSERT( boost::is_same< EMPTY  , get_FOO_SELF<EMPTY  >::type >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< double , get_FOO_SELF<DOUBLE >::type >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< char   , get_FOO_SELF<CHAR   >::type >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< EMPTY  , get_FOO_SELF<EMPTY  >::type >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< double , get_FOO_SELF<DOUBLE >::type >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< char   , get_FOO_SELF<CHAR   >::type >::value ));
 
-	BOOST_STATIC_ASSERT( boost::is_same< int    , get_FOO_SELF<int>::type >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< int    , get_FOO_SELF<int>::type >::value ));
 
-	BOOST_STATIC_ASSERT( boost::is_same< void   , get_value_type_void<EMPTY>::type >::value );
-	BOOST_STATIC_ASSERT( boost::is_same< int    , get_value_type_void<VAL>::type >::value );
+	BOOST_STATIC_ASSERT(( boost::is_same< void   , get_value_type_void<EMPTY>::type >::value ));
+	BOOST_STATIC_ASSERT(( boost::is_same< int    , get_value_type_void<VAL>::type >::value ));
 
 }
 
@@ -71,9 +71,9 @@ struct FALSE_ { typedef m::false_ TF; };
 
 TEST(META_UTIL,member_type_default_mpl_TF){
 
-	BOOST_STATIC_ASSERT( !get_TF_false_<EMPTY >::type::value );
-	BOOST_STATIC_ASSERT(  get_TF_false_<TRUE_ >::type::value );
-	BOOST_STATIC_ASSERT( !get_TF_false_<FALSE_>::type::value );
+	BOOST_STATIC_ASSERT(( !get_TF_false_<EMPTY >::type::value ));
+	BOOST_STATIC_ASSERT((  get_TF_false_<TRUE_ >::type::value ));
+	BOOST_STATIC_ASSERT(( !get_TF_false_<FALSE_>::type::value ));
 	
 }
 
@@ -83,9 +83,9 @@ SCHEME_HAS_MEMBER_TYPE(FOO)
 
 TEST(META_UTIL,has_member_type){
 
-	BOOST_STATIC_ASSERT( !has_type_FOO<EMPTY  >::value );
-	BOOST_STATIC_ASSERT(  has_type_FOO<DOUBLE >::value );
-	BOOST_STATIC_ASSERT(  has_type_FOO<CHAR   >::value );
+	BOOST_STATIC_ASSERT(( !has_type_FOO<EMPTY  >::value ));
+	BOOST_STATIC_ASSERT((  has_type_FOO<DOUBLE >::value ));
+	BOOST_STATIC_ASSERT((  has_type_FOO<CHAR   >::value ));
 
 }
 
@@ -179,18 +179,18 @@ SCHEME_HAS_CONST_MEMBER_FUNCTION_3(used_memory)
 
 TEST(META_UTIL,detect_function){
 
-	BOOST_STATIC_ASSERT( !HasUsedMemoryMethod<EMPTY            ,int,float,char>::Has );
-	BOOST_STATIC_ASSERT(  HasUsedMemoryMethod<USED_MEMORY_CONST,int,float,char>::Has );
+	BOOST_STATIC_ASSERT(( !HasUsedMemoryMethod<EMPTY            ,int,float,char>::Has ));
+	BOOST_STATIC_ASSERT((  HasUsedMemoryMethod<USED_MEMORY_CONST,int,float,char>::Has ));
 
-	BOOST_STATIC_ASSERT( !has_const_member_fun_used_memory<EMPTY            ,size_t,int,float,char>::value );
-	BOOST_STATIC_ASSERT( !has_const_member_fun_used_memory<USED_MEMORY      ,size_t,int,float,char>::value );
-	BOOST_STATIC_ASSERT(  has_const_member_fun_used_memory<USED_MEMORY_CONST,size_t,int,float,char>::value );	
-	BOOST_STATIC_ASSERT( !has_member_fun_used_memory      <EMPTY            ,size_t,int,float,char>::value );
-	BOOST_STATIC_ASSERT(  has_member_fun_used_memory      <USED_MEMORY      ,size_t,int,float,char>::value );	
-	BOOST_STATIC_ASSERT( !has_member_fun_used_memory      <USED_MEMORY_CONST,size_t,int,float,char>::value );	
+	BOOST_STATIC_ASSERT(( !has_const_member_fun_used_memory<EMPTY            ,size_t,int,float,char>::value ));
+	BOOST_STATIC_ASSERT(( !has_const_member_fun_used_memory<USED_MEMORY      ,size_t,int,float,char>::value ));
+	BOOST_STATIC_ASSERT((  has_const_member_fun_used_memory<USED_MEMORY_CONST,size_t,int,float,char>::value ));	
+	BOOST_STATIC_ASSERT(( !has_member_fun_used_memory      <EMPTY            ,size_t,int,float,char>::value ));
+	BOOST_STATIC_ASSERT((  has_member_fun_used_memory      <USED_MEMORY      ,size_t,int,float,char>::value ));	
+	BOOST_STATIC_ASSERT(( !has_member_fun_used_memory      <USED_MEMORY_CONST,size_t,int,float,char>::value ));	
 
-	BOOST_STATIC_ASSERT( !has_const_call_oper_3<EMPTY          ,void,int,float,char>::value );	
-	BOOST_STATIC_ASSERT(  has_const_call_oper_3<CALL_OPER_CONST,void,int,float,char>::value );	
+	BOOST_STATIC_ASSERT(( !has_const_call_oper_3<EMPTY          ,void,int,float,char>::value ));	
+	BOOST_STATIC_ASSERT((  has_const_call_oper_3<CALL_OPER_CONST,void,int,float,char>::value ));	
 
 }
 

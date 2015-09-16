@@ -90,7 +90,7 @@ struct ConfigTest {
 };
 
 TEST(ObjectiveFunction,detect_call_operator){
-	BOOST_STATIC_ASSERT( util::meta::has_const_call_oper_3<ScoreIntDouble,double,int const &,double const &,ConfigTest const &>::value );
+	BOOST_STATIC_ASSERT(( util::meta::has_const_call_oper_3<ScoreIntDouble,double,int const &,double const &,ConfigTest const &>::value ));
 }
 
 template<class Interactions >

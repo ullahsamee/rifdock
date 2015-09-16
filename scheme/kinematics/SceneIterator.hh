@@ -87,7 +87,7 @@ using std::endl;
 							typename DerefPolicy<Scene,Interaction>::Value const
 						>					
 	{
-		BOOST_STATIC_ASSERT( !util::meta::is_pair<Interaction>::value );
+		BOOST_STATIC_ASSERT(( !util::meta::is_pair<Interaction>::value ));
 		typedef SceneIter1B<Scene,Interaction,SymPolicy,DerefPolicy> THIS;
 		typedef Interaction Actor;
 		typedef SymPolicy<Scene,Interaction> Sym;
@@ -199,7 +199,7 @@ using std::endl;
 		typedef _Scene Scene;
 		typedef _Interaction Interaction;
 		typedef _CountPair CountPair;
-		BOOST_STATIC_ASSERT( util::meta::is_pair<Interaction>::value );
+		BOOST_STATIC_ASSERT(( util::meta::is_pair<Interaction>::value ));
 		typedef typename Interaction::first_type Actor1;
 		typedef typename Interaction::second_type Actor2;
 		typedef SceneIter2B<Scene,std::pair<Actor1,Actor2>,CountPair> THIS;
