@@ -178,16 +178,16 @@ lk_derivative(
 
 /// @details only to be called when the distance, dis, is less than the switch-point for
 /// the lj_switch_dis2sigma value.
-template < typename Real, typename LJParams >
-Real
-ljrep_linearized(
-	Real const dis,
-	LJParams const & p
-)
-{
-	assert( dis * dis < p.ljrep_linear_ramp_d2_cutoff );
-	return  dis*p.lj_switch_slope + p.lj_switch_intercept;
-}
+// template < typename Real, typename LJParams >
+// Real
+// ljrep_linearized(
+// 	Real const dis,
+// 	LJParams const & p
+// )
+// {
+// 	assert( dis * dis < p.ljrep_linear_ramp_d2_cutoff );
+// 	return  dis*p.lj_switch_slope + p.lj_switch_intercept;
+// }
 
 /// @details: evaluate the standard Lennard-Jones 6-12 functional form.
 /// Only call this function if the square distance is in the range
@@ -247,7 +247,8 @@ lj_evaluation(
 
 	if ( dis2 < p.ljrep_linear_ramp_d2_cutoff ) { // dis * p.inv_lj_sigma < lj_switch_dis2sigma ) {
 		//  ctsa - use linear ramp instead of lj when the dis/sigma  ratio drops below theshold
-		ljE = ljrep_linearized( dis, p );
+		// ljE = ljrep_linearized( dis, p ); // sometimes got assertion errors due to numerical issues
+		ljE = dis*p.lj_switch_slope + p.lj_switch_intercept;
 	} else if ( dis < p.ljatr_cubic_poly_xlo ) {
 		//  ctsa - calc regular lennard-jones
 		ljE = lj_generic_form( dis2, inv_dis2, p ); //  p.lj_r12_coeff * inv_dis12 + p.lj_r6_coeff * inv_dis6;
