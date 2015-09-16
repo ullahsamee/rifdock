@@ -12,10 +12,10 @@ TEST(util_container_ContainerInteractions,default_on_vector){
 	typedef ContainerInteractions< double, std::vector<int>, std::vector<int>, Index > CI;
 	typedef std::pair<Index,Index> Index2;
 
-	BOOST_STATIC_ASSERT( boost::is_same< 
+	BOOST_STATIC_ASSERT(( boost::is_same< 
 		std::pair<ContainerInteractionsIter<Index>,ContainerInteractionsIter<Index> >,
 		CI::Range 
-	>::value );
+	>::value ));
 
 	std::vector<int> a;
 	std::vector<int> b;
@@ -105,10 +105,10 @@ TEST(util_container_ContainerInteractions,specialization_on_myvector){
 	typedef ContainerInteractions< double, myvector<int>, std::vector<int>, Index > CI;
 	typedef std::pair<Index,Index> Index2;
 
-	BOOST_STATIC_ASSERT( boost::is_same< 
+	BOOST_STATIC_ASSERT(( boost::is_same< 
 		std::vector<Index2>,
 		CI::Range 
-	>::value );
+	>::value ));
 
 	myvector<int> a(2,0);
 	std::vector<int> b(3,1);

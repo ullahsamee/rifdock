@@ -51,10 +51,8 @@ TEST(InstanceMap,holds_types){
 		BOOST_STATIC_ASSERT(( mpl::size<TEST>::value == mpl::size<Types>::value ));
 		BOOST_STATIC_ASSERT(( bf::result_of::has_key<TEST,int>::value ));
 		ASSERT_TRUE( bf::has_key<int>(imap) );
-		BOOST_STATIC_ASSERT( boost::is_same<int,
-			bf::result_of::value_at_key<TEST,int>::type >::value );
-		BOOST_STATIC_ASSERT( boost::is_same<char,
-			bf::result_of::value_at_key<TEST,char>::type >::value );
+		BOOST_STATIC_ASSERT(( boost::is_same<int,bf::result_of::value_at_key<TEST,int>::type >::value ));
+		BOOST_STATIC_ASSERT(( boost::is_same<char,bf::result_of::value_at_key<TEST,char>::type >::value ));
 		imap.get<int>() = 1;
 		imap.get<char>() = 'C';	
 		imap.get<float>() = 1.2345f;
@@ -184,10 +182,8 @@ TEST( InstanceMap, subtyping ){
 		BOOST_STATIC_ASSERT(( mpl::size<TEST>::value == mpl::size<Types>::value ));
 		BOOST_STATIC_ASSERT(( bf::result_of::has_key<TEST,int>::value ));
 		ASSERT_TRUE( bf::has_key<int>(imap) );
-		BOOST_STATIC_ASSERT( boost::is_same<int,
-			bf::result_of::value_at_key<TEST,int>::type >::value );
-		BOOST_STATIC_ASSERT( boost::is_same<char,
-			bf::result_of::value_at_key<TEST,char>::type >::value );
+		BOOST_STATIC_ASSERT(( boost::is_same<int,bf::result_of::value_at_key<TEST,int>::type >::value ));
+		BOOST_STATIC_ASSERT(( boost::is_same<char,bf::result_of::value_at_key<TEST,char>::type >::value ));
 		imap.get<int>() = 1;
 		imap.get<char>() = 'C';	
 		imap.get<float>() = 1.2345f;
