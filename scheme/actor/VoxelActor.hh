@@ -17,7 +17,8 @@ namespace actor {
 		// typedef _Position Position;
 		typedef _Float Float;
 		typedef objective::voxel::VoxelArray<3,Float> VoxelArray;
-		typedef std::vector<std::vector<shared_ptr< VoxelArray > > > Voxels;
+		// typedef std::vector<std::vector<shared_ptr< VoxelArray > > > Voxels;
+		typedef std::vector<std::vector< VoxelArray * > > Voxels;		
 
 		// Position position_;
 		Voxels voxels_;
