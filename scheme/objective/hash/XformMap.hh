@@ -11,6 +11,10 @@
 
 #include <sparsehash/dense_hash_map>
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 namespace scheme { namespace objective { namespace hash {
 
 
@@ -58,6 +62,9 @@ struct XformMap {
     Map map_;
 	ElementSerializer element_serializer_;
     Float cart_resl_, ang_resl_, cart_bound_;
+	#ifdef USE_OPENMP
+    omp_lock_t insert_lock;
+	#endif
 
 	XformMap( Float cart_resl=-1.0, Float ang_resl=-1.0, Float cart_bound=512.0 )
 	{
@@ -68,6 +75,16 @@ struct XformMap {
 		if( cart_resl_ != -1.0 && ang_resl != -1.0 ){
 			hasher_.init( cart_resl, ang_resl, cart_bound );
 		}
+
+		#ifdef USE_OPENMP
+		omp_init_lock( &insert_lock );
+		#endif
+	}
+
+	~XformMap(){
+		#ifdef USE_OPENMP
+		omp_destroy_lock( &insert_lock );
+		#endif		
 	}
 
 	void clear() { map_.clear(); }
@@ -146,13 +163,16 @@ struct XformMap {
 			// std::cerr << x_lever_coord << std::endl;
 			// std::cerr << nb_lever_coord << std::endl;
 			if( (nb_lever_coord-x_lever_coord).squaredNorm() <= thresh2 ){
-				#ifdef USE_OPENMP
-				#pragma omp critical
-				#endif
+				// #ifdef USE_OPENMP
+				// omp_set_lock( &insert_lock );
+				// #endif
 				{
 					insert( nbkey, value );
 					++nbcount;
 				}
+				// #ifdef USE_OPENMP
+				// omp_unset_lock( &insert_lock );
+				// #endif
 			}
 			++count;
 		}

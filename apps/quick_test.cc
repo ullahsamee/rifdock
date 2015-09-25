@@ -65,14 +65,14 @@
 
 // #include "scheme/objective/hash/XformHash.gtest.cc"
 // #include "scheme/objective/hash/XformHashFromNest.gtest.cc"
-// #include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
+#include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
 // #include "scheme/objective/hash/XformMap.gtest.cc"
 
 // #include "scheme/objective/storage/RotamerScores.gtest.cc"
 
 // #include "scheme/chemical/RotamerIndex.gtest.cc"
 
-#include "scheme/objective/storage/TwoBodyTable.gtest.cc"
+// #include "scheme/objective/storage/TwoBodyTable.gtest.cc"
 
 // #include "scheme/actor/BackboneActor.gtest.cc"
 

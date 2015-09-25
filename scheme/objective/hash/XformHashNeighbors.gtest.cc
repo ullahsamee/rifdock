@@ -16,7 +16,8 @@ namespace scheme { namespace objective { namespace hash { namespace xhnbtest {
 using std::cout;
 using std::endl;
 
-typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
+typedef float Float;
+typedef Eigen::Transform<Float,3,Eigen::AffineCompact> Xform;
 // typedef Eigen::Affine3d Xform;
 
 template<class XH>
@@ -39,6 +40,8 @@ void get_neighbors_ref(
 
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
+	double eps_tol = 0.0000001;
+	if( sizeof(Float) == 4 ) eps_tol = 0.0001;
 	typedef uint64_t Key;
 	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
 	boost::uniform_real<> runif;
@@ -49,21 +52,23 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
 			Key k0 = xh.grid_[util::SimpleArray<7,double>(0.0)];
 			ASSERT_EQ( k0%2, (i+1)%2 );
 			util::SimpleArray<7,double> f7 = xh.grid_[k0];
-			for(int k = 0; k < 7; ++k) ASSERT_NEAR( f7[k], 0.0, 0.000001 );
+			for(int k = 0; k < 7; ++k) ASSERT_NEAR( f7[k], 0.0, eps_tol );
 			Xform x = Xform::Identity();
 			// x.translation()[0] = 2.0*runif(rng)-1.0; // this doesn't work... even/odd cells
 			// x.translation()[1] = 2.0*runif(rng)-1.0; //
 			// x.translation()[2] = 2.0*runif(rng)-1.0; //
-			Quaterniond q( xh.get_center( xh.get_key( x ) ).rotation() );
-			ASSERT_NEAR( q.w(), 1.0, 0.000001 );
-			ASSERT_NEAR( q.x(), 0.0, 0.000001 );
-			ASSERT_NEAR( q.y(), 0.0, 0.000001 );
-			ASSERT_NEAR( q.z(), 0.0, 0.000001 );
+			Quaternion<Float> q( xh.get_center( xh.get_key( x ) ).rotation() );
+			ASSERT_NEAR( q.w(), 1.0, eps_tol );
+			ASSERT_NEAR( q.x(), 0.0, eps_tol );
+			ASSERT_NEAR( q.y(), 0.0, eps_tol );
+			ASSERT_NEAR( q.z(), 0.0, eps_tol );
 		}
 	}
 }
 
-TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_refllection_symmetry ){
+TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
+	double eps_tol = 0.0000001;
+	if( sizeof(Float) == 4 ) eps_tol = 0.0001;
 	using namespace Eigen;
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
@@ -128,15 +133,15 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_refllection_symmetry ){
 			f[15] = xh.grid_[ xh.grid_[ F7( a,b,c, -w,-x,-y,-z ) ] ];
 			for(int j = 1; j < 16; ++j){
 				ASSERT_EQ  (      i[0]%2  ,      i[j]%2    ); // all even or all odd
-				ASSERT_NEAR( fabs(f[0][3]), fabs(f[j][3]) , 0.000001 );
-				ASSERT_NEAR( fabs(f[0][4]), fabs(f[j][4]) , 0.000001 );
-				ASSERT_NEAR( fabs(f[0][5]), fabs(f[j][5]) , 0.000001 );
-				ASSERT_NEAR( fabs(f[0][6]), fabs(f[j][6]) , 0.000001 );
+				ASSERT_NEAR( fabs(f[0][3]), fabs(f[j][3]) , eps_tol );
+				ASSERT_NEAR( fabs(f[0][4]), fabs(f[j][4]) , eps_tol );
+				ASSERT_NEAR( fabs(f[0][5]), fabs(f[j][5]) , eps_tol );
+				ASSERT_NEAR( fabs(f[0][6]), fabs(f[j][6]) , eps_tol );
 			}
 
 			// if( iter1+iter2 == 0 ){
 			// 	for(int j=0; j<8; ++j){
-			// 		Xform xf = Xform( numeric::to_half_cell( Quaterniond(f[j][3],f[j][4],f[j][5],f[j][6]) ).matrix());
+			// 		Xform xf = Xform( numeric::to_half_cell( Quaternion<Float>(f[j][3],f[j][4],f[j][5],f[j][6]) ).matrix());
 			// 		for(int k=0;k<3;++k) xf.translation()[k] = f[j][k];
 			// 		Key k = xh.get_key( xf );
 			// 		Key o = k & 1;
@@ -159,6 +164,9 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 	NSAMP = 1000;
 	#endif
 
+	double eps_tol = 0.0000001;
+	if( sizeof(Float) == 4 ) eps_tol = 0.0001;
+
 	using namespace Eigen;
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
@@ -172,7 +180,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 		XformHash_Quat_BCC7_Zorder<Xform> xh( runif(rng)+0.1, 2+(int)(runif(rng)*20.0), runif(rng)*400+10.0 );
 		for(int i = 0; i < NSAMP; ++i){
 			Xform x; numeric::rand_xform(rng,x);
-			// while( fabs(Quaterniond(x.rotation()).w()) > 0.01 ) numeric::rand_xform(rng,x);
+			// while( fabs(Quaternion<Float>(x.rotation()).w()) > 0.01 ) numeric::rand_xform(rng,x);
 			Key key = xh.get_key(x);
 			Key akey,ksym;
 			akey = xh.asym_key(key,ksym);
@@ -212,19 +220,19 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 			Xform xc = xh.get_center(  key );
 			Xform xa = xh.get_center( akey );
 			ASSERT_EQ( xc.translation(), xa.translation() );
-			Quaterniond qc( xc.rotation() );
-			Quaterniond qa( xa.rotation() );
+			Quaternion<Float> qc( xc.rotation() );
+			Quaternion<Float> qa( xa.rotation() );
 			// cout << qc.coeffs().transpose() << endl;
 			// cout << qa.coeffs().transpose() << endl << endl;
 			qc = numeric::to_half_cell(qc);
 			qa = numeric::to_half_cell(qa);
 			// cout << qc.coeffs().transpose() << endl;
 			// cout << qa.coeffs().transpose() << endl << endl;
-			ASSERT_NEAR( qc.w(),              qa.w()  , 0.000001 );
-			if( fabs( qc.w() ) > 0.000000001  ){
-				ASSERT_NEAR( qc.x(), (fx?-1.0:1.0)*qa.x() , 0.000001 );
-				ASSERT_NEAR( qc.y(), (fy?-1.0:1.0)*qa.y() , 0.000001 );
-				ASSERT_NEAR( qc.z(), (fz?-1.0:1.0)*qa.z() , 0.000001 );
+			ASSERT_NEAR( qc.w(),              qa.w()  , eps_tol );
+			if( fabs( qc.w() ) > eps_tol  ){
+				ASSERT_NEAR( qc.x(), (fx?-1.0:1.0)*qa.x() , eps_tol );
+				ASSERT_NEAR( qc.y(), (fy?-1.0:1.0)*qa.y() , eps_tol );
+				ASSERT_NEAR( qc.z(), (fz?-1.0:1.0)*qa.z() , eps_tol );
 			}
 			// cout << std::showpos;
 
@@ -364,7 +372,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_ori_neighbors ){
 	double quat_bound=numeric::deg2quat(ang_bound);
 
 	for(int iter1 = 0; iter1 < NSAMP; ++iter1){
-		XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 5.0+runif(rng)*10.0, 10+runif(rng)*100.0 );
+		XformHash_Quat_BCC7_Zorder<Xform> xh( Float(1.0), Float(5.0+runif(rng)*10.0), Float(10+runif(rng)*100.0) );
 		// XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 10.0 );
 		XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform> > nb( cart_bound, ang_bound, xh, NSAMP*20.0 );
 
@@ -405,14 +413,14 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_ori_neighbors ){
 				// std::ofstream out("nbrs_sym_fails.pdb");
 				// for(int i = 0; i < fails.size(); ++i){
 				// 	Xform x = xh.get_center( fails[i] );
-				// 	Eigen::Quaterniond q(x.rotation());
+				// 	Eigen::Quaternion<Float> q(x.rotation());
 				// 	io::dump_pdb_atom( out, "C" ,i, 50*q.coeffs() );
 				// }
 				// out.close();
 				// std::ofstream out2("nbrs_sym_passes.pdb");
 				// for(int i = 0; i < passes.size(); ++i){
 				// 	Xform x = xh.get_center( passes[i] );
-				// 	Eigen::Quaterniond q(x.rotation());
+				// 	Eigen::Quaternion<Float> q(x.rotation());
 				// 	io::dump_pdb_atom( out2, "C" ,i, 50*q.coeffs() );
 				// }
 				// out2.close();
@@ -444,7 +452,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		// double cart_bound=2.0, ang_bound=20.0;
 		double quat_bound=numeric::deg2quat(ang_bound);
 		// XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 5.0+runif(rng)*10.0, 10+runif(rng)*200.0 );
-		XformHash_Quat_BCC7_Zorder<Xform> xh( 1.0, 10.0 );
+		XformHash_Quat_BCC7_Zorder<Xform> xh( Float(1.0), Float(10.0) );
 		typedef XformHashNeighbors< XformHash_Quat_BCC7_Zorder<Xform>, true > XNB;
 		XNB nb( cart_bound, ang_bound, xh, NSAMP*50.0 );
 

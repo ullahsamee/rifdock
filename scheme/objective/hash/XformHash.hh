@@ -711,7 +711,7 @@ struct XformHash_bt24_BCC6 {
 		params[0] = params6[3];
 		params[1] = params6[4];
 		params[2] = params6[5];
-		Eigen::Matrix3d m;
+		Eigen::Matrix<Float,3,3> m;
 		// ori_map_.params_to_value( params, cell_index, 0, m );
 		{
 			Float const & w(nest::pmap::cell_width<Float>());

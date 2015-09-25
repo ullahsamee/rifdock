@@ -176,6 +176,16 @@ TEST( XformMap, test_bt24_bcc6 ){
 
 
 
+TEST( XformMap, test_float_double ){
+	typedef Eigen::Transform<double,3,Eigen::AffineCompact> EigenXformD;
+	typedef scheme::objective::hash::XformMap< EigenXformD, double, XformHash_bt24_BCC6 > XMapD;
+	typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXformF;
+	typedef scheme::objective::hash::XformMap< EigenXformF, double, XformHash_bt24_BCC6 > XMapF;
+
+	ASSERT_TRUE( false );
+
+}
+
 
 
 }}}}

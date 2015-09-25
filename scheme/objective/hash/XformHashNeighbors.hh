@@ -14,6 +14,8 @@
 #include <set>
 #include <map>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/foreach.hpp>
+
 
 namespace scheme { namespace objective { namespace hash {
 
@@ -190,9 +192,9 @@ struct XformHashNeighbors {
 					keys.insert(nbkey);
 				}
 				assert( keys.size() > 0 );
-				#ifdef USE_OPENMP
-				#pragma omp critical
-				#endif
+				// #ifdef USE_OPENMP
+				// #pragma omp critical
+				// #endif
 				{
 					ori_cache_.insert( std::make_pair( ori_key, std::vector<Key>(keys.size()) ) );
 					std::copy(keys.begin(),keys.end(),ori_cache_[ori_key].begin());
@@ -220,8 +222,8 @@ struct XformHashNeighbors {
 				std::cout << "FLIP: " << ((ksym>>2)&1) << " " << ((ksym>>1)&1) << " " << ((ksym>>0)&1) << std::endl;
 				for(int i = 0; i < asym_nbrs.size(); ++i){
 					Xform x = hasher_.get_center( ori_cache_[ori_key][i] );
-					Eigen::Quaterniond q(x.rotation());
-					Eigen::Vector4d v( q.coeffs() );
+					Eigen::Quaternion<Float> q(x.rotation());
+					Eigen::Matrix<Float,4,1> v( q.coeffs() );
 					// v *= q.coeffs()[3];
 					// std::cout << q.w() << std::endl;
 					io::dump_pdb_atom( out, "C" ,i, 50.0*v );
@@ -238,6 +240,21 @@ struct XformHashNeighbors {
 			// std::cout << "added ori_cahce_ " << ori_key << " " << (float)nsamp_/keys.size() << std::endl;
 		}
 		return ori_cache_[ori_key];
+	}
+
+	void merge( XformHashNeighbors<XformHash,UNIQUE> const & other ){
+		BOOST_FOREACH( typename OriCache::value_type const & v, other.ori_cache_ ){
+			if( ori_cache_.find( v.first ) == ori_cache_.end() ){
+				ori_cache_.insert( v );
+			} else {
+				std::vector<Key> & mykeys( ori_cache_.find( v.first )->second );
+				BOOST_FOREACH( Key k, v.second ){
+					if( std::find( mykeys.begin(), mykeys.end(), k ) == mykeys.end() ){
+						mykeys.push_back(k);
+					}
+				}
+			}
+		}
 	}
 
 	bool save( std::ostream & out ) {
