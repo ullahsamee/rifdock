@@ -20,7 +20,7 @@
 namespace scheme { namespace objective { namespace hash {
 
 
-template< class XformHash, bool UNIQUE=true > struct XformHashNeighbors;
+template< class XformHash, bool UNIQUE=false > struct XformHashNeighbors;
 
 
 /// may contain duplicate keys!
