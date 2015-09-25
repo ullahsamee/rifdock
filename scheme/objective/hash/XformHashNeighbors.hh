@@ -40,14 +40,14 @@ struct XformHashNeighborCrappyIterator : boost::iterator_facade<
 	std::vector<uint64_t> const * ori_nbrs_;
 	std::vector< util::SimpleArray<3,int16_t> > const * shifts_;
 	// std::set<Key> seenit_;
-	google::dense_hash_set<Key> seenit_;
+	// google::dense_hash_set<Key> seenit_;
 
 	XformHashNeighborCrappyIterator( XformHashNeighbors<XformHash,UNIQUE> & xhn, Key key, bool _end=false) : 
 		xh( &xhn.hasher_ ),
 		ori_nbrs_( &xhn.get_ori_neighbors( key ) ),
 		shifts_( &xhn.get_cart_shifts() )
 	{
-		if( UNIQUE ) seenit_.set_empty_key( std::numeric_limits<Key>::max() );
+		// if( UNIQUE ) seenit_.set_empty_key( std::numeric_limits<Key>::max() );
 		i1 = i2 = i3 = 0;
 		end = false;
 		ix = (int)((util::undilate<7>( key>>1 ) & 63) | ((key>>57)&127)<<6);
@@ -68,14 +68,14 @@ private:
 		Key ori_key = (*ori_nbrs_)[i1];
 		ori_key = xh->cart_shift_key( ori_key, ix, iy, iz );
 		Key k = xh->cart_shift_key( ori_key, (*shifts_)[i2][0], (*shifts_)[i2][1], (*shifts_)[i2][2], i3 );
-		if( UNIQUE ){
-			if( seenit_.find(k) != seenit_.end() ){
-				const_cast<THIS*>(this)->increment();
-				return dereference();
-			} else {
-				const_cast<THIS*>(this)->seenit_.insert(k);
-			}		
-		}
+		// if( UNIQUE ){
+		// 	if( seenit_.find(k) != seenit_.end() ){
+		// 		const_cast<THIS*>(this)->increment();
+		// 		return dereference();
+		// 	} else {
+		// 		const_cast<THIS*>(this)->seenit_.insert(k);
+		// 	}		
+		// }
 		return k;
     }
     bool equal( THIS const & o) const {
