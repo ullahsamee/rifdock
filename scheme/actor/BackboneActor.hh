@@ -21,7 +21,7 @@ namespace actor {
 		char aa_,ss_;
 		int index_;
 
-		BackboneActor() : position_(), aa_('-'), ss_('-'), index_(0) {}
+		BackboneActor() : position_(Position::Identity()), aa_('-'), ss_('-'), index_(0) {}
 
 		BackboneActor(Position const & p, char aa, char ss, int i=0) : position_(p), aa_(aa), ss_(ss),index_(i) {}
 

@@ -474,7 +474,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 					nbrs_set.insert( *itr );
 					++count;
 				}
-				ASSERT_EQ( nbrs_set.size(), count );
+				// UNIQUE option has been commented out
+				// ASSERT_EQ( nbrs_set.size(), count );
 
 				// std::vector<Key> const & ori_nbrs = nb.get_ori_neighbors( key );
 				// std::vector< util::SimpleArray<3,int16_t> > shifts = nb.get_cart_shifts();
