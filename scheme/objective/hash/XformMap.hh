@@ -62,12 +62,15 @@ struct XformMap {
     Map map_;
 	ElementSerializer element_serializer_;
     Float cart_resl_, ang_resl_, cart_bound_;
-	#ifdef USE_OPENMP
-    omp_lock_t insert_lock;
-	#endif
+	// #ifdef USE_OPENMP
+ //    omp_lock_t insert_lock;
+	// #endif
 
-	XformMap( Float cart_resl=-1.0, Float ang_resl=-1.0, Float cart_bound=512.0 )
-	{
+	XformMap( Float cart_resl=-1.0, Float ang_resl=-1.0, Float cart_bound=512.0 ){
+		init( cart_resl, ang_resl, cart_bound );
+	}
+
+	void init( Float cart_resl, Float ang_resl, Float cart_bound=512.0 ){
 		map_.set_empty_key( std::numeric_limits<Key>::max() );
 		cart_resl_ = cart_resl;
 		ang_resl_ = ang_resl;
@@ -76,15 +79,15 @@ struct XformMap {
 			hasher_.init( cart_resl, ang_resl, cart_bound );
 		}
 
-		#ifdef USE_OPENMP
-		omp_init_lock( &insert_lock );
-		#endif
+		// #ifdef USE_OPENMP
+		// omp_init_lock( &insert_lock );
+		// #endif
 	}
 
 	~XformMap(){
-		#ifdef USE_OPENMP
-		omp_destroy_lock( &insert_lock );
-		#endif		
+		// #ifdef USE_OPENMP
+		// omp_destroy_lock( &insert_lock );
+		// #endif		
 	}
 
 	void clear() { map_.clear(); }
@@ -215,6 +218,10 @@ struct XformMap {
 		// 	std::cerr << "XformMap::save must be binary ostream" << std::endl;
 		// 	return false;
 		// }
+		if( cart_resl_ == -1 || ang_resl_ == -1 || cart_bound_ == -1 ){
+			std::cerr << "XformMap::save: bad cart_resl_, ang_resl_, or cart_bound_ " << cart_resl_ << " " << ang_resl_ << " " << cart_bound_ << std::endl;
+			return false;
+		}
 		std::ostringstream oss;
 		oss << std::endl;
 		oss << "=========== description ===========" << std::endl;
@@ -244,7 +251,7 @@ struct XformMap {
 		}
 		return true;
 	}
-	bool load( std::istream & in ) {
+	bool load( std::istream & in, std::string & description ) {
 		// no way to check if the stream was opened binary!
 		// if( ! (in.flags() & std::ios::binary) ){
 		// 	std::cerr << "XformMap::save must be binary ostream" << std::endl;
@@ -256,7 +263,8 @@ struct XformMap {
 		for(int i = 0; i < 9999; ++i) buf[i] = 0;
 		in.read(buf,s);
 		std::cout << "XformMap load, description: " << std::endl;
-		std::cout << std::string(buf).substr(37,s-80) << std::endl;
+		description = std::string(buf).substr(37,s-80); 
+		std::cout << description << std::endl;
 		in.read( (char*)&s, sizeof(size_t) );
 		// std::cout << "SIZE IN " << s << std::endl;
 		for(int i = 0; i < 9999; ++i) buf[i] = 0;
@@ -277,6 +285,7 @@ struct XformMap {
 		in.read((char*)&cart_resl,sizeof(Float));
 		in.read((char*)&ang_resl,sizeof(Float));
 		in.read((char*)&cart_bound,sizeof(Float));
+		std::cout << "read:" << cart_resl << " " << ang_resl << std::endl;
 		if( cart_resl_ != -1 && cart_resl_ != cart_resl ){
 			std::cerr << "XformMap::load, hasher cart_resl mismatch, expected " << cart_resl_ << " got "  << cart_resl << std::endl;
 			return false;			
