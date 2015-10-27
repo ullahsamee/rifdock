@@ -74,9 +74,9 @@
 
 // #include "scheme/objective/storage/TwoBodyTable.gtest.cc"
 
-// #include "scheme/actor/BackboneActor.gtest.cc"
+#include "scheme/actor/BackboneActor.gtest.cc"
 
-#include "scheme/search/SpatialBandB.gtest.cc"
+// #include "scheme/search/SpatialBandB.gtest.cc"
 
 int main(int argc, char **argv)
 {

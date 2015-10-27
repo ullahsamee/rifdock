@@ -78,6 +78,8 @@ struct NestDirector
 	template<class A, class B, class C, class D> 
 	NestDirector( A const & a, B const & b, C const & c, D const & d, Index ibody ) : ibody_(ibody),nest_(a,b,c,d) {}
 
+	Nest const & nest() const { return nest_; }
+
 	virtual
 	bool
 	set_scene(

@@ -262,9 +262,9 @@ struct XformMap {
 		char buf[9999];
 		for(int i = 0; i < 9999; ++i) buf[i] = 0;
 		in.read(buf,s);
-		std::cout << "XformMap load, description: " << std::endl;
+		// std::cout << "XformMap load, description: " << std::endl;
 		description = std::string(buf).substr(37,s-80); 
-		std::cout << description << std::endl;
+		// std::cout << description << std::endl;
 		in.read( (char*)&s, sizeof(size_t) );
 		// std::cout << "SIZE IN " << s << std::endl;
 		for(int i = 0; i < 9999; ++i) buf[i] = 0;
@@ -285,7 +285,7 @@ struct XformMap {
 		in.read((char*)&cart_resl,sizeof(Float));
 		in.read((char*)&ang_resl,sizeof(Float));
 		in.read((char*)&cart_bound,sizeof(Float));
-		std::cout << "read:" << cart_resl << " " << ang_resl << std::endl;
+		// std::cout << "read:" << cart_resl << " " << ang_resl << std::endl;
 		if( cart_resl_ != -1 && cart_resl_ != cart_resl ){
 			std::cerr << "XformMap::load, hasher cart_resl mismatch, expected " << cart_resl_ << " got "  << cart_resl << std::endl;
 			return false;			
@@ -306,6 +306,10 @@ struct XformMap {
 
 		// std::cout << "SIZE IN " << map_.size() << std::endl;
 		return true;
+	}
+	bool load( std::istream & in ) {
+		std::string dummy;
+		return load(in,dummy);
 	}
 
 

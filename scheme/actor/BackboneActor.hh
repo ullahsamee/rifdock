@@ -2,6 +2,7 @@
 #define INCLUDED_actor_BackboneActor_HH
 
 #include <Eigen/Dense>
+#include <scheme/io/dump_pdb_atom.hh>
 
 namespace scheme {
 namespace actor {
@@ -16,6 +17,7 @@ namespace actor {
 		typedef _Position Position;
 		typedef typename Position::Scalar Float;
 		typedef BackboneActor<Position> THIS;
+		typedef Eigen::Matrix<Float,3,1> V3;
 
 		Position position_;
 		char aa_,ss_;
@@ -49,22 +51,22 @@ namespace actor {
 
 		template <class Vin>
 		void from_n_ca_c( Vin _n, Vin _ca, Vin _c ){
-			typedef Eigen::Matrix<Float,3,1> V;
-			V n (  _n[0],  _n[1],  _n[2] );
-			V ca( _ca[0], _ca[1], _ca[2] );
-			V c (  _c[0],  _c[1],  _c[2] );						
-			// V e1 = n - ca; 
-			V e1 = (c+n)/2.0 - ca; // from old motif stuff to maintain compatibility			
+			
+			V3 n (  _n[0],  _n[1],  _n[2] );
+			V3 ca( _ca[0], _ca[1], _ca[2] );
+			V3 c (  _c[0],  _c[1],  _c[2] );						
+			// V3 e1 = n - ca; 
+			V3 e1 = (c+n)/2.0 - ca; // from old motif stuff to maintain compatibility			
 			e1.normalize();
-			V e3 = e1.cross( c - ca );
+			V3 e3 = e1.cross( c - ca );
 			e3.normalize();
-			V e2 = e3.cross( e1 );
+			V3 e2 = e3.cross( e1 );
 			Eigen::Matrix<Float,3,3> m;
 			m(0,0) = e1[0];   m(0,1) = e2[0];   m(0,2) = e3[0];
 			m(1,0) = e1[1];   m(1,1) = e2[1];   m(1,2) = e3[1];
 			m(2,0) = e1[2];   m(2,1) = e2[2];   m(2,2) = e3[2];			
 
-			V t = m * V( -1.952799123558066, -0.2200069625712990, 1.524857 ) + ca;
+			V3 t = m * V3( -1.952799123558066, -0.2200069625712990, 1.524857 ) + ca;
 			// V t = m * V(-0.865810,-1.764143,1.524857) + ca;// - (c+n)/2.0; // average 'CEN' icoor
 
 			// std::cout << e1 << std::endl;
@@ -87,10 +89,22 @@ namespace actor {
 	// t = c;	
 		}
 
+		template<class V>
+		void get_n_ca_c( V & n, V & ca, V & c ) const {
+			n  = position_ * V( 2.80144, -0.992889, -1.52486 );
+		 	ca = position_ * V( 1.95280,  0.220007, -1.52486 );
+		 	c  = position_ * V( 2.87767,  1.4329  , -1.52486 );
+		}
+
 		void 
 		set_position(
 			Position const & pos
 		){ position_ = pos; }
+
+		void 
+		moveby(
+			Position const & pos
+		){ position_ = pos * position_; }
 
 		Position const &
 		position() const { return position_; }
@@ -114,6 +128,37 @@ namespace actor {
 	  	}
 
 	};
+
+
+template< class P, class MetaData >
+void write_pdb( std::ostream & out, BackboneActor<P> const & a, MetaData const & meta ){
+	typedef Eigen::Matrix<typename P::Scalar,3,1> V3;
+	V3 n,ca,c;
+	a.get_n_ca_c(n,ca,c);
+	int rnum = 1;
+	int anum = 1;
+	chemical::AtomData  ndata( " N  ", "GLY", 'A', rnum, anum+1, "N" );
+	chemical::AtomData cadata( " CA ", "GLY", 'A', rnum, anum+2, "C" );
+	chemical::AtomData  cdata( " C  ", "GLY", 'A', rnum, anum+3, "C" );
+	io::dump_pdb_atom( out,  n,  ndata );
+	io::dump_pdb_atom( out, ca, cadata );
+	io::dump_pdb_atom( out,  c,  cdata );
+
+	// AtomData(
+	// 	std::string const & _atomname = AtomData::default_atomname(),        
+	// 	std::string const & _resname  = AtomData::default_resname(),       
+	// 	char                _chain    = AtomData::default_chain(),     
+	// 	int                 _resnum   = AtomData::default_resnum(),      
+	// 	int                 _atomnum  = AtomData::default_atomnum(),       
+	// 	std::string const & _elem     = AtomData::default_elem(),    
+	// 	bool                _ishet    = AtomData::default_ishet(),     
+	// 	float               _occ      = AtomData::default_occ(),   
+	// 	float               _bfac     = AtomData::default_bfac()
+	// );
+
+}
+
+
 
 template<class X>
 std::ostream & operator<<(std::ostream & out,BackboneActor<X> const& a){
