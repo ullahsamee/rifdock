@@ -107,7 +107,9 @@ struct RotamerScores {
 	}
 
 	float score( int i ) const { assert(i<N); return rotscores_[i].score(); }
-	float rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }	
+	Data rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }	
+
+	bool empty( int i ) const { return rotscores_[i].empty(); }
 
 	static int maxsize(){ return _N; }
 

@@ -91,9 +91,18 @@ namespace actor {
 
 		template<class V>
 		void get_n_ca_c( V & n, V & ca, V & c ) const {
-			n  = position_ * V( 2.80144, -0.992889, -1.52486 );
-		 	ca = position_ * V( 1.95280,  0.220007, -1.52486 );
-		 	c  = position_ * V( 2.87767,  1.4329  , -1.52486 );
+			V3 tmpn  = position_ * V( 2.80144, -0.992889, -1.52486 );
+		 	V3 tmpca = position_ * V( 1.95280,  0.220007, -1.52486 );
+		 	V3 tmpc  = position_ * V( 2.87767,  1.4329  , -1.52486 );
+		 	n [0] = tmpn [0]; n [1] = tmpn [1]; n [2] = tmpn [2];
+		 	ca[0] = tmpca[0]; ca[1] = tmpca[1]; ca[2] = tmpca[2];
+		 	c [0] = tmpc [0]; c [1] = tmpc [1]; c [2] = tmpc [2];
+		}
+
+		template<class V>
+		void get_ca( V & ca ) const {
+		 	V3 tmp = position_ * V3( 1.95280,  0.220007, -1.52486 );
+		 	ca[0] = tmp[0]; ca[1] = tmp[1]; ca[2] = tmp[2];		 			 	
 		}
 
 		void 
