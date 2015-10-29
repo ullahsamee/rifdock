@@ -489,6 +489,7 @@ namespace impl {
 			Position const & ,
 			double 
 		) const {
+			cout << "THIS SHOULD NEVER HAPPEN" << endl;
 			BOOST_STATIC_ASSERT((
 				m::or_<
 					impl::has_type_Position<Actor1> ,

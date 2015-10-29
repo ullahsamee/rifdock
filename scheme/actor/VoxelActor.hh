@@ -74,7 +74,7 @@ void write_pdb( std::ostream & , VoxelActor<X,F> const &, MetaData const & ){
 
 
 
-template< class VoxelActor, class Atom >
+template< class VoxelActor, class Atom, bool REPL_ONLY = false >
 struct Score_Voxel_vs_Atom {
 	typedef float Result;
 	typedef std::pair<VoxelActor,Atom> Interaction;
@@ -89,7 +89,8 @@ struct Score_Voxel_vs_Atom {
 		// std::cout << "     UB " << v.voxels()[c][a.type()]->ub_ << std::endl;		
 		float score = v.voxels()[c][a.type()]->at( a.position()[0], a.position()[1], a.position()[2] );		
 		// std::cout << "  score " << score << std::endl;
-		return a.type() > 17 ? std::max(0.0f,score) : score;
+		if( REPL_ONLY ) return std::max(0.0f,score);
+		else return a.type() > 17 ? std::max(0.0f,score) : score;
 	}
 	template<class Pair, class Config>
 	Result operator()(Pair const & p, Config const& c) const {

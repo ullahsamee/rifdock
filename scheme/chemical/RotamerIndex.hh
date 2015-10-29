@@ -24,8 +24,9 @@ struct ChemicalIndex {
 	std::vector<std::string> resnames_;
 	std::map<std::string,int> resname2num_;
 	std::vector< std::vector< AtomData > > atomdata_;
+	AtomData null_atomdata_;
 
-	ChemicalIndex(){
+	ChemicalIndex() : null_atomdata_() {
 	}
 
 	bool have_res( std::string resn ) const {
@@ -48,10 +49,16 @@ struct ChemicalIndex {
 		add_atomdata( resname2num_[resname], atomnum, data );
 	}
 
-	AtomData       & atom_data( int restype, int atomnum )       { return atomdata_.at(restype).at(atomnum); }
-	AtomData const & atom_data( int restype, int atomnum ) const { return atomdata_.at(restype).at(atomnum); }	
+	AtomData       & atom_data( int restype, int atomnum )       { if(restype<0) return null_atomdata_; return atomdata_.at(restype).at(atomnum); }
+	AtomData const & atom_data( int restype, int atomnum ) const { if(restype<0) return null_atomdata_; return atomdata_.at(restype).at(atomnum); }	
 	AtomData       & atom_data( std::string const & resname, int atomnum )       { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }
 	AtomData const & atom_data( std::string const & resname, int atomnum ) const { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }	
+
+	int resname2num( std::string const & resn ) const {
+		std::map<std::string,int>::const_iterator i = resname2num_.find(resn);
+		if( i == resname2num_.end() ) return -1;
+		return i->second;
+	}
 
 };
 
