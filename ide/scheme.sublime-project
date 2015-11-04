@@ -4,7 +4,7 @@
 		{
 			"follow_symlinks": true,
 			"path": "../",
-            "folder_exclude_patterns": ["doc","dox","build","CMakeFiles","external"],
+            "folder_exclude_patterns": ["doc","dox","build","CMakeFiles","external","build_clang"],
             "file_exclude_patterns": ["*.ninja","CMakeCache*","Makefile","main_test","quick_test","*.cmake",".ninja*"],
 		},
 	],

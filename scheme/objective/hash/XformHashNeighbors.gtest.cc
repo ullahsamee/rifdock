@@ -242,7 +242,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 
 // // this test is fucked.... can't get 0-registration correct...
 // // thinking ori + cart_shift should still work correctly.. will test that
-// TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_check_cart_neighbors ){
+// TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_cart_neighbors ){
 // 	typedef uint64_t Key;
 // 	int NSAMP = 5;
 // 	double THRESH = 0.01;

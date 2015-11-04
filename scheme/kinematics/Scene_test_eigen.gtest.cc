@@ -221,7 +221,7 @@ TEST(Scene_eigen,relative_relations_preserved){
 
 
 
-// TEST(Scene_eigen,DISABLED_performance){
+// TEST(Scene_eigen, performance){
 // // TEST(Scene_eigen,performance){
 // 	// TODO: speed up SceneIter iteration 
 // 	//       iteration seems to take about 100 cycles per score call overhead

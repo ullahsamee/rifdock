@@ -2,6 +2,9 @@
 #define INCLUDED_kinematics_SceneBase_HH
 
 #include "scheme/types.hh"
+#include "scheme/util/meta/util.hh"
+
+#include <boost/any.hpp>
 #include <vector>
 
 namespace scheme {
@@ -35,6 +38,36 @@ struct SceneBase {
 	void set_position(Index i, Position const & newp){
 		positions_.at(i) = newp;
 	}
+
+	template< class Actor >
+	bool add_actor( Index ib, Actor const & actor ){
+		boost::any any_actor = actor;
+		return add_actor( ib, any_actor );
+	}
+	virtual bool add_actor( Index ib, boost::any const & a ) { return false; }
+
+	template< class Actor >
+	Actor get_actor( Index ib, Index ia ) const {
+		boost::any any_actor = util::meta::type2type<Actor>();
+		get_actor( ib, ia, any_actor );
+		return boost::any_cast<Actor>( any_actor );
+	}
+	virtual bool get_actor( Index ib, Index ia, boost::any & a ) const { return false; }
+
+	template< class Actor >
+	Actor & get_nonconst_actor( Index ib, Index ia ){
+		boost::any any_actor = util::meta::type2type<Actor>();
+		get_nonconst_actor( ib, ia, any_actor );
+		return *boost::any_cast<Actor*>( any_actor );
+	}
+	virtual bool get_nonconst_actor( Index ib, Index ia, boost::any & a ){ return false; }
+
+	template< class Actor >
+	int num_actors( Index ib ) const {
+		boost::any any_actor = util::meta::type2type<Actor>();
+		return num_actors( ib, any_actor );
+	}
+	virtual int num_actors( Index ib, boost::any const & a ) const { return -1; }
 
 	// symmetry stuff, doesn't need to be Conformation-sepcific
 		void update_symmetry( Index nbodies ){

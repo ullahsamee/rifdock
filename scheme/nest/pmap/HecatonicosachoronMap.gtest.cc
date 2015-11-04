@@ -144,7 +144,7 @@ double min_cube_side(T const & coords){
 	return min_cube_side(coords,cen);
 }
 
-// TEST(hecatonicosachoron,DISABLED_sample_dodec_inscribe_cube){
+// TEST(hecatonicosachoron, sample_dodec_inscribe_cube){
 // 	// dodecahedron 
 // 	// (±1, ±1, ±1)
 // 	// (0, ±1/φ, ±φ)
@@ -353,7 +353,7 @@ make_half120cell_neighbors(
 vector<Quaterniond> make_half120cell();
 
 
-// TEST(hecatonicosachoron,DISABLED_dump_static_data){
+// TEST(hecatonicosachoron, dump_static_data){
 // 	vector<Quaterniond> half120cell = make_half120cell();
 // 	Array<uint8_t,60,12> nbrs = make_half120cell_neighbors(half120cell);
 
@@ -391,7 +391,7 @@ vector<Quaterniond> make_half120cell();
 
 // }
 
-// TEST(hecatonicosachoron,DISABLED_cell_alignment){
+// TEST(hecatonicosachoron, cell_alignment){
 // 	/////////////////////////////////////////////////////////////////////////////////////
 // 	/////////////////////////////////////////////////////////////////////////////////////
 // 	/////////////////////////////////////////////////////////////////////////////////////		
@@ -648,7 +648,7 @@ TEST(hecatonicosachoron,covering){
 
 }
 
-// TEST(hecatonicosachoron,DISABLED_visualize){
+// TEST( hecatonicosachoron, visualize ){
 
 // 	boost::random::mt19937 rng((unsigned int)time(0));
 // 	boost::normal_distribution<> gauss;

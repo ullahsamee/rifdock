@@ -1,3 +1,5 @@
+#include <gtest/gtest.h>
+
 #include <scheme/search/SpatialBandB.hh>
 
 #include <scheme/actor/BackboneActor.hh>

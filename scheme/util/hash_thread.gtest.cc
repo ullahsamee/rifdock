@@ -112,8 +112,9 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost:
 
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
+#ifdef BENCHMARK
 
-TEST( test_hash_thread, DISABLED_google_hash_thread ){
+TEST( test_hash_thread, google_hash_thread ){
 
  	int64_t MAXIDX = 2000ll*1000ll*1000ll;
  	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
@@ -142,6 +143,8 @@ TEST( test_hash_thread, DISABLED_google_hash_thread ){
  	d.clear();
 
  }
+
+ #endif
 // on lappy 4x haswell 2.8
 // nthread:     1  118.039 ns / lookup   11.804 s runtime    8.472 M lookup/sec    8.472 M lookup/sec/thread 
 // nthread:     2   56.901 ns / lookup    5.690 s runtime   17.575 M lookup/sec    8.787 M lookup/sec/thread 
@@ -264,7 +267,9 @@ void test_multiarray(
 // real	8m41.960s
 // 6m22.756s
 
-TEST( test_hash_thread, DISABLED_multi_array_thread ){
+#ifdef BENCHMARK
+
+TEST( test_hash_thread, multi_array_thread ){
 
  	int maxNthread = 32;
  	int64_t SIZE = 1000*1000*1000;
@@ -301,6 +306,9 @@ TEST( test_hash_thread, DISABLED_multi_array_thread ){
  	}	
 
  }
+
+#endif
+
 // nthread:     1,  84.195ns / lookup,   8.420s runtime,  11.877M lookup/sec,  11.877M lookup/sec/thread 
 // nthread:     2,  67.559ns / lookup,   6.756s runtime,  14.802M lookup/sec,   7.401M lookup/sec/thread 
 // nthread:     3,  51.433ns / lookup,   5.143s runtime,  19.443M lookup/sec,   6.481M lookup/sec/thread 

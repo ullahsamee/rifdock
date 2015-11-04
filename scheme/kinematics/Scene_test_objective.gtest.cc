@@ -217,8 +217,9 @@ void performance_test_helper(Scene const & scene, Visitor & visitor){
 
 
 
+#ifdef BENCHMARK
 
-TEST( SceneObjective, DISABLED_big_scene_performance ){
+TEST( SceneObjective, big_scene_performance ){
 // TEST(SceneObjective,performance){
 	// TODO: speed up SceneIter iteration 
 	//       iteration seems to take about 100 cycles per score call overhead
@@ -307,6 +308,8 @@ TEST( SceneObjective, DISABLED_big_scene_performance ){
 	ScoreADIADI::ncalls = 0;
 
 }
+
+#endif 
 
 }
 }

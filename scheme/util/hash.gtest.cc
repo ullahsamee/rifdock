@@ -142,7 +142,7 @@ void fill_and_test_map(Map * hp){
 
 struct GoogleDense { template<class K, class V> struct apply { typedef google::dense_hash_map<K,V> type; }; };
 
-// TEST(test_hash, DISABLED_sparse_vs_dense){
+// TEST(test_hash, sparse_vs_dense){
 // 	// SegmentedMap<uint64_t,util::SimpleArray<8,double> ,GoogleDense,2> m;
 
 // 	google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > d;

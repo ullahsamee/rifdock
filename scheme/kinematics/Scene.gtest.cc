@@ -118,7 +118,9 @@ void test_iterator_visitor_agree(std::vector<int> nbod, int nsym){
 		ASSERT_EQ( iterset, v.set_ );
 	}
 	{ // FixedActor
-		std::set<FixedActor> iterset; BOOST_FOREACH( FixedActor a, scene.get_actors<FixedActor>() ) iterset.insert(a);
+		std::set<FixedActor> iterset;
+		BOOST_FOREACH( FixedActor a, scene.get_actors<FixedActor>() )
+			iterset.insert(a);
 		SetVisitor<FixedActor> v; scene.visit(v);
 		ASSERT_EQ( iterset, v.set_ );
 	}
@@ -246,6 +248,46 @@ TEST( Scene, serialization ){
 	#endif
 
 }
+
+TEST( Scene, base_class_add_actor ){
+
+		typedef m::vector< ADI, FixedActor > Actors;
+		typedef Scene<Actors,X1dim,uint32_t> Scene;
+
+		Scene scene(2);
+
+		SceneBase<X1dim,uint32_t> & test = scene;
+
+		ASSERT_EQ( test.template num_actors<FixedActor>(0), 0 );
+		ASSERT_TRUE( test.add_actor( 0 , FixedActor(1.0) ) );
+		ASSERT_EQ( test.template num_actors<FixedActor>(0), 1 );
+
+		int foo;
+		ASSERT_FALSE( test.add_actor( 0 , foo ) ); // can't add int
+		ASSERT_FALSE( test.add_actor( 7 , foo ) ); // can't add int
+		ASSERT_EQ( test.template num_actors<int>(0), -1 ); // request for num of invalid type gets -1
+
+		ASSERT_EQ( scene.template get_actor<FixedActor>(0,0) ,
+			       test .template get_actor<FixedActor>(0,0) );
+
+		ASSERT_THROW( test.template get_actor<int>(0,0), boost::bad_any_cast );
+
+
+		ASSERT_EQ( test.template num_actors<ADI>(1), 0 );
+		ASSERT_TRUE( test.add_actor( 1 , ADI(1.0,3) ) );
+		ASSERT_EQ( test.template num_actors<ADI>(1), 1 );
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , 
+			       test .template get_actor<ADI>(1,0) );
+
+		test.template get_nonconst_actor<ADI>(1,0).data_ = 4;
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , ADI(1.0,4) );
+		test.template get_nonconst_actor<ADI>(1,0).set_position( 2.0 );
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , ADI(2.0,4) );
+
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , 
+			       test .template get_actor<ADI>(1,0) );
+
+	}
 
 
 }

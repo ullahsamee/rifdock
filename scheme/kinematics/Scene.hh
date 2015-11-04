@@ -5,7 +5,6 @@
 #include "scheme/kinematics/SceneBase.hh"
 #include "scheme/kinematics/SceneIterator.hh"
 
-#include "scheme/util/meta/util.hh"
 #include "scheme/util/meta/InstanceMap.hh"
 #include "scheme/util/container/ContainerInteractions.hh"
 
@@ -138,6 +137,109 @@ namespace impl {
 	template<class T1, class T2,class I> struct get_placeholder_type<std::pair<T1,T2>,I> { 
 		typedef typename std::pair<std::pair<I,I>,std::pair<I,I> > type; };
 
+
+	template< class Scene >
+	struct ActorAdder {
+		Scene & scene_;
+		boost::any const & actor_;
+		typename Scene::Index ib_;
+		bool & success_;
+		ActorAdder(
+			Scene & s,
+			typename Scene::Index ib,
+			boost::any const & a,
+			bool & success
+		) : scene_(s), ib_(ib), actor_(a), success_(success) {}
+		template<class Actor>
+		void operator()( Actor const & ) {
+		    try {
+			    Actor tmp = boost::any_cast<Actor>( actor_ );
+			    scene_.add_actor( ib_ , tmp );
+		        success_ = true;
+		    } catch(const boost::bad_any_cast &) {
+		    	return;
+		    }
+		}
+	};
+
+	template< class Scene >
+	struct ActorGetter {
+		Scene const & scene_;
+		boost::any const & actor_exemplar_;
+		boost::any & actor_;
+		typename Scene::Index ib_, ia_;
+		bool & success_;
+		ActorGetter(
+			Scene const & s,
+			typename Scene::Index ib,
+			typename Scene::Index ia,
+			boost::any const & aex,
+			boost::any & a,
+			bool & success
+		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
+		template<class Actor>
+		void operator()( Actor const & ) {
+		    try {
+			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
+			    actor_ = scene_.template get_actor<Actor>( ib_ , ia_ );
+		        success_ = true;
+		    } catch(const boost::bad_any_cast &) {
+		    	return;
+		    }
+		}
+	};
+
+	template< class Scene >
+	struct ActorGetterNonconst {
+		Scene & scene_;
+		boost::any const & actor_exemplar_;
+		boost::any & actor_;
+		typename Scene::Index ib_, ia_;
+		bool & success_;
+		ActorGetterNonconst(
+			Scene & s,
+			typename Scene::Index ib,
+			typename Scene::Index ia,
+			boost::any const & aex,
+			boost::any & a,
+			bool & success
+		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
+		template<class Actor>
+		void operator()( Actor const & ) {
+		    try {
+			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
+			    actor_ = &scene_.template get_nonconst_actor<Actor>( ib_ , ia_ );
+		        success_ = true;
+		    } catch(const boost::bad_any_cast &) {
+		    	return;
+		    }
+		}
+	};
+
+	template< class Scene >
+	struct ActorCounter {
+		Scene const & scene_;
+		boost::any const & actor_;
+		typename Scene::Index ib_;
+		int & count_;
+		ActorCounter(
+			Scene const & s,
+			typename Scene::Index ib,
+			boost::any const & a,
+			int & count
+		) : scene_(s), ib_(ib), actor_(a), count_(count) {}
+		template<class Actor>
+		void operator()( Actor const & ) {
+		    try {
+			    boost::any_cast<util::meta::type2type<Actor> >( actor_ );
+			    count_ = scene_.template num_actors<Actor>( ib_ );
+		    } catch(const boost::bad_any_cast &) {
+		    	return;
+		    }
+		}
+	};
+
+
 }
 
 
@@ -264,16 +366,52 @@ namespace impl {
 			return conformation(ib).template get<Actor>().at(ia);
 		}
 
-
+		template<class Actor>
+		Actor &
+		get_nonconst_actor( Index ib, Index ia ){
+			return mutable_conformation_asym(ib).template get<Actor>().at(ia);
+		}
 
 		template<class Actor>
 		void add_actor(Index ib, Actor const & a) {
 			mutable_conformation_asym(ib).template add_actor<Actor>(a);
 		}
 
+		virtual bool add_actor( Index ib, boost::any const & a ){
+			bool success = false;
+			impl::ActorAdder<THIS> adder( *this, ib, a, success );
+			boost::mpl::for_each<Actors>( adder );
+			return success;
+		}
+
+		virtual bool get_actor( Index ib, Index ia, boost::any & a_in ) const {
+			bool success = false;
+			boost::any a;
+			impl::ActorGetter<THIS> getter( *this, ib, ia, a_in, a, success );
+			boost::mpl::for_each<Actors>( getter );
+			if( success ) a_in = a;
+			return success;
+		}
+
+		virtual bool get_nonconst_actor( Index ib, Index ia, boost::any & a_in ){
+			bool success = false;
+			boost::any a;
+			impl::ActorGetterNonconst<THIS> getter( *this, ib, ia, a_in, a, success );
+			boost::mpl::for_each<Actors>( getter );
+			if( success ) a_in = a;
+			return success;
+		}
+
 		template<class Actor>
 		size_t num_actors(Index ib) const {
 			return bodies_.at(ib).conformation().template get<Actor>().size();
+		}
+
+		virtual int num_actors( Index ib, boost::any const & a ) const {
+			int num_actors = -1;
+			impl::ActorCounter<THIS> counter( *this, ib, a, num_actors );
+			boost::mpl::for_each<Actors>( counter );
+			return num_actors;			
 		}
 
 		//////////////////////////// actor iteration //////////////////////////////////
