@@ -139,19 +139,23 @@ namespace impl {
 
 
 	template< class Scene >
-	struct ActorAdder {
+	struct ActorAdder 
+	{
 		Scene & scene_;
 		boost::any const & actor_;
 		typename Scene::Index ib_;
 		bool & success_;
+
 		ActorAdder(
 			Scene & s,
 			typename Scene::Index ib,
 			boost::any const & a,
 			bool & success
 		) : scene_(s), ib_(ib), actor_(a), success_(success) {}
+
 		template<class Actor>
-		void operator()( Actor const & ) {
+		void operator()( Actor const & ) 
+		{
 		    try {
 			    Actor tmp = boost::any_cast<Actor>( actor_ );
 			    scene_.add_actor( ib_ , tmp );
@@ -163,7 +167,8 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorGetter {
+	struct ActorGetter 
+	{
 		Scene const & scene_;
 		boost::any const & actor_exemplar_;
 		boost::any & actor_;
@@ -177,8 +182,10 @@ namespace impl {
 			boost::any & a,
 			bool & success
 		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
+		
 		template<class Actor>
-		void operator()( Actor const & ) {
+		void operator()( Actor const & ) 
+		{
 		    try {
 			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
 			    actor_ = scene_.template get_actor<Actor>( ib_ , ia_ );
@@ -190,7 +197,8 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorGetterNonconst {
+	struct ActorGetterNonconst 
+	{
 		Scene & scene_;
 		boost::any const & actor_exemplar_;
 		boost::any & actor_;
@@ -204,8 +212,10 @@ namespace impl {
 			boost::any & a,
 			bool & success
 		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
+
 		template<class Actor>
-		void operator()( Actor const & ) {
+		void operator()( Actor const & ) 
+		{
 		    try {
 			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
 			    actor_ = &scene_.template get_nonconst_actor<Actor>( ib_ , ia_ );
@@ -217,7 +227,8 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorCounter {
+	struct ActorCounter 
+	{
 		Scene const & scene_;
 		boost::any const & actor_;
 		typename Scene::Index ib_;
@@ -228,8 +239,10 @@ namespace impl {
 			boost::any const & a,
 			int & count
 		) : scene_(s), ib_(ib), actor_(a), count_(count) {}
+
 		template<class Actor>
-		void operator()( Actor const & ) {
+		void operator()( Actor const & ) 
+		{
 		    try {
 			    boost::any_cast<util::meta::type2type<Actor> >( actor_ );
 			    count_ = scene_.template num_actors<Actor>( ib_ );

@@ -90,9 +90,10 @@ struct RotamerScores {
 		}
 	}
 
-	void merge( THIS const & other ){
-		int size = other.size();
-		for( int i = 0; i < size; ++i ){
+	template<int N2>
+	void merge( RotamerScores<N2,Data,_RotamerBits,_Divisor> const & other ){
+		for( int i = 0; i < N2; ++i ){
+			if( other.empty(i) ) break;
 			add_rotamer( other.rotscores_[i] );
 		}
 	}

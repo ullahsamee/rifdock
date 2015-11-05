@@ -189,6 +189,10 @@ namespace impl {
             sink.template get<typename X::first_type>() = OP()(sink.template get<typename X::first_type>(),x.second);
         }
     };
+    template<class Float> struct VEC { 
+        std::vector<Float> & vec; VEC(std::vector<Float> & s):vec(s){}
+        template<class T> void operator()(T const & x) const { vec.push_back(x.second); }
+    };
 }
 template<class A,class B>
 std::ostream & operator<<(std::ostream & out, InstanceMap<A,B> const & m){
@@ -229,6 +233,10 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
         impl::SUM<Float> s(sum);
         f::for_each( (FusionType&)*this, s );
         return sum;
+    }
+    void vector( std::vector<Float> & vec ) const {
+        impl::VEC<Float> s(vec);
+        f::for_each( (FusionType&)*this, s );
     }
     ///@brief test equality element by element
     bool operator==(THIS const & o) const {

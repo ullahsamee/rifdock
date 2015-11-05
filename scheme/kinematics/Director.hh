@@ -31,8 +31,8 @@ template<
 	class _BigIndex = uint64_t,
 	class _Index = uint64_t
 >
-struct Director {
-	
+struct Director 
+{	
 	typedef _Position Position;
 	typedef _BigIndex BigIndex;
 	typedef _Index Index;	
