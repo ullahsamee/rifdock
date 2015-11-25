@@ -2,7 +2,6 @@
 #define INCLUDED_scheme_util_SimpleArray_HH
 
 #include "scheme/types.hh"
-#include <stdint.h>
 #include <cmath>
 #include <boost/assert.hpp>
 #include <boost/utility/enable_if.hpp>

@@ -46,7 +46,7 @@ FILE(GLOB L3 "scheme/*/*/*.cc")
 FILE(GLOB L4 "scheme/*/*/*/*.cc")
 FILE(GLOB L5 "scheme/*/*/*/*/*.cc")
 
-list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boost_timer fftw3)
+list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boost_timer )
 list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib64)

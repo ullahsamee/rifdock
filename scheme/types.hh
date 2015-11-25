@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #ifdef CXX11
 	#include <memory>
 #else
