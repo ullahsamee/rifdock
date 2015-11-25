@@ -634,9 +634,9 @@ struct XformHash_bt24_BCC6 {
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.45 > ang_resl && ori_nside < 62 ) ++ori_nside; // TODO: HACK multiplier!
 
-		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-		std::cout << "ori_nside: " << ori_nside << std::endl;
-		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+		// std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+		// std::cout << "ori_nside: " << ori_nside << std::endl;
+		// std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 
 		init( cart_resl, (int)ori_nside, cart_bound );
 	}

@@ -40,11 +40,11 @@
 // #include "scheme/util/meta/InstanceMap_container.gtest.cc"
 // #include "scheme/util/meta/InstanceMap_numeric.gtest.cc"
 
-// #include "scheme/objective/ObjectiveFunction.gtest.cc"
+#include "scheme/objective/ObjectiveFunction.gtest.cc"
 // #include "scheme/objective/voxel/VoxelArray.gtest.cc"
 // #include "scheme/objective/voxel/FieldCache.gtest.cc"
 
-#include "scheme/kinematics/Scene.gtest.cc"
+// #include "scheme/kinematics/Scene.gtest.cc"
 // #include "scheme/kinematics/Scene_test_eigen.gtest.cc"
 // #include "scheme/kinematics/SceneIterator.gtest.cc"
 // #include "scheme/kinematics/Director.gtest.cc"
@@ -80,6 +80,9 @@
 
 int main(int argc, char **argv)
 {
+
+	std::cout << int( 1.6 * 1 ) << std::endl;
+
 	std::vector<std::string> args;
 	for(int i = 0; i < argc; ++i) args.push_back(std::string(argv[i]));
 	std::cout << "int main(int argc, char **argv) FROM " << __FILE__ << std::endl;

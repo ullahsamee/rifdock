@@ -391,6 +391,173 @@ TEST(ObjectiveFunction,tuple_of_ref_interactions){
 
 }
 
+
+struct ScoreIntWithPre {
+	typedef double Result;
+	typedef int Interaction;
+	double local_scale;
+	typedef m::true_ HasPre;
+	ScoreIntWithPre():local_scale(1.0){}
+	static std::string name(){ return "ScoreIntWithPre"; }
+	template<class Config>
+	Result operator()(Interaction a, Config const& c) const {
+		return a*c.scale * local_scale;
+	}
+	template<class Config>
+	void pre( Result & r, Config const & c ) const {
+		r += 1.0;
+	}
+};
+std::ostream & operator<<(std::ostream & out,ScoreIntWithPre const& si){ return out << si.name(); }
+
+
+
+TEST( ObjectiveFunction, test_pre )
+{
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreInt
+		>,
+		ConfigTest
+	> ObjFunNoPre;
+	ObjFunNoPre scorenopre;
+
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreIntWithPre
+		>,
+		ConfigTest
+	> ObjFunWithPre;
+	ObjFunWithPre scorewithpre;
+
+	typedef ObjFunNoPre::Results ResultsNoPre;
+	typedef ObjFunWithPre::Results ResultsWithPre;	
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	InteractionSource interaction_source;
+	EXPECT_EQ( ResultsNoPre  (0), scorenopre  (interaction_source) );
+	EXPECT_EQ( ResultsWithPre(1), scorewithpre(interaction_source) );	
+	interaction_source.get_interactions<int>().push_back(1);
+	EXPECT_EQ( ResultsNoPre  (1), scorenopre  (interaction_source) );	
+	EXPECT_EQ( ResultsWithPre(2), scorewithpre(interaction_source) );
+
+}
+
+struct ScoreIntWithPost {
+	typedef double Result;
+	typedef int Interaction;
+	double local_scale;
+	typedef m::true_ HasPost;
+	ScoreIntWithPost():local_scale(1.0){}
+	static std::string name(){ return "ScoreIntWithPost"; }
+	template<class Config>
+	Result operator()(Interaction a, Config const& c) const {
+		return a*c.scale * local_scale;
+	}
+	template<class Config>
+	void post( Result & r, Config const & c ) const {
+		r += 1.0;
+	}
+};
+std::ostream & operator<<(std::ostream & out,ScoreIntWithPost const& si){ return out << si.name(); }
+
+
+
+TEST( ObjectiveFunction, test_post )
+{
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreInt
+		>,
+		ConfigTest
+	> ObjFunNoPost;
+	ObjFunNoPost scorenopost;
+
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreIntWithPost
+		>,
+		ConfigTest
+	> ObjFunWithPost;
+	ObjFunWithPost scorewithpost;
+
+	typedef ObjFunNoPost::Results ResultsNoPost;
+	typedef ObjFunWithPost::Results ResultsWithPost;	
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	InteractionSource interaction_source;
+	EXPECT_EQ( ResultsNoPost  (0), scorenopost  (interaction_source) );
+	EXPECT_EQ( ResultsWithPost(1), scorewithpost(interaction_source) );	
+	interaction_source.get_interactions<int>().push_back(1);
+	EXPECT_EQ( ResultsNoPost  (1), scorenopost  (interaction_source) );	
+	EXPECT_EQ( ResultsWithPost(2), scorewithpost(interaction_source) );
+
+}
+
+
+
+
+struct ScoreIntWithScratch {
+	typedef double Result;
+	typedef int Interaction;
+	double local_scale;
+	typedef m::true_ HasPre;
+	typedef m::true_ HasPost;	
+	typedef int Scratch;
+	ScoreIntWithScratch():local_scale(1.0){}
+	static std::string name(){ return "ScoreIntWithScratch"; }
+	mutable Scratch * addr_of_scratch_should_stay_same;
+	template<class Config>
+	void pre( Result & r, Scratch & s, Config const & c ) const {
+		r += 1.0;
+		addr_of_scratch_should_stay_same = &s;
+	}
+	template<class Config>
+	Result operator()(Interaction a, Scratch & s, Config const& c ) const {
+		if( addr_of_scratch_should_stay_same != &s ){
+			std::cerr << "addr_of_scratch_should_stay_same" << std::endl;
+			std::exit(-1);
+		}
+		return a*c.scale * local_scale;
+	}
+	template<class Config>
+	void post( Result & r, Scratch & s, Config const & c ) const {
+		ASSERT_EQ( addr_of_scratch_should_stay_same, &s ); // verify that same scratch object is being passed
+		r += 1.0;
+	}
+};
+std::ostream & operator<<(std::ostream & out,ScoreIntWithScratch const& si){ return out << si.name(); }
+
+
+
+TEST( ObjectiveFunction, test_scratch )
+{
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreInt
+		>,
+		ConfigTest
+	> ObjFunNoScratch;
+	ObjFunNoScratch scorenoscratch;
+
+	typedef	ObjectiveFunction<
+		mpl::list<
+			ScoreIntWithScratch
+		>,
+		ConfigTest
+	> ObjFunWithScratch;
+	ObjFunWithScratch scorewithscratch;
+
+	typedef ObjFunNoScratch::Results ResultsNoScratch;
+	typedef ObjFunWithScratch::Results ResultsWithScratch;	
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	InteractionSource interaction_source;
+	EXPECT_EQ( ResultsNoScratch  (0), scorenoscratch  (interaction_source) );
+	EXPECT_EQ( ResultsWithScratch(2), scorewithscratch(interaction_source) );	
+	interaction_source.get_interactions<int>().push_back(1);
+	EXPECT_EQ( ResultsNoScratch  (1), scorenoscratch  (interaction_source) );	
+	EXPECT_EQ( ResultsWithScratch(3), scorewithscratch(interaction_source) );
+
+}
+
 }
 }
 }
