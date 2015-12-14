@@ -118,6 +118,7 @@ struct RotamerIndex {
 	BoundsMap bounds_map_;
 	ChildMap child_map_;
 	std::map<int,int> parent_to_primary_;
+	std::vector<int> protonchi_parent_;
 
 	RotamerIndex(){}
 
@@ -174,6 +175,36 @@ struct RotamerIndex {
 				chem_index_.add_atomdata( rotamers_[i].resname_, ia, rotamers_[i].atoms_[ia].data() );
 			}
 		}		
+
+
+		protonchi_parent_.resize(this->size(),-2);
+		protonchi_parent_[0] = 0;
+		int last = 0;
+		for( int i = 1; i < this->size(); ++i ){
+			// cout << this->resname(i) << " " << this->nchi(i) << " " << this->nchi_noproton(i) << endl;
+			if( this->resname(i) != this->resname(i-1) ){
+				protonchi_parent_[i] = i;
+				last = i;
+			} else {
+				for( int j = 0; j < this->nchi_noproton(i); ++j ){
+					if( this->chi(i,j) != this->chi(i-1,j) ){
+						protonchi_parent_[i] = i;
+						last = i;
+					}
+				}
+			}
+			if( protonchi_parent_[i] == -2 ) protonchi_parent_[i] = last;
+		}
+		int uniq_sum = 0;
+		for( int i = 0; i < this->size(); ++i ){
+			// cout << I(3,i) << " " << this->resname(i);
+			for( int j = 0; j < this->nchi(i); ++j ){
+				// cout << " " << F(7,2,this->chi(i,j));
+			}
+			// cout << " " << I(3,protonchi_parent_[i]) << endl;
+			uniq_sum += ( i == protonchi_parent_[i] );
+		}
+		std::cout << "n protonchi_parent_ " << uniq_sum << std::endl;
 
 		sanity_check();
 	}
@@ -235,6 +266,11 @@ struct RotamerIndex {
 			}
 		}		
 
+		for( int i = 0; i < this->size(); ++i ){
+			ALWAYS_ASSERT( 0 <= protonchi_parent_[i] && protonchi_parent_[i] < this->size() );
+			ALWAYS_ASSERT( resname( protonchi_parent_[i] ) == resname(i) )
+			// this is weak....
+		}
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
@@ -308,6 +344,8 @@ struct RotamerIndex {
 		}
 		return h;
 	}
+
+	int protonchi_parent( int i ) const { return protonchi_parent_[i]; }
 
 };
 
