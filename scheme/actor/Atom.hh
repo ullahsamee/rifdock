@@ -123,6 +123,7 @@ struct Atom {
 	int type() const { return type_; }
 	void set_type(int i){ type_ = i; }
 	AtomData const & data() const { return *data_; }
+	AtomData & nonconst_data() { return *data_; }
 
 	Position const & position() const { return position_; }
 
