@@ -119,6 +119,7 @@ struct RotamerIndex {
 	ChildMap child_map_;
 	std::map<int,int> parent_to_primary_;
 	std::vector<int> protonchi_parent_;
+	int ala_rot_;
 
 	RotamerIndex(){}
 
@@ -206,6 +207,13 @@ struct RotamerIndex {
 		}
 		std::cout << "n protonchi_parent_ " << uniq_sum << std::endl;
 
+		for( int i = 0; i < this->size(); ++i ){
+			if( resname(i) == "ALA" ){
+				ala_rot_ = i;
+				break;
+			}
+		}
+
 		sanity_check();
 	}
 
@@ -271,10 +279,14 @@ struct RotamerIndex {
 			ALWAYS_ASSERT( resname( protonchi_parent_[i] ) == resname(i) )
 			// this is weak....
 		}
+
+		ALWAYS_ASSERT( resname(ala_rot_) == "ALA" );
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
 	std::vector<Atom> const & atoms(int rotnum) const { return rotamers_.at(rotnum).atoms_; }
+
+	int ala_rot() const { return ala_rot_; }
 
 	std::pair<int,int>
 	index_bounds( std::string const & resname ) const { 

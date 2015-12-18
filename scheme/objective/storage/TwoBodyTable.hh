@@ -64,26 +64,30 @@ struct TwoBodyTable {
 	}
 	
 	Data twobody( int ires, int jres, int irot, int jrot ) const {
-		int ir  = ires > jres ? ires : jres;
-		int jr  = ires > jres ? jres : ires;
+		int const ir = ires > jres ? ires : jres;
+		int const jr = ires > jres ? jres : ires;
 		if( twobody_[ir][jr].num_elements() > 0 ){
-			int irotlocal = all2sel_[ires][irot];
-			int jrotlocal = all2sel_[jres][jrot];
+			int const irotlocal = all2sel_[ires][irot];
+			int const jrotlocal = all2sel_[jres][jrot];
 			if( irotlocal < 0 || jrotlocal < 0 ){
 				return Data(9e9); // at least one of the onebodies is bad
 			}
 			// swap if jres > ires
-			int irl = ires > jres ? irotlocal : jrotlocal;
-			int jrl = ires > jres ? jrotlocal : irotlocal;
-			return twobody_[ ires ][ jres ][ irotlocal ][ jrotlocal ];
+			int const irl = ires > jres ? irotlocal : jrotlocal;
+			int const jrl = ires > jres ? jrotlocal : irotlocal;
+			return twobody_[ ir ][ jr ][ irl ][ jrl ];
 		} else {
 			return Data(0.0);
 		}
 	}
 	
-	Data twobody_raw( int ires, int jres, int irotlocal, int jrotlocal ) const {
-		if( twobody_[ires][jres].num_elements() > 0 ){
-			return twobody_[ ires ][ jres ][ irotlocal ][ jrotlocal ];
+	Data twobody_rotlocalnumbering( int ires, int jres, int irotlocal, int jrotlocal ) const {
+		int const ir  = ires > jres ? ires : jres;
+		int const jr  = ires > jres ? jres : ires;
+		int const irl = ires > jres ? irotlocal : jrotlocal;
+		int const jrl = ires > jres ? jrotlocal : irotlocal;
+		if( twobody_[ir][jr].num_elements() > 0 ){
+			return twobody_[ ir ][ jr ][ irl ][ jrl ];
 		} else {
 			return Data(0.0);
 		}
