@@ -32,15 +32,18 @@ struct TwoBodyTable {
 
 	TwoBodyTable() {} // for use with load()
 
-	TwoBodyTable( size_t nres, size_t nrots ) :
-		nres_(nres),
-		nrot_(nrots),
-		onebody_( boost::extents[nres][nrots] ),
-		all2sel_( boost::extents[nres][nrots] ),
-		sel2all_( boost::extents[nres][nrots] ), // some at the ends of dim2 will be -1	
-		nsel_( nres, 0 ),
-		twobody_ ( boost::extents[nres][nres] )
-	{}
+	TwoBodyTable( size_t nres, size_t nrots ) { init( nres, nrots); }
+
+	void
+	init( size_t nres, size_t nrots ){
+		nres_ = nres;
+		nrot_ = nrots;
+		onebody_.resize( boost::extents[nres][nrots] );
+		all2sel_.resize( boost::extents[nres][nrots] );
+		sel2all_.resize( boost::extents[nres][nrots] );
+		nsel_.resize( nres, 0 );
+		twobody_.resize( boost::extents[nres][nres] );
+	}
 
 	Data const & onebody( int ires, int irot ) const { 
 		return onebody_[ires][irot];
