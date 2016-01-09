@@ -24,7 +24,7 @@ inline void dump_pdb_atom(
 	// float occ,bfac;
 	BOOST_VERIFY( a.atomname.size() < 5 );
 	BOOST_VERIFY( a.resname.size() < 4 );
-	BOOST_VERIFY( a.elem.size() < 11 );	
+	BOOST_VERIFY( a.elem.size() < 11 );
 	BOOST_VERIFY( x<10000 && x > -1000 );
 	BOOST_VERIFY( y<10000 && y > -1000 );
 	BOOST_VERIFY( z<10000 && z > -1000 );
@@ -49,9 +49,22 @@ inline void dump_pdb_atom(
 }
 
 template<class XYZ>
+inline void dump_pdb_atom_resname_atomname(
+	std::ostream & out,
+	std::string const & resname,
+	std::string const & atomname,
+	XYZ const & xyz
+){
+	AtomData a;
+	a.resname = resname;
+	a.atomname = atomname;
+	dump_pdb_atom(out,xyz[0],xyz[1],xyz[2],a);
+}
+
+template<class XYZ>
 inline void dump_pdb_atom(
 	std::ostream & out,
-	std::string elem,
+	std::string const & elem,
 	XYZ const & xyz
 ){
 	AtomData a; a.elem = elem;

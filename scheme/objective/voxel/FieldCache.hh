@@ -72,9 +72,9 @@ struct FieldCache3D : public VoxelArray<3,Float> {
 	}
 
 	Float
-	sample_field( 
-		Field3D<Float> const & field, 
-		Float3 cen, 
+	sample_field(
+		Field3D<Float> const & field,
+		Float3 cen,
 		int oversample
 	) const {
 		Float const om = 1.0/oversample;
@@ -93,23 +93,23 @@ struct FieldCache3D : public VoxelArray<3,Float> {
 		return mn;
 	}
 
-	double check_against_field( Field3D<Float> const & field, int oversample=1 ) const {
+	double check_against_field( Field3D<Float> const & field, int oversample=1, float tolerance=0.0001 ) const {
 		int nerror(0), nsamp(0);
 		{
 			// sanity check
 			// std::exit(-1);
 			// std::cout << this->shape()[0] << std::endl;
 			// std::cout << this->shape()[1] << std::endl;
-			// std::cout << this->shape()[2] << std::endl;						
+			// std::cout << this->shape()[2] << std::endl;
 			for(int i = 0; i < this->shape()[0]; i += 8){
 			for(int j = 0; j < this->shape()[1]; j += 8){
-			for(int k = 0; k < this->shape()[2]; k += 8){						
+			for(int k = 0; k < this->shape()[2]; k += 8){
 				++nsamp;
 				Float3 cen = this->indices_to_center( Indices(i,j,k) );
 				Float test1 = this->operator[]( cen );
 				// Float test2 = field( cen[0], cen[1], cen[2] );
 				Float test2 = sample_field(field,cen,oversample);
-				if( fabs(test1-test2) > 0.0001 ){
+				if( fabs(test1-test2) > tolerance ){
 					std::cout << "FIELD MISMATCH stored: " << test1 << " recalculated: " << test2 << std::endl;
 					++nerror;
 					// if(!permissive) throw FieldException("field check fails");
@@ -158,7 +158,7 @@ struct BoundingFieldCache3D : public VoxelArray<3,Float> {
 	    // cache_loc_(cache_loc)
 	{
 		if( ref.cs_.norm() > spread )
-			std::cout << "BoundingFieldCache3D warning: spread " << spread 
+			std::cout << "BoundingFieldCache3D warning: spread " << spread
 		              << " less than ref cell_size.norm() " << ref.cs_.norm() << std::endl;
 //		Float3 lb = ref.lb_-spread;
 //		Float3 ub = ref.ub_+spread;

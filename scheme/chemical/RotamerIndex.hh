@@ -15,8 +15,13 @@
 #include <map>
 #include <cmath>
 
+#include <Eigen/Dense>
+
 namespace scheme { namespace chemical {
 
+struct HBondRay {
+	::Eigen::Vector3f horb_cen, direction;
+};
 
 template< class _AtomData >
 struct ChemicalIndex {
@@ -41,7 +46,7 @@ struct ChemicalIndex {
 
 	void add_atomdata( int restype, int atomnum, AtomData const & data ){
 		if( atomdata_.size() <= restype ) atomdata_.resize(restype+1);
-		if( atomdata_[restype].size() <= atomnum ) atomdata_[restype].resize(atomnum+1);		
+		if( atomdata_[restype].size() <= atomnum ) atomdata_[restype].resize(atomnum+1);
 		atomdata_[restype][atomnum] = data;
 	}
 	void add_atomdata( std::string resname, int atomnum, AtomData const & data ){
@@ -50,9 +55,9 @@ struct ChemicalIndex {
 	}
 
 	AtomData       & atom_data( int restype, int atomnum )       { if(restype<0) return null_atomdata_; return atomdata_.at(restype).at(atomnum); }
-	AtomData const & atom_data( int restype, int atomnum ) const { if(restype<0) return null_atomdata_; return atomdata_.at(restype).at(atomnum); }	
+	AtomData const & atom_data( int restype, int atomnum ) const { if(restype<0) return null_atomdata_; return atomdata_.at(restype).at(atomnum); }
 	AtomData       & atom_data( std::string const & resname, int atomnum )       { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }
-	AtomData const & atom_data( std::string const & resname, int atomnum ) const { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }	
+	AtomData const & atom_data( std::string const & resname, int atomnum ) const { return atomdata_.at( resname2num_.find(resname)->second ).at(atomnum); }
 
 	int resname2num( std::string const & resn ) const {
 		std::map<std::string,int>::const_iterator i = resname2num_.find(resn);
@@ -75,6 +80,8 @@ struct Rotamer {
 	std::vector<float> chi_;
 	std::vector<Atom> atoms_;
 	std::vector<std::pair<Atom,Atom> > hbonders_;
+	std::vector<HBondRay> donors_;
+	std::vector<HBondRay> acceptors_;
 	int nheavyatoms;
 	uint64_t validation_hash() const {
 		uint64_t h = (uint64_t)(boost::hash<std::string>()(resname_));
@@ -100,19 +107,21 @@ struct RotamerIndex {
 	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
 	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
 	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
-	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }	
-	size_t nchi_noproton( size_t i ) const { return nchi(i)-nprotonchi(i); }	
+	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }
+	size_t nchi_noproton( size_t i ) const { return nchi(i)-nprotonchi(i); }
 	size_t nprotonchi( size_t i ) const { return rotamers_.at(i).n_proton_chi_; }
 	float   chi( size_t i, size_t j ) const { return rotamers_.at(i).chi_.at(j); }
 	size_t nhbonds( size_t i ) const { return rotamers_.at(i).hbonders_.size(); }
 	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
-	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }	
+	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
 
 	ChemicalIndex<AtomData> chem_index_;
 
 	std::vector< Rotamer > rotamers_;
+	Rotamer const & rotamer( int irot ) const { return rotamers_[irot]; }
+
 	std::vector< int > primary_rotamers_; // rot # of non-ex rotamers
-	std::vector< int > parent_rotamer_; // 
+	std::vector< int > parent_rotamer_; //
 	std::vector< int > parent_primary_; // pri-rot # of primary parent
 	RotamerGenerator rotgen_;
 	BoundsMap bounds_map_;
@@ -132,7 +141,7 @@ struct RotamerIndex {
 		int parent_key = -1
 	){
 		Rotamer r;
-		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms );
+		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms, r.donors_, r.acceptors_ );
 		r.resname_ = resname;
 		r.chi_ = chi;
 		r.n_proton_chi_ = n_proton_chi;
@@ -143,7 +152,7 @@ struct RotamerIndex {
 		return this_key;
 	}
 
-	void 
+	void
 	build_index()
 	{
 		// bounds
@@ -155,7 +164,7 @@ struct RotamerIndex {
 			}
 		}
 		bounds_map_[ rotamers_.back().resname_ ].second = rotamers_.size();
-		
+
 		// primary rotamers
 		for(int i = 0; i < rotamers_.size(); ++i){
 			if( parent_rotamer_[i]==i ) primary_rotamers_.push_back(i);
@@ -175,7 +184,7 @@ struct RotamerIndex {
 			for( int ia = 0; ia < rotamers_[i].atoms_.size(); ++ia ){
 				chem_index_.add_atomdata( rotamers_[i].resname_, ia, rotamers_[i].atoms_[ia].data() );
 			}
-		}		
+		}
 
 
 		protonchi_parent_.resize(this->size(),-2);
@@ -218,7 +227,7 @@ struct RotamerIndex {
 	}
 
 	bool
-	sanity_check() const 
+	sanity_check() const
 	{
 		// std::cout << "SANITY_CHECK" << std::endl;
 		typedef std::pair<std::string,std::pair<int,int> > TMP;
@@ -246,7 +255,7 @@ struct RotamerIndex {
 						+rotamers_.at(irot).resname_+", "+str(parent_chi)+" vs "+str(child_chi) );
 				} else {
 					ALWAYS_ASSERT_MSG( chidiff < 20.0, "parent chi more than 20° from child! "
-						+rotamers_.at(irot).resname_+", "+str(parent_chi)+" vs "+str(child_chi) );					
+						+rotamers_.at(irot).resname_+", "+str(parent_chi)+" vs "+str(child_chi) );
 				}
 			}
 		}
@@ -272,7 +281,7 @@ struct RotamerIndex {
 				AtomData const & ad2( chem_index_.atom_data( rotamers_[irot].resname_, ia ) );
 				ALWAYS_ASSERT( ad1 == ad2 );
 			}
-		}		
+		}
 
 		for( int i = 0; i < this->size(); ++i ){
 			ALWAYS_ASSERT( 0 <= protonchi_parent_[i] && protonchi_parent_[i] < this->size() );
@@ -289,14 +298,14 @@ struct RotamerIndex {
 	int ala_rot() const { return ala_rot_; }
 
 	std::pair<int,int>
-	index_bounds( std::string const & resname ) const { 
+	index_bounds( std::string const & resname ) const {
 		BoundsMap::const_iterator i = bounds_map_.find(resname);
 		if( i == bounds_map_.end() ) return std::make_pair(0,0);
 		return i->second;
 	}
 
 	std::pair<int,int>
-	child_bounds_of_primary( int ipri ) const { 
+	child_bounds_of_primary( int ipri ) const {
 		return child_map_.at(ipri);
 	}
 
@@ -307,9 +316,9 @@ struct RotamerIndex {
 		if( resname.size() ) b = index_bounds(resname);
 		int rescount = 0;
 		for(int irot = b.first; irot < b.second; ++irot){
-			std::cout << rotamers_[irot].resname_ << " " << irot; 
-			for(int i = 0; i < rotamers_[irot].chi_.size(); ++i) std::cout << " " << rotamers_[irot].chi_[i];
-			std::cout << std::endl;
+			// std::cout << rotamers_[irot].resname_ << " " << irot;
+			// for(int i = 0; i < rotamers_[irot].chi_.size(); ++i) std::cout << " " << rotamers_[irot].chi_[i];
+			// std::cout << std::endl;
 			out << "MODEL " << rotamers_[irot].resname_ << " " << ++rescount << " " << irot << std::endl;
 			BOOST_FOREACH( Atom const & a, rotamers_[irot].atoms_ ){
 				out << scheme::io::dump_pdb_atom(a) << std::endl;
@@ -319,9 +328,17 @@ struct RotamerIndex {
 			typedef std::pair<Atom,Atom> TMP;
 			BOOST_FOREACH( TMP const & h, rotamers_[irot].hbonders_ ){
 				out << scheme::io::dump_pdb_atom(h.first) << std::endl;
-				out << scheme::io::dump_pdb_atom(h.second) << std::endl;				
+				out << scheme::io::dump_pdb_atom(h.second) << std::endl;
 			}
-			out << "ENDMDL " << irot << " HBONDERS" << std::endl;			
+			BOOST_FOREACH( HBondRay const & hr, rotamers_[irot].donors_ ){
+				scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "CDON", hr.horb_cen );
+				scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "DDON", hr.horb_cen+hr.direction*0.1 );
+			}
+			BOOST_FOREACH( HBondRay const & hr, rotamers_[irot].acceptors_ ){
+				scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "CACC", hr.horb_cen );
+				scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "DACC", hr.horb_cen+hr.direction*0.1 );
+			}
+			out << "ENDMDL" << std::endl;
 		}
 	}
 

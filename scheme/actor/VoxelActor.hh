@@ -18,7 +18,7 @@ namespace actor {
 		typedef _Float Float;
 		typedef objective::voxel::VoxelArray<3,Float> VoxelArray;
 		// typedef std::vector<std::vector<shared_ptr< VoxelArray > > > Voxels;
-		typedef std::vector<std::vector< VoxelArray * > > Voxels;		
+		typedef std::vector<std::vector< VoxelArray * > > Voxels;
 
 		// Position position_;
 		Voxels voxels_;
@@ -37,7 +37,7 @@ namespace actor {
 		// 	set_position(moveby*actor0.position());
 		// }
 
-		// void 
+		// void
 		// set_position(
 		// 	Position const & pos
 		// ){ position_ = pos; }
@@ -78,7 +78,7 @@ template< class VoxelActor, class Atom, bool REPL_ONLY = false >
 struct Score_Voxel_vs_Atom {
 	typedef float Result;
 	typedef std::pair<VoxelActor,Atom> Interaction;
-	static std::string name(){ return "Score_Voxel_vs_Atom"; }	
+	static std::string name(){ return "Score_Voxel_vs_Atom"; }
 	template<class Config>
 	Result operator()( VoxelActor const & v, Atom const & a, Config const& c ) const {
 		// std::cout << "score voxel vs atom " << a.data().atomname << std::endl;
@@ -86,8 +86,8 @@ struct Score_Voxel_vs_Atom {
 		// std::cout << "   type " << a.type() << std::endl;
 		// std::cout << "   pos  " << a.position().transpose() << std::endl;
 		// std::cout << "     LB " << v.voxels()[c][a.type()]->lb_ << std::endl;
-		// std::cout << "     UB " << v.voxels()[c][a.type()]->ub_ << std::endl;		
-		float score = v.voxels()[c][a.type()]->at( a.position()[0], a.position()[1], a.position()[2] );		
+		// std::cout << "     UB " << v.voxels()[c][a.type()]->ub_ << std::endl;
+		float score = v.voxels()[c][a.type()]->at( a.position()[0], a.position()[1], a.position()[2] );
 		// std::cout << "  score " << score << std::endl;
 		if( REPL_ONLY ) return std::max(0.0f,score);
 		else return a.type() > 17 ? std::max(0.0f,score) : score;

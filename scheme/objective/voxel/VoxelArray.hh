@@ -62,8 +62,8 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 
 	template<class Floats>
 	typename boost::disable_if< boost::is_arithmetic<Floats>, Float & >::type
-	operator[](Floats const & floats){ return this->operator()(floats_to_index(floats)); }	
-	
+	operator[](Floats const & floats){ return this->operator()(floats_to_index(floats)); }
+
 	Float at( Float f, Float g, Float h ) const {
 		Indices idx = floats_to_index( Bounds( f, g, h ) );
 		if( idx[0] < this->shape()[0] && idx[1] < this->shape()[1] && idx[2] < this->shape()[2] )
@@ -79,20 +79,20 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 		else return 0.0;
 	}
 
-	// void write(std::ostream & out) const { 
+	// void write(std::ostream & out) const {
 	// 	out.write( (char const*)&lb_, sizeof(Bounds) );
 	// 	out.write( (char const*)&ub_, sizeof(Bounds) );
 	// 	out.write( (char const*)&cs_, sizeof(Bounds) );
 	// 	for(size_t i = 0; i < DIM; ++i) out.write( (char const*)&(this->shape()[i]), sizeof() );
 	// 	out.write( (char const*)this->data(), this->num_elements()*sizeof(Float) );
 	// }
-	// void read(std::istream & in){ 
+	// void read(std::istream & in){
 	// 	in.read( (char*)&lb_, sizeof(Bounds) );
 	// 	in.read( (char*)&ub_, sizeof(Bounds) );
 	// 	in.read( (char*)&cs_, sizeof(Bounds) );
 	// 	in.read( (char*)this->data(), this->num_elements()*sizeof(Float) );
 	// }
-	bool operator==(THIS const & o) const { 
+	bool operator==(THIS const & o) const {
 		return lb_==o.lb_ && ub_==o.ub_ && cs_==o.cs_ && (BASE const &)o == (BASE const &)*this;
 	}
 
@@ -123,7 +123,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
     	BOOST_VERIFY( boost::is_pod<Float>::type::value );
   		out.write( (char*)&lb_, sizeof(Bounds) );
   		out.write( (char*)&ub_, sizeof(Bounds) );
-  		out.write( (char*)&cs_, sizeof(Bounds) );  		  		
+  		out.write( (char*)&cs_, sizeof(Bounds) );
         for(size_t i = 0; i < DIM; ++i){
         	out.write( (char*)(&(this->shape()[i])), sizeof(typename BASE::size_type) );
         }

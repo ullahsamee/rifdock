@@ -12,7 +12,7 @@ struct RotamerScore {
 	typedef RotamerScore< _Data, _RotamerBits, _Divisor > THIS;
 	typedef _Data Data;
 	static const int RotamerBits = _RotamerBits;
-	static const int ScoreBits = sizeof(_Data)*8 - _RotamerBits;	
+	static const int ScoreBits = sizeof(_Data)*8 - _RotamerBits;
 	static const Data one = 1;
 	static const Data RotamerMask = (( one << RotamerBits ) - one );
 
@@ -39,7 +39,7 @@ struct RotamerScore {
 
 	bool operator < ( THIS const & other ) const { return data_ > other.data_; } // reverse so low score is low
 	bool operator== ( THIS const & other ) const { return data_ == other.data_; }
-	bool operator== ( Data const & other ) const { return data_ == other; }	
+	bool operator== ( Data const & other ) const { return data_ == other; }
 
 	bool empty() const { return data_ == RotamerMask; }
 };
@@ -52,14 +52,14 @@ struct RotamerScores {
 	typedef _Data Data;
 	typedef RotamerScores< _N, _Data, _RotamerBits, _Divisor > THIS;
 	typedef RotamerScore<      _Data, _RotamerBits, _Divisor > RotScore;
-	
+
 	static int const N = _N;
 	util::SimpleArray<N,RotScore> rotscores_;
-	
+
 	RotamerScores(){
 		rotscores_.fill( RotScore::RotamerMask );
 	}
-	
+
 	void add_rotamer( Data rot, float score ){
 		add_rotamer( RotScore(rot,score) );
 	}
@@ -68,7 +68,7 @@ struct RotamerScores {
 		int insert_pos = 0;
 		RotScore worst( std::numeric_limits<Data>::max() );
 		for( int i = 0; i < N; ++i ){
-			// std::cout << " iter " << i << " " << rotscores_[i].score() << " " << rotscores_[i].rotamer() << " " 
+			// std::cout << " iter " << i << " " << rotscores_[i].score() << " " << rotscores_[i].rotamer() << " "
 			          // << "cur " << rotscores_[i].data_ << " low " << worst.data_ << std::endl;
 			// if rot already stored, this is the position we check
 			if( rotscores_[i].rotamer() == irot ){
@@ -108,13 +108,13 @@ struct RotamerScores {
 	}
 
 	float score( int i ) const { assert(i<N); return rotscores_[i].score(); }
-	Data rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }	
+	Data rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }
 
 	bool empty( int i ) const { return rotscores_[i].empty(); }
 
 	static int maxsize(){ return _N; }
 
-	int size() const { int i; for(i=0;i<_N;++i) if( rotscores_[i].empty() ) break; return i; }	
+	int size() const { int i; for(i=0;i<_N;++i) if( rotscores_[i].empty() ) break; return i; }
 
 	void sort_rotamers(){
 		std::sort( rotscores_.begin(), rotscores_.end() );
@@ -123,7 +123,7 @@ struct RotamerScores {
 	bool is_sorted() const {
 		for( int i = 1; i < _N; ++i )
 			if( rotscores_[i] < rotscores_[i-1] )
-				return false;		
+				return false;
 		return true;
 	}
 
@@ -131,7 +131,7 @@ struct RotamerScores {
 		static std::string const name = "RotamerScores< "
 			 + boost::lexical_cast<std::string>(_N)
 			 + ", "
-			 + boost::lexical_cast<std::string>(sizeof(_Data))	 
+			 + boost::lexical_cast<std::string>(sizeof(_Data))
 			 + ", "
 			 + boost::lexical_cast<std::string>(_RotamerBits)
 			 + ", "
