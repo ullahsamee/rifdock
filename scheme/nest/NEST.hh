@@ -20,7 +20,7 @@ namespace scheme {
 namespace nest {
 
 	using util::StoreValue;
-	using util::StorePointer;	
+	using util::StorePointer;
 
 	///@brief Base class for NEST
 	///@tparam Index index type
@@ -33,10 +33,10 @@ namespace nest {
 
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool 
+		virtual bool
 		virtual_get_state(
-			Index index, 
-			Index resl, 
+			Index index,
+			Index resl,
 			boost::any & result
 		) = 0;
 
@@ -44,7 +44,7 @@ namespace nest {
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@returns false if invalid index
-		virtual	bool 
+		virtual	bool
 		virtual_get_state(
 			std::vector<Index> const & indices,
 			Index cell_index,
@@ -71,16 +71,16 @@ namespace nest {
 
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
-		virtual Index 
+		virtual Index
 		virtual_size(Index resl) const = 0;
 
 		///@brief get the number of cells in this nest
-		virtual Index 
+		virtual Index
 		virtual_num_cells() const = 0;
 
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
-		virtual size_t 
+		virtual size_t
 		virtual_dim() const = 0;
 	};
 
@@ -233,25 +233,25 @@ namespace nest {
 		bool _is_virtual = true
 	>
 	struct NEST : // policy-based design, see Modern C++ Design
-	    public boost::mpl::if_c< 
-		    	_is_virtual, 
-		    	NestBase<_Index>, 
+	    public boost::mpl::if_c<
+		    	_is_virtual,
+		    	NestBase<_Index>,
 	    		Empty
 	    	>::type, // conditional inherit
-		public ParamMap< _DIM, _Value, _Index, _Float>, 
+		public ParamMap< _DIM, _Value, _Index, _Float>,
 	    public StoragePolicy<_Value>
 	{
 		static int const DIM = _DIM;
 		static bool const is_virtual = _is_virtual;
 
-		typedef _Float Float;		
+		typedef _Float Float;
 		typedef _Value Value;
 		typedef _Index Index;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
 		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float,is_virtual> ThisType;
 		typedef util::SimpleArray<DIM,Index> Indices;
 		typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
-		typedef util::SimpleArray<DIM,Float> Params;		
+		typedef util::SimpleArray<DIM,Float> Params;
 		typedef Value ValueType;
 		typedef Index IndexType;
 		typedef _Float FloatType;
@@ -401,7 +401,7 @@ namespace nest {
 			SignedIndices ub = ((indices.template cast<SignedIndex>()+(SignedIndex)1).min((SignedIndex)((1<<resl)-1)));
 			// std::cout << "IX " << indices.transpose() << " cell " << cell_index << std::endl;
 			// std::cout << "LB " << lb.transpose() << std::endl;
-			// std::cout << "UB " << ub.transpose() << std::endl;			
+			// std::cout << "UB " << ub.transpose() << std::endl;
 			boost::function<void(SignedIndices)> functor;
 			functor = boost::bind( & ThisType::template push_index<OutIter>, this, _1, cell_index, resl, out );
 			util::NESTED_FOR<DIM>(lb,ub,functor);
@@ -488,7 +488,7 @@ namespace nest {
 		virtual	Index virtual_get_index( boost::any const & val, Index resl ) const {
 			return impl::wrap_virtual_get_index( *this, val, resl );
 		}
-	
+
 		virtual bool virtual_get_indices(
 			boost::any const & val,
 			Index resl,
@@ -500,6 +500,20 @@ namespace nest {
 
 
 	};
+
+	template< int DIM,
+		class Value,
+		template<int,class,class,class> class ParamMap,
+		template<class> class StoragePolicy,
+		class Index,
+		class Float,
+		bool is_virtual
+	>
+	std::ostream & operator << ( std::ostream & out, NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float,is_virtual> const & nest ){
+		out << "NEST  dim " << DIM << "(todo: print types, StoragePolicy, is_virtual)" << std::endl;
+		out << "parammap: " << static_cast<ParamMap< DIM, Value, Index, Float> >(nest) ;
+		return out;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 	///@brief specialization of NEST for zero dimensional grids (discrete choices)
@@ -580,15 +594,15 @@ namespace nest {
 			if(status) this->set_stored_value(v);
 			return status;
 		}
-	
+
 		///@brief return size(resl)
 		///@return num_cells for these type
 		virtual Index virtual_size(Index /*resl*/) const { return this->num_cells(); }
-	
+
 		///@brief virtual function returning num_cells()
 		///@return num_cells
 		virtual Index virtual_num_cells() const { return this->num_cells(); }
-	
+
 		///@brief get dimension of this nest
 		///@return always 0 for these types
 		virtual size_t virtual_dim() const { return 0; }

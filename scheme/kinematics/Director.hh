@@ -31,11 +31,11 @@ template<
 	class _BigIndex = uint64_t,
 	class _Index = uint64_t
 >
-struct Director 
-{	
+struct Director
+{
 	typedef _Position Position;
 	typedef _BigIndex BigIndex;
-	typedef _Index Index;	
+	typedef _Index Index;
 	typedef SceneBase<Position,Index> Scene;
 
 	virtual
@@ -61,7 +61,7 @@ struct NestDirector
 	typedef _Nest Nest;
 	typedef typename Nest::Value Position;
 	typedef typename Nest::Index BigIndex;
-	typedef typename Nest::Index Index;	
+	typedef typename Nest::Index Index;
 	typedef SceneBase<Position,Index> Scene;
 
 	Index ibody_;
@@ -69,13 +69,13 @@ struct NestDirector
 
 	NestDirector() : ibody_(0),nest_() {}
 	NestDirector( Index ibody ) : ibody_(ibody),nest_() {}
-	template<class A> 
+	template<class A>
 	NestDirector( A const & a, Index ibody ) : ibody_(ibody),nest_(a) {}
-	template<class A, class B> 
+	template<class A, class B>
 	NestDirector( A const & a, B const & b, Index ibody ) : ibody_(ibody),nest_(a,b) {}
-	template<class A, class B, class C> 
+	template<class A, class B, class C>
 	NestDirector( A const & a, B const & b, C const & c, Index ibody ) : ibody_(ibody),nest_(a,b,c) {}
-	template<class A, class B, class C, class D> 
+	template<class A, class B, class C, class D>
 	NestDirector( A const & a, B const & b, C const & c, D const & d, Index ibody ) : ibody_(ibody),nest_(a,b,c,d) {}
 
 	Nest const & nest() const { return nest_; }
@@ -101,6 +101,12 @@ struct NestDirector
 
 };
 
+template< class Nest >
+std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
+	out << "NestDirector " << d.nest();
+	return out;
+}
+
 
 class SymElem {};
 
@@ -119,8 +125,8 @@ struct SceneTree {
 
 	Position edge_xform_;
 	std::vector<NestP> position_nests_;
-	std::vector<NestP> sym_elem_nests_;	
-	std::vector<NestP> conformation_nests_;		
+	std::vector<NestP> sym_elem_nests_;
+	std::vector<NestP> conformation_nests_;
 
 	std::vector<Index> bodies_;
 	std::vector<SymElem> sym_elems_;
@@ -141,7 +147,7 @@ struct SceneTree {
 		std::vector<NestP> & nests
 	) const {
 		nests.insert( nests.end(),     position_nests_.begin(),     position_nests_.end() );
-		nests.insert( nests.end(),     sym_elem_nests_.begin(),     sym_elem_nests_.end() );		
+		nests.insert( nests.end(),     sym_elem_nests_.begin(),     sym_elem_nests_.end() );
 		nests.insert( nests.end(), conformation_nests_.begin(), conformation_nests_.end() );
 		BOOST_FOREACH( SceneTreeP child, children_ ){
 			child->get_nests( nests );
@@ -188,7 +194,7 @@ struct SceneTree {
 		for( int ipos = 0; ipos < position_nests_.size(); ++ipos){
 			// std::cerr << "set_scene get nest xform" << std::endl;
 			Position & nest_xform( *boost::any_cast<Position*>(*idof) );
-			// std::cerr << "set_scene get nest xform DONE" << std::endl;			
+			// std::cerr << "set_scene get nest xform DONE" << std::endl;
 			position = nest_xform * position;
 			++idof;
 		}
@@ -213,7 +219,7 @@ template<
 	class _Index = uint64_t
 >
 struct TreeDirector : public Director<_Position,_BigIndex,_Index> {
-	
+
 	typedef _BigIndex BigIndex;
 	typedef _Index Index;
 	typedef _Position Position;
@@ -251,7 +257,7 @@ struct TreeDirector : public Director<_Position,_BigIndex,_Index> {
 		if( !success ) return false;
 		// std::cerr << *boost::any_cast<numeric::X1dim*>(tmp_dofs.front()) << std::endl;
 		assert( root_ != 0 );
-		// std::cerr << "set_scene" << std::endl;		
+		// std::cerr << "set_scene" << std::endl;
 		root_->set_scene( Position::Identity(), tmp_dofs.begin(), scene );
 		// std::cerr << "clear_empty_dofs" << std::endl;
 		root_->clear_empty_dofs( tmp_dofs.begin() );

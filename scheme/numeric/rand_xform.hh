@@ -9,7 +9,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/timer/timer.hpp>
 
-namespace scheme { namespace numeric { 
+namespace scheme { namespace numeric {
 
 
 template<class T>
@@ -55,6 +55,24 @@ rand_xform(
 
 template<class T>
 void
+rand_xform_cartnormal(
+	boost::random::mt19937 & rng,
+	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
+	T const & cart_sd
+){
+	boost::uniform_real<> runif;
+	boost::normal_distribution<> rnorm;
+	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
+	qrand.normalize();
+	Eigen::Matrix3d m = qrand.matrix();
+	for(int i = 0; i < 9; ++i) x.data()[i] = m.data()[i];
+	x.data()[ 9] = rnorm(rng) * cart_sd;
+	x.data()[10] = rnorm(rng) * cart_sd;
+	x.data()[11] = rnorm(rng) * cart_sd;
+}
+
+template<class T>
+void
 rand_xform_quat(
 	boost::random::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
@@ -79,8 +97,6 @@ rand_xform_quat(
 		Eigen::Matrix3d m = qrand.matrix();
 		for(int i = 0; i < 9; ++i) x.data()[i] = m.data()[i];
 	}
-	
-	
 	{ // cart part
 		x.data()[ 9] = rnorm(rng);
 		x.data()[10] = rnorm(rng);
@@ -92,6 +108,37 @@ rand_xform_quat(
 		x.data()[11] *= scale * cart_bound / len;
 	}
 }
+
+template<class T>
+void
+rand_xform_sphere(
+	boost::random::mt19937 & rng,
+	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
+	T const cart_radius,
+	T const ang_radius
+){
+	boost::normal_distribution<> rnorm;
+	boost::uniform_real<> runif;
+
+	float ang = (1.0 - runif(rng)*runif(rng)) * ang_radius;
+	Eigen::Matrix<float,1,3> axis( rnorm(rng), rnorm(rng), rnorm(rng) );
+	axis.normalize();
+	Eigen::AngleAxis<T> aa( ang, axis );
+	x = Eigen::Transform<T,3,Eigen::AffineCompact> ( aa );
+
+	Eigen::AngleAxis<T> aa2( x.rotation() );
+
+	// std::cout << ang << " " << ang_radius << " " << aa2.angle() << std::endl;
+
+	Eigen::Matrix<float,1,3> delta( 9e9, 9e9, 9e9 );
+	while( delta.squaredNorm() > cart_radius*cart_radius ){
+		delta = 2.0 * cart_radius * Eigen::Matrix<float,1,3>( runif(rng)-0.5, runif(rng)-0.5, runif(rng)-0.5 );
+	}
+
+	x.translation() = delta;
+
+}
+
 
 
 }}

@@ -45,27 +45,27 @@ struct TwoBodyTable {
 		twobody_.resize( boost::extents[nres][nres] );
 	}
 
-	Data const & onebody( int ires, int irot ) const { 
+	Data const & onebody( int ires, int irot ) const {
 		return onebody_[ires][irot];
 	}
-	
+
 	void bounds_check_1b( int ires, int irot ) const {
 		ALWAYS_ASSERT_MSG( ires >= 0, "ires < 0!" );
-		ALWAYS_ASSERT_MSG( irot >= 0, "irot < 0!" );		
+		ALWAYS_ASSERT_MSG( irot >= 0, "irot < 0!" );
 		ALWAYS_ASSERT_MSG( ires < nres_, "ires >= nres!" );
-		ALWAYS_ASSERT_MSG( irot < nrot_, "irot >= nrot!" );				
+		ALWAYS_ASSERT_MSG( irot < nrot_, "irot >= nrot!" );
 	}
-	
+
 	Data const & onebody_at( int ires, int irot ) const {
 		bounds_check_1b(ires,irot);
 		return onebody_[ires][irot];
 	}
-	
+
 	void set_onebody( int ires, int irot, Data const & val ){
 		bounds_check_1b(ires,irot);
-		onebody_[ires][irot] = val; 
+		onebody_[ires][irot] = val;
 	}
-	
+
 	Data twobody( int ires, int jres, int irot, int jrot ) const {
 		int const ir = ires > jres ? ires : jres;
 		int const jr = ires > jres ? jres : ires;
@@ -83,7 +83,7 @@ struct TwoBodyTable {
 			return Data(0.0);
 		}
 	}
-	
+
 	Data twobody_rotlocalnumbering( int ires, int jres, int irotlocal, int jrotlocal ) const {
 		int const ir  = ires > jres ? ires : jres;
 		int const jr  = ires > jres ? jres : ires;
@@ -95,7 +95,7 @@ struct TwoBodyTable {
 			return Data(0.0);
 		}
 	}
-	
+
 	// assumes onebody energies have been filled in at this point!
 	void init_onebody_filter( float thresh ){
 		all2sel_.resize( boost::extents[nres_][nrot_] );
@@ -161,7 +161,7 @@ struct TwoBodyTable {
 	void save( std::ostream & out, std::string const & description ) const {
   		ALWAYS_ASSERT( onebody_.num_elements() == nres_*nrot_ );
   		ALWAYS_ASSERT( all2sel_.num_elements() == nres_*nrot_ );
-  		ALWAYS_ASSERT( sel2all_.num_elements() == nres_*nrot_ );  		  		
+  		ALWAYS_ASSERT( sel2all_.num_elements() == nres_*nrot_ );
   		ALWAYS_ASSERT( nsel_.size() == nres_ );
   		size_t const dsrcrize = description.size();
   		out.write( (char*)&dsrcrize, sizeof(size_t) );
@@ -190,8 +190,10 @@ struct TwoBodyTable {
   		}}
 	}
 	void load( std::istream & in, std::string & description ) {
+// std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << "" << std::endl;
 		size_t dsrcrize;
 		in.read( (char*)&dsrcrize, sizeof(size_t) );
+// std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << dsrcrize << std::endl;
 		char *buf = new char[dsrcrize];
   		in.read( buf, dsrcrize*sizeof(char) );
   		description.resize( dsrcrize );
@@ -201,7 +203,7 @@ struct TwoBodyTable {
   		in.read( (char*)&nrot_, sizeof(size_t) );
   		onebody_.resize( boost::extents[nres_][nrot_] );
   		all2sel_.resize( boost::extents[nres_][nrot_] );
-  		sel2all_.resize( boost::extents[nres_][nrot_] );  		  		
+  		sel2all_.resize( boost::extents[nres_][nrot_] );
   		for( int i = 0; i < nres_*nrot_; ++i ){
 	  		in.read( (char*)&( onebody_.data()[i] ), sizeof(Data) );
 	  		in.read( (char*)&( all2sel_.data()[i] ), sizeof(int) );
@@ -271,7 +273,7 @@ struct TwoBodyTable {
 		// std::cout << "create_subtable: new nres: " << newt.nres_ << std::endl;
 		newt.init_onebody_filter( filter1bthresh ); // inits & fills all2sel_, sel2all_, and nsel_
 		newt.twobody_.resize( boost::extents[newt.nres_][newt.nres_] );
-		for( int ilocal = 0; ilocal < newt.nres_; ++ilocal ){		
+		for( int ilocal = 0; ilocal < newt.nres_; ++ilocal ){
 		for( int jlocal = 0; jlocal < newt.nres_; ++jlocal ){
 			int iglobal = res_l2g[ilocal];
 			int jglobal = res_l2g[jlocal];
@@ -297,7 +299,7 @@ struct TwoBodyTable {
 				}}
 				if( minscore > -0.01 && maxscore < 0.01 ){
 					ALWAYS_ASSERT( 0 <= ilocal && ilocal < newt.nres_ );
-					ALWAYS_ASSERT( 0 <= jlocal && jlocal < newt.nres_ );				
+					ALWAYS_ASSERT( 0 <= jlocal && jlocal < newt.nres_ );
 					newt.clear_twobody( ilocal, jlocal );
 				}
 			}
@@ -316,7 +318,7 @@ struct TwoBodyTable {
 	// 	all2sel_.resize( boost::extents[other.all2sel_.shape()[0]][other.all2sel_.shape()[1]] );
 	// 	sel2all_.resize( boost::extents[other.sel2all_.shape()[0]][other.sel2all_.shape()[1]] );
 	// 	ALWAYS_ASSERT( all2sel_.num_elements() == onebody_.num_elements() );
-	// 	ALWAYS_ASSERT( sel2all_.num_elements() == onebody_.num_elements() );				
+	// 	ALWAYS_ASSERT( sel2all_.num_elements() == onebody_.num_elements() );
 	// 	for( int i = 0; i < other.onebody_.num_elements(); ++i ){
 	// 		onebody_.data()[i] = other.onebody_.data()[i];
 	// 		all2sel_.data()[i] = other.all2sel_.data()[i];
@@ -332,7 +334,7 @@ struct TwoBodyTable {
 	// 		for( int k = 0; k < twobody_[i][j].num_elements(); ++k ){
 	// 			twobody_[i][j].data()[k] = other.twobody_[i][j].data()[k];
 	// 		}
-	// 	}}			
+	// 	}}
 
 	// }
 

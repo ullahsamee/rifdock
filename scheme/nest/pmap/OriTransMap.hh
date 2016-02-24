@@ -26,8 +26,8 @@ namespace scheme { namespace nest { namespace pmap {
 
 		static int const DIMENSION = DIM;
 		typedef Value ValueType ;
-		typedef Float FloatType ;		
-		typedef Index IndexType ;		
+		typedef Float FloatType ;
+		typedef Index IndexType ;
 		typedef util::SimpleArray<DIM,Index> Indices;
 		typedef util::SimpleArray<DIM,Float> Params;
 		typedef util::SimpleArray<3,Float> P3;
@@ -63,8 +63,8 @@ namespace scheme { namespace nest { namespace pmap {
 			int const ori_nside = OriMap::get_nside_for_rot_resl_deg( rot_resl_deg );
 			ori_map_.init( ori_nside );
 			trans_map_.init( lb, ub, bs );
-			// cout << "OriMap: TetracontoctachoronMap, " 
-			//      << rot_resl_deg << " nside: " << ori_map_.nside_ << ", covrad: " 
+			// cout << "OriMap: TetracontoctachoronMap, "
+			//      << rot_resl_deg << " nside: " << ori_map_.nside_ << ", covrad: "
 		 //    	 << ori_map_.bin_circumradius(0)*180.0/M_PI << ", size: " << ori_map_.num_cells() << endl;
 		}
 
@@ -132,7 +132,12 @@ namespace scheme { namespace nest { namespace pmap {
 
 	};
 
-
+template< int D, class V, class I, class F >
+std::ostream & operator << ( std::ostream & out, OriTransMap<D,V,I,F> const & otm ){
+	out << "OriMap: " << otm.ori_map_ << std::endl;
+	out << "TransMap: " << otm.trans_map_ ;
+	return out;
+}
 
 }}}
 

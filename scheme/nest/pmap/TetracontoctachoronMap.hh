@@ -39,10 +39,10 @@ namespace scheme { namespace nest { namespace pmap {
 
 		static int const DIMENSION = DIM;
 		typedef Value ValueType ;
-		typedef Float FloatType ;		
-		typedef Index IndexType ;		
+		typedef Float FloatType ;
+		typedef Index IndexType ;
 		typedef util::SimpleArray<DIM,Index> Indices;
-		typedef util::SimpleArray<DIM,Float> Params;		
+		typedef util::SimpleArray<DIM,Float> Params;
 
 		Index nside_;
 		Float one_over_nside_;
@@ -73,7 +73,7 @@ namespace scheme { namespace nest { namespace pmap {
 
 			// if( !( p[0] >= 0.0 && p[0] <= 1.0 ) ) cout << "BAD param val: " << p[0] << endl;
 			// if( !( p[1] >= 0.0 && p[1] <= 1.0 ) ) cout << "BAD param val: " << p[1] << endl;
-			// if( !( p[2] >= 0.0 && p[2] <= 1.0 ) ) cout << "BAD param val: " << p[2] << endl;						
+			// if( !( p[2] >= 0.0 && p[2] <= 1.0 ) ) cout << "BAD param val: " << p[2] << endl;
 
 			assert( p[0] >= -0.00001 && p[0] <= 1.00001 );
 			assert( p[1] >= -0.00001 && p[1] <= 1.00001 );
@@ -85,7 +85,7 @@ namespace scheme { namespace nest { namespace pmap {
 			p[1] = fmin(1.0,p[1]);
 			p[2] = fmin(1.0,p[2]);
 
-			// std::cout << cell_index << " " << p << " " << p << std::endl;			
+			// std::cout << cell_index << " " << p << " " << p << std::endl;
 			// static int count = 0; if( ++count > 30 ) std::exit(-1);
 
 			p = w*(p-0.5); // now |p| < sqrt(2)-1
@@ -138,7 +138,7 @@ namespace scheme { namespace nest { namespace pmap {
 			// // cout << "      get p  " << q.x() << " " << q.y() << " " << q.z() << endl;
 
 			params[0] = q.x()/q.w()/cell_width<Float>() + 0.5;
-			params[1] = q.y()/q.w()/cell_width<Float>() + 0.5;			
+			params[1] = q.y()/q.w()/cell_width<Float>() + 0.5;
 			params[2] = q.z()/q.w()/cell_width<Float>() + 0.5;
 
 			Indices ci = params * nside_;
@@ -147,7 +147,7 @@ namespace scheme { namespace nest { namespace pmap {
 			params = params * nside_ - ci.template cast<Float>();
 			assert( params[0] >= 0.0 && params[0] <= 1.0 );
 			assert( params[1] >= 0.0 && params[1] <= 1.0 );
-			assert( params[2] >= 0.0 && params[2] <= 1.0 );						
+			assert( params[2] >= 0.0 && params[2] <= 1.0 );
 
 			// just for testing...
 			// params[0] = fmax(0.000001,params[0]);
@@ -165,13 +165,13 @@ namespace scheme { namespace nest { namespace pmap {
 		}
 
 		///@brief get parameter space repr of Value for particular cell
-		///@note necessary only for neighbor lookup		
+		///@note necessary only for neighbor lookup
 		void value_to_params_for_cell(
 			Value const & value,
 			Params & params
 		) const {
 			std::cerr << "Not Implemented" << std::endl;
-			std::exit(-1);			
+			std::exit(-1);
 		}
 
 		///@brief return the cell_index of neighboring cells within radius of value
@@ -236,12 +236,12 @@ namespace scheme { namespace nest { namespace pmap {
 			}
 			assert(nside_==1);
 			static Float const covrad[6] = {
-				 62.76235, 
-				 37.95720, 
-				 20.53126, 
-				 11.00814, 
-				  5.31355, 
-				  2.66953 
+				 62.76235,
+				 37.95720,
+				 20.53126,
+				 11.00814,
+				  5.31355,
+				  2.66953
 			};
 			return covrad[resl] * M_PI / 180.0;
 		}
@@ -263,6 +263,17 @@ namespace scheme { namespace nest { namespace pmap {
 
 	};
 
+
+	template<
+		int DIM,
+		class Value,
+		class Index,
+		class Float
+	>
+	std::ostream & operator << ( std::ostream & out, TetracontoctachoronMap<DIM,Value,Index,Float> const & tm ){
+		out << "TetracontoctachoronMap nside = " << tm.nside_ << " covrad0 = " << tm.bin_circumradius(0)*180.0/M_PI;
+		return out;
+	}
 
 
 }}}

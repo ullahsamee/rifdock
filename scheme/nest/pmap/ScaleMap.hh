@@ -32,15 +32,15 @@ namespace pmap {
 		static int const DIMENSION = DIM;
 		typedef ScaleMap<DIM,Value,Index,Float> ThisType;
 		typedef Value ValueType ;
-		typedef Float FloatType ;		
-		typedef Index IndexType ;		
+		typedef Float FloatType ;
+		typedef Index IndexType ;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
 		typedef util::SimpleArray<DIM,Index> Indices;
 		typedef util::SimpleArray<DIM,SignedIndex> SignedIndices;
-		typedef util::SimpleArray<DIM,Float> Params;		
+		typedef util::SimpleArray<DIM,Float> Params;
 		BOOST_STATIC_ASSERT_MSG(DIM>0,"ScaleMap DIM must be > 0");
 	 private:
-		///@brief lower bound on value space		
+		///@brief lower bound on value space
 		Params lower_bound_;
 		///@brief upper bound on value space base size 1
 		Params upper_bound_;
@@ -51,8 +51,8 @@ namespace pmap {
 		Index num_cells_;
 	 public:
 
-	 	Params const & lower_bound() const { return lower_bound_; } 
-	 	Params const & upper_bound() const { return upper_bound_; }	 	
+	 	Params const & lower_bound() const { return lower_bound_; }
+	 	Params const & upper_bound() const { return upper_bound_; }
 	 	Params const &  cell_width() const { return cell_width_; }
 	 	Indices const & cell_sizes() const { return cell_sizes_; }
 
@@ -62,20 +62,20 @@ namespace pmap {
 		ScaleMap(){	cell_sizes_.fill(1); lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default lb, ub
 		template< class I >
-		ScaleMap(I const & bs) : 
+		ScaleMap(I const & bs) :
 			cell_sizes_(bs) { lower_bound_.fill(0); upper_bound_.fill(1); init(); }
 		///@brief construct with default bs
 		template< class P >
-		ScaleMap(P const & lb, P const & ub) : 
+		ScaleMap(P const & lb, P const & ub) :
 			lower_bound_(lb), upper_bound_(ub) { cell_sizes_.fill(1); init(); }
 		///@brief construct with specified lb, ub and bs
 		template< class P, class I >
-		ScaleMap(P const & lb, P const & ub, I const & bs) : 
+		ScaleMap(P const & lb, P const & ub, I const & bs) :
 			lower_bound_(lb), upper_bound_(ub), cell_sizes_(bs) { init(); }
 
 		template< class I >
 		void init(I const & bs){
-			cell_sizes_ = bs; 
+			cell_sizes_ = bs;
 			lower_bound_.fill(0);
 			upper_bound_.fill(1);
 			init();
@@ -176,7 +176,7 @@ namespace pmap {
 		}
 
 		Indices cellindex_to_indices(Index index) const {
-			Indices indices;						
+			Indices indices;
 			for(size_t i = 0; i < DIM; ++i){
 				indices[i] = ( index / cell_sizes_pref_sum_[i] ) % cell_sizes_[i];
 				assert(indices[i] < cell_sizes_[i]);
@@ -196,7 +196,7 @@ namespace pmap {
 		// 	SignedIndices ub = ((indices.template cast<int>()+1).min((1<<resl)-1));
 		// 	// std::cout << "IX " << indices.transpose() << " cell " << cell_index << std::endl;
 		// 	// std::cout << "LB " << lb.transpose() << std::endl;
-		// 	// std::cout << "UB " << ub.transpose() << std::endl;			
+		// 	// std::cout << "UB " << ub.transpose() << std::endl;
 		// 	boost::function<void(SignedIndices)> functor;
 		// 	functor = boost::bind( & ThisType::template push_index<OutIter>, this, _1, cell_index, resl, out );
 		// 	util::NESTED_FOR<DIM>(lb,ub,functor);
@@ -247,6 +247,16 @@ namespace pmap {
 	 	virtual ~ScaleMap(){}
 	};
 
+	template<
+		int DIM,
+		class Value,
+		class Index,
+		class Float
+	>
+	std::ostream & operator << ( std::ostream & out, ScaleMap<DIM,Value,Index,Float> const & sm ){
+		out << "ScaleMap cell_sizes = " << sm.cell_sizes() << " cell_widths = " << sm.cell_width();
+		return out;
+	}
 
 }
 }

@@ -22,7 +22,7 @@ namespace scheme { namespace objective { namespace hash {
 template< int ArrayBits, class Key, class Value >
 struct XfromMapSerializer {
     // typedef util::SimpleArray< (1<<ArrayBits), Value >  ValArray;
-  	typedef  Value  ValArray;    
+  	typedef  Value  ValArray;
 	bool operator()( std::istream * in, std::pair<Key const,ValArray> * val ) const {
 		Key & k = const_cast<Key&>( val->first );
 		in->read( (char*)&k, sizeof(Key) );
@@ -32,7 +32,7 @@ struct XfromMapSerializer {
 	}
 	bool operator()( std::ostream * out, std::pair<Key const,ValArray> const & val ) const {
 		out->write( (char*)&val.first, sizeof(Key) );
-		out->write( (char*)&val.second, sizeof(ValArray) );		
+		out->write( (char*)&val.second, sizeof(ValArray) );
 		return true;
 	}
 };
@@ -46,7 +46,7 @@ template<
 	// template<class X> class _Hasher = XformHash_bt24_BCC6_Zorder >
 	template<class X> class _Hasher = XformHash_Quat_BCC7_Zorder ,
 	// class ElementSerializer = XfromMapSerializer< ArrayBits, uint64_t, Value >
-	class ElementSerializer = XfromMapSerializer< 0, uint64_t, _Value >	
+	class ElementSerializer = XfromMapSerializer< 0, uint64_t, _Value >
 >
 struct XformMap {
 	// BOOST_STATIC_ASSERT(( ArrayBits >= 0 ));
@@ -57,7 +57,7 @@ struct XformMap {
 	typedef typename Xform::Scalar Float;
     // typedef util::SimpleArray< (1<<ArrayBits), Value >  ValArray;
     // typedef google::dense_hash_map<Key,ValArray> Map;
-    typedef google::dense_hash_map<Key,Value> Map;    
+    typedef google::dense_hash_map<Key,Value> Map;
     Hasher hasher_;
     Map map_;
 	ElementSerializer element_serializer_;
@@ -87,7 +87,7 @@ struct XformMap {
 	~XformMap(){
 		// #ifdef USE_OPENMP
 		// omp_destroy_lock( &insert_lock );
-		// #endif		
+		// #endif
 	}
 
 	void clear() { map_.clear(); }
@@ -242,8 +242,8 @@ struct XformMap {
 		// int tmp = ArrayBits;
 		// out.write( (char*)&tmp, sizeof(int) );
 		out.write( (char*)&cart_resl_, sizeof(Float) );
-		out.write( (char*)&ang_resl_, sizeof(Float) );		
-		out.write( (char*)&cart_bound_, sizeof(Float) );		
+		out.write( (char*)&ang_resl_, sizeof(Float) );
+		out.write( (char*)&cart_bound_, sizeof(Float) );
 		// std::cout << "SIZE OUT " << map_.size() << std::endl;
 		if( ! map_.serialize( element_serializer_, &out ) ){
 			std::cerr << "XfromMap::load failed to unserialize sparsehash" << std::endl;
@@ -263,7 +263,7 @@ struct XformMap {
 		for(int i = 0; i < 9999; ++i) buf[i] = 0;
 		in.read(buf,s);
 		// std::cout << "XformMap load, description: " << std::endl;
-		description = std::string(buf).substr(37,s-80); 
+		description = std::string(buf).substr(37,s-80);
 		// std::cout << description << std::endl;
 		in.read( (char*)&s, sizeof(size_t) );
 		// std::cout << "SIZE IN " << s << std::endl;
@@ -288,11 +288,11 @@ struct XformMap {
 		// std::cout << "read:" << cart_resl << " " << ang_resl << std::endl;
 		if( cart_resl_ != -1 && cart_resl_ != cart_resl ){
 			std::cerr << "XformMap::load, hasher cart_resl mismatch, expected " << cart_resl_ << " got "  << cart_resl << std::endl;
-			return false;			
+			return false;
 		}
 		if( ang_resl_ != -1 && ang_resl_ != ang_resl ){
 			std::cerr << "XformMap::load, hasher ang_resl mismatch, expected " << ang_resl_ << " got "  << ang_resl << std::endl;
-			return false;			
+			return false;
 		}
 		if( cart_resl_ == -1 ) cart_resl_ = cart_resl;
 		if(  ang_resl_ == -1 )  ang_resl_ =  ang_resl;
