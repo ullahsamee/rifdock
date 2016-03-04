@@ -45,7 +45,7 @@ namespace impl {
 			this->template get<Actor>().insert(this->template get<Actor>().end(),a);
 		}
 	};
-	
+
 	///@brief holds a Conformation pointer and an Xform
 	template<
 		class _Conformation,
@@ -61,21 +61,25 @@ namespace impl {
 		BodyTplt() : conformation_() {}
 		BodyTplt(shared_ptr<ConformationConst> c) : conformation_(c) {}
 
+		BodyTplt( THIS const & other ){
+			conformation_ = make_shared<Conformation>( *other.conformation_ );
+		}
+
 		// BodyTplt( BodyTplt const & proto ){
 		// 	conformation_ = make_shared<ConformationConst>( proto ); // NO!!! Confs are CONST
 		// }
 
-		// template<class Actor> 
+		// template<class Actor>
 		// Actor
 		// get_actor(
 		// 	Index i
-		// ) const { 
+		// ) const {
 		// 	return Actor(this->value()->template get<Actor>().at(i),position_);
 		// }
-		// template<class Actor> 
+		// template<class Actor>
 		// Actor
-		// get_actor_unsafe(Index i) const { 
-		// 	return Actor(this->value()->template get<Actor>()[i],position_); 
+		// get_actor_unsafe(Index i) const {
+		// 	return Actor(this->value()->template get<Actor>()[i],position_);
 		// }
 
 		// Position const & position() const { return position_; }
@@ -109,21 +113,21 @@ namespace impl {
 		typedef _Interaction Interaction;
 
 		Interaction i_;
-		
+
 		void operator()( Interaction const & i, double=0 ){ i_ = i; }
-		
+
 		#ifdef CXX11
 			template< class I = Interaction >
 		#else
 			template< class I >
 		#endif
-		typename boost::enable_if< util::meta::is_pair<I> , void >::type 
-		operator()( 
+		typename boost::enable_if< util::meta::is_pair<I> , void >::type
+		operator()(
 			typename I::first_type const & i,
-			typename I::second_type const & j,			
+			typename I::second_type const & j,
 			double=0
 		){ i_ = std::make_pair(i,j); }
-		
+
 		Interaction const & get() const { return i_; }
 	};
 
@@ -134,12 +138,12 @@ namespace impl {
 
 	template<class T,class I> struct get_placeholder_type {
 		typedef typename std::pair<I,I> type; };
-	template<class T1, class T2,class I> struct get_placeholder_type<std::pair<T1,T2>,I> { 
+	template<class T1, class T2,class I> struct get_placeholder_type<std::pair<T1,T2>,I> {
 		typedef typename std::pair<std::pair<I,I>,std::pair<I,I> > type; };
 
 
 	template< class Scene >
-	struct ActorAdder 
+	struct ActorAdder
 	{
 		Scene & scene_;
 		boost::any const & actor_;
@@ -154,7 +158,7 @@ namespace impl {
 		) : scene_(s), ib_(ib), actor_(a), success_(success) {}
 
 		template<class Actor>
-		void operator()( Actor const & ) 
+		void operator()( Actor const & )
 		{
 		    try {
 			    Actor tmp = boost::any_cast<Actor>( actor_ );
@@ -167,7 +171,7 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorGetter 
+	struct ActorGetter
 	{
 		Scene const & scene_;
 		boost::any const & actor_exemplar_;
@@ -182,9 +186,9 @@ namespace impl {
 			boost::any & a,
 			bool & success
 		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
-		
+
 		template<class Actor>
-		void operator()( Actor const & ) 
+		void operator()( Actor const & )
 		{
 		    try {
 			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
@@ -197,7 +201,7 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorGetterNonconst 
+	struct ActorGetterNonconst
 	{
 		Scene & scene_;
 		boost::any const & actor_exemplar_;
@@ -214,7 +218,7 @@ namespace impl {
 		) : scene_(s), ib_(ib), ia_(ia), actor_exemplar_(aex), actor_(a), success_(success) {}
 
 		template<class Actor>
-		void operator()( Actor const & ) 
+		void operator()( Actor const & )
 		{
 		    try {
 			    boost::any_cast< util::meta::type2type<Actor> >( actor_exemplar_ );
@@ -227,7 +231,7 @@ namespace impl {
 	};
 
 	template< class Scene >
-	struct ActorCounter 
+	struct ActorCounter
 	{
 		Scene const & scene_;
 		boost::any const & actor_;
@@ -241,7 +245,7 @@ namespace impl {
 		) : scene_(s), ib_(ib), actor_(a), count_(count) {}
 
 		template<class Actor>
-		void operator()( Actor const & ) 
+		void operator()( Actor const & )
 		{
 		    try {
 			    boost::any_cast<util::meta::type2type<Actor> >( actor_ );
@@ -269,7 +273,7 @@ namespace impl {
 		class _Index = uint64_t
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
-		
+
 		typedef SceneBase<_Position,_Index> BASE;
 		typedef Scene<_ActorContainers,_Position,_Index> THIS;
 		typedef _Position Position;
@@ -319,30 +323,30 @@ namespace impl {
 	    #endif
 	    bool operator==(THIS const & o) const {
 			assert( bodies_.size() == this->positions_.size() );
-	    	return this->bodies_==o.bodies_ && 
-	    	       this->symframes_==o.symframes_ && 
-	    	       this->n_sym_bodies_==o.n_sym_bodies_ && 
+	    	return this->bodies_==o.bodies_ &&
+	    	       this->symframes_==o.symframes_ &&
+	    	       this->n_sym_bodies_==o.n_sym_bodies_ &&
 	    	       this->positions_==o.positions_;
 	    }
 
 
 		/// mutators
-		void add_body(){ 
-			bodies_.push_back( make_shared<ConformationConst>() ); 
-			this->positions_.push_back(Position::Identity()); 
+		void add_body(){
+			bodies_.push_back( make_shared<ConformationConst>() );
+			this->positions_.push_back(Position::Identity());
 			this->update_symmetry( (Index)bodies_.size() );
 			assert( bodies_.size() == this->positions_.size() );
 		}
-		void add_body(shared_ptr<ConformationConst> const & c){ 
-			bodies_.push_back(c); 
-			this->positions_.push_back(Position::Identity()); 
+		void add_body(shared_ptr<ConformationConst> const & c){
+			bodies_.push_back(c);
+			this->positions_.push_back(Position::Identity());
 			this->update_symmetry( (Index)bodies_.size() );
 			assert( bodies_.size() == this->positions_.size() );
 		}
-		// void add_body(Body const & b){ 
-		// 	bodies_.push_back(b); 
-		// 	positions_.push_back(Position::Identity()); 
-		// 	this->update_symmetry( (Index)bodies_.size() ); 
+		// void add_body(Body const & b){
+		// 	bodies_.push_back(b);
+		// 	positions_.push_back(Position::Identity());
+		// 	this->update_symmetry( (Index)bodies_.size() );
 		// }
 		// void set_body(Index i, shared_ptr<ConformationConst> const & c){ bodies_[i] = c; }
 		// void set_body(Index i, Body const & b){ bodies_[i] = b; }
@@ -354,11 +358,11 @@ namespace impl {
 
 		/// mainly internal use
 		Bodies const & __bodies_unsafe__() const { return bodies_; }
-		std::vector<Position> & __symframes_unsafe__(){ return this->symframes_; }		
+		std::vector<Position> & __symframes_unsafe__(){ return this->symframes_; }
 
 		Position const & __position_unsafe_asym__(Index i) const { return this->positions_[i]; }
 		Position       & __position_unsafe_asym__(Index i)       { return this->positions_[i]; }
-		Position const __position_unsafe__(Index i) const { 
+		Position const __position_unsafe__(Index i) const {
 			Index isym = this->sym_index_map(i);
 			// if( isym == 0 )	return this->positions_[i];
 			/*else*/ return this->symframes_[isym] * this->positions_[i];
@@ -424,7 +428,7 @@ namespace impl {
 			int num_actors = -1;
 			impl::ActorCounter<THIS> counter( *this, ib, a, num_actors );
 			boost::mpl::for_each<Actors>( counter );
-			return num_actors;			
+			return num_actors;
 		}
 
 		//////////////////////////// actor iteration //////////////////////////////////
@@ -510,7 +514,7 @@ namespace impl {
 		typename boost::enable_if<util::meta::is_pair<typename Visitor::Interaction> >::type
 		visit(Visitor & visitor) const {
 			typedef typename Visitor::Interaction::first_type Actor1;
-			typedef typename Visitor::Interaction::second_type Actor2;			
+			typedef typename Visitor::Interaction::second_type Actor2;
 			typedef typename f::result_of::value_at_key<Conformation,Actor1>::type Container1;
 			typedef typename f::result_of::value_at_key<Conformation,Actor2>::type Container2;
 			typedef util::container::ContainerInteractions<typename Scene::Position,Container1,Container2,Index> ContInter;
@@ -531,7 +535,7 @@ namespace impl {
 
 					// // simple version, ~10-15% faster in simple case
 					// Index const NACT1 = c1.template get<Actor1>().size();
-					// Index const NACT2 = c2.template get<Actor2>().size();				
+					// Index const NACT2 = c2.template get<Actor2>().size();
 					// for(Index j1 = 0; j1 < NACT1; ++j1){
 					// 	Actor1 a1( c1.template get<Actor1>()[j1], p1 );
 					// 	for(Index j2 = 0; j2 < NACT2; ++j2){
@@ -563,8 +567,8 @@ namespace impl {
 		typename boost::enable_if<
 			m::and_<
 				impl::get_RequireAbsolutePositioning_false_<Visitor>,
-				impl::has_type_Position<Actor1> , 
-				impl::has_type_Position<Actor2> 
+				impl::has_type_Position<Actor1> ,
+				impl::has_type_Position<Actor2>
 			> >::type
 		visit_2b_inner(
 			Visitor & visitor,
@@ -587,7 +591,7 @@ namespace impl {
 		typename boost::enable_if<
 			m::and_<
 				m::not_<impl::get_RequireAbsolutePositioning_false_<Visitor> >,
-				impl::has_type_Position<Actor2> 
+				impl::has_type_Position<Actor2>
 			> >::type
 		visit_2b_inner(
 			Visitor & visitor,
@@ -602,7 +606,7 @@ namespace impl {
 			Actor2 a2( a2_0, rel_pos );
 			// TODO: remove requirement to form pair; will be more efficient if fixed a1 is passet through w/o copy
 			// visitor( std::make_pair(a1_0,a2), w );
-			visitor.template operator()< std::pair<Actor1,Actor2> >( a1_0, a2, w );	
+			visitor.template operator()< std::pair<Actor1,Actor2> >( a1_0, a2, w );
 		}
 
 		template<class Visitor, class Actor1, class Actor2>
@@ -630,7 +634,7 @@ namespace impl {
 		typename boost::enable_if<
 			m::and_<
 				m::not_<impl::has_type_Position<Actor1> > ,
-				m::not_<impl::has_type_Position<Actor2> > 
+				m::not_<impl::has_type_Position<Actor2> >
 			> >::type
 		visit_2b_inner(
 			Visitor & ,
@@ -638,13 +642,13 @@ namespace impl {
 			Actor2 const & ,
 			Position const & ,
 			Position const & ,
-			double 
+			double
 		) const {
 			cout << "THIS SHOULD NEVER HAPPEN" << endl;
 			BOOST_STATIC_ASSERT((
 				m::or_<
 					impl::has_type_Position<Actor1> ,
-					impl::has_type_Position<Actor2> 
+					impl::has_type_Position<Actor2>
 				>::value
 			));
 		}
@@ -659,7 +663,7 @@ namespace impl {
 		interaction_placeholder_type {typedef typename impl::get_placeholder_type<Interaction,Index>::type type; };
 
 		template<class Interaction> struct
-		iter_type { typedef typename 
+		iter_type { typedef typename
 			m::if_< util::meta::is_pair<Interaction>,
 				typename m::if_< util::meta::is_homo_pair<Interaction>,
 					SceneIter2B<THIS,Interaction,CountPairUpperTriangle>,
@@ -670,9 +674,9 @@ namespace impl {
 			type; };
 
 		template<class Interaction> struct
-		interactions_type { 
+		interactions_type {
 			typedef typename iter_type<Interaction>::type Iter;
-			typedef std::pair<Iter,Iter> type; 
+			typedef std::pair<Iter,Iter> type;
 		};
 		template<class Interaction>
 		typename interactions_type<Interaction>::type
@@ -780,8 +784,8 @@ namespace impl {
 		std::ostream & out;
 		MetaData const & meta;
 		ActorDumpPDB(
-			Scene const & s, 
-			std::ostream & o, 
+			Scene const & s,
+			std::ostream & o,
 			MetaData const & m
 		) : scene(s), out(o), meta(m) {}
 		template<class Actor>

@@ -7,11 +7,14 @@
 
 namespace scheme { namespace objective { namespace storage {
 
+struct Empty {};
+
 template< class _Data = uint16_t, int _RotamerBits = 9, int _Divisor = -13 >
 struct RotamerScore {
 	typedef RotamerScore< _Data, _RotamerBits, _Divisor > THIS;
 	typedef _Data Data;
 	static const int RotamerBits = _RotamerBits;
+	static const int Divisor = _Divisor;
 	static const int ScoreBits = sizeof(_Data)*8 - _RotamerBits;
 	static const Data one = 1;
 	static const Data RotamerMask = (( one << RotamerBits ) - one );
@@ -42,16 +45,36 @@ struct RotamerScore {
 	bool operator== ( Data const & other ) const { return data_ == other; }
 
 	bool empty() const { return data_ == RotamerMask; }
+} __attribute__((packed));
+
+
+struct HbondSatDatum {
+	int8_t data_;
+	int target_sat_num(){ return 0; }
+	int rotamer_sat_num(){ return 0; }
 };
 
-template< int _N, class _Data = uint16_t, int _RotamerBits=9, int _Divisor=-13 >
+template< class _Data = uint16_t, int _RotamerBits = 9, int _Divisor = -13, class HbondSatData=HbondSatDatum[2] >
+struct RotamerScoreWithHBSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
+	typedef _Data Data;
+	typedef RotamerScore<_Data,_RotamerBits,_Divisor> BASE;
+	static const int RotamerBits = _RotamerBits;
+	static const int Divisor = _Divisor;
+	RotamerScoreWithHBSat() : BASE() {}
+	RotamerScoreWithHBSat( Data data ) : BASE( data ) {}
+	RotamerScoreWithHBSat( Data rot, float score ) : BASE(rot,score) {}
+	HbondSatData hbdata_;
+
+} __attribute__((packed));
+
+template< int _N, class _RotamerScore = RotamerScore<> >
 struct RotamerScores {
 	BOOST_STATIC_ASSERT(( _N > 0   ));
 	BOOST_STATIC_ASSERT(( _N < 256 )); // arbitrary
 
-	typedef _Data Data;
-	typedef RotamerScores< _N, _Data, _RotamerBits, _Divisor > THIS;
-	typedef RotamerScore<      _Data, _RotamerBits, _Divisor > RotScore;
+	typedef _RotamerScore RotScore;
+	typedef typename RotScore::Data Data;
+	typedef RotamerScores< _N, RotScore > THIS;
 
 	static int const N = _N;
 	util::SimpleArray<N,RotScore> rotscores_;
@@ -91,7 +114,7 @@ struct RotamerScores {
 	}
 
 	template<int N2>
-	void merge( RotamerScores<N2,Data,_RotamerBits,_Divisor> const & other ){
+	void merge( RotamerScores<N2,RotScore> const & other ){
 		for( int i = 0; i < N2; ++i ){
 			if( other.empty(i) ) break;
 			add_rotamer( other.rotscores_[i] );
@@ -131,19 +154,19 @@ struct RotamerScores {
 		static std::string const name = "RotamerScores< "
 			 + boost::lexical_cast<std::string>(_N)
 			 + ", "
-			 + boost::lexical_cast<std::string>(sizeof(_Data))
+			 + boost::lexical_cast<std::string>(sizeof(Data))
 			 + ", "
-			 + boost::lexical_cast<std::string>(_RotamerBits)
+			 + boost::lexical_cast<std::string>(RotScore::RotamerBits)
 			 + ", "
-			 + boost::lexical_cast<std::string>(_Divisor)
+			 + boost::lexical_cast<std::string>(RotScore::Divisor)
 			 +" >";
 		return name;
 	}
 
 };
 
-template< int N, class V, int B, int D >
-std::ostream & operator << ( std::ostream & out, RotamerScores<N,V,B,D> const & val ){
+template< int N, class R >
+std::ostream & operator << ( std::ostream & out, RotamerScores<N,R> const & val ){
 	out << "RotamerScores( ";
 	for(int i = 0; i < val.size(); ++i){
 		out << val.score(i) << "," << val.rotamer(i) << "  ";

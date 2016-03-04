@@ -38,12 +38,12 @@ namespace impl {
             Keys, // already fusion pairs
             m::transform<
                 Keys, typename
-                m::eval_if< 
+                m::eval_if<
                     // m::is_sequence<Arg2>,
                     m::or_< boost::is_same<FUSION_PAIRS,Arg2> , m::is_sequence<Arg2> >,
                     Arg2,                   // It seems one of these two it getting instantiated even
                     m::transform<Keys,Arg2> // when m::eval_if< boost::is_same<FUSION_PAIRS,Arg2> is true ***
-                    >::type,         
+                    >::type,
                 f::pair<m::_1,m::_2>
             >
         >::type type;
@@ -131,17 +131,17 @@ struct InstanceMap : impl::fusion_map<_Keys,Arg2>::type
     InstanceMap(A const&a,B const&b,C const&c,D const&d,E const&e,F const&f,G const&g,H const&h,I const&i,J const&j) : Base(a,b,c,d,e,f,g,h,i,j) {}
 
     ///@brief get reference to the instance of type associated with key Key
-    ///@tparam Key input 
+    ///@tparam Key input
     template<typename Key>
-    typename f::result_of::value_at_key<Base,Key>::type & 
+    typename f::result_of::value_at_key<Base,Key>::type &
     get() { return f::at_key<Key>((Base&)*this); }
-    
+
     ///@brief get const reference to the instance of type associated with key Key
-    ///@tparam Key input 
+    ///@tparam Key input
     template<typename Key>
-    typename f::result_of::value_at_key<Base,Key>::type const & 
+    typename f::result_of::value_at_key<Base,Key>::type const &
     get() const { return f::at_key<Key>((Base&)*this); }
-  
+
     bool operator==(THIS const & other) const {
         impl::EqualsVisitor<THIS> eqv(*this,other);
         m::for_each<Keys,type2type<m::_1> >(eqv);
@@ -161,7 +161,7 @@ struct InstanceMap : impl::fusion_map<_Keys,Arg2>::type
 
 
 namespace impl {
-    template<class T> struct EQUAL { 
+    template<class T> struct EQUAL {
         T const & rhs;
         bool & is_equal;
         EQUAL(T const & r,bool & b): rhs(r),is_equal(b){}
@@ -169,7 +169,7 @@ namespace impl {
             is_equal &= (rhs.template get<typename X::first_type>() == x.second);
         }
     };
-    template<class Float> struct SUM { 
+    template<class Float> struct SUM {
         Float & sum; SUM(Float & s):sum(s){}
         template<class T> void operator()(T const & x) const { sum += x.second; }
     };
@@ -189,7 +189,7 @@ namespace impl {
             sink.template get<typename X::first_type>() = OP()(sink.template get<typename X::first_type>(),x.second);
         }
     };
-    template<class Float> struct VEC { 
+    template<class Float> struct VEC {
         std::vector<Float> & vec; VEC(std::vector<Float> & s):vec(s){}
         template<class T> void operator()(T const & x) const { vec.push_back(x.second); }
     };
@@ -227,15 +227,16 @@ struct NumericInstanceMap : InstanceMap<Keys,Arg2> {
         set.val = val;
         f::for_each( (FusionType&)*this, set );
     }
-    ///@briew sum of instance values    
+    ///@briew sum of instance values
     Float sum() const {
         Float sum=0;
         impl::SUM<Float> s(sum);
         f::for_each( (FusionType&)*this, s );
         return sum;
     }
-    void vector( std::vector<Float> & vec ) const {
-        impl::VEC<Float> s(vec);
+    template<class F2>
+    void vector( std::vector<F2> & vec ) const {
+        impl::VEC<F2> s(vec);
         f::for_each( (FusionType&)*this, s );
     }
     ///@brief test equality element by element
@@ -304,7 +305,7 @@ namespace impl {
 struct std_vector_mfc { template<class T> struct apply { typedef std::vector<T> type; }; };
 
 template<class DefaultCFC = std_vector_mfc>
-struct make_container_pair { template<class T> struct apply { 
+struct make_container_pair { template<class T> struct apply {
     typedef typename impl::get_value_type_void<T>::type VALUE;
     typedef typename m::eval_if<
         boost::is_same<void,VALUE>,

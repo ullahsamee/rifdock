@@ -20,6 +20,8 @@ typedef Eigen::Transform<Float,3,Eigen::AffineCompact> Xform;
 typedef actor::BackboneActor<Xform> BBActor;
 typedef Eigen::Matrix<Float,3,1> Vec;
 
+
+// why is this here?
 struct TestScoreBBactor {
 	typedef double Result;
 	typedef BBActor Interaction;
@@ -32,11 +34,11 @@ struct TestScoreBBactor {
 	Result operator()(BBActor const & a, Config const& c) const {
 		// for( int i = 0; i < 12; ++i ){
 			// cout << i << " " << target_inv_.data()[i] << endl;
-			// cout << i << " " << a.position().data()[i] << endl;			
+			// cout << i << " " << a.position().data()[i] << endl;
 		// }
 		// cout << a.position().rotation().trace() << " " << target_inv_.rotation().trace() << endl;
 		// cout << target_inv_.inverse().translation().transpose() << endl;
-		// cout << a.position().translation().transpose() << endl;		
+		// cout << a.position().translation().transpose() << endl;
 		Xform xrel = target_inv_ * a.position();
 		// cout << xrel.translation().transpose() << endl;
 		// cout << (xrel.rotation().trace()-1.0)/2.0 << std::endl;
@@ -92,14 +94,14 @@ TEST( SpatialBandB, test_test_utils ){
 		Xform target( Xform::Identity() );
 		target.translation() = Vec(1,2,3);
 		obj.get_objective<TestScoreBBactor>().target_inv_ = target.inverse();
-		{	
-			x = Xform::Identity();			
+		{
+			x = Xform::Identity();
 			x.translation() = Vec(1,2,3);
 			s.set_position( 0, x );
 			ASSERT_FLOAT_EQ( -1.0, obj(s).sum() );
 		}
 		{
-			x = Xform::Identity();			
+			x = Xform::Identity();
 			x.translation() = Vec(3,2,1);
 			s.set_position( 0, x );
 			ASSERT_FLOAT_EQ(  0.0, obj(s).sum() );
@@ -131,7 +133,7 @@ TEST( SpatialBandB, test_test_utils ){
 	}
 
 
-	// BoundingObjectiveFunction< 
+	// BoundingObjectiveFunction<
 
 
 }

@@ -40,6 +40,27 @@ Float deg2quat(Float deg){
 }
 
 
+
+template< class Float >
+Float
+sqr(Float const & r) { return r*r; }
+
+template< class Float >
+Float sigmoidish(
+	Float const & sqdist,
+	Float const & mindis,
+	Float const & maxdis
+){
+	if( sqdist > maxdis*maxdis ) {
+		return 0.0;
+	} else if( sqdist < mindis*mindis ) {
+		return 1.0;
+	} else {
+		Float dist = sqrt( sqdist );
+		return sqr(1.0  - sqr( (dist - mindis) / (maxdis - mindis) ) );
+	}
+}
+
 }}
 
 #endif

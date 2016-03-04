@@ -30,7 +30,7 @@ struct SceneBase {
 
 	virtual shared_ptr<THIS> clone() const = 0;
 
-	Position position(Index i) const 
+	Position position(Index i) const
 	{
 		Index isym = this->sym_index_map(i);
 		return this->symframes_.at(isym) * positions_.at(i);
@@ -48,7 +48,7 @@ struct SceneBase {
 	virtual bool add_actor( Index ib, boost::any const & a ) { return false; }
 
 	template< class Actor >
-	Actor get_actor( Index ib, Index ia ) const 
+	Actor get_actor( Index ib, Index ia ) const
 	{
 		boost::any any_actor = util::meta::type2type<Actor>();
 		get_actor( ib, ia, any_actor );
@@ -66,7 +66,7 @@ struct SceneBase {
 	virtual bool get_nonconst_actor( Index ib, Index ia, boost::any & a ){ return false; }
 
 	template< class Actor >
-	int num_actors( Index ib ) const 
+	int num_actors( Index ib ) const
 	{
 		boost::any any_actor = util::meta::type2type<Actor>();
 		return num_actors( ib, any_actor );
