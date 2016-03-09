@@ -95,6 +95,7 @@ struct Rotamer {
 
 }
 
+
 template<class _Atom, class RotamerGenerator>
 struct RotamerIndex {
 	BOOST_STATIC_ASSERT(( ( boost::is_same< _Atom, typename RotamerGenerator::Atom >::value ) ));
@@ -105,6 +106,7 @@ struct RotamerIndex {
 
 	size_t size() const { return rotamers_.size(); }
 	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
+	char oneletter(size_t i) const { return oneletter_map_.at(rotamers_.at(i).resname_); }
 	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
 	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
 	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }
@@ -114,6 +116,8 @@ struct RotamerIndex {
 	size_t nhbonds( size_t i ) const { return rotamers_.at(i).hbonders_.size(); }
 	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
 	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
+
+	std::map<std::string,char> oneletter_map_;
 
 	ChemicalIndex<AtomData> chem_index_;
 
@@ -130,7 +134,11 @@ struct RotamerIndex {
 	std::vector<int> protonchi_parent_;
 	int ala_rot_;
 
-	RotamerIndex(){}
+	RotamerIndex(){
+		std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << "" << std::endl;
+		this->fill_oneletter_map( oneletter_map_ );
+		std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << "" << std::endl;
+	}
 
 	// assumes primary parent is added firrt among its class
 	int
@@ -149,6 +157,8 @@ struct RotamerIndex {
 		int this_key = rotamers_.size()-1;
 		if( parent_key >= 0 ) parent_rotamer_.push_back( parent_key );
 		else                  parent_rotamer_.push_back( this_key );
+
+
 		return this_key;
 	}
 
@@ -376,6 +386,74 @@ struct RotamerIndex {
 
 	int protonchi_parent( int i ) const { return protonchi_parent_[i]; }
 
+
+	void fill_oneletter_map( std::map<std::string,char> & oneletter_map ){
+		oneletter_map["ALA"] = 'A';
+		oneletter_map["CYS"] = 'C';
+		oneletter_map["ASP"] = 'D';
+		oneletter_map["GLU"] = 'E';
+		oneletter_map["PHE"] = 'F';
+		oneletter_map["GLY"] = 'G';
+		oneletter_map["HIS"] = 'H';
+		oneletter_map["ILE"] = 'I';
+		oneletter_map["LYS"] = 'K';
+		oneletter_map["LEU"] = 'L';
+		oneletter_map["MET"] = 'M';
+		oneletter_map["ASN"] = 'N';
+		oneletter_map["PRO"] = 'P';
+		oneletter_map["GLN"] = 'Q';
+		oneletter_map["ARG"] = 'R';
+		oneletter_map["SER"] = 'S';
+		oneletter_map["THR"] = 'T';
+		oneletter_map["VAL"] = 'V';
+		oneletter_map["TRP"] = 'W';
+		oneletter_map["TYR"] = 'Y';
+		oneletter_map["ADE"] = 'a';
+		oneletter_map["CYT"] = 'c';
+		oneletter_map["GUA"] = 'g';
+		oneletter_map["THY"] = 't';
+		oneletter_map["RAD"] = 'a';
+		oneletter_map["RCY"] = 'c';
+		oneletter_map["RGU"] = 'g';
+		oneletter_map["URA"] = 'u';
+		oneletter_map["H2O"] = 'w';
+		oneletter_map["UNP"] = 'z';
+		oneletter_map["UNK"] = 'Z';
+		oneletter_map["VRT"] = 'X';
+		oneletter_map["ala"] = 'A';
+		oneletter_map["cys"] = 'C';
+		oneletter_map["asp"] = 'D';
+		oneletter_map["glu"] = 'E';
+		oneletter_map["phe"] = 'F';
+		oneletter_map["gly"] = 'G';
+		oneletter_map["his"] = 'H';
+		oneletter_map["ile"] = 'I';
+		oneletter_map["lys"] = 'K';
+		oneletter_map["leu"] = 'L';
+		oneletter_map["met"] = 'M';
+		oneletter_map["asn"] = 'N';
+		oneletter_map["pro"] = 'P';
+		oneletter_map["gln"] = 'Q';
+		oneletter_map["arg"] = 'R';
+		oneletter_map["ser"] = 'S';
+		oneletter_map["thr"] = 'T';
+		oneletter_map["val"] = 'V';
+		oneletter_map["trp"] = 'W';
+		oneletter_map["tyr"] = 'Y';
+		oneletter_map["ade"] = 'a';
+		oneletter_map["cyt"] = 'c';
+		oneletter_map["gua"] = 'g';
+		oneletter_map["thy"] = 't';
+		oneletter_map["rad"] = 'a';
+		oneletter_map["rcy"] = 'c';
+		oneletter_map["rgu"] = 'g';
+		oneletter_map["ura"] = 'u';
+		oneletter_map["h2o"] = 'w';
+		oneletter_map["unp"] = 'z';
+		oneletter_map["unk"] = 'Z';
+		oneletter_map["vrt"] = 'X';
+	}
+
 };
 
 
@@ -405,6 +483,8 @@ std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG> const & ridx
 	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
  	return out;
 }
+
+
 
 }}
 

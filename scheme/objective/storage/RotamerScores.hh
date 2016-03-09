@@ -46,6 +46,9 @@ struct RotamerScore {
 
 	bool empty() const { return data_ == RotamerMask; }
 } __attribute__((packed));
+template< class Data, int RBits, int Div > int const RotamerScore<Data,RBits,Div>::RotamerBits;
+template< class Data, int RBits, int Div > int const RotamerScore<Data,RBits,Div>::Divisor;
+template< class Data, int RBits, int Div > int const RotamerScore<Data,RBits,Div>::ScoreBits;
 
 
 struct HbondSatDatum {
@@ -66,6 +69,8 @@ struct RotamerScoreWithHBSat : public RotamerScore<_Data,_RotamerBits,_Divisor> 
 	HbondSatData hbdata_;
 
 } __attribute__((packed));
+template< class Data, int RBits, int Div, class Sat > int const RotamerScoreWithHBSat<Data,RBits,Div,Sat>::RotamerBits;
+template< class Data, int RBits, int Div, class Sat > int const RotamerScoreWithHBSat<Data,RBits,Div,Sat>::Divisor;
 
 template< int _N, class _RotamerScore = RotamerScore<> >
 struct RotamerScores {

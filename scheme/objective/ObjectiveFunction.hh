@@ -20,7 +20,7 @@
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/mpl.hpp>
 
-// #define DEBUG_IO 
+// #define DEBUG_IO
 
 namespace scheme {
 namespace objective {
@@ -74,30 +74,30 @@ namespace impl {
 
 
 	template< class Result, class Objective, class Interaction, class Scratch, class Config >
-	void call_objective( Result & result, Objective const & objective, Interaction const & interaction, 
+	void call_objective( Result & result, Objective const & objective, Interaction const & interaction,
 		                 Scratch & scratch, Config const & config ){
 		result = objective( interaction, scratch, config );
 	}
 	template< class Result, class Objective, class Interaction, class Config >
-	void call_objective( Result & result, Objective const & objective, Interaction const & interaction, 
+	void call_objective( Result & result, Objective const & objective, Interaction const & interaction,
 		                 NullScratch &, Config const & config ){
 		result = objective( interaction, config );
 	}
 	template< class Result, class Objective, class Actor1, class Actor2, class Scratch, class Config >
-	void call_objective( Result & result, Objective const & objective, Actor1 const & actor1, Actor2 const & actor2, 
+	void call_objective( Result & result, Objective const & objective, Actor1 const & actor1, Actor2 const & actor2,
 		                 Scratch & scratch, Config const & config ){
 		result = objective( actor1, actor2, scratch, config );
 	}
 	template< class Result, class Objective, class Actor1, class Actor2, class Config >
-	void call_objective( Result & result, Objective const & objective, Actor1 const & actor1, Actor2 const & actor2, 
+	void call_objective( Result & result, Objective const & objective, Actor1 const & actor1, Actor2 const & actor2,
 		                 NullScratch &, Config const & config ){
 		result = objective( actor1, actor2, config );
 	}
 
 	///@brief helper functor to call objective for all Interaction instances in InteractionSource
-	///@detail this one calls objective( interaction, config ) this is more general than the split pair one because it can support 
+	///@detail this one calls objective( interaction, config ) this is more general than the split pair one because it can support
 	/// onebody or more than twobody interactions, but can be less efficient for pair interactions
-	// 
+	//
 	template<
 		class Interaction,
 		class Results,
@@ -143,14 +143,14 @@ namespace impl {
 	>
 	struct EvalObjectiveSplitPair {
 		typename Interaction::first_type const & actor_1;
-		typename Interaction::second_type const & actor_2;		
+		typename Interaction::second_type const & actor_2;
 		Results & results;
 		Scratches & scratches;
 		Config const & config;
 		double weight;
 		EvalObjectiveSplitPair(
 			typename Interaction::first_type const & i,
-			typename Interaction::second_type const & j,			
+			typename Interaction::second_type const & j,
 			Results & r,
 			Scratches & s,
 			Config const & c,
@@ -180,12 +180,12 @@ namespace impl {
 
 	template<class InteractionSource, class Placeholder>
 	typename boost::disable_if<typename get_DefinesInteractionWeight_false_<InteractionSource>::type,double>::type
-	get_interaction_weight(InteractionSource const & , Placeholder const & ){ 
+	get_interaction_weight(InteractionSource const & , Placeholder const & ){
 		return 1.0;
 	}
 	template<class InteractionSource, class Placeholder>
 	typename boost::enable_if<typename get_DefinesInteractionWeight_false_<InteractionSource>::type,double>::type
-	get_interaction_weight(InteractionSource const & is, Placeholder const & ph){ 
+	get_interaction_weight(InteractionSource const & is, Placeholder const & ph){
 		return is.get_weight_from_placeholder(ph);
 	}
 
@@ -219,7 +219,7 @@ namespace impl {
 	eval_objective_post(
 		Objective const & objective,
 		typename Objective::Result & result,
-		Scratch & scratch,		
+		Scratch & scratch,
 		Config const & config
 	){
 		objective.post( result, scratch, config );
@@ -230,7 +230,7 @@ namespace impl {
 	eval_objective_post(
 		Objective const & objective,
 		typename Objective::Result & result,
-		NullScratch & scratch,		
+		NullScratch & scratch,
 		Config const & config
 	){
 		objective.post( result, config );
@@ -299,14 +299,14 @@ namespace impl {
 		Config const & config_;
 		EvalObjectivesPre( ObjectiveMap const & f, Results & r, Scratches & scratches, Config const & c )
 		 : objective_map_(f), results_(r), scratches_(scratches), config_(c) {}
-		template<class Interaction>	
+		template<class Interaction>
 		void operator()(util::meta::type2type<Interaction>) const {
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectivesPre Interaction: ";
 				util::meta::PrintType(std::cout).operator()(Interaction());
 			#endif
 			f::for_each(
-				objective_map_.template get<Interaction>(), 
+				objective_map_.template get<Interaction>(),
 				EvalObjectivePre< Interaction, Results, Scratches, Config >( results_, scratches_, config_ )
 			);
 		}
@@ -316,11 +316,11 @@ namespace impl {
 	struct EvalObjectivesPost {
 		ObjectiveMap const & objective_map_;
 		Results & results_;
-		Scratches & scratches_;		
+		Scratches & scratches_;
 		Config const & config_;
 		EvalObjectivesPost( ObjectiveMap const & f, Results & r, Scratches & scratches, Config const & c )
 		 : objective_map_(f),results_(r),scratches_(scratches),config_(c) {}
-		
+
 		template<class Interaction>
 		void operator()(util::meta::type2type<Interaction>) const {
 			#ifdef DEBUG_IO
@@ -328,7 +328,7 @@ namespace impl {
 				util::meta::PrintType(std::cout).operator()(Interaction());
 			#endif
 			f::for_each(
-				objective_map_.template get<Interaction>(), 
+				objective_map_.template get<Interaction>(),
 				EvalObjectivePost< Interaction, Results, Scratches, Config >( results_, scratches_, config_ )
 			);
 		}
@@ -370,7 +370,7 @@ namespace impl {
 		Results & results_;
 		Scratches & scratches_;
 		Config const & config_;
-		
+
 		EvalObjectives(
 			InteractionSource const & p,
 			ObjectiveMap const & f,
@@ -380,10 +380,10 @@ namespace impl {
 		) : interaction_source_(p),objective_map_(f),results_(r),scratches_(s),config_(c) {
 			// std::cout << "USE ITERATION" << std::endl;
 		}
-		
+
 		template<class Interaction>	void
 		operator()(util::meta::type2type<Interaction>) const {
-			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));		
+			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectives Interaction: ";
 				util::meta::PrintType(std::cout).operator()(Interaction());
@@ -403,7 +403,7 @@ namespace impl {
 							InteractionSource
 						>( interaction_placeholder, interaction_source_ );
 				f::for_each(
-					objective_map_.template get<Interaction>(), 
+					objective_map_.template get<Interaction>(),
 					EvalObjective< Interaction, Results , Scratches, Config >
 					             ( interaction, results_, scratches_, config_, weight )
 				);
@@ -449,10 +449,10 @@ namespace impl {
 		#else
 			template< class I >
 		#endif
-		typename boost::enable_if< util::meta::is_pair<I> , void >::type 
-		operator()( 
-			typename I::first_type const & a1, 
-			typename I::second_type const & a2, 
+		typename boost::enable_if< util::meta::is_pair<I> , void >::type
+		operator()(
+			typename I::first_type const & a1,
+			typename I::second_type const & a2,
 			double weight=1.0
 		) {
 			f::for_each(
@@ -486,7 +486,7 @@ namespace impl {
 		Results & results_;
 		Scratches & scratches_;
 		Config const & config_;
-		
+
 		EvalObjectives(
 			InteractionSource const & p,
 			ObjectiveMap const & f,
@@ -496,10 +496,10 @@ namespace impl {
 		) : interaction_source_(p),objective_map_(f),results_(r),scratches_(s),config_(c) {
 			// std::cout << "USE VISITATION" << std::endl;
 		}
-		
+
 		template<class Interaction>	void
 		operator()(util::meta::type2type<Interaction>) const {
-			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));		
+			BOOST_STATIC_ASSERT(( InteractionSource::template has_interaction<Interaction>::value ));
 			#ifdef DEBUG_IO
 				std::cout << "    EvalObjectives Interaction: ";
 				util::meta::PrintType(std::cout).operator()(Interaction());
@@ -523,7 +523,7 @@ namespace impl {
 
 ///@brief Minimal Concept for Objective used in ObectiveFunction
 struct ObjectiveConcept {
-	///@typedef required type of result this functor generates, 
+	///@typedef required type of result this functor generates,
 	///@note must be convertable to double but could have extra data
 	typedef double Result;
 	///@typedef required type of input evaluatable data, could be a pair of tuple
@@ -560,7 +560,7 @@ struct ObjectiveFunction {
 	BOOST_STATIC_ASSERT(( m::size<UniqueObjectives>::value == m::size<Objectives>::value ));
 
 	///@typedef unique InteractionTypes types
-	typedef typename 
+	typedef typename
 		m::copy< typename // copy back into mpl::vector;
 			m::copy< typename // copy to mpl::set so unique
 				m::transform< // all InteractionTypes Type from Obectives
@@ -575,8 +575,8 @@ struct ObjectiveFunction {
 
 	///@typedef mpl::vector of Objectives for each unique PetalsType
 	typedef typename
-		m::transform< 
-			InteractionTypes, 
+		m::transform<
+			InteractionTypes,
 			impl::copy_objective_if_interaction_equal<Objectives>,
 			m::back_inserter<m::vector<> >
 		>::type
@@ -618,8 +618,8 @@ struct ObjectiveFunction {
 	Objective &
 	get_objective(){
 		BOOST_STATIC_ASSERT(( true )); // shold check that objective is actuall in Objectives...
-		return f::deref( f::find<Objective>( 
-			objective_map_.template get<typename Objective::Interaction>() 
+		return f::deref( f::find<Objective>(
+			objective_map_.template get<typename Objective::Interaction>()
 		));
 	}
 
@@ -652,7 +652,7 @@ struct ObjectiveFunction {
 		#ifdef DEBUG_IO
 			std::cout << "ObjectiveFunction pre" << std::endl;
 		#endif
-		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
+		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >(
 			impl::EvalObjectivesPre<
 				ObjectiveMap,
 				Results,
@@ -664,7 +664,7 @@ struct ObjectiveFunction {
 		#ifdef DEBUG_IO
 			std::cout << "ObjectiveFunction operator()" << std::endl;
 		#endif
-		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
+		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >(
 			impl::EvalObjectives<
 				InteractionSource,
 				ObjectiveMap,
@@ -677,7 +677,7 @@ struct ObjectiveFunction {
 		#ifdef DEBUG_IO
 			std::cout << "ObjectiveFunction post" << std::endl;
 		#endif
-		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >( 
+		m::for_each< MutualInteractionTypes, util::meta::type2type<m::_1> >(
 			impl::EvalObjectivesPost<
 				ObjectiveMap,
 				Results,
@@ -693,7 +693,7 @@ struct ObjectiveFunction {
 	///@param Config override default Config
 	///@return a NumericInstanceMap of ResultTypes defined by Objectives
 	template<class InteractionSource>
-	Results 
+	Results
 	operator()(
 		InteractionSource const & source,
 		Config const & config
@@ -707,7 +707,7 @@ struct ObjectiveFunction {
 	///@param InteractionSource must implement the InteractionSource concept
 	///@return a NumericInstanceMap of ResultTypes defined by Objectives
 	template<class InteractionSource>
-	Results 
+	Results
 	operator()(
 		InteractionSource const & source
 	) const {
