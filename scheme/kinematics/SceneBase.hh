@@ -28,7 +28,8 @@ struct SceneBase {
 
 	virtual ~SceneBase(){}
 
-	virtual shared_ptr<THIS> clone() const = 0;
+	virtual shared_ptr<THIS> clone_shallow() const = 0;
+	virtual shared_ptr<THIS> clone_deep() const = 0;
 
 	Position position(Index i) const
 	{
@@ -72,6 +73,15 @@ struct SceneBase {
 		return num_actors( ib, any_actor );
 	}
 	virtual int num_actors( Index ib, boost::any const & a ) const { return -1; }
+
+	template< class Actor >
+	bool clear_actors( Index ib )
+	{
+		Actor a;
+		boost::any any_actor = a;
+		return clear_actors( ib, any_actor );
+	}
+	virtual bool clear_actors( Index ib, boost::any const & a ) { return false; }
 
 	// symmetry stuff, doesn't need to be Conformation-sepcific
 	void update_symmetry( Index nbodies )

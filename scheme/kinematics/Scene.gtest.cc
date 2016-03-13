@@ -28,7 +28,7 @@ template<class _Interaction>
 struct SetVisitor{
 	typedef _Interaction Interaction;
 	std::set<Interaction> set_;
-	
+
 	void operator()(
 		Interaction const & i,
 		double =1.0
@@ -37,7 +37,7 @@ struct SetVisitor{
 	}
 
 	template< class I >
-	typename boost::enable_if< util::meta::is_pair<I> , void >::type 
+	typename boost::enable_if< util::meta::is_pair<I> , void >::type
 	operator()(
 		typename I::first_type const & i,
 		typename I::second_type const & j,
@@ -52,7 +52,7 @@ struct AsymSetVisitor : SetVisitor<_Interaction> {
 };
 
 typedef actor::ActorConcept<X1dim,int> ADI;
-typedef actor::ActorConcept<X1dim,char> ADC;	
+typedef actor::ActorConcept<X1dim,char> ADC;
 
 struct FixedActor {
 	double data_;
@@ -196,7 +196,7 @@ TEST(Scene,test_fixed_actor){
 
 	Scene scene(2);
 	scene.add_actor( 0, FixedActor(1.0));
-	scene.add_actor( 1, ADI(1,0));	
+	scene.add_actor( 1, ADI(1,0));
 
 	scene.set_position(0,X1dim( 0));
 	scene.set_position(1,X1dim( 0));
@@ -215,7 +215,7 @@ TEST(Scene,test_fixed_actor){
 	scene.set_position(1,X1dim(-5)); scene.visit(visitor2); ASSERT_EQ( visitor2.result_ ,-1.0 ); visitor2.clear();
 
 	// // this should fail to compile
-	// objective::ObjectiveVisitor<ObjFixedFixed,Config> failvisitor(ObjFixedFixed(),c);	
+	// objective::ObjectiveVisitor<ObjFixedFixed,Config> failvisitor(ObjFixedFixed(),c);
 	// scene.visit(failvisitor);
 
 }
@@ -234,7 +234,7 @@ TEST( Scene, serialization ){
 
 		Scene scene(2);
 		scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
-		scene.mutable_conformation_asym(1).add_actor(ADI(1,0));	
+		scene.mutable_conformation_asym(1).add_actor(ADI(1,0));
 		scene.set_position(0,X1dim( 0));
 		scene.set_position(1,X1dim( 0));
 
@@ -249,7 +249,7 @@ TEST( Scene, serialization ){
 
 }
 
-TEST( Scene, base_class_add_actor ){
+TEST( Scene, base_class_basic_operations ){
 
 		typedef m::vector< ADI, FixedActor > Actors;
 		typedef Scene<Actors,X1dim,uint32_t> Scene;
@@ -276,7 +276,7 @@ TEST( Scene, base_class_add_actor ){
 		ASSERT_EQ( test.template num_actors<ADI>(1), 0 );
 		ASSERT_TRUE( test.add_actor( 1 , ADI(1.0,3) ) );
 		ASSERT_EQ( test.template num_actors<ADI>(1), 1 );
-		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , 
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) ,
 			       test .template get_actor<ADI>(1,0) );
 
 		test.template get_nonconst_actor<ADI>(1,0).data_ = 4;
@@ -284,8 +284,12 @@ TEST( Scene, base_class_add_actor ){
 		test.template get_nonconst_actor<ADI>(1,0).set_position( 2.0 );
 		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , ADI(2.0,4) );
 
-		ASSERT_EQ( scene.template get_actor<ADI>(1,0) , 
+		ASSERT_EQ( scene.template get_actor<ADI>(1,0) ,
 			       test .template get_actor<ADI>(1,0) );
+
+		ASSERT_EQ( test.template num_actors<ADI>(1), 1 );
+		ASSERT_TRUE( test.template clear_actors<ADI>(1) );
+		ASSERT_EQ( test.template num_actors<ADI>(1), 0 );
 
 	}
 

@@ -41,7 +41,7 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 		Indices ind;
 		for(int i = 0; i < DIM; ++i){
 			Float tmp = ((f[i]-lb_[i])/cs_[i]);
-			assert(tmp >= 0.0);
+			// assert(tmp >= 0.0);
 			ind[i] = tmp;
 		}
 		// std::cout << "floats_to_index " << f << " " << ind << std::endl;

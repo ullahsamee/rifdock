@@ -32,7 +32,7 @@ struct XformHash_Quat_BCC7_Zorder {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<7,Float> F7;
-	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
+	typedef scheme::util::SimpleArray<7,uint64_t> I7;
 
 	static Key const ORI_MASK = ~ BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001110 );
 	static Key const ORI_MASK_NO0 = ~ BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001111 );
@@ -56,14 +56,14 @@ struct XformHash_Quat_BCC7_Zorder {
 	XformHash_Quat_BCC7_Zorder( Float cart_resl, int ori_nside, Float cart_bound=512.0 ){
 		init_nside( ori_nside, cart_resl, cart_bound );
 	}
-	
+
 	void init( Float cart_resl, Float ang_resl, Float cart_bound ) {
 		// bcc orientation grid covering radii
 		static float const covrad[61] = {
 			84.09702,54.20621,43.98427,31.58683,27.58101,22.72314,20.42103,17.58167,16.12208,14.44320,13.40178,12.15213,11.49567,
 			10.53203,10.11448, 9.32353, 8.89083, 8.38516, 7.95147, 7.54148, 7.23572, 6.85615, 6.63594, 6.35606, 6.13243, 5.90677,
 			 5.72515, 5.45705, 5.28864, 5.06335, 4.97668, 4.78774, 4.68602, 4.51794, 4.46654, 4.28316, 4.20425, 4.08935, 3.93284,
-			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266, 
+			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266,
 			 2.91052, 2.86858, 2.85592, 2.78403, 2.71234, 2.69544, 2.63151, 2.57503, 2.59064 };
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 61 ) ++ori_nside; // TODO: fix this number!
@@ -104,15 +104,15 @@ struct XformHash_Quat_BCC7_Zorder {
 		f7[4] = q.x();
 		f7[5] = q.y();
 		f7[6] = q.z();
-		// std::cout << f7 << std::endl;		
+		// std::cout << f7 << std::endl;
 		bool odd;
 		I7 i7 = grid_.get_indices( f7, odd );
-		// std::cout << std::endl << (i7[0]>>6) << " " << (i7[1]>>6) << " " << (i7[2]>>6) << " " << i7[3] << " " << i7[4] << " " 
+		// std::cout << std::endl << (i7[0]>>6) << " " << (i7[1]>>6) << " " << (i7[2]>>6) << " " << i7[3] << " " << i7[4] << " "
 			// << i7[5] << " " << i7[6] << " " << std::endl;
 		// std::cout << std::endl << i7 << std::endl;
 		Key key = odd;
-		key = key | (i7[0]>>6)<<57; 
-		key = key | (i7[1]>>6)<<50; 
+		key = key | (i7[0]>>6)<<57;
+		key = key | (i7[1]>>6)<<50;
 		key = key | (i7[2]>>6)<<43;
 		key = key | util::dilate<7>( i7[0] & 63 ) << 1;
 		key = key | util::dilate<7>( i7[1] & 63 ) << 2;
@@ -121,7 +121,7 @@ struct XformHash_Quat_BCC7_Zorder {
 		key = key | util::dilate<7>( i7[4]      ) << 5;
 		key = key | util::dilate<7>( i7[5]      ) << 6;
 		key = key | util::dilate<7>( i7[6]      ) << 7;
-		return key;								
+		return key;
 	}
 
 	I7 get_indices(Key key, bool & odd) const {
@@ -134,13 +134,13 @@ struct XformHash_Quat_BCC7_Zorder {
 		i7[4] =  util::undilate<7>( key>>5 ) & 63;
 		i7[5] =  util::undilate<7>( key>>6 ) & 63;
 		i7[6] =  util::undilate<7>( key>>7 ) & 63;
-		return i7;		
+		return i7;
 	}
 
 	Xform get_center(Key key) const {
 		bool odd;
 		I7 i7 = get_indices(key,odd);
-		// std::cout << i7 << std::endl << std::endl;							
+		// std::cout << i7 << std::endl << std::endl;
 		F7 f7 = grid_.get_center(i7,odd);
 		// std::cout << f7 << std::endl;
 		Eigen::Quaternion<Float> q( f7[3], f7[4], f7[5], f7[6] );
@@ -163,8 +163,8 @@ struct XformHash_Quat_BCC7_Zorder {
 		key &= ORI_MASK; // zero cart parts of key
 		key &= ~(Key)1; // zero even/odd
 		key |= o;
-		key |= (x>>6)<<57 | util::dilate<7>( x & 63 ) << 1; 
-		key |= (y>>6)<<50 | util::dilate<7>( y & 63 ) << 2; 
+		key |= (x>>6)<<57 | util::dilate<7>( x & 63 ) << 1;
+		key |= (y>>6)<<50 | util::dilate<7>( y & 63 ) << 2;
 		key |= (z>>6)<<43 | util::dilate<7>( z & 63 ) << 3;
 		return key;
 	}
@@ -173,10 +173,10 @@ struct XformHash_Quat_BCC7_Zorder {
 
 	Key approx_nori() const {
 		static int const nori[63] = {
-			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
-			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
+			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193,
+			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572,
 			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
-		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
+		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};
 		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
 	}
 
@@ -205,7 +205,7 @@ struct XformHash_Quat_BCC7_Zorder {
 
 		x = x > nside1/2 ? x : nside1-x;
 		y = y > nside1/2 ? y : nside1-y;
-		z = z > nside1/2 ? z : nside1-z;				
+		z = z > nside1/2 ? z : nside1-z;
 		// make new key
 		Key k = key & ~ORI_MASK;
 		k = k | o;
@@ -283,7 +283,7 @@ struct XformHash_Quat_BCC7 {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 7, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<7,Float> F7;
-	typedef scheme::util::SimpleArray<7,uint64_t> I7;	
+	typedef scheme::util::SimpleArray<7,uint64_t> I7;
 
 	Float grid_size_;
 	Float grid_spacing_;
@@ -300,10 +300,10 @@ struct XformHash_Quat_BCC7 {
 			84.09702,54.20621,43.98427,31.58683,27.58101,22.72314,20.42103,17.58167,16.12208,14.44320,13.40178,12.15213,11.49567,
 			10.53203,10.11448, 9.32353, 8.89083, 8.38516, 7.95147, 7.54148, 7.23572, 6.85615, 6.63594, 6.35606, 6.13243, 5.90677,
 			 5.72515, 5.45705, 5.28864, 5.06335, 4.97668, 4.78774, 4.68602, 4.51794, 4.46654, 4.28316, 4.20425, 4.08935, 3.93284,
-			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266, 
-			 2.91052, 2.86858, 2.85592, 2.78403, 2.71234, 2.69544, 2.63151, 2.57503, 2.59064, 2.55367, 2.48010, 2.41046, 2.40289, 
-			 2.36125, 2.33856, 2.29815, 2.26979, 2.21838, 2.19458, 2.17881, 2.12842, 2.14030, 2.06959, 2.05272, 2.04950, 2.00790, 
-			 1.96385, 1.96788, 1.91474, 1.90942, 1.90965, 1.85602, 1.83792, 1.81660, 1.80228, 1.77532, 1.76455, 1.72948, 1.72179, 
+			 3.84954, 3.74505, 3.70789, 3.58776, 3.51407, 3.45023, 3.41919, 3.28658, 3.24700, 3.16814, 3.08456, 3.02271, 2.96266,
+			 2.91052, 2.86858, 2.85592, 2.78403, 2.71234, 2.69544, 2.63151, 2.57503, 2.59064, 2.55367, 2.48010, 2.41046, 2.40289,
+			 2.36125, 2.33856, 2.29815, 2.26979, 2.21838, 2.19458, 2.17881, 2.12842, 2.14030, 2.06959, 2.05272, 2.04950, 2.00790,
+			 1.96385, 1.96788, 1.91474, 1.90942, 1.90965, 1.85602, 1.83792, 1.81660, 1.80228, 1.77532, 1.76455, 1.72948, 1.72179,
 			 1.68324, 1.67009, 1.67239, 1.64719, 1.63832, 1.60963, 1.60093, 1.58911};
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 100 ) ++ori_nside;
@@ -335,9 +335,9 @@ struct XformHash_Quat_BCC7 {
 		f7[4] = q.x();
 		f7[5] = q.y();
 		f7[6] = q.z();
-		// std::cout << f7 << std::endl;		
+		// std::cout << f7 << std::endl;
 		Key key = grid_[f7];
-		return key;								
+		return key;
 	}
 
 	Xform get_center(Key key) const {
@@ -356,10 +356,10 @@ struct XformHash_Quat_BCC7 {
 
 	Key approx_nori() const {
 		static int const nori[63] = {
-			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193, 
-			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572, 
+			    0,    53,    53,   181,   321,   665,   874,  1642,  1997,  2424,  3337,  4504,  5269,  6592,  8230, 10193,
+			11420, 14068, 16117, 19001, 21362, 25401, 29191, 33227, 37210, 41454, 45779, 51303, 57248, 62639, 69417, 76572,
 			83178, 92177, 99551,108790,117666,127850,138032,149535,159922,171989,183625,196557,209596,226672,239034,253897,
-		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};		
+		   271773,288344,306917,324284,342088,364686,381262,405730,427540,450284,472265,498028,521872,547463};
 		return nori[ grid_.nside_[3]-2 ]; // -1 for 0-index, -1 for ori_side+1
 	}
 
@@ -375,7 +375,7 @@ struct XformHash_bt24_BCC3_Zorder {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
-	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
+	typedef scheme::util::SimpleArray<3,uint64_t> I3;
 
 	Float grid_size_;
 	Float grid_spacing_;
@@ -387,7 +387,7 @@ struct XformHash_bt24_BCC3_Zorder {
 	XformHash_bt24_BCC3_Zorder( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
 	{
 		// bcc orientation grid covering radii
-		static float const covrad[64] = { 
+		static float const covrad[64] = {
 			49.66580,25.99805,17.48845,13.15078,10.48384, 8.76800, 7.48210, 6.56491, 5.84498, 5.27430, 4.78793, 4.35932,
 		     4.04326, 3.76735, 3.51456, 3.29493, 3.09656, 2.92407, 2.75865, 2.62890, 2.51173, 2.39665, 2.28840, 2.19235,
 		     2.09949, 2.01564, 1.94154, 1.87351, 1.80926, 1.75516, 1.69866, 1.64672, 1.59025, 1.54589, 1.50077, 1.46216,
@@ -401,7 +401,7 @@ struct XformHash_bt24_BCC3_Zorder {
 
 	XformHash_bt24_BCC3_Zorder( Float cart_resl, int ori_nside, Float cart_bound ){
 		init(cart_resl,ori_nside,cart_bound);
-	}	
+	}
 
 	void init( Float cart_resl, int ori_nside, Float cart_bound ){
 		cart_resl /= 0.56; // TODO: fix this number!
@@ -421,7 +421,7 @@ struct XformHash_bt24_BCC3_Zorder {
 	// 5 bits bt24 cell index
 	// 7 bits high order cart X bits
 	// 7 bits high order cart Y bits
-	// 7 bits high order cart Z bits		
+	// 7 bits high order cart Z bits
 	// 36 bits 6*6 zorder cart/ori
 	// 2 bits cart/ori even/odd
 	Key get_key( Xform const & x ) const {
@@ -435,7 +435,7 @@ struct XformHash_bt24_BCC3_Zorder {
 		assert( 0.0 <= params[0] && params[0] <= 1.0 );
 		assert( 0.0 <= params[1] && params[1] <= 1.0 );
 		assert( 0.0 <= params[2] && params[2] <= 1.0 );
-		
+
 		bool ori_odd, cart_odd;
 		I3 ori_indices, cart_indices;
 		 ori_indices =  ori_grid_.get_indices( params,  ori_odd );
@@ -465,7 +465,7 @@ struct XformHash_bt24_BCC3_Zorder {
 		// lowest two bits, even/odd
 		key = key | ori_odd | cart_odd<<1;
 
-		return key;								
+		return key;
 	}
 
 	Xform get_center(Key key) const {
@@ -475,7 +475,7 @@ struct XformHash_bt24_BCC3_Zorder {
 
 		cart_indices[0] = (((key>>52)&127) << 6) | (util::undilate<6>( (key>>5) ) & 63);
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
-		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
+		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);
 
 		ori_indices[0] = util::undilate<6>( (key>>2)&(((uint64_t)1<<36)-1) ) & 63;
 		ori_indices[1] = util::undilate<6>( (key>>3)&(((uint64_t)1<<36)-1) ) & 63;
@@ -493,7 +493,7 @@ struct XformHash_bt24_BCC3_Zorder {
 		Xform center( m );
 		center.translation()[0] = trans[0];
 		center.translation()[1] = trans[1];
-		center.translation()[2] = trans[2];				
+		center.translation()[2] = trans[2];
 
 		return center;
 	}
@@ -511,7 +511,7 @@ struct XformHash_bt24_BCC3 {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::BCC< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
-	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
+	typedef scheme::util::SimpleArray<3,uint64_t> I3;
 
 	Float grid_size_;
 	Float grid_spacing_;
@@ -555,7 +555,7 @@ struct XformHash_bt24_BCC3 {
 		assert( 0.0 <= params[0] && params[0] <= 1.0 );
 		assert( 0.0 <= params[1] && params[1] <= 1.0 );
 		assert( 0.0 <= params[2] && params[2] <= 1.0 );
-		
+
 		F3 trans(x.translation());
 		Key ori_index, cart_index;
 		 ori_index =  ori_grid_[ params ];
@@ -567,7 +567,7 @@ struct XformHash_bt24_BCC3 {
 		key = key | cart_index << 18;
 		key = key | ori_index;
 
-		return key;								
+		return key;
 	}
 
 	Xform get_center(Key key) const {
@@ -586,7 +586,7 @@ struct XformHash_bt24_BCC3 {
 		Xform center( m );
 		center.translation()[0] = trans[0];
 		center.translation()[1] = trans[1];
-		center.translation()[2] = trans[2];				
+		center.translation()[2] = trans[2];
 
 		return center;
 	}
@@ -679,26 +679,29 @@ struct XformHash_bt24_BCC6 {
 			q = numeric::to_half_cell(q);
 
 			params[0] = q.x()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
-			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;			
+			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
 			params[2] = q.z()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
 
-			assert( params[0] >= 0.0 && params[0] <= 1.0 );
-			assert( params[1] >= 0.0 && params[1] <= 1.0 );
-			assert( params[2] >= 0.0 && params[2] <= 1.0 );						
+			assert( -0.0001 <= params[0] && params[0] <= 1.0001 );
+			assert( -0.0001 <= params[1] && params[1] <= 1.0001 );
+			assert( -0.0001 <= params[2] && params[2] <= 1.0001 );
 
 		}
 		assert( cell_index < 24 );
-		assert( 0.0 <= params[0] && params[0] <= 1.0 );
-		assert( 0.0 <= params[1] && params[1] <= 1.0 );
-		assert( 0.0 <= params[2] && params[2] <= 1.0 );
-		
+		params[0] = fmax(0.0,params[0]);
+		params[1] = fmax(0.0,params[1]);
+		params[2] = fmax(0.0,params[2]);
+		params[0] = fmin(1.0,params[0]);
+		params[1] = fmin(1.0,params[1]);
+		params[2] = fmin(1.0,params[2]);
+
 		F6 params6;
 		params6[0] = x.translation()[0];
 		params6[1] = x.translation()[1];
 		params6[2] = x.translation()[2];
 		params6[3] = params[0];
 		params6[4] = params[1];
-		params6[5] = params[2];				
+		params6[5] = params[2];
 
 		return cell_index<<59 | grid_[params6];
 	}
@@ -726,7 +729,7 @@ struct XformHash_bt24_BCC6 {
 			params[1] = fmin(1.0,params[1]);
 			params[2] = fmin(1.0,params[2]);
 
-			// std::cout << cell_index << " " << p << " " << p << std::endl;			
+			// std::cout << cell_index << " " << p << " " << p << std::endl;
 			// static int count = 0; if( ++count > 30 ) std::exit(-1);
 
 			params = w*(params-0.5); // now |params| < sqrt(2)-1
@@ -743,7 +746,7 @@ struct XformHash_bt24_BCC6 {
 		Xform center( m );
 		center.translation()[0] = params6[0];
 		center.translation()[1] = params6[1];
-		center.translation()[2] = params6[2];				
+		center.translation()[2] = params6[2];
 
 		return center;
 	}
@@ -767,7 +770,7 @@ struct XformHash_bt24_Cubic_Zorder {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::Cubic< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
-	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
+	typedef scheme::util::SimpleArray<3,uint64_t> I3;
 
 	Float grid_size_;
 	Float grid_spacing_;
@@ -780,11 +783,11 @@ struct XformHash_bt24_Cubic_Zorder {
 	{
 		cart_resl /= 0.867; // TODO: fix this number!
 		// bcc orientation grid covering radii
-		static float const covrad[64] = { 62.71876,39.26276,26.61019,20.06358,16.20437,13.45733,11.58808,10.10294, 9.00817, 8.12656, 7.37295, 
-			                  6.74856, 6.23527, 5.77090, 5.38323, 5.07305, 4.76208, 4.50967, 4.25113, 4.04065, 3.88241, 3.68300, 
-			                  3.53376, 3.36904, 3.22018, 3.13437, 2.99565, 2.89568, 2.78295, 2.70731, 2.61762, 2.52821, 2.45660, 
-			                  2.37996, 2.31057, 2.25207, 2.18726, 2.13725, 2.08080, 2.02489, 1.97903, 1.92123, 1.88348, 1.83759, 
-			                  1.79917, 1.76493, 1.72408, 1.68516, 1.64581, 1.62274, 1.57909, 1.55846, 1.52323, 1.50846, 1.47719, 
+		static float const covrad[64] = { 62.71876,39.26276,26.61019,20.06358,16.20437,13.45733,11.58808,10.10294, 9.00817, 8.12656, 7.37295,
+			                  6.74856, 6.23527, 5.77090, 5.38323, 5.07305, 4.76208, 4.50967, 4.25113, 4.04065, 3.88241, 3.68300,
+			                  3.53376, 3.36904, 3.22018, 3.13437, 2.99565, 2.89568, 2.78295, 2.70731, 2.61762, 2.52821, 2.45660,
+			                  2.37996, 2.31057, 2.25207, 2.18726, 2.13725, 2.08080, 2.02489, 1.97903, 1.92123, 1.88348, 1.83759,
+			                  1.79917, 1.76493, 1.72408, 1.68516, 1.64581, 1.62274, 1.57909, 1.55846, 1.52323, 1.50846, 1.47719,
 			                  1.44242, 1.42865, 1.39023, 1.37749, 1.34783, 1.32588, 1.31959, 1.29872, 1.26796 };
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.01 > ang_resl && ori_nside < 62 ) ++ori_nside;
@@ -811,7 +814,7 @@ struct XformHash_bt24_Cubic_Zorder {
 		assert( 0.0 <= params[0] && params[0] <= 1.0 );
 		assert( 0.0 <= params[1] && params[1] <= 1.0 );
 		assert( 0.0 <= params[2] && params[2] <= 1.0 );
-		
+
 		I3 ori_indices, cart_indices;
 		 ori_indices =  ori_grid_.get_indices( params );
 		F3 trans(x.translation());
@@ -837,7 +840,7 @@ struct XformHash_bt24_Cubic_Zorder {
 		key = key | ( util::dilate<6>( (cart_indices[2] & 63) ) << 5 );
 		key = key << 2;
 
-		return key;								
+		return key;
 	}
 
 	Xform get_center(Key key) const {
@@ -847,7 +850,7 @@ struct XformHash_bt24_Cubic_Zorder {
 
 		cart_indices[0] = (((key>>52)&127) << 6) | (util::undilate<6>( (key>>5) ) & 63);
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
-		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
+		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);
 
 		ori_indices[0] = util::undilate<6>( (key>>2)&(((Key)1<<36)-1) ) & 63;
 		ori_indices[1] = util::undilate<6>( (key>>3)&(((Key)1<<36)-1) ) & 63;
@@ -862,7 +865,7 @@ struct XformHash_bt24_Cubic_Zorder {
 		Xform center( m );
 		center.translation()[0] = trans[0];
 		center.translation()[1] = trans[1];
-		center.translation()[2] = trans[2];				
+		center.translation()[2] = trans[2];
 
 		return center;
 	}
@@ -881,7 +884,7 @@ struct XformHash_Quatgrid_Cubic {
 	typedef scheme::nest::pmap::TetracontoctachoronMap<> OriMap;
 	typedef scheme::numeric::Cubic< 3, Float, uint64_t > Grid;
 	typedef scheme::util::SimpleArray<3,Float> F3;
-	typedef scheme::util::SimpleArray<3,uint64_t> I3;	
+	typedef scheme::util::SimpleArray<3,uint64_t> I3;
 
 	Float grid_size_;
 	Float grid_spacing_;
@@ -925,7 +928,7 @@ struct XformHash_Quatgrid_Cubic {
 		assert( 0.0 <= params[0] && params[0] <= 1.0 );
 		assert( 0.0 <= params[1] && params[1] <= 1.0 );
 		assert( 0.0 <= params[2] && params[2] <= 1.0 );
-		
+
 		bool ori_odd, cart_odd;
 		I3 ori_indices, cart_indices;
 		 ori_indices =  ori_grid_.get_indices( params,  ori_odd );
@@ -955,7 +958,7 @@ struct XformHash_Quatgrid_Cubic {
 		// lowest two bits, even/odd
 		key = key | ori_odd | cart_odd<<1;
 
-		return key;								
+		return key;
 	}
 
 	Xform get_center(Key key) const {
@@ -965,7 +968,7 @@ struct XformHash_Quatgrid_Cubic {
 
 		cart_indices[0] = (((key>>52)&127) << 6) | (util::undilate<6>( (key>>5) ) & 63);
 		cart_indices[1] = (((key>>45)&127) << 6) | (util::undilate<6>( (key>>6) ) & 63);
-		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);			
+		cart_indices[2] = (((key>>38)&127) << 6) | (util::undilate<6>( (key>>7) ) & 63);
 
 		ori_indices[0] = util::undilate<6>( (key>>2)&(((Key)1<<36)-1) ) & 63;
 		ori_indices[1] = util::undilate<6>( (key>>3)&(((Key)1<<36)-1) ) & 63;
@@ -983,7 +986,7 @@ struct XformHash_Quatgrid_Cubic {
 		Xform center( m );
 		center.translation()[0] = trans[0];
 		center.translation()[1] = trans[1];
-		center.translation()[2] = trans[2];				
+		center.translation()[2] = trans[2];
 
 		return center;
 	}

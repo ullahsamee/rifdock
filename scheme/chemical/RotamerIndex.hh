@@ -135,9 +135,7 @@ struct RotamerIndex {
 	int ala_rot_;
 
 	RotamerIndex(){
-		std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << "" << std::endl;
 		this->fill_oneletter_map( oneletter_map_ );
-		std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << "" << std::endl;
 	}
 
 	// assumes primary parent is added firrt among its class

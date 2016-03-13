@@ -2,6 +2,7 @@
 #define INCLUDED_kinematics_Scene_HH
 
 #include "scheme/types.hh"
+#include "scheme/util/assert.hh"
 #include "scheme/kinematics/SceneBase.hh"
 #include "scheme/kinematics/SceneIterator.hh"
 
@@ -53,7 +54,7 @@ namespace impl {
 		class Index
 	>
 	struct BodyTplt {
-		typedef BodyTplt<_Conformation,Index> THIS;
+		typedef BodyTplt<_Conformation,Index> This;
 		typedef _Conformation Conformation;
 		typedef _Conformation ConformationConst; // TODO: fix this, requires figuring out Cereal load_and_construct
 		// typedef _Position Position;
@@ -61,7 +62,11 @@ namespace impl {
 		BodyTplt() : conformation_() {}
 		BodyTplt(shared_ptr<ConformationConst> c) : conformation_(c) {}
 
-		BodyTplt( THIS const & other ){
+		BodyTplt( This const & other ){
+			conformation_ = other.conformation_;
+		}
+
+		void deepcopy( This const & other ){
 			conformation_ = make_shared<Conformation>( *other.conformation_ );
 		}
 
@@ -96,7 +101,7 @@ namespace impl {
 		    }
 	    #endif
 
-	    bool operator==(THIS const & o) const { return *conformation_==*o.conformation_; }
+	    bool operator==(This const & o) const { return *conformation_==*o.conformation_; }
 
 	 private:
 		// Position position_;
@@ -231,6 +236,33 @@ namespace impl {
 	};
 
 	template< class Scene >
+	struct ActorClearer
+	{
+		Scene & scene_;
+		boost::any const & actor_exemplar_;
+		typename Scene::Index ib_;
+		bool & success_;
+		ActorClearer(
+			Scene & s,
+			typename Scene::Index ib,
+			boost::any const & aex,
+			bool & success
+		) : scene_(s), ib_(ib), actor_exemplar_(aex), success_(success) {}
+
+		template<class Actor>
+		void operator()( Actor const & )
+		{
+		    try {
+			    boost::any_cast< Actor const & >( actor_exemplar_ );
+			    scene_.template clear_actors<Actor>( ib_ );
+		        success_ = true;
+		    } catch(const boost::bad_any_cast &) {
+		    	return;
+		    }
+		}
+	};
+
+	template< class Scene >
 	struct ActorCounter
 	{
 		Scene const & scene_;
@@ -274,8 +306,8 @@ namespace impl {
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
 
-		typedef SceneBase<_Position,_Index> BASE;
-		typedef Scene<_ActorContainers,_Position,_Index> THIS;
+		typedef SceneBase<_Position,_Index> Base;
+		typedef Scene<_ActorContainers,_Position,_Index> This;
 		typedef _Position Position;
 		typedef _Index Index;
 		typedef impl::Conformation<_ActorContainers> Conformation;
@@ -293,11 +325,25 @@ namespace impl {
 			this->update_symmetry( (Index)bodies_.size() );
 		}
 
+		Scene( This const & o, bool deep = 1 ) : Base(o) {
+			if( deep ){
+				bodies_.resize(o.bodies_.size());
+				for( int i = 0; i < bodies_.size(); ++i ){
+					bodies_[i].deepcopy( o.bodies_[i] );
+				}
+			} else {
+				bodies_ = o.bodies_; // is shallow copy
+			}
+		}
+		virtual shared_ptr<Base> clone_deep() const {
+			return make_shared<This>(*this,true);
+		}
+		virtual shared_ptr<Base> clone_shallow() const {
+			return make_shared<This>(*this,false);
+		}
+
 		virtual ~Scene(){}
 
-		virtual shared_ptr<BASE> clone() const {
-			return make_shared<THIS>(*this);
-		}
 
 		// virtual Position position(Index i) const {
 		// 	Index isym = this->sym_index_map(i);
@@ -321,7 +367,7 @@ namespace impl {
 		   		ar & this->positions_;
 	    	}
 	    #endif
-	    bool operator==(THIS const & o) const {
+	    bool operator==(This const & o) const {
 			assert( bodies_.size() == this->positions_.size() );
 	    	return this->bodies_==o.bodies_ &&
 	    	       this->symframes_==o.symframes_ &&
@@ -382,6 +428,12 @@ namespace impl {
 		get_actor(Index ib, Index ia) const {
 			return conformation(ib).template get<Actor>().at(ia);
 		}
+		template<class Actor>
+		void
+		clear_actors(Index ib){
+			mutable_conformation_asym(ib).template get<Actor>().clear();
+		}
+
 
 		template<class Actor>
 		Actor &
@@ -396,7 +448,7 @@ namespace impl {
 
 		virtual bool add_actor( Index ib, boost::any const & a ){
 			bool success = false;
-			impl::ActorAdder<THIS> adder( *this, ib, a, success );
+			impl::ActorAdder<This> adder( *this, ib, a, success );
 			boost::mpl::for_each<Actors>( adder );
 			return success;
 		}
@@ -404,7 +456,7 @@ namespace impl {
 		virtual bool get_actor( Index ib, Index ia, boost::any & a_in ) const {
 			bool success = false;
 			boost::any a;
-			impl::ActorGetter<THIS> getter( *this, ib, ia, a_in, a, success );
+			impl::ActorGetter<This> getter( *this, ib, ia, a_in, a, success );
 			boost::mpl::for_each<Actors>( getter );
 			if( success ) a_in = a;
 			return success;
@@ -413,9 +465,16 @@ namespace impl {
 		virtual bool get_nonconst_actor( Index ib, Index ia, boost::any & a_in ){
 			bool success = false;
 			boost::any a;
-			impl::ActorGetterNonconst<THIS> getter( *this, ib, ia, a_in, a, success );
+			impl::ActorGetterNonconst<This> getter( *this, ib, ia, a_in, a, success );
 			boost::mpl::for_each<Actors>( getter );
 			if( success ) a_in = a;
+			return success;
+		}
+
+		virtual bool clear_actors( Index ib, boost::any const & a_in ) {
+			bool success = false;
+			impl::ActorClearer<This> clearer( *this, ib, a_in, success );
+			boost::mpl::for_each<Actors>( clearer );
 			return success;
 		}
 
@@ -426,7 +485,7 @@ namespace impl {
 
 		virtual int num_actors( Index ib, boost::any const & a ) const {
 			int num_actors = -1;
-			impl::ActorCounter<THIS> counter( *this, ib, a, num_actors );
+			impl::ActorCounter<This> counter( *this, ib, a, num_actors );
 			boost::mpl::for_each<Actors>( counter );
 			return num_actors;
 		}
@@ -435,44 +494,44 @@ namespace impl {
 
 		template<class Actor>
 		std::pair<
-			SceneIter1B<THIS,Actor,Symmetric,ActorCopy>,
-			SceneIter1B<THIS,Actor,Symmetric,ActorCopy>
+			SceneIter1B<This,Actor,Symmetric,ActorCopy>,
+			SceneIter1B<This,Actor,Symmetric,ActorCopy>
 		>
 		get_actors() const {
-			typedef SceneIter1B<THIS,Actor,Symmetric,ActorCopy> Iter;
+			typedef SceneIter1B<This,Actor,Symmetric,ActorCopy> Iter;
 			Iter beg = Iter::make_begin(*this);
 			Iter end = Iter::make_end  (*this);
 			return std::make_pair(beg,end);
 		}
 		template<class Actor>
 		std::pair<
-			SceneIter1B<THIS,Actor,NotSymmetric,ActorCopy>,
-			SceneIter1B<THIS,Actor,NotSymmetric,ActorCopy>
+			SceneIter1B<This,Actor,NotSymmetric,ActorCopy>,
+			SceneIter1B<This,Actor,NotSymmetric,ActorCopy>
 		>
 		get_actors_asym() const {
-			typedef SceneIter1B<THIS,Actor,NotSymmetric,ActorCopy> Iter;
+			typedef SceneIter1B<This,Actor,NotSymmetric,ActorCopy> Iter;
 			Iter beg = Iter::make_begin(*this);
 			Iter end = Iter::make_end  (*this);
 			return std::make_pair(beg,end);
 		}
 		template<class Actor>
 		std::pair<
-			SceneIter1B<THIS,Actor,Symmetric,PlaceHolder>,
-			SceneIter1B<THIS,Actor,Symmetric,PlaceHolder>
+			SceneIter1B<This,Actor,Symmetric,PlaceHolder>,
+			SceneIter1B<This,Actor,Symmetric,PlaceHolder>
 		>
 		get_actors_placeholder() const {
-			typedef SceneIter1B<THIS,Actor,Symmetric,PlaceHolder> Iter;
+			typedef SceneIter1B<This,Actor,Symmetric,PlaceHolder> Iter;
 			Iter beg = Iter::make_begin(*this);
 			Iter end = Iter::make_end  (*this);
 			return std::make_pair(beg,end);
 		}
 		template<class Actor>
 		std::pair<
-			SceneIter1B<THIS,Actor,NotSymmetric,PlaceHolder>,
-			SceneIter1B<THIS,Actor,NotSymmetric,PlaceHolder>
+			SceneIter1B<This,Actor,NotSymmetric,PlaceHolder>,
+			SceneIter1B<This,Actor,NotSymmetric,PlaceHolder>
 		>
 		get_actors_placeholder_asym() const {
-			typedef SceneIter1B<THIS,Actor,NotSymmetric,PlaceHolder> Iter;
+			typedef SceneIter1B<This,Actor,NotSymmetric,PlaceHolder> Iter;
 			Iter beg = Iter::make_begin(*this);
 			Iter end = Iter::make_end  (*this);
 			return std::make_pair(beg,end);
@@ -644,7 +703,7 @@ namespace impl {
 			Position const & ,
 			double
 		) const {
-			cout << "THIS SHOULD NEVER HAPPEN" << endl;
+			cout << "This SHOULD NEVER HAPPEN" << endl;
 			BOOST_STATIC_ASSERT((
 				m::or_<
 					impl::has_type_Position<Actor1> ,
@@ -666,10 +725,10 @@ namespace impl {
 		iter_type { typedef typename
 			m::if_< util::meta::is_pair<Interaction>,
 				typename m::if_< util::meta::is_homo_pair<Interaction>,
-					SceneIter2B<THIS,Interaction,CountPairUpperTriangle>,
-					SceneIter2B<THIS,Interaction,CountPairNoDuplicates>
+					SceneIter2B<This,Interaction,CountPairUpperTriangle>,
+					SceneIter2B<This,Interaction,CountPairNoDuplicates>
 				>::type,
-				SceneIter1B<THIS,Interaction,NotSymmetric,PlaceHolder>
+				SceneIter1B<This,Interaction,NotSymmetric,PlaceHolder>
 			>::type
 			type; };
 

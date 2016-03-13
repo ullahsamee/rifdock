@@ -40,11 +40,11 @@
 // #include "scheme/util/meta/InstanceMap_container.gtest.cc"
 // #include "scheme/util/meta/InstanceMap_numeric.gtest.cc"
 
-#include "scheme/objective/ObjectiveFunction.gtest.cc"
+// #include "scheme/objective/ObjectiveFunction.gtest.cc"
 // #include "scheme/objective/voxel/VoxelArray.gtest.cc"
 // #include "scheme/objective/voxel/FieldCache.gtest.cc"
 
-// #include "scheme/kinematics/Scene.gtest.cc"
+#include "scheme/kinematics/Scene.gtest.cc"
 // #include "scheme/kinematics/Scene_test_eigen.gtest.cc"
 // #include "scheme/kinematics/SceneIterator.gtest.cc"
 // #include "scheme/kinematics/Director.gtest.cc"
@@ -68,7 +68,7 @@
 // #include "scheme/objective/hash/XformHashNeighbors.gtest.cc"
 // #include "scheme/objective/hash/XformMap.gtest.cc"
 
-// #include "scheme/objective/storage/RotamerScores.gtest.cc"
+#include "scheme/objective/storage/RotamerScores.gtest.cc"
 
 // #include "scheme/chemical/RotamerIndex.gtest.cc"
 
@@ -76,7 +76,7 @@
 
 // #include "scheme/actor/BackboneActor.gtest.cc"
 
-#include "scheme/search/SpatialBandB.gtest.cc"
+// #include "scheme/search/SpatialBandB.gtest.cc"
 
 int main(int argc, char **argv)
 {

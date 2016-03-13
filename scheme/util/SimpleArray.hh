@@ -82,9 +82,8 @@ struct SimpleArray {
 	F sum () const { F p=0; for(int i=0;i<N;++i) p += D[i]; return p; }
 	F prod(size_t l) const { F p=1; for(int i = 0; i < l; ++i) p *= D[i]; return p; }
 	F sum (size_t l) const { F p=0; for(int i = 0; i < l; ++i) p += D[i]; return p; }
-	bool operator==(THIS const & o) const {
-		bool r = true; for(int i=0;i<N;++i) r &= D[i]==o.D[i]; return r;
-	}
+	bool operator==(THIS const & o) const {	bool r = true; for(int i=0;i<N;++i) r &= D[i]==o.D[i]; return r; }
+	bool operator!=(THIS const & o) const { return !(*this==o); }
 	F squaredNorm() const { F n=0; for(int i=0;i<N;++i) n+=D[i]*D[i]; return n; }
 	F norm() const { return std::sqrt(squaredNorm()); }
 	void normalize(){ *this /= norm(); }
@@ -98,13 +97,13 @@ struct SimpleArray {
 	void swap(THIS & o){ for(int i=0;i<N;++i) std::swap(D[i],o.D[i]); }
 	// friend class boost::serialization::access;
 	#ifdef CEREAL
-	friend class cereal::access;	
+	friend class cereal::access;
 	#endif
     template<class Archive> void serialize(Archive & ar, const unsigned int ){
 		for(size_t i = 0; i < N; ++i) ar & D[i];
 	}
 	THIS operator-() const { THIS r; for(size_t i = 0; i < N; ++i) r[i] = -D[i]; return r; }
-	SimpleArray<N,F> sign() const { 
+	SimpleArray<N,F> sign() const {
 		SimpleArray<N,F> r; for(int i=0;i<N;++i) r[i] = D[i]>0 ? 1.0 : -1.0; return r; }
 	template<class F2> SimpleArray<N,F> & operator*=(F2 const & o){ for(int i=0;i<N;++i) D[i] *= o; return *this; }
 	template<class F2> SimpleArray<N,F> & operator/=(F2 const & o){ for(int i=0;i<N;++i) D[i] /= o; return *this; }
