@@ -77,14 +77,14 @@ namespace scheme { namespace nest {
 			BigIndex const one(1);
 			BigIndex hier_index = index & ((one<<(dim_*resl))-one);
 			// std::cout << "cell_index: " << big_cell_index << std::endl;
-			// std::cout << "hier_index: " << hier_index << std::endl;	
+			// std::cout << "hier_index: " << hier_index << std::endl;
 			Indices hier_indices;
 			expand_index( hier_index, hier_indices );
 			size_t iindex = 0;
 			for(size_t i = 0; i < nests_.size(); ++i){
 				Index cell_index = big_cell_index / ncells_pref_sum_[i] % ncells_[i];
 				// std::cout << "MultiNest  nest " << resl << ", nest " << i << ", ci " << cell_index << ", ii " << iindex << std::endl;
-				if( ! nests_[i]->virtual_get_state( hier_indices, cell_index, iindex, resl, anys[i] ) ) return false; 
+				if( ! nests_[i]->virtual_get_state( hier_indices, cell_index, iindex, resl, anys[i] ) ) return false;
 			}
             return true;
 		}
@@ -101,14 +101,14 @@ namespace scheme { namespace nest {
 
 		///@brief virtual virtual function to set the state of this nest
 		///@returns false if invalid index
-		virtual bool 
+		virtual bool
 		virtual_get_state(
-			Index index, 
-			Index resl, 
+			Index index,
+			Index resl,
 			boost::any & result
 		){
 			BOOST_VERIFY( resl <= max_valid_resl_ );
-			std::cout << "not implemented yet" << std::endl;
+			std::cout << "sheffler: not implemented yet" << std::endl;
 			std::exit(-1);
 		}
 
@@ -116,7 +116,7 @@ namespace scheme { namespace nest {
 		///@detail will consume DIM indices from hindices vector, starting at iindex, then will increment iindex
 		///        for use in composite data structures containing NestBases
 		///@returns false if invalid index
-		virtual	bool 
+		virtual	bool
 		virtual_get_state(
 			std::vector<Index> const & indices,
 			Index cell_index,
@@ -125,14 +125,14 @@ namespace scheme { namespace nest {
 			boost::any & result
 		){
 			BOOST_VERIFY( resl <= max_valid_resl_ );
-			std::cout << "not implemented yet" << std::endl;
+			std::cout << "sheffler: not implemented yet" << std::endl;
 			std::exit(-1);
 		}
 
 		///@brief get the total size of this NEST at resl
 		///@return number of possible states at depth resl
-		virtual Index 
-		virtual_size(Index resl) const { 
+		virtual Index
+		virtual_size(Index resl) const {
 			BOOST_VERIFY( resl <= max_valid_resl_ );
 			Index s = (Index)size(resl);
 			BOOST_VERIFY( s <= BigIndex( std::numeric_limits<Index>::max() ) );
@@ -140,16 +140,16 @@ namespace scheme { namespace nest {
 		}
 
 		///@brief get the number of cells in this nest
-		virtual Index 
+		virtual Index
 		virtual_num_cells() const {
 			return tot_ncells_;
 		}
 
 		///@brief get the dimension of this nest
 		///@return dimension of Nest
-		virtual size_t 
+		virtual size_t
 		virtual_dim() const { return dim(); }
-		
+
 		size_t dim() const { return dim_; }
 		BigIndex size( Index resl ) const {
 			return BigIndex((unsigned long)tot_ncells_) * ((BigIndex(1))<<(resl*dim_));
@@ -176,14 +176,14 @@ namespace scheme { namespace nest {
 			}
 			BOOST_VERIFY( cell_indices.size() == nests_.size() );
 			BOOST_VERIFY( indices.size() == dim_ );
-	
+
 			// std::cout << "MultiNest virtual_get_index INDICES:";
 			// BOOST_FOREACH( Index i, indices ) std::cout << " " << i;
 			// std::cout << std::endl;
 			// std::cout << "MultiNest virtual_get_index CELL_INDICES:";
 			// BOOST_FOREACH( Index i, cell_indices ) std::cout << " " << i;
 			// std::cout << std::endl;
-			
+
 			BigIndex index = 0, cell_index = 0;
 			for(int i = 0; i <       dim_         ; ++i)      index |= util::dilate( dim_, indices[i] ) << i;
 			for(int i = 0; i < cell_indices.size(); ++i) cell_index += cell_indices[i] * ncells_pref_sum_[i];

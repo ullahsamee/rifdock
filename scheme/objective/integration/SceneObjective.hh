@@ -103,7 +103,7 @@ struct SceneObjectiveParametric :
 	virtual
 	bool
 	is_compatible( SceneBase const & s ) const {
-		return NULL != dynamic_cast<Scene const *>( &s );
+		return nullptr != dynamic_cast<Scene const *>( &s );
 	}
 
 	virtual

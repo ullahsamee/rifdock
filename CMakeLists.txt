@@ -22,18 +22,21 @@ cmake_minimum_required (VERSION 2.6)
 #SET( CMAKE_CXX_FLAGS         "-w -O3 -std=c++11 -DCXX11 -DBENCHMARK -DDEBUG -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-w -O3 -std=c++11 -DCXX11 -DBENCHMARK -DDEBUG -ffast-math" )
 
-SET( CMAKE_CXX_FLAGS         "-w -O3 -DDEBUG -ffast-math" )
-SET( CMAKE_EXE_LINKER_FLAGS  "-w -O3 -DDEBUG -ffast-math" )
+SET( CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS}        -std=c++14 -stdlib=libc++ -DCXX11 -DCXX14 -w -O3 -DDEBUG -ffast-math -funroll-loops -march=native" )
+SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lc++abi" )
 
+# this removes those annoying ._* file turds you get with network fs on mac
+execute_process( COMMAND find ../../scheme/scheme -regex .*[.]_.* -exec rm {} \; )
 
 add_subdirectory(external/gmock)
 include_directories("external")
 include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
 include_directories("/usr/local/include/eigen3")
-include_directories("/usr/local/include")
-include_directories("/usr/local/boost/include")
-include_directories("/local/rosetta/will_tmp/boost_1_58_0")
+#include_directories("/usr/local/include")
+#include_directories("/usr/local/boost/include")
+#include_directories("/local/rosetta/will_tmp/boost_1_58_0")
+include_directories("/scratch/USERS/sheffler/root/clang37/include")
 
 list( APPEND LIB_CC scheme/rosetta/score/EtableParams_init.lib.cc scheme/rosetta/atype_map.lib.cc scheme/chemical/ligand_factory.lib.cc )
 
@@ -50,7 +53,8 @@ list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boo
 list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib)
 list(APPEND CMAKE_LIBRARY_PATH /usr/lib64)
-list(APPEND CMAKE_LIBRARY_PATH /local/rosetta/will_tmp/boost_1_58_0/stage/lib)
+# list(APPEND CMAKE_LIBRARY_PATH /local/rosetta/will_tmp/boost_1_58_0/stage/lib)
+list(APPEND CMAKE_LIBRARY_PATH /scratch/USERS/sheffler/root/clang37/lib)
 
 # include_directories("scheme")
 include_directories(".")

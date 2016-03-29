@@ -25,10 +25,10 @@ using namespace pmap;
 TEST(NEST,concpets){
 	NEST< 1, concept::ValueArchitype, concept::ParamMapArchitype >().set_state(1,0);
 	// NEST< 1, double, concept::ParamMapArchitype >().get_index(1.0,0); // this should not compile!
-	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().set_state(1,0);	
-	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().get_index(concept::ValueArchitype(),0);		
-	// NEST< 1, concept::ValueArchitype, UnitMap >().set_state(1,0);	
-	NEST< 1, concept::ArrayValueArchitype<1>, UnitMap >().set_state(1,0);		
+	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().set_state(1,0);
+	NEST< 1, concept::ValueArchitype, concept::ParamMapInvertableArchitype >().get_index(concept::ValueArchitype(),0);
+	// NEST< 1, concept::ValueArchitype, UnitMap >().set_state(1,0);
+	NEST< 1, concept::ArrayValueArchitype<1>, UnitMap >().set_state(1,0);
 	NEST< 1, concept::ArrayValueArchitype<1>, UnitMap >().get_index(concept::ArrayValueArchitype<1>(),0);
 	SUCCEED();
 }
@@ -68,9 +68,9 @@ TEST(NEST,map_discrete) {
 	choices += 42.0,152.345,8049782.83402;
 	NEST<0,double,pmap::DiscreteChoiceMap,StoreValue> nest0(choices);
 	ASSERT_EQ(choices.size(),nest0.size());
-	ASSERT_EQ(choices.size(),nest0.size(0));	
+	ASSERT_EQ(choices.size(),nest0.size(0));
 	ASSERT_EQ(choices.size(),nest0.size(3));
-	ASSERT_EQ(choices.size(),nest0.size(4));			
+	ASSERT_EQ(choices.size(),nest0.size(4));
 	for(size_t i = 0; i < nest0.size(); ++i){
 		ASSERT_TRUE( nest0.set_state(i) );
 		ASSERT_EQ(choices[i],nest0.set_and_get(i));
@@ -135,7 +135,7 @@ void test_store_pointer_virtual(){
 	NEST<DIM,VAL,UnitMap,StoreValue  ,size_t,double,true> nest_val(2);
 	NEST<DIM,VAL,UnitMap,StorePointer,size_t,double,true> nest_ptr(2);
 	NestBase<size_t> * nest_val_virtual = &nest_val;
-	NestBase<size_t> * nest_ptr_virtual = &nest_ptr;	
+	NestBase<size_t> * nest_ptr_virtual = &nest_ptr;
 	StorePointer<VAL> * ptr_store      = dynamic_cast< StorePointer<VAL>* >(nest_ptr_virtual);
 	StorePointer<VAL> * ptr_store_fail = dynamic_cast< StorePointer<VAL>* >(nest_val_virtual);
 	ASSERT_TRUE(ptr_store);
@@ -148,7 +148,7 @@ void test_store_pointer_virtual(){
 			VAL tmp;
 			boost::any a = &tmp;
 			ASSERT_TRUE( nest_val_virtual->virtual_get_state(i,r,a) );
-			ASSERT_TRUE( nest_ptr_virtual->virtual_get_state(i,r,a) );			
+			ASSERT_TRUE( nest_ptr_virtual->virtual_get_state(i,r,a) );
 			ASSERT_EQ( nest_val.value(), val_pointed_to );
 			ASSERT_EQ( nest_val.value(), tmp );
 			ASSERT_EQ( tmp, val_pointed_to );
@@ -215,7 +215,9 @@ TEST(NEST,bounds){
 	ASSERT_TRUE (nest.set_state(0,0));
 	ASSERT_FALSE(nest.set_state(1,0));
 	#ifndef NDEBUG
+	#ifndef CXX14
 	ASSERT_DEATH( nest.set_and_get(1,0), "Assertion.*failed" );
+	#endif
 	#endif
 }
 
@@ -237,7 +239,9 @@ TEST(NEST,virtual_get_index){
 	}
 
 	NEST<2,VAL,nest::concept::ParamMapArchitype> nest2;
+	#ifndef CXX14
 	ASSERT_DEATH( nest2.virtual_get_index( a, 0 ), ".*" );
+	#endif
 
 }
 

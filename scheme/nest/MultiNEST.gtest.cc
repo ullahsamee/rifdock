@@ -23,19 +23,19 @@ TEST( MultiNest, boost_any ){
 	any ad = d;
 	ASSERT_EQ( d, any_cast<double>(ad) );
 	ASSERT_EQ( d, *any_cast<double>(&ad) );
-	ASSERT_EQ( NULL, any_cast<float>(&ad) );	
+	ASSERT_EQ( nullptr, any_cast<float>(&ad) );
 
 	any adp = dp;
 
 	d = 1.2345; ASSERT_EQ( 1.2345, *any_cast<double*>(adp) );
 	d = 3.2345; ASSERT_EQ( 3.2345, *any_cast<double*>(adp) );
 	d = 3.2345; ASSERT_EQ( 3.2345, **any_cast<double*>(&adp) );
-	d = 3.2345; ASSERT_EQ( NULL, any_cast<float*>(&adp) );
+	d = 3.2345; ASSERT_EQ( nullptr, any_cast<float*>(&adp) );
 
 	any adsp = dsp;
 	*dsp = 2.34; ASSERT_EQ( 2.34, *any_cast<shared_ptr<double> >(adsp) );
 	*dsp = 3.34; ASSERT_EQ( 3.34, **any_cast<shared_ptr<double> >(&adsp) );
-	*dsp = 2.34; ASSERT_EQ( NULL, any_cast<double*>(&adsp) );
+	*dsp = 2.34; ASSERT_EQ( nullptr, any_cast<double*>(&adsp) );
  }
 
 TEST( MultiNest, expand_index ){
@@ -267,9 +267,11 @@ TEST( MultiNest, get_state_ncell_handling ){
 	multi.get_states( 23, 0, anys ); ASSERT_EQ( val1, A1( 3.5 ) ); ASSERT_EQ( val2, A2( 2.5, 0.5 ) ); ASSERT_EQ( val3, A3( 1.5, 0.5, 0.5 ) );
 
 	#ifndef NDEBUG
+	#ifndef CXX14
 	ASSERT_DEATH( multi.get_states( 24, 0, anys ), ".*" );
 	#endif
-	
+	#endif
+
 	multi.get_states(  0 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 0.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );
 	multi.get_states(  1 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 1.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );
 	multi.get_states(  2 * (1<<6), 1, anys ); ASSERT_EQ( val1, A1( 2.25 ) ); ASSERT_EQ( val2, A2( 0.25, 0.25 ) ); ASSERT_EQ( val3, A3( 0.25, 0.25, 0.25 ) );

@@ -66,13 +66,13 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
 	}
 }
 
-TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
+TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
 	double eps_tol = 0.0000001;
 	if( sizeof(Float) == 4 ) eps_tol = 0.0001;
 	using namespace Eigen;
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
-	typedef util::SimpleArray<7,Key> I7;	
+	typedef util::SimpleArray<7,Key> I7;
 	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
 	boost::uniform_real<> runif;
 	boost::normal_distribution<> rnorm;
@@ -82,7 +82,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
 		for(int iter2 = 0; iter2 < 100; ++iter2){
 			double a = runif(rng);
 			double b = runif(rng);
-			double c = runif(rng);		
+			double c = runif(rng);
 			double x = rnorm(rng);
 			double y = rnorm(rng);
 			double z = rnorm(rng);
@@ -102,7 +102,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
 			i[ 4] = xh.grid_[ F7( a,b,c, +w,-x,+y,+z ) ];
 			i[ 5] = xh.grid_[ F7( a,b,c, +w,-x,+y,-z ) ];
 			i[ 6] = xh.grid_[ F7( a,b,c, +w,-x,-y,+z ) ];
-			i[ 7] = xh.grid_[ F7( a,b,c, +w,-x,-y,-z ) ];	
+			i[ 7] = xh.grid_[ F7( a,b,c, +w,-x,-y,-z ) ];
 			i[ 8] = xh.grid_[ F7( a,b,c, -w,+x,+y,+z ) ];
 			i[ 9] = xh.grid_[ F7( a,b,c, -w,+x,+y,-z ) ];
 			i[10] = xh.grid_[ F7( a,b,c, -w,+x,-y,+z ) ];
@@ -110,10 +110,10 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
 			i[12] = xh.grid_[ F7( a,b,c, -w,-x,+y,+z ) ];
 			i[13] = xh.grid_[ F7( a,b,c, -w,-x,+y,-z ) ];
 			i[14] = xh.grid_[ F7( a,b,c, -w,-x,-y,+z ) ];
-			i[15] = xh.grid_[ F7( a,b,c, -w,-x,-y,-z ) ];	
+			i[15] = xh.grid_[ F7( a,b,c, -w,-x,-y,-z ) ];
 
 
-			// cout << i[0] <<" "<< i[1] <<" "<< i[2] <<" "<< i[3] <<" "<< i[4] <<" "<< i[5] <<" "<< i[6] <<" "<< i[7] << endl;	
+			// cout << i[0] <<" "<< i[1] <<" "<< i[2] <<" "<< i[3] <<" "<< i[4] <<" "<< i[5] <<" "<< i[6] <<" "<< i[7] << endl;
 			std::vector<F7> f(16);
 			f[ 0] = xh.grid_[ xh.grid_[ F7( a,b,c, +w,+x,+y,+z ) ] ];
 			f[ 1] = xh.grid_[ xh.grid_[ F7( a,b,c, +w,+x,+y,-z ) ] ];
@@ -155,7 +155,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_quaternion_reflection_symmetry ){
 
 		}
 	}
-	
+
 }
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
@@ -170,7 +170,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 	using namespace Eigen;
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
-	typedef util::SimpleArray<7,Key> I7;	
+	typedef util::SimpleArray<7,Key> I7;
 	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
 	boost::uniform_real<> runif;
 
@@ -197,7 +197,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 			// 		Key x =  util::undilate<7>( k>>5 ) & 63;
 			// 		Key y =  util::undilate<7>( k>>6 ) & 63;
 			// 		Key z =  util::undilate<7>( k>>7 ) & 63;
-			// 		std::cout << "KEY  " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    " 
+			// 		std::cout << "KEY  " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    "
 			// 		<< w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 			// 	}
 			// 	{
@@ -207,7 +207,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 			// 		Key x =  util::undilate<7>( k>>5 ) & 63;
 			// 		Key y =  util::undilate<7>( k>>6 ) & 63;
 			// 		Key z =  util::undilate<7>( k>>7 ) & 63;
-			// 		std::cout << "ASYM " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    " 
+			// 		std::cout << "ASYM " << ksym << "\t" << xh.grid_.nside_[3]-o <<"\t" << o << "    "
 			// 		<< w << "\t" << x << "\t" << y << "\t" << z << std::endl;
 			// 	}
 
@@ -271,17 +271,17 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 // 			if( key0%2 ){
 // 				x1.translation()[0] -= xh.cart_width()/2.0;
 // 				x1.translation()[1] -= xh.cart_width()/2.0;
-// 				x1.translation()[2] -= xh.cart_width()/2.0;								
+// 				x1.translation()[2] -= xh.cart_width()/2.0;
 // 			} else {
 // 				x1.translation()[0] += xh.cart_width()/2.0;
 // 				x1.translation()[1] += xh.cart_width()/2.0;
-// 				x1.translation()[2] += xh.cart_width()/2.0;								
+// 				x1.translation()[2] += xh.cart_width()/2.0;
 // 			}
 // 			Key key1 = xh.get_key(x1);
 // 			cout << x0.translation().transpose() << endl;
-// 			cout << x1.translation().transpose() << endl;			
+// 			cout << x1.translation().transpose() << endl;
 // 			xh.print_key(key0);
-// 			xh.print_key(key1);			
+// 			xh.print_key(key1);
 // 			ASSERT_NE( key0%2, key1%2 );
 // 			Xform cen1 = xh.get_center(key1);
 
@@ -293,16 +293,16 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 // 				Key nbkey0 = xh.cart_shift_key( key0, shifts[j][0], shifts[j][1], shifts[j][2], 0 );
 // 				Key nbkey1 = xh.cart_shift_key( key1, shifts[j][0], shifts[j][1], shifts[j][2], 1 );
 // 				nbrs_set.insert( nbkey0 );
-// 				nbrs_set.insert( nbkey1 );				
+// 				nbrs_set.insert( nbkey1 );
 // 				vnbrs.push_back( xh.get_center(nbkey0).translation() );
-// 				vnbrs.push_back( xh.get_center(nbkey1).translation() );				
+// 				vnbrs.push_back( xh.get_center(nbkey1).translation() );
 // 				nbrcen += xh.get_center(nbkey0).translation();
 // 				nbrcen += xh.get_center(nbkey1).translation();
 
 // 				nbrs_set_cart.insert( nbkey0 & xh.CART_MASK_NO0 );
-// 				nbrs_set_cart.insert( nbkey1 & xh.CART_MASK_NO0 );				
+// 				nbrs_set_cart.insert( nbkey1 & xh.CART_MASK_NO0 );
 // 				nbrs_set_ori.insert( nbkey0 & xh.ORI_MASK_NO0 );
-// 				nbrs_set_ori.insert( nbkey1 & xh.ORI_MASK_NO0 );				
+// 				nbrs_set_ori.insert( nbkey1 & xh.ORI_MASK_NO0 );
 // 				// cout << nbkey%2 << " " <<  nbrs[j]%2 << endl;
 // 			}
 
@@ -347,13 +347,13 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 // 			out2.close();
 // 			std::ofstream out3("test_cen.pdb");
 // 			io::dump_pdb_atom( out3, "C" ,i, 10.0*cen0.translation() );
-// 			io::dump_pdb_atom( out3, "C" ,i, 10.0*cen1.translation() );			
+// 			io::dump_pdb_atom( out3, "C" ,i, 10.0*cen1.translation() );
 // 			out3.close();
 
 // 			ASSERT_LE( nfail/1000.0/NSAMP, THRESH );
 // 			return ;
 // 		}
-// 	}	
+// 	}
 // }
 
 TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_ori_neighbors ){
@@ -427,7 +427,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_ori_neighbors ){
 
 
 			// cout << "PASS " << qpass.transpose() << " " << opass << endl;
-			// cout << "FAIL " << qfail.transpose() << " " << ofail << endl;		
+			// cout << "FAIL " << qfail.transpose() << " " << ofail << endl;
 			ASSERT_LE( nfail/300.0/NSAMP, THRESH );
 
 			// return;
@@ -492,7 +492,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 				// }
 				// cout << nbrs_set.size() << " " << ori_nbrs.size() << " " << shifts.size() << endl;
 			}
-			
+
 			int nfail = 0;
 			for(int j = 0; j < 300*NSAMP; ++j){
 				Xform p; numeric::rand_xform_quat(rng,p,cart_bound,quat_bound);
@@ -501,7 +501,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 				bool fail = nbrs_set.find(nk) == nbrs_set.end();
 				nfail += fail;
 				// if( fail ){
-				// 	xh.print_key(key);					
+				// 	xh.print_key(key);
 				// 	xh.print_key(nk);
 				// 	cout << endl;
 				// }
@@ -519,7 +519,7 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		XNB nb2( cart_bound, ang_bound, xh, NSAMP*50.0 );
 		std::ifstream in( "test.sxhn", std::ios::binary );
 		ASSERT_TRUE( nb2.load( in ) );
-		in.close(); 
+		in.close();
 
 		// XformHash const hasher_;
 		// std::map< Key, std::vector<Key> > ori_cache_;
@@ -527,14 +527,14 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 		// int nsamp_;
 		// std::vector< util::SimpleArray<3,int16_t> > cart_shifts_;
 		ASSERT_EQ( nb.hasher_, nb2.hasher_ );
-		ASSERT_EQ( nb.cart_bound_, nb2.cart_bound_ );				
+		ASSERT_EQ( nb.cart_bound_, nb2.cart_bound_ );
 		ASSERT_EQ( nb.ang_bound_, nb2.ang_bound_ );
-		ASSERT_EQ( nb.quat_bound_, nb2.quat_bound_ );		
-		ASSERT_EQ( nb.nsamp_, nb2.nsamp_ );		
-		ASSERT_EQ( nb.ori_cache_.size(), nb2.ori_cache_.size() );		
-		ASSERT_EQ( nb.cart_shifts_.size(), nb2.cart_shifts_.size() );	
+		ASSERT_EQ( nb.quat_bound_, nb2.quat_bound_ );
+		ASSERT_EQ( nb.nsamp_, nb2.nsamp_ );
+		ASSERT_EQ( nb.ori_cache_.size(), nb2.ori_cache_.size() );
+		ASSERT_EQ( nb.cart_shifts_.size(), nb2.cart_shifts_.size() );
 		ASSERT_EQ( nb.ori_cache_, nb2.ori_cache_ );
-		ASSERT_EQ( nb.cart_shifts_, nb2.cart_shifts_ );		
+		ASSERT_EQ( nb.cart_shifts_, nb2.cart_shifts_ );
 
 	}
 }

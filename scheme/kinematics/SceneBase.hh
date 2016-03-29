@@ -28,7 +28,7 @@ struct SceneBase {
 
 	virtual ~SceneBase(){}
 
-	virtual shared_ptr<THIS> clone_shallow() const = 0;
+	virtual shared_ptr<THIS> clone_shallow() const { return clone_deep(); } // default to deep copy
 	virtual shared_ptr<THIS> clone_deep() const = 0;
 
 	Position position(Index i) const

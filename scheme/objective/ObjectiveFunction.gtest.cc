@@ -40,7 +40,7 @@ std::ostream & operator<<(std::ostream & out,ScoreInt const& si){ return out << 
 struct ScoreInt2 {
 	typedef double Result;
 	typedef int Interaction;
-	static std::string name(){ return "ScoreInt2"; }	
+	static std::string name(){ return "ScoreInt2"; }
 	template<class Config>
 	Result operator()(Interaction const & a, Config const& c) const {
 		return 2*a*c.scale;
@@ -50,7 +50,7 @@ std::ostream & operator<<(std::ostream & out,ScoreInt2 const& si){ return out <<
 struct ScoreInt3 {
 	typedef double Result;
 	typedef int Interaction;
-	static std::string name(){ return "ScoreInt3"; }	
+	static std::string name(){ return "ScoreInt3"; }
 	template<class Config>
 	Result operator()(Interaction const & a, Config const& c) const {
 		return 3*a*c.scale;
@@ -61,7 +61,7 @@ std::ostream & operator<<(std::ostream & out,ScoreInt3 const& si){ return out <<
 struct ScoreDouble {
 	typedef double Result;
 	typedef double Interaction;
-	static std::string name(){ return "ScoreDouble"; }	
+	static std::string name(){ return "ScoreDouble"; }
 	template<class Config>
 	Result operator()(Interaction const & a, Config const& c) const {
 		return a*c.scale;
@@ -72,7 +72,7 @@ std::ostream & operator<<(std::ostream & out,ScoreDouble const& si){ return out 
 struct ScoreIntDouble {
 	typedef double Result;
 	typedef std::pair<int,double> Interaction;
-	static std::string name(){ return "ScoreIntDouble"; }	
+	static std::string name(){ return "ScoreIntDouble"; }
 	template<class Config>
 	Result operator()(int const & i,double const & a, Config const& c) const {
 		return i*a*c.scale;
@@ -95,18 +95,18 @@ TEST(ObjectiveFunction,detect_call_operator){
 
 template<class Interactions >
 struct SimpleInteractionSource {
-	
+
 	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
-	
+
 	MAP interactions_map_;
-	
+
 	typedef Interactions InteractionTypes;
 
-	template<class Interaction>	std::vector<Interaction> & 
+	template<class Interaction>	std::vector<Interaction> &
 	get_interactions() {
 		return interactions_map_.template get<Interaction>();
 	}
-	template<class Interaction>	std::vector<Interaction> const & 
+	template<class Interaction>	std::vector<Interaction> const &
 	get_interactions() const {
 		return interactions_map_.template get<Interaction>();
 	}
@@ -119,7 +119,7 @@ struct SimpleInteractionSource {
 
 };
 template<class I>
-std::ostream & operator<<(std::ostream & out, SimpleInteractionSource<I> const & s){ 
+std::ostream & operator<<(std::ostream & out, SimpleInteractionSource<I> const & s){
 	return out << s.interactions_map_;
 }
 
@@ -137,13 +137,13 @@ TEST(ObjectiveFunction,basic_tests_local_and_global_config){
 	ObjFun score;
 
 	typedef ObjFun::Results Results;
-	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( Results(0,0,0,0), score(interaction_source) );
 	interaction_source.get_interactions<int>().push_back(1);
 	EXPECT_EQ( Results(1,2,0,0), score(interaction_source) );
 	interaction_source.get_interactions<double>().push_back(1.234);
-	interaction_source.get_interactions<double>().push_back(2);	
+	interaction_source.get_interactions<double>().push_back(2);
 	interaction_source.get_interactions<double>().push_back(-2);
 	EXPECT_EQ( Results(1,2,1.234,0), score(interaction_source) );
 	interaction_source.get_interactions<std::pair<int,double> >().push_back(std::make_pair(1,1.5));
@@ -165,17 +165,17 @@ TEST(ObjectiveFunction,test_results){
 	typedef	ObjectiveFunction< mpl::vector< ScoreDouble, ScoreInt >, ConfigTest	> ObjFun;
 	ObjFun score;
 	// typedef util::meta::InstanceMap< mpl::vector<int,double>, std::vector<mpl::_1> > InteractionSource;
-	typedef SimpleInteractionSource< mpl::vector<int,double> > InteractionSource;	
+	typedef SimpleInteractionSource< mpl::vector<int,double> > InteractionSource;
 
 	InteractionSource interaction_source;
 	interaction_source.get_interactions<int>().push_back(1);
-	interaction_source.get_interactions<int>().push_back(7);	
-	interaction_source.get_interactions<double>().push_back(1.2345);	
+	interaction_source.get_interactions<int>().push_back(7);
+	interaction_source.get_interactions<double>().push_back(1.2345);
 	ObjFun::Results weights(2.0);
 	ObjFun::Results results = score(interaction_source);
 	float tot = results.sum();
 	EXPECT_FLOAT_EQ( 9.2345f, tot );
-	EXPECT_DOUBLE_EQ( 9.2345, results.sum() );		
+	EXPECT_DOUBLE_EQ( 9.2345, results.sum() );
 	EXPECT_DOUBLE_EQ( 18.469,  (results*weights).sum() );
 	EXPECT_DOUBLE_EQ( 18.469,  (results+results).sum() );
 	EXPECT_DOUBLE_EQ( 27.7035, (results*weights + results).sum() );
@@ -188,14 +188,14 @@ struct PlaceholderInteractionSource {
 	typedef size_t Placeholder;
 	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAP;
 	typedef util::meta::InstanceMap<Interactions,mpl::always<std::vector<Placeholder> > > MAP_int;
-	
+
 	MAP interactions_map_;
-	MAP_int placeholder_map_;	
-	
+	MAP_int placeholder_map_;
+
 	typedef Interactions InteractionTypes;
 
-	template<class Interaction>	
-	void 
+	template<class Interaction>
+	void
 	add_interaction(
 		Interaction const & interaction
 	){
@@ -206,7 +206,7 @@ struct PlaceholderInteractionSource {
 	}
 
 	template<class Interaction>
-	std::vector<Placeholder> const & 
+	std::vector<Placeholder> const &
 	get_interactions() const {
 		return placeholder_map_.template get<Interaction>();
 	}
@@ -218,18 +218,18 @@ struct PlaceholderInteractionSource {
 	struct interaction_placeholder_type { typedef Placeholder type; };
 
 	template<class Interaction>
-	Interaction const & 
+	Interaction const &
 	get_interaction_from_placeholder(
 		Placeholder const & placeholder
 	) const {
-		// cout << "get_interaction_from_placeholder " << (interactions_map_.template get<Interaction>()[placeholder]) 
+		// cout << "get_interaction_from_placeholder " << (interactions_map_.template get<Interaction>()[placeholder])
 		//      << " placeholder " << placeholder << endl;
 		return interactions_map_.template get<Interaction>()[placeholder];
 	}
 
 };
 template<class I>
-std::ostream operator<<(std::ostream & out, PlaceholderInteractionSource<I> const & s){ 
+std::ostream operator<<(std::ostream & out, PlaceholderInteractionSource<I> const & s){
 	return out << s.interactions_map_;
 }
 
@@ -248,13 +248,13 @@ TEST(ObjectiveFunction,test_iteraction_placeholder){
 	ObjFun score;
 
 	typedef ObjFun::Results Results;
-	typedef PlaceholderInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	typedef PlaceholderInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( Results(0,0,0,0,0), score(interaction_source) );
 	interaction_source.add_interaction<int>(1);
 	EXPECT_EQ( Results(1,2,3,0,0), score(interaction_source) );
 	interaction_source.add_interaction<double>(1.234);
-	interaction_source.add_interaction<double>(2);	
+	interaction_source.add_interaction<double>(2);
 	interaction_source.add_interaction<double>(-2);
 	EXPECT_EQ( Results(1,2,3,1.234,0), score(interaction_source) );
 	interaction_source.add_interaction<std::pair<int,double> >(std::make_pair(1,1.5));
@@ -311,18 +311,18 @@ struct CopyIM {
 
 
 struct vec_of_rem_refwrap {
-	template<class T> struct apply { typedef 
+	template<class T> struct apply { typedef
 		std::vector<typename util::meta::recursive_remove_refwrap<T>::type> type; }; };
 
 template<class Interactions >
 struct RefInteractionSource {
-	
+
 	typedef util::meta::InstanceMap<Interactions,std::vector<mpl::_1> > MAPREF;
-	typedef util::meta::InstanceMap<Interactions, vec_of_rem_refwrap > MAPVAL;	
+	typedef util::meta::InstanceMap<Interactions, vec_of_rem_refwrap > MAPVAL;
 
 	MAPVAL imap_val_;
-	MAPREF imap_ref_;	
-	
+	MAPREF imap_ref_;
+
 	// leave thes out here to test default behavoir
 	// typedef Interactions InteractionTypes;
 
@@ -331,12 +331,12 @@ struct RefInteractionSource {
 		m::for_each<Interactions,util::meta::type2type<m::_1> >(cpim);
 	}
 
-	template<class Interaction>	std::vector<Interaction> const & 
+	template<class Interaction>	std::vector<Interaction> const &
 	get_interactions() const {
 		return imap_ref_.template get<Interaction>();
 	}
 
-	template<class Interaction>	std::vector<typename util::meta::recursive_remove_refwrap<Interaction>::type > & 
+	template<class Interaction>	std::vector<typename util::meta::recursive_remove_refwrap<Interaction>::type > &
 	get_interactions_vals() {
 		return imap_val_.template get<Interaction>();
 	}
@@ -349,7 +349,7 @@ struct RefInteractionSource {
 
 };
 template<class I>
-std::ostream & operator<<(std::ostream & out, RefInteractionSource<I> const & s){ 
+std::ostream & operator<<(std::ostream & out, RefInteractionSource<I> const & s){
 	return out << s.imap_val_;
 }
 
@@ -376,7 +376,7 @@ TEST(ObjectiveFunction,tuple_of_ref_interactions){
 
 	typedef ObjFun::Results Results;
 	typedef std::pair<reference_wrapper<int const>,reference_wrapper<double const> > I1;
-	typedef RefInteractionSource< mpl::vector<I1> > InteractionSource;	
+	typedef RefInteractionSource< mpl::vector<I1> > InteractionSource;
 	InteractionSource interaction_source;
 
 	EXPECT_EQ( Results(0), score(interaction_source) );
@@ -403,8 +403,8 @@ struct ScoreIntWithPre {
 	Result operator()(Interaction a, Config const& c) const {
 		return a*c.scale * local_scale;
 	}
-	template<class Config>
-	void pre( Result & r, Config const & c ) const {
+	template<class Scene, class Config>
+	void pre( Scene const &, Result & r, Config const & c ) const {
 		r += 1.0;
 	}
 };
@@ -431,13 +431,13 @@ TEST( ObjectiveFunction, test_pre )
 	ObjFunWithPre scorewithpre;
 
 	typedef ObjFunNoPre::Results ResultsNoPre;
-	typedef ObjFunWithPre::Results ResultsWithPre;	
-	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	typedef ObjFunWithPre::Results ResultsWithPre;
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( ResultsNoPre  (0), scorenopre  (interaction_source) );
-	EXPECT_EQ( ResultsWithPre(1), scorewithpre(interaction_source) );	
+	EXPECT_EQ( ResultsWithPre(1), scorewithpre(interaction_source) );
 	interaction_source.get_interactions<int>().push_back(1);
-	EXPECT_EQ( ResultsNoPre  (1), scorenopre  (interaction_source) );	
+	EXPECT_EQ( ResultsNoPre  (1), scorenopre  (interaction_source) );
 	EXPECT_EQ( ResultsWithPre(2), scorewithpre(interaction_source) );
 
 }
@@ -453,8 +453,8 @@ struct ScoreIntWithPost {
 	Result operator()(Interaction a, Config const& c) const {
 		return a*c.scale * local_scale;
 	}
-	template<class Config>
-	void post( Result & r, Config const & c ) const {
+	template<class Scene, class Config>
+	void post( Scene const &, Result & r, Config const & c ) const {
 		r += 1.0;
 	}
 };
@@ -481,13 +481,13 @@ TEST( ObjectiveFunction, test_post )
 	ObjFunWithPost scorewithpost;
 
 	typedef ObjFunNoPost::Results ResultsNoPost;
-	typedef ObjFunWithPost::Results ResultsWithPost;	
-	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	typedef ObjFunWithPost::Results ResultsWithPost;
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( ResultsNoPost  (0), scorenopost  (interaction_source) );
-	EXPECT_EQ( ResultsWithPost(1), scorewithpost(interaction_source) );	
+	EXPECT_EQ( ResultsWithPost(1), scorewithpost(interaction_source) );
 	interaction_source.get_interactions<int>().push_back(1);
-	EXPECT_EQ( ResultsNoPost  (1), scorenopost  (interaction_source) );	
+	EXPECT_EQ( ResultsNoPost  (1), scorenopost  (interaction_source) );
 	EXPECT_EQ( ResultsWithPost(2), scorewithpost(interaction_source) );
 
 }
@@ -500,13 +500,13 @@ struct ScoreIntWithScratch {
 	typedef int Interaction;
 	double local_scale;
 	typedef m::true_ HasPre;
-	typedef m::true_ HasPost;	
+	typedef m::true_ HasPost;
 	typedef int Scratch;
 	ScoreIntWithScratch():local_scale(1.0){}
 	static std::string name(){ return "ScoreIntWithScratch"; }
 	mutable Scratch * addr_of_scratch_should_stay_same;
-	template<class Config>
-	void pre( Result & r, Scratch & s, Config const & c ) const {
+	template<class Scene, class Config>
+	void pre( Scene const &, Result & r, Scratch & s, Config const & c ) const {
 		r += 1.0;
 		addr_of_scratch_should_stay_same = &s;
 	}
@@ -518,8 +518,8 @@ struct ScoreIntWithScratch {
 		}
 		return a*c.scale * local_scale;
 	}
-	template<class Config>
-	void post( Result & r, Scratch & s, Config const & c ) const {
+	template<class Scene, class Config>
+	void post( Scene const &, Result & r, Scratch & s, Config const & c ) const {
 		ASSERT_EQ( addr_of_scratch_should_stay_same, &s ); // verify that same scratch object is being passed
 		r += 1.0;
 	}
@@ -547,13 +547,13 @@ TEST( ObjectiveFunction, test_scratch )
 	ObjFunWithScratch scorewithscratch;
 
 	typedef ObjFunNoScratch::Results ResultsNoScratch;
-	typedef ObjFunWithScratch::Results ResultsWithScratch;	
-	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;	
+	typedef ObjFunWithScratch::Results ResultsWithScratch;
+	typedef SimpleInteractionSource< mpl::vector<int,double,std::pair<int,double> > > InteractionSource;
 	InteractionSource interaction_source;
 	EXPECT_EQ( ResultsNoScratch  (0), scorenoscratch  (interaction_source) );
-	EXPECT_EQ( ResultsWithScratch(2), scorewithscratch(interaction_source) );	
+	EXPECT_EQ( ResultsWithScratch(2), scorewithscratch(interaction_source) );
 	interaction_source.get_interactions<int>().push_back(1);
-	EXPECT_EQ( ResultsNoScratch  (1), scorenoscratch  (interaction_source) );	
+	EXPECT_EQ( ResultsNoScratch  (1), scorenoscratch  (interaction_source) );
 	EXPECT_EQ( ResultsWithScratch(3), scorewithscratch(interaction_source) );
 
 }

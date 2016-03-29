@@ -7,7 +7,6 @@
 #include "scheme/numeric/util.hh"
 #include "scheme/types.hh"
 #include <vector>
-#include <boost/foreach.hpp>
 
 namespace scheme { namespace rosetta { namespace score {
 
@@ -24,6 +23,8 @@ struct RosettaField {
 	F3 atom_bins_lb_, atom_bins_ub_;
 	I3 atom_bins_dim_;
 
+	float const bin_witdh_ = 6.001f;
+
 	RosettaField() { EtableInit::init_EtableParams(params); }
 
 	RosettaField(
@@ -35,17 +36,17 @@ struct RosettaField {
 	void init_atom_bins(){
 		atom_bins_lb_.fill( std::numeric_limits<float>::max() );
 		atom_bins_ub_.fill( std::numeric_limits<float>::min() );
-		BOOST_FOREACH( Atom const & a, atoms_ ){
+		for( auto const & a : atoms_ ){
 			atom_bins_lb_ = atom_bins_lb_.min(a.position());
 			atom_bins_ub_ = atom_bins_ub_.max(a.position());
 		}
 		// std::cout << atom_bins_lb_ << std::endl;
 		// std::cout << atom_bins_ub_ << std::endl;
-		atom_bins_dim_[0] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[0] - atom_bins_lb_[0]) / 6.0 ) );
-		atom_bins_dim_[1] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[1] - atom_bins_lb_[1]) / 6.0 ) );
-		atom_bins_dim_[2] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[2] - atom_bins_lb_[2]) / 6.0 ) );
+		atom_bins_dim_[0] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[0] - atom_bins_lb_[0]) / bin_witdh_ ) );
+		atom_bins_dim_[1] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[1] - atom_bins_lb_[1]) / bin_witdh_ ) );
+		atom_bins_dim_[2] = std::max( 1, (int)std::ceil ( (atom_bins_ub_[2] - atom_bins_lb_[2]) / bin_witdh_ ) );
 		atom_bins_.resize( atom_bins_dim_ );
-		BOOST_FOREACH( Atom const & a, atoms_ ){
+		for( auto const & a : atoms_ ){
 			I3 i = position_to_atombin(a.position());
 			// std::cout << "add atom " << i << std::endl;
 			atom_bins_(i).push_back(a);
@@ -58,7 +59,7 @@ struct RosettaField {
 		BOOST_VERIFY( tot == atoms_.size() );
 	}
 	I3 position_to_atombin( F3 p ) const {
-		I3 i = ( p - atom_bins_lb_ ) / 6.0;
+		I3 i = ( p - atom_bins_lb_ ) / bin_witdh_;
 		// std::cout << p << std::endl;
 		// std::cout << i << std::endl;
 		return i;
@@ -99,7 +100,7 @@ struct RosettaField {
 	float compute_rosetta_energy_safe(float x, float y, float z, int atype) const
 	{
 		float E = 0;
-		BOOST_FOREACH(Atom const & a,atoms_){
+		for( auto const & a : atoms_ ){
 			E += compute_rosetta_energy_one( a, x, y, z, atype );
 		}
 		return E;
@@ -120,7 +121,7 @@ struct RosettaField {
 		for( ii[1] = lb[1]; ii[1] < ub[1]; ++ii[1] ){
 		for( ii[2] = lb[2]; ii[2] < ub[2]; ++ii[2] ){
 			// std::cout << i << " " << ii << " " << std::endl;
-			BOOST_FOREACH(Atom const & a, atom_bins_(ii) ){
+			for( auto const & a : atom_bins_(ii) ){
 				E += compute_rosetta_energy_one( a, x, y, z, atype );
 			}
 		}}}

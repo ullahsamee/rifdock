@@ -24,7 +24,7 @@ struct TestScene : public SceneBase<X1dim>
 		update_symmetry(positions_.size());
 	}
 
-	virtual shared_ptr<SceneBase<X1dim> > clone() const { return make_shared<TestScene>(*this); }
+	virtual shared_ptr<SceneBase<X1dim> > clone_deep() const { return make_shared<TestScene>(*this); }
 
 
 };
@@ -41,19 +41,19 @@ TEST( Director, test_NestDirector ){
 
 	TestScene scene;
 	scene.add_position(0);
-	scene.add_position(0);	
-	scene.add_position(0);	
-	scene.add_position(0);			
+	scene.add_position(0);
+	scene.add_position(0);
+	scene.add_position(0);
 
 	NestDirector< Nest1D > d0(0);
-	NestDirector< Nest1D > d2(2);	
+	NestDirector< Nest1D > d2(2);
 
 	d0.set_scene( 7, 3, scene );
 	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(0) );
 	ASSERT_EQ( X1dim(0.0)                , scene.position(1) );
 	ASSERT_EQ( X1dim(0.0)                , scene.position(2) );
 	ASSERT_EQ( X1dim(0.0)                , scene.position(3) );
-	
+
 	d2.set_scene( 7, 3, scene );
 	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(0) );
 	ASSERT_EQ( X1dim(0.0)                , scene.position(1) );
@@ -67,7 +67,7 @@ TEST( Director, test_TreeDirector ){
 
 	TestScene scene;
 	scene.add_position(0);
-	scene.add_position(0);	
+	scene.add_position(0);
 	// cout << scene << endl;
 
 	shared_ptr<scheme::nest::NestBase<> > x1nest  = make_shared<scheme::nest::NEST<1,X1dim> >(1);
@@ -85,8 +85,8 @@ TEST( Director, test_TreeDirector ){
 
 	TreeDirector< numeric::X1dim > director(root);
 
-	nest::NEST<2,util::SimpleArray<2>,nest::pmap::ScaleMap> refnest( 
-		util::SimpleArray<2>(20.0,10.0), 
+	nest::NEST<2,util::SimpleArray<2>,nest::pmap::ScaleMap> refnest(
+		util::SimpleArray<2>(20.0,10.0),
 		util::SimpleArray<2>(21.0,12.0),
 		util::SimpleArray<2,uint64_t>(1,2)
 	 );
@@ -100,7 +100,7 @@ TEST( Director, test_TreeDirector ){
 			util::SimpleArray<2> tmp = refnest.set_and_get(i,resl);
 			// scene.set_position( 0, tmp[0] );
 			// scene.set_position( 1, tmp[1] );
-			director.set_scene( i, resl, scene ); 
+			director.set_scene( i, resl, scene );
 			++count;
 			// cout << scene << " " << refnest.set_and_get(i,resl) << endl;
 			ASSERT_EQ( scene.position(0)[0], tmp[0] );
@@ -110,11 +110,11 @@ TEST( Director, test_TreeDirector ){
 	cout << "set_scene rate: " << (double)count / t.elapsed().wall*1000000000.0 << " / sec " << endl;
 
 
-	shared_ptr<SceneBase<X1dim> > test = scene.clone();
+	shared_ptr<SceneBase<X1dim> > test = scene.clone_deep();
 	// cout << test->position(0) << " " << scene.position(0) << endl;
-	ASSERT_EQ( test->position(0)[0] , scene.position(0)[0] );	
+	ASSERT_EQ( test->position(0)[0] , scene.position(0)[0] );
 	test->set_position(0,0);
-	// cout << test->position(0) << " " << scene.position(0) << endl;	
+	// cout << test->position(0) << " " << scene.position(0) << endl;
 	ASSERT_NE( test->position(0)[0] , scene.position(0)[0] );
 }
 

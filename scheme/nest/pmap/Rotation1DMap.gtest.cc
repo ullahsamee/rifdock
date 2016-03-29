@@ -33,7 +33,7 @@ double get_angle( Matrix3d const & m ){
 
 TEST( Rotation1DMap , flip_test ){
 
-	{ 
+	{
 		NEST<1,Matrix3d,Rotation1DMap> nest;
 		Vector3d axis(1,0,0), flip(0,1,0);
 		nest.set_axis( axis );
@@ -42,9 +42,9 @@ TEST( Rotation1DMap , flip_test ){
 		{ Matrix3d m = nest.set_and_get(1,0); ASSERT_DOUBLE_EQ(  M_PI    , get_angle(m) ); ASSERT_GE( get_axis(m).dot( flip ), 0.9999 ); }
 		{ Matrix3d m = nest.set_and_get(0,1); ASSERT_DOUBLE_EQ( -M_PI/2.0, get_angle(m) ); ASSERT_GE( get_axis(m).dot( axis ), 0.9999 ); }
 		{ Matrix3d m = nest.set_and_get(1,1); ASSERT_DOUBLE_EQ(  M_PI/2.0, get_angle(m) ); ASSERT_GE( get_axis(m).dot( axis ), 0.9999 ); }
-		{ 
+		{
 			Matrix3d m = nest.set_and_get(2,1);
-			ASSERT_DOUBLE_EQ(  M_PI    , get_angle(m) ); 
+			ASSERT_DOUBLE_EQ(  M_PI    , get_angle(m) );
 			ASSERT_GE( get_axis(m).dot( Vector3d(0,sqrt(2)/2,-sqrt(2)/2) ), 0.9999 );
 		}
 		{
@@ -53,7 +53,9 @@ TEST( Rotation1DMap , flip_test ){
 			ASSERT_GE( get_axis(m).dot( Vector3d(0,sqrt(2)/2,sqrt(2)/2) ), 0.9999 );
 		}
 		#ifndef NDEBUG
+		#ifndef CXX14
 		ASSERT_DEATH( nest.set_and_get(4,1), ".*" );
+		#endif
 		#endif
 	}
 
@@ -61,7 +63,7 @@ TEST( Rotation1DMap , flip_test ){
 
 TEST( Rotation1DMap , basic_test ){
 
-	{ 
+	{
 		NEST<1,Matrix3d,Rotation1DMap> nest;
 		Vector3d axis(1,0,0); nest.set_axis( axis );
 		{ Matrix3d m = nest.set_and_get(0,0); ASSERT_DOUBLE_EQ(  0.0     , get_angle(m) );                                               }
