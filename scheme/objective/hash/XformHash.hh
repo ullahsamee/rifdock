@@ -719,9 +719,9 @@ struct XformHash_bt24_BCC6 {
 		{
 			Float const & w(nest::pmap::cell_width<Float>());
 
-			assert( params[0] >= -0.00001 && params[0] <= 1.00001 );
-			assert( params[1] >= -0.00001 && params[1] <= 1.00001 );
-			assert( params[2] >= -0.00001 && params[2] <= 1.00001 );
+			assert( params[0] >= -0.0001 && params[0] <= 1.0001 );
+			assert( params[1] >= -0.0001 && params[1] <= 1.0001 );
+			assert( params[2] >= -0.0001 && params[2] <= 1.0001 );
 			params[0] = fmax(0.0,params[0]);
 			params[1] = fmax(0.0,params[1]);
 			params[2] = fmax(0.0,params[2]);
