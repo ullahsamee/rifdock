@@ -682,9 +682,9 @@ struct XformHash_bt24_BCC6 {
 			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
 			params[2] = q.z()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
 
-			assert( -0.0001 <= params[0] && params[0] <= 1.0001 );
-			assert( -0.0001 <= params[1] && params[1] <= 1.0001 );
-			assert( -0.0001 <= params[2] && params[2] <= 1.0001 );
+			// assert( -0.0001 <= params[0] && params[0] <= 1.0001 );
+			// assert( -0.0001 <= params[1] && params[1] <= 1.0001 );
+			// assert( -0.0001 <= params[2] && params[2] <= 1.0001 );
 
 		}
 		assert( cell_index < 24 );
@@ -719,9 +719,9 @@ struct XformHash_bt24_BCC6 {
 		{
 			Float const & w(nest::pmap::cell_width<Float>());
 
-			assert( params[0] >= -0.0001 && params[0] <= 1.0001 );
-			assert( params[1] >= -0.0001 && params[1] <= 1.0001 );
-			assert( params[2] >= -0.0001 && params[2] <= 1.0001 );
+			// assert( params[0] >= -0.0001 && params[0] <= 1.0001 );
+			// assert( params[1] >= -0.0001 && params[1] <= 1.0001 );
+			// assert( params[2] >= -0.0001 && params[2] <= 1.0001 );
 			params[0] = fmax(0.0,params[0]);
 			params[1] = fmax(0.0,params[1]);
 			params[2] = fmax(0.0,params[2]);
