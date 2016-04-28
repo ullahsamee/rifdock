@@ -21,6 +21,7 @@ namespace scheme { namespace chemical {
 
 struct HBondRay {
 	::Eigen::Vector3f horb_cen, direction;
+	int32_t id=1, group=-1;
 };
 
 template< class _AtomData >
