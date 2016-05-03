@@ -8,8 +8,8 @@ project (test_librosetta)
 #link_directories( ${ROSETTA_SRC}/build/external/${ROSETTA_BIN} )
 
 
-set( ROSETTA_SRC /work/sheffler/ssd/rosetta/librosetta/source )
-set( ROSETTA_BIN /work/sheffler/ssd/rosetta/librosetta/source/cmake/build_cxx14_omp )
+set( ROSETTA_SRC $ENV{CMAKE_ROSETTA_PATH}/source )
+set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_cxx14_omp )
 link_directories( ${ROSETTA_BIN} )
 
 set( ALL_ROSETTA_LIBS 
