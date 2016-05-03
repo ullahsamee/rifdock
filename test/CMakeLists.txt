@@ -19,47 +19,34 @@ cmake_minimum_required (VERSION 2.6)
 #SET( CMAKE_CXX_FLAGS         "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "-std=c++11 -DCEREAL -DCXX11 -w -O3 -DDEBUG -ffast-math" )
 
-#SET( CMAKE_CXX_FLAGS         "-w -O3 -std=c++11 -DCXX11 -DBENCHMARK -DDEBUG -ffast-math" )
-#SET( CMAKE_EXE_LINKER_FLAGS  "-w -O3 -std=c++11 -DCXX11 -DBENCHMARK -DDEBUG -ffast-math" )
+#SET( CMAKE_CXX_FLAGS         "-w -O3 -std=c++11 -DCXX11 -DSCHEME_BENCHMARK -DDEBUG -ffast-math" )
+#SET( CMAKE_EXE_LINKER_FLAGS  "-w -O3 -std=c++11 -DCXX11 -DSCHEME_BENCHMARK -DDEBUG -ffast-math" )
 
 #SET( CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS}        -std=c++14 -stdlib=libc++ -DCXX11 -DCXX14 -w -O3 -DDEBUG -ffast-math -funroll-loops -march=native" )
 #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lc++abi" )
 
-SET( CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS}        -std=c++11 -DCXX11 -w -O3 -DDEBUG -ffast-math -funroll-loops -march=native" )
-SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lc++abi" )
+# SET( CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS}        -std=c++11 -DCXX11 -w -O3 -DDEBUG -ffast-math -funroll-loops -march=native" )
+# SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lc++abi" )
 
 # this removes those annoying ._* file turds you get with network fs on mac
-# execute_process( COMMAND find ../../scheme/scheme -regex .*[.]_.* -exec rm {} \; )
 
-add_subdirectory(gmock)
-include_directories("../external")
-include_directories("../test/gmock/gtest/include")
-include_directories("../test/gmock/include")
-include_directories("../external/eigen3")
-include_directories("/scratch/USERS/sheffler/root/clang37/include")
-
-list( APPEND LIB_CC ../scheme/rosetta/score/EtableParams_init.lib.cc ../scheme/rosetta/atype_map.lib.cc ../scheme/chemical/ligand_factory.lib.cc )
 
 # shitty "data" files to compile faster
+list( APPEND LIB_CC ../schemelib/scheme/rosetta/score/EtableParams_init.lib.cc ../schemelib/scheme/rosetta/atype_map.lib.cc ../schemelib/scheme/chemical/ligand_factory.lib.cc )
 SET_SOURCE_FILES_PROPERTIES( ${LIB_CC} PROPERTIES COMPILE_FLAGS -O0 )
+add_library( scheme ${LIB_CC} )
 
-FILE(GLOB L1 "../scheme/*.cc")
-FILE(GLOB L2 "../scheme/*/*.cc")
-FILE(GLOB L3 "../scheme/*/*/*.cc")
-FILE(GLOB L4 "../scheme/*/*/*/*.cc")
-FILE(GLOB L5 "../scheme/*/*/*/*/*.cc")
+FILE(GLOB L1 "../schemelib/scheme/*.cc")
+FILE(GLOB L2 "../schemelib/scheme/*/*.cc")
+FILE(GLOB L3 "../schemelib/scheme/*/*/*.cc")
+FILE(GLOB L4 "../schemelib/scheme/*/*/*/*.cc")
+FILE(GLOB L5 "../schemelib/scheme/*/*/*/*/*.cc")
 
-list(APPEND EXTRA_LIBS gmock boost_system boost_filesystem boost_iostreams z boost_timer )
-list(APPEND CMAKE_LIBRARY_PATH /usr/local/lib)
-list(APPEND CMAKE_LIBRARY_PATH /usr/lib)
-list(APPEND CMAKE_LIBRARY_PATH /usr/lib64)
-list(APPEND CMAKE_LIBRARY_PATH /scratch/USERS/sheffler/root/clang37/lib)
+list(APPEND EXTRA_LIBS boost_system boost_filesystem boost_iostreams z boost_timer )
 
-include_directories("..") # scheme source dir
+
 include_directories(".")
 link_directories(${CMAKE_LIBRARY_PATH})
-
-add_library( scheme ${LIB_CC} )
 
 
 project (main_test)

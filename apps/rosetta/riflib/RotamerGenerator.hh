@@ -1,0 +1,85 @@
+// -*- mode:c++;tab-width:2;indent-tabs-mode:t;show-trailing-whitespace:t;rm-trailing-spaces:t -*-
+// vi: set ts=2 noet:
+//
+// (c) Copyright Rosetta Commons Member Institutions.
+// (c) This file is part of the Rosetta software suite and is made available under license.
+// (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
+// (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
+// (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
+#ifndef INCLUDED_riflib_RotamerGenerator_hh
+#define INCLUDED_riflib_RotamerGenerator_hh
+
+#include <core/types.hh>
+#include <core/pose/Pose.fwd.hh>
+#include <core/pack/rotamer_set/RotamerSet.fwd.hh>
+#include <scheme/actor/Atom.hh>
+#include <scheme/chemical/RotamerIndex.hh>
+#include <numeric/xyzVector.hh>
+#include <vector>
+#include <Eigen/Dense>
+
+namespace devel {
+namespace scheme {
+
+typedef ::scheme::actor::Atom<
+	::Eigen::Vector3f
+> SchemeAtom;
+
+typedef ::scheme::chemical::ChemicalIndex<
+	::scheme::chemical::AtomData
+> ChemicalIndex;
+
+struct RosettaRotamerGenerator;
+
+typedef ::scheme::chemical::RotamerIndex<
+	SchemeAtom,
+	RosettaRotamerGenerator
+> RotamerIndex;
+
+using ::scheme::chemical::HBondRay;
+
+
+struct RosettaRotamerGenerator {
+	typedef SchemeAtom Atom;
+
+	void
+	get_atoms( // TODO: possibly replace with fill_rotamer( scheme rot )
+		std::string resname,
+		std::vector<float> const & chi,
+		std::vector<SchemeAtom> & atoms,
+		std::vector<std::pair<SchemeAtom,SchemeAtom> > & hbonders, // TODO: depricate this?
+		int & nheavyatoms,
+		std::vector<HBondRay> & donors,
+		std::vector<HBondRay> & acceptors
+	);
+
+};
+
+
+void get_donor_rays   ( core::pose::Pose const & pose, int ir, bool withbb, std::vector<HBondRay> & donors );
+void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb, std::vector<HBondRay> & acceptors );
+
+void get_donor_rays   ( core::pose::Pose const & pose, int ir, bool withbb,
+	std::vector<HBondRay> & donors,std::vector<std::pair<int,std::string>> & anames );
+void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
+	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames );
+
+
+
+core::pack::rotamer_set::RotamerSetOP
+get_rosetta_rot_set(
+	core::pose::Pose & pose,
+	core::Size ir
+ );
+
+
+void
+get_rotamer_index(
+	RotamerIndex & rot_index,
+	std::string cachefile=""
+);
+
+
+}}
+
+#endif
