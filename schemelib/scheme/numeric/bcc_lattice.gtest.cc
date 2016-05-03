@@ -2,12 +2,12 @@
 
 #include "scheme/numeric/bcc_lattice.hh"
 #include "scheme/io/dump_pdb_atom.hh"
+#include "scheme/util/Timer.hh"
 #include <fstream>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/foreach.hpp>
-#include <boost/timer/timer.hpp>
 #include <iterator>     // std::back_inserter
 #include <boost/format.hpp>
 #include <sparsehash/dense_hash_set>
@@ -97,16 +97,16 @@ test_bcc_performance(
 			samples[i][j] = runif(rng)*9.0-4.5;			
 
 	std::vector<size_t> indices(NSAMP);
-	boost::timer::cpu_timer lookup_time;
+	util::Timer<> lookup_time;
 	for(int i = 0; i < NSAMP; ++i)
 		indices[i] = bcc[samples[i]];
-	cout << "BCC DIM " << N << " lookup rate: " << (double)NSAMP / lookup_time.elapsed().wall*1000000000.0 << " sec / ";
+	cout << "BCC DIM " << N << " lookup rate: " << (double)NSAMP / lookup_time.elapsed() << " sec / ";
 
 	std::vector<V> centers(NSAMP);
-	boost::timer::cpu_timer getval_time;
+	util::Timer<> getval_time;
 	for(int i = 0; i < NSAMP; ++i)
 		centers[i] = bcc[indices[i]];
-	cout << " getval rate: " << (double)NSAMP / getval_time.elapsed().wall*1000000000.0 << " sec" << endl;
+	cout << " getval rate: " << (double)NSAMP / getval_time.elapsed() << " sec" << endl;
 
 
 	F maxdiff = 0;
@@ -361,13 +361,13 @@ TEST(bcc_lattice,neighbors){
 // 		cout << endl;
 
 // // 	std::vector<size_t> indices(NSAMP);
-// // 	boost::timer::cpu_timer lookup_time;
+// // 	util::Timer<> lookup_time;
 // // 	for(int i = 0; i < NSAMP; ++i)
 // // 		indices[i] = bcc[samples[i]];
-// // 	cout << N << " lookup: " << (double)NSAMP / lookup_time.elapsed().wall*1000000000.0 << " sec" << endl;
+// // 	cout << N << " lookup: " << (double)NSAMP / lookup_time.elapsed() << " sec" << endl;
 
 // // 	std::vector<V> centers(NSAMP);
-// // 	boost::timer::cpu_timer getval_time;
+// // 	util::Timer<> getval_time;
 // // 	for(int i = 0; i < NSAMP; ++i)
 // // 		centers[i] = bcc[indices[i]];
 

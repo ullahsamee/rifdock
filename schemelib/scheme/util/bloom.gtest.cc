@@ -6,7 +6,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 #include <sparsehash/dense_hash_map>
 
@@ -113,22 +113,22 @@ TEST( bloom , bloom_filter_example ){
 	// }
 
 	{
-		boost::timer::cpu_timer timer;
+		util::Timer<> timer;
 		int nfalse = 0;
 		for( uint64_t i = 0; i < NTEST; ++i ){
 			nfalse += filter.contains( randindex(rng) );
 		}
-		double t = timer.elapsed().wall/1000000000.0;
+		double t = timer.elapsed();
 		cout << "false positive rate: " << (double)nfalse / NTEST << endl;
 		cout << "BLOOM: " << NTEST / t / 1000000.0 << "M/s" << endl;		
 	}
 	{
-		boost::timer::cpu_timer timer;
+		util::Timer<> timer;
 		int nfalse = 0;
 		for( uint64_t i = 0; i < NTEST; ++i ){
 			nfalse += inserted.find( randindex(rng) ) != inserted.end();
 		}
-		double t = timer.elapsed().wall/1000000000.0;
+		double t = timer.elapsed();
 		cout << "HASH: " << NTEST / t / 1000000.0 << "M/s" << endl;
 	}
 

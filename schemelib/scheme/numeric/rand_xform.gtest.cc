@@ -3,7 +3,6 @@
 #include "scheme/numeric/rand_xform.hh"
 #include "scheme/numeric/bcc_lattice.hh"
 #include "scheme/numeric/util.hh"
-#include <boost/timer/timer.hpp>
 #include <map>
 
 namespace scheme { namespace numeric { namespace rand_xfrom_test {

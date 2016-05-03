@@ -10,7 +10,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 namespace scheme { namespace numeric { namespace test {
 
@@ -64,11 +64,11 @@ TEST( euler_angles, performance ){
 		samp[i] = m;
 	}
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	for(int i = 0; i < NSAMP; ++i){
 		euler_angles(samp[i],euler[i]);
 	}
-	cout << "rate " << (double)1000000000*NSAMP/(double)t.elapsed().wall << endl;
+	cout << "rate " << NSAMP/(double)t.elapsed() << endl;
 
 
 

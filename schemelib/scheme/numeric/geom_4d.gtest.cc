@@ -10,7 +10,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 #include <fstream>
 
@@ -65,14 +65,14 @@ TEST( geom_4d , tetracontoctachoron_cell_lookup )
 	}
 		// V4 const quat_pos = quat.cwiseAbs();
 
-	boost::timer::cpu_timer naive;
+	util::Timer<> naive;
 	for(int i = 0; i < NITER; ++i){
 		// (t24*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
 		(t24*samp[i]).maxCoeff(&cell[i]);		
 	}
-	cout << "bt24 naive rate:  " << (Float)NITER / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 naive rate:  " << (Float)NITER / naive.elapsed_nano() << endl;
 
-	boost::timer::cpu_timer clever;
+	util::Timer<> clever;
 	for(int i = 0; i < NITER; ++i){
 		numeric::get_cell_48cell( samp[i], cell2[i] );
 		// this is slower !?!
@@ -81,7 +81,7 @@ TEST( geom_4d , tetracontoctachoron_cell_lookup )
 
 
 	}
-	cout << "bt24 clever rate: " << (double)NITER / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "bt24 clever rate: " << (double)NITER / clever.elapsed_nano() << endl;
 
 	for(int i = 0; i < NITER; ++i){
 		if( cell[i] != cell2[i] ){
@@ -142,18 +142,18 @@ TEST( geom_4d , tetracontoctachoron_half_cell_lookup )
 	}
 		// V4 const quat_pos = quat.cwiseAbs();
 
-	boost::timer::cpu_timer naive;
+	util::Timer<> naive;
 	for(int i = 0; i < NITER; ++i){
 		// (t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);
 		(t24h*samp[i]).cwiseAbs().maxCoeff(&cell[i]);		
 	}
-	cout << "hbt24 naive rate:  " << (Float)NITER / naive.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 naive rate:  " << (Float)NITER / naive.elapsed_nano() << endl;
 
-	boost::timer::cpu_timer clever;
+	util::Timer<> clever;
 	for(int i = 0; i < NITER; ++i){
 		numeric::get_cell_48cell_half( samp[i], cell2[i] );
 	}
-	cout << "hbt24 clever rate: " << (double)NITER / clever.elapsed().wall * 1000000000.0 << endl;
+	cout << "hbt24 clever rate: " << (double)NITER / clever.elapsed_nano() << endl;
 
 	for(int i = 0; i < NITER; ++i){
 		// if( cell[i] > 11 ) continue;

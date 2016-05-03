@@ -4,7 +4,7 @@
 
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 #include <boost/foreach.hpp>
 
 #include <sparsehash/dense_hash_map>
@@ -64,7 +64,7 @@ void test_map( Map * hp, int64_t MAXIDX, int64_t NSAMP ){
 	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	size_t count = 0;
 	for(size_t i = 0; i < NSAMP; ++i){
 		size_t ri = randindex(rng);
@@ -75,7 +75,7 @@ void test_map( Map * hp, int64_t MAXIDX, int64_t NSAMP ){
 	}
 
 	if( count == 0 ) cout << "ERROR!!" << endl;
-	cout << "rate "  << NSAMP << " " << NROW << " " << MAXIDX << " " << (double)t.elapsed().wall/NSAMP/NROW << "ns, nonsense: " << (double)count/NSAMP << endl;
+	cout << "rate "  << NSAMP << " " << NROW << " " << MAXIDX << " " << t.elapsed_nano()/NSAMP/NROW << "ns, nonsense: " << (double)count/NSAMP << endl;
 }
 
 
@@ -119,7 +119,7 @@ void fill_and_test_map(Map * hp){
 
 	boost::random::mt19937 rng2((uint64_t)0);	
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	size_t count = 0;
 	for(size_t i = 0; i < NSAMP; ++i){
 		size_t ri = randindex(rng2);
@@ -128,7 +128,7 @@ void fill_and_test_map(Map * hp){
 			count += iter==h.end() ? 0.0 : iter->second[0];
 		}
 	}
-	cout << "rate " << NSAMP << " " << NROW << " " << MAXIDX << " " << (double)t.elapsed().wall/NSAMP/NROW << "ns, nonsense: " << (double)count / NSAMP << endl;
+	cout << "rate " << NSAMP << " " << NROW << " " << MAXIDX << " " << t.elapsed_nano()/NSAMP/NROW << "ns, nonsense: " << (double)count / NSAMP << endl;
 }
 
 // 100M 1/10 nrow 1
@@ -193,23 +193,23 @@ void test_2map(
 	for(size_t i = 0; i < NSAMP; ++i)
 		ridx.push_back( randindex(rng) );
 
-	boost::timer::cpu_timer tm;
+	util::Timer<> tm;
 	size_t mcount = 0;
 	BOOST_FOREACH(size_t ri,ridx){
 		for(size_t j = 0; j < NROW; ++j){
 			if( m.find(ri+j) != m.end() ) mcount += m[ri+j];
 		}
 	}
-	cout << lm << " rate " << (double)tm.elapsed().wall/NSAMP*NROW << "ns" << endl;
+	cout << lm << " rate " << tm.elapsed_nano()/NSAMP*NROW << "ns" << endl;
 
-	boost::timer::cpu_timer tn;
+	util::Timer<> tn;
 	size_t ncount = 0;
 	BOOST_FOREACH(size_t ri,ridx){
 		for(size_t j = 0; j < NROW; ++j){
 			if( n.find(ri+j) != n.end() ) ncount += n[ri+j];
 		}
 	}
-	cout << ln << " rate " << (double)tn.elapsed().wall/NSAMP*NROW << "ns" << endl;
+	cout << ln << " rate " << tn.elapsed_nano()/NSAMP*NROW << "ns" << endl;
 
 	cout << mcount << endl;
 	ASSERT_EQ( mcount, ncount );

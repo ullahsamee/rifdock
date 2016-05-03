@@ -9,7 +9,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 #include <fstream>
 
@@ -42,7 +42,7 @@ TEST( XformMap, stores_correctly ){
 
 	XformMap< Xform, double > const & xmap_test( xmap );
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 
 	for(int i = 0; i < dat.size(); ++i){
 		Xform const & x = dat[i].first;
@@ -50,7 +50,7 @@ TEST( XformMap, stores_correctly ){
 		EXPECT_EQ( xmap_test[x], v );
 		// cout << x.translation().transpose() << " " << v << endl;
 	}
-	cout << "XformMap " << NSAMP << " lookup rate: " << (double)NSAMP / t.elapsed().wall*1000000000.0 << " /sec ";
+	cout << "XformMap " << NSAMP << " lookup rate: " << (double)NSAMP / t.elapsed() << " /sec ";
 
 	// { // no way to check if stream in binary!
 	// 	std::cout << "following failure message is expected" << std::endl;

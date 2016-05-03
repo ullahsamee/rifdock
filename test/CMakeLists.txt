@@ -42,11 +42,9 @@ FILE(GLOB L3 "../schemelib/scheme/*/*/*.cc")
 FILE(GLOB L4 "../schemelib/scheme/*/*/*/*.cc")
 FILE(GLOB L5 "../schemelib/scheme/*/*/*/*/*.cc")
 
-list(APPEND EXTRA_LIBS boost_system boost_filesystem boost_iostreams z boost_timer )
-
+list(APPEND EXTRA_LIBS boost_system  )
 
 include_directories(".")
-link_directories(${CMAKE_LIBRARY_PATH})
 
 
 project (main_test)

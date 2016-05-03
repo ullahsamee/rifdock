@@ -5,7 +5,7 @@
 #include "scheme/kinematics/Director.hh"
 #include "scheme/numeric/X1dim.hh"
 
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 namespace scheme { namespace kinematics { namespace test_director {
 
@@ -92,7 +92,7 @@ TEST( Director, test_TreeDirector ){
 	 );
 
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	int count = 0;
 	for( int resl = 0; resl < 8; ++resl ){
 		// cout << "================== resl " << resl << " ======================" << endl;
@@ -107,7 +107,7 @@ TEST( Director, test_TreeDirector ){
 			ASSERT_EQ( scene.position(1)[0], tmp[1] );
 		}
 	}
-	cout << "set_scene rate: " << (double)count / t.elapsed().wall*1000000000.0 << " / sec " << endl;
+	cout << "set_scene rate: " << (double)count / t.elapsed() << " / sec " << endl;
 
 
 	shared_ptr<SceneBase<X1dim> > test = scene.clone_deep();

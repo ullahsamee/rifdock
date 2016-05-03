@@ -7,7 +7,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 
 namespace scheme { namespace numeric { namespace pref_test {
 
@@ -29,11 +29,11 @@ void test_xform_perf(){
 	Xform x,sum = Xform::Identity();
 	rand_xform(rng,x);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	for(int i = 0; i < NSAMP; ++i){
 		sum = sum * x;
 	}
-	double time = t.elapsed().wall;
+	double time = t.elapsed_nano();
 	printf( "runtime %7.3fns nonsense: %7.3f \n", time/NSAMP, sum.translation()[0] );
 
 }

@@ -7,7 +7,7 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 #include <sparsehash/dense_hash_set>
 
 namespace scheme { namespace objective { namespace hash { namespace xhtest {
@@ -138,20 +138,20 @@ void test_xform_hash_perf( double cart_resl, double ang_resl, int const N2=100*1
 	for(int i = 0; i < N2; ++i)
 		numeric::rand_xform(rng,samples[i]);
 
-	boost::timer::cpu_timer tk;
+	util::Timer<> tk;
 	std::vector<uint64_t> keys(N2);
 	for(int i = 0; i < N2; ++i){
 		keys[i] = xh.get_key( samples[i] );
 		// centers[i] = xh.get_center( keys[i] );
 		// cout << endl;
 	}
-	time_key += (double)tk.elapsed().wall;
+	time_key += (double)tk.elapsed_nano();
 
 
-	boost::timer::cpu_timer tc;
+	util::Timer<> tc;
 	for(int i = 0; i < N2; ++i)
 		centers[i] = xh.get_center( keys[i] );
-	time_cen += (double)tc.elapsed().wall;
+	time_cen += (double)tc.elapsed_nano();
 
 	google::dense_hash_set<size_t> idx_seen;
 	idx_seen.set_empty_key(std::numeric_limits<uint64_t>::max());

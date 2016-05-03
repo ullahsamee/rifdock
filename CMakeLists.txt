@@ -4,7 +4,7 @@ execute_process( COMMAND find ${CMAKE_SOURCE_DIR} -regex .*[.]_.* -exec rm {} \;
 
 set( CMAKE_BUILD_TYPE Release )
 
-SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -w" )
+SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -w" )
 add_definitions( -DCXX11 ) # these don't work....
 add_definitions( -DCXX14 )
 add_definitions( -std=c++14 )
@@ -20,11 +20,13 @@ include_directories("external/gmock/gtest/include")
 include_directories("external/gmock/include")
 list( APPEND EXTRA_LIBS gmock )
 
-include_directories("external/include")
+include_directories( "external/include" )
 include_directories( "schemelib" )
+include_directories( "/usr/local/include" )
+link_directories( "/usr/local/lib" )
+link_directories( "/usr/local/lib64" )
 
 #####################################################################################
 
 add_subdirectory(test)
-
-add_subdirectory(apps/rosetta)
+add_subdirectory(apps)

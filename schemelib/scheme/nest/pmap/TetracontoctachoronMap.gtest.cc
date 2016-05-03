@@ -11,7 +11,6 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
-#include <boost/timer/timer.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <fstream>

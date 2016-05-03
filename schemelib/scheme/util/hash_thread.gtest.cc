@@ -5,7 +5,7 @@
 
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include "scheme/util/Timer.hh"
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
 
@@ -68,13 +68,13 @@ void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
 	cout << "done fill " 
 		 << (double)h.size()/1000000 << "M  entries, "
 		 << (double)h.bucket_count()/1000000000 * sizeof(typename Map::value_type) << "GB  total size, " 
 		 << (double)h.size() / h.bucket_count() << " load, "
-		 << (double)t.elapsed().wall/NFILL << "ns"
+		 << t.elapsed_nano()/NFILL << "ns"
 		 << endl;
 }
 
@@ -92,7 +92,7 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost:
 
 	// h.resize(NFILL/2);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	size_t count = 0;
 	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(rng);
@@ -101,12 +101,12 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost:
 			count += iter==h.end() ? 0.0 : iter->second[0];
 		}
 	}
-	double const time = (double)t.elapsed().wall;
+	double const time = t.elapsed_nano();
 
 	m.lock();
 	*runtime += time;
 	if( count == 0 ) cout << "ERROR!!" << endl;
-	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+	// cout << "rate " << t.elapsed_nano()/NITER/NROW << "ns, nonsense: " << (double)count << endl;
 	m.unlock();
 }
 
@@ -177,19 +177,19 @@ void test_array(
 	boost::random::uniform_int_distribution<int64_t> randindex(0,N);
 	// h.resize(NFILL/2);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	float count = 0;
 	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(*rng);
 		count += *(h+ri);
 	}
-	double const time = (double)t.elapsed().wall;
+	double const time = t.elapsed_nano();
 
 	static std::mutex m;
 	m.lock();
 	*runtime += time;
 	if( count == 0 ) cout << "ERROR!!" << endl;
-	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+	// cout << "rate " << t.elapsed_nano()/NITER/NROW << "ns, nonsense: " << (double)count << endl;
 	m.unlock();
 }
 
@@ -248,19 +248,19 @@ void test_multiarray(
 	boost::random::uniform_int_distribution<int64_t> randindex( 0, hp->shape()[0] );
 	// h.resize(NFILL/2);
 
-	boost::timer::cpu_timer t;
+	util::Timer<> t;
 	float count = 0;
 	for(size_t i = 0; i < NITER; ++i){
 		size_t ri = randindex(*rng);
 		count += (*hp)[ri];
 	}
-	double const time = (double)t.elapsed().wall;
+	double const time = t.elapsed_nano();
 
 	static std::mutex m;
 	m.lock();
 	*runtime += time;
 	if( count == 0 ) cout << "ERROR!!" << endl;
-	// cout << "rate " << (double)t.elapsed().wall/NITER/NROW << "ns, nonsense: " << (double)count << endl;
+	// cout << "rate " << t.elapsed_nano()/NITER/NROW << "ns, nonsense: " << (double)count << endl;
 	m.unlock();
 }
 

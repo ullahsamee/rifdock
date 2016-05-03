@@ -6,7 +6,6 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
 
 namespace scheme { namespace objective { namespace storage { namespace rstest {
 
