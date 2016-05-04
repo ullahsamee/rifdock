@@ -41,6 +41,7 @@ get_filename_component( PYTHON_LIB_DIR ${PYTHON_LIB_FILE} DIRECTORY )
 include_directories( ${PYTHON_INCLUDE_DIR}/python3.5m )
 link_directories( ${PYTHON_LIB_DIR} )
 
+install(DIRECTORY pysetta/ DESTINATION lib/python3/pysetta FILES_MATCHING PATTERN "*.py")
 
 message( "using python include: " ${PYTHON_INCLUDE_DIR}/python3.5m )
 message( "using python lib:     " ${PYTHON_LIB_DIR} )

@@ -1,1 +1,1 @@
-from _devel import *
+from _pysetta_devel import *
