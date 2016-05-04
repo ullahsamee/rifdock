@@ -1,6 +1,4 @@
 
-project (test_librosetta)
-
 # attemp to use a scons build...
 #set( ROSETTA_SRC /work/sheffler/ssd/rosetta/master/source )
 #set( ROSETTA_BIN release/linux/3.10/64/x86/gcc/6.1/cxx11-omp )
@@ -30,11 +28,19 @@ SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS -DCXX11 -DPTR_STD" )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENMP -DMULTI_THREADED" )
 
-add_subdirectory(riflib)
+
+add_subdirectory( riflib)
+add_subdirectory( python )
+
 
 add_executable( test_librosetta test_librosetta.cc  )
 target_link_libraries ( test_librosetta ${ALL_ROSETTA_LIBS} )
 
 add_executable( rifgen rifgen.cc  )
 target_link_libraries ( rifgen riflib ${ALL_ROSETTA_LIBS} )
-	
+install ( TARGETS rifgen RUNTIME DESTINATION bin )
+
+add_executable( rif_dock_test rif_dock_test.cc  )
+target_link_libraries ( rif_dock_test riflib ${ALL_ROSETTA_LIBS} )
+install ( TARGETS rif_dock_test RUNTIME DESTINATION bin )
+
