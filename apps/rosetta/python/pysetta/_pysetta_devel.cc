@@ -11,7 +11,7 @@ void rosetta_init( std::vector<std::string> args ) {
 	int i = 0;
 	for( auto const & arg : args ){
 		if( arg[0] == '-' ) std::cout << std::endl << "    ";
-		std::cout << arg;
+		std::cout << arg << ' ';
 		cargs[i] = new char[arg.size()+1];
 		for( int j = 0; j < arg.size(); ++j ){
 			cargs[i][j] = arg[j];
