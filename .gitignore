@@ -29,7 +29,7 @@ Makefile
 
 *.a
 
-/build/
+/build*/
 
 /.DS_Store
 

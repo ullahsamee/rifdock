@@ -1,14 +1,13 @@
 cmake_minimum_required (VERSION 3.3)
 
+message( "build type " ${CMAKE_BUILD_TYPE} )
+
 # remove sublime text turds
 message( "removing ._* turds from " ${CMAKE_SOURCE_DIR} )
 execute_process( COMMAND find ${CMAKE_SOURCE_DIR} -regex .*[.]_.* -exec rm {} \; )
 
 set( CMAKE_INSTALL_PREFIX $ENV{SCHEME_INSTALL_PATH} )
 message( "CMAKE_INSTALL_PREFIX is " ${CMAKE_INSTALL_PREFIX} )
-
-
-set( CMAKE_BUILD_TYPE Release )
 
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -w" )
 add_definitions( -DCXX11 )
