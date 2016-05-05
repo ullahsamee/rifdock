@@ -8,15 +8,6 @@
 
 set( ROSETTA_SRC $ENV{CMAKE_ROSETTA_PATH}/source )
 
-string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
-IF( ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG )
-	set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_cxx14_omp_debug )
-ENDIF()
-IF( NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG )
-	set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_cxx14_omp )
-ENDIF()
-message( "use rosetta bin dir: " ${ROSETTA_BIN} )
-
 link_directories( ${ROSETTA_BIN} )
 
 set( ALL_ROSETTA_LIBS 

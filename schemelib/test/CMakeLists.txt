@@ -4,11 +4,11 @@ list( APPEND LIB_CC ../scheme/rosetta/score/EtableParams_init.lib.cc ../scheme/r
 SET_SOURCE_FILES_PROPERTIES( ${LIB_CC} PROPERTIES COMPILE_FLAGS -O0 )
 add_library( scheme ${LIB_CC} )
 
-FILE(GLOB L1 "../scheme/*.cc")
-FILE(GLOB L2 "../scheme/*/*.cc")
-FILE(GLOB L3 "../scheme/*/*/*.cc")
-FILE(GLOB L4 "../scheme/*/*/*/*.cc")
-FILE(GLOB L5 "../scheme/*/*/*/*/*.cc")
+FILE(GLOB L1 "../scheme/[0-9a-zA-Z_]*.cc")
+FILE(GLOB L2 "../scheme/*/[0-9a-zA-Z_]*.cc")
+FILE(GLOB L3 "../scheme/*/*/[0-9a-zA-Z_]*.cc")
+FILE(GLOB L4 "../scheme/*/*/*/[0-9a-zA-Z_]*.cc")
+FILE(GLOB L5 "../scheme/*/*/*/*/[0-9a-zA-Z_]*.cc")
 
 list(APPEND EXTRA_LIBS boost_system  )
 

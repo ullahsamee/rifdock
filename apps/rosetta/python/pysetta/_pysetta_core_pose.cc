@@ -6,10 +6,23 @@ using namespace ::core::pose;
 
 namespace py = pybind11;
 
+struct TEST : public std::enable_shared_from_this<TEST> {
+	TEST(){}
+	void do_something() const {
+		std::cout << "something" << std::endl;
+	}
+};
+
+
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
 PYBIND11_PLUGIN(_pysetta_core_pose) {
     py::module m("_pysetta_core_pose", "rosetta core::pose");
+
+	py::class_< TEST, std::shared_ptr<TEST> >(m, "TEST")
+		.def( py::init<>() )
+		.def( "do_something", &TEST::do_something )
+	;
 
 	py::class_< Pose, std::shared_ptr<Pose> >(m, "Pose")
 		.def( py::init<>() )
@@ -22,3 +35,16 @@ PYBIND11_PLUGIN(_pysetta_core_pose) {
     return m.ptr();
 }
 
+/*
+import os
+from pysetta import devel
+from pysetta.core.pose import Pose
+from pysetta.core.import_pose import pose_from_file
+
+args = "dummy -database "+os.environ['CMAKE_ROSETTA_PATH']+"/database"
+devel.init( args.split() )
+p = Pose()
+p.dump_pdb("test.pdb")
+p = pose_from_file("/work/sheffler/1ffw_native.pdb")
+p.dump_pdb("test2.pdb")
+*/

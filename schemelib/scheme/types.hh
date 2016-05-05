@@ -1,9 +1,13 @@
 #include <stdint.h>
 
-#ifndef CXX14
+#ifndef CXX11
 	#include <boost/static_assert.hpp>
-	BOOST_STATIC_ASSERT_MSG( false, "cxx14 required for rif stuff");
+	BOOST_STATIC_ASSERT_MSG( false, "c++11 required for rif stuff");
 #endif
+// #ifndef CXX14
+// 	#include <boost/static_assert.hpp>
+// 	BOOST_STATIC_ASSERT_MSG( false, "c++14 required for rif stuff");
+// #endif
 
 #include <memory>
 

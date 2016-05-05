@@ -9,9 +9,9 @@ foreach( SRC_PATH ${PYSETTA_SOURCES} )
   message( "process pysetta source file: " ${PYSETTA_SRC}.cc )
 
   add_library(${PYSETTA_SRC} SHARED ${PYSETTA_SRC}.cc )
-  target_link_libraries( ${PYSETTA_SRC} python3 ${ALL_ROSETTA_LIBS} )
+  target_link_libraries( ${PYSETTA_SRC} python2.7 ${ALL_ROSETTA_LIBS} )
   set_target_properties( ${PYSETTA_SRC}  PROPERTIES PREFIX "")
-  install ( TARGETS ${PYSETTA_SRC} LIBRARY DESTINATION lib/python3 )
+  install ( TARGETS ${PYSETTA_SRC} LIBRARY DESTINATION lib/python2 )
 
   set_target_properties(${PYSETTA_SRC}  PROPERTIES SUFFIX ".so")
 

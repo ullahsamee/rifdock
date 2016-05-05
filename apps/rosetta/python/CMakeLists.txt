@@ -1,6 +1,4 @@
 
-message( "entering apps/rosetta/python")
-
 project(pysetta)
 
 include(CheckCXXCompilerFlag)
@@ -34,17 +32,7 @@ endif()
 # Include path for Python header files
 include_directories(../../../external/pybind11/include)
 
-find_path( PYTHON_INCLUDE_DIR python3.5m/Python.h )
-find_library( PYTHON_LIB_FILE python3 )
-get_filename_component( PYTHON_LIB_DIR ${PYTHON_LIB_FILE} DIRECTORY )
 
-include_directories( ${PYTHON_INCLUDE_DIR}/python3.5m )
-link_directories( ${PYTHON_LIB_DIR} )
-
-install(DIRECTORY pysetta/ DESTINATION lib/python3/pysetta FILES_MATCHING PATTERN "*.py")
-
-message( "using python include: " ${PYTHON_INCLUDE_DIR}/python3.5m )
-message( "using python lib:     " ${PYTHON_LIB_DIR} )
 
 add_subdirectory(pysetta)
 add_subdirectory(test)

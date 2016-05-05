@@ -1,7 +1,6 @@
-MESSAGE( "entering apps/rosetta/riflib")
 
-FILE(GLOB L1 "*.cc")
-FILE(GLOB L2 "*/*.cc")
+FILE(GLOB L1 "[0-9a-zA-Z_]*.cc")
+FILE(GLOB L2 "*/[0-9a-zA-Z_]*.cc")
 
 list(APPEND EXTRA_LIBS  )
 
