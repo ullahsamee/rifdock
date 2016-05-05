@@ -32,6 +32,31 @@ endif()
 # Include path for Python header files
 include_directories(../../../external/pybind11/include)
 
+#####################################################################################
+
+if(${PYTHON_VERSION} MATCHES 2)
+  find_path( PYTHON_INCLUDE_DIR python2.7/Python.h )
+  find_library( PYTHON_LIB_FILE python2.7 )
+  get_filename_component( PYTHON_LIB_DIR ${PYTHON_LIB_FILE} DIRECTORY )
+  include_directories( ${PYTHON_INCLUDE_DIR}/python2.7 )
+  link_directories( ${PYTHON_LIB_DIR} )
+  install(DIRECTORY pysetta/ DESTINATION lib/python2/pysetta FILES_MATCHING PATTERN "*.py")
+  message( "using python include .......... " ${PYTHON_INCLUDE_DIR}/python2.7 )
+  message( "using python lib .............. " ${PYTHON_LIB_DIR} )
+  message( "install python libs to ........ " ${CMAKE_INSTALL_PREFIX}/lib/python2 )
+else()
+  find_path( PYTHON_INCLUDE_DIR python3.5m/Python.h )
+  find_library( PYTHON_LIB_FILE python3 )
+  get_filename_component( PYTHON_LIB_DIR ${PYTHON_LIB_FILE} DIRECTORY )
+  include_directories( ${PYTHON_INCLUDE_DIR}/python3.5m )
+  link_directories( ${PYTHON_LIB_DIR} )
+  install(DIRECTORY pysetta/ DESTINATION lib/python3/pysetta FILES_MATCHING PATTERN "*.py")
+  message( "using python include .......... " ${PYTHON_INCLUDE_DIR}/python3.5m )
+  message( "using python lib .............. " ${PYTHON_LIB_DIR} )
+  message( "install python libs to ........ " ${CMAKE_INSTALL_PREFIX}/lib/python3 )
+endif()
+
+
 
 
 add_subdirectory(pysetta)
