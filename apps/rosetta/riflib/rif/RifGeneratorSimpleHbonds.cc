@@ -162,14 +162,38 @@ struct HBJob {
             accresn_std.push_back( "RGU" );
             accresn_std.push_back( "URA" );
 
-			// if( donresn_all.size()==0 ) donresn_all = donresn_std;
-			// if( accresn_all.size()==0 ) accresn_all = accresn_std;
-
+			// if( donresn_user.size()==0 ) donresn_user = donresn_std;
+			// if( accresn_user.size()==0 ) accresn_user = accresn_std;
+			for( auto s : donresn_user ){
+				if( std::find( donresn_std.begin(), donresn_std.end(), s ) == donresn_std.end() ){
+					donresn_std.push_back(s);
+					std::cout << "adding don res " << s << " to std set" << std::endl;
+				}
+			}
+			for( auto s : accresn_user ){
+				if( std::find( accresn_std.begin(), accresn_std.end(), s ) == accresn_std.end() ){
+					accresn_std.push_back(s);
+					std::cout << "adding acc res " << s << " to std set" << std::endl;
+				}
+			}
 		}
 		std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
 		for( auto ir : target_res ){
 			::devel::scheme::get_donor_rays   ( target, ir, true, target_donors );
 			::devel::scheme::get_acceptor_rays( target, ir, true, target_acceptors );
+		}
+		{
+			if( target_donors.size() ){
+				utility::io::ozstream donout(params->output_prefix+"donors.pdb");
+				::devel::scheme::dump_hbond_rays( donout, target_donors, true );
+				donout.close();
+			}
+			if( target_acceptors.size() ){
+				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb");		
+				::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );			
+				accout.close();
+			}
+			// utility_exit_with_message("debug hbonds");
 		}
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
 		int n_sat_groups = 0;
@@ -195,7 +219,7 @@ struct HBJob {
 
 		}
 
-		// int npairs = donresn.size()*accresn_all.size()  +  accresn.size()*donresn_all.size() ;
+		// int npairs = donresn.size()*accresn_user.size()  +  accresn.size()*donresn_user.size() ;
 
 		// build up a joblist for hbond rif gen
 		std::vector<HBJob> hb_jobs;
@@ -205,9 +229,9 @@ struct HBJob {
 			std::cout << "RifGenSimpleHbonds checking res " << resn << std::endl;
 			HBJob j;
 			j.ires = ir;
-			for( int iacc = 1; iacc <= accresn_all.size(); ++iacc ){
+			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
 				j.don = "GLY";
-				j.acc = accresn_all[iacc];
+				j.acc = accresn_user[iacc];
 				if( std::find( accresn_std.begin(), accresn_std.end(), j.acc ) == accresn_std.end() ) continue; // no non-standard res in RIF
 				j.don_or_acc = "DON_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
@@ -218,8 +242,8 @@ struct HBJob {
 					hb_jobs.push_back( j );
 				}
 			}
-			for( int idon = 1; idon <= donresn_all.size(); ++idon ){
-				j.don = donresn_all[idon];
+			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
+				j.don = donresn_user[idon];
 				if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF
 				j.acc = "GLY";
 				j.don_or_acc = "ACC_";
@@ -232,6 +256,7 @@ struct HBJob {
 				}
 			}
 		}
+		runtime_assert_msg( hb_jobs.size() , "no hbond jobs generated!" );
 		std::sort( hb_jobs.begin(), hb_jobs.end() );
 		// for( int i = 0; i < hb_jobs.size(); ++i ){
 		// 	HBJob j = hb_jobs[i];
@@ -497,8 +522,15 @@ struct HBJob {
 					std::vector<SchemeAtom> const & res_atoms( rot_index.atoms(irot) );
 
 					Xform const res_atomsbbf( Vec(res_atoms[0].position()[0],res_atoms[0].position()[1],res_atoms[0].position()[2]) ,
-													 Vec(res_atoms[1].position()[0],res_atoms[1].position()[1],res_atoms[1].position()[2]) ,
-													 Vec(res_atoms[2].position()[0],res_atoms[2].position()[1],res_atoms[2].position()[2]) );
+					                          Vec(res_atoms[1].position()[0],res_atoms[1].position()[1],res_atoms[1].position()[2]) ,
+					                          Vec(res_atoms[2].position()[0],res_atoms[2].position()[1],res_atoms[2].position()[2]) );
+					if( rel_rot_pos.n .distance_squared( rel_rot_pos.ca ) < 1.0 ||
+					    rel_rot_pos.ca.distance_squared( rel_rot_pos.c  ) < 1.0 ||
+					    rel_rot_pos.c .distance_squared( rel_rot_pos.n  ) < 1.0  )
+					{ 
+						std::cout << "bad data in rel_rot_pos!" << std::endl;
+						continue;
+					}
 					Xform const hbondbbf     ( rel_rot_pos.n    , rel_rot_pos.ca   , rel_rot_pos.c     );
 					Xform const hbonder_frame( rel_rot_pos.stub1, rel_rot_pos.stub2, rel_rot_pos.stub3 );
 
@@ -594,17 +626,17 @@ struct HBJob {
 						if( opts.dump_fraction > 0 ){
 							double const runif = uniform(rngs[omp_thread_num_1()-1]);
 							float dump_chance = opts.dump_fraction;
-							if( positioned_rotamer_score < -2.0 ) dump_chance *= 2.0;
-							if( positioned_rotamer_score < -3.0 ) dump_chance *= 2.0;
-							if( positioned_rotamer_score < -4.0 ) dump_chance *= 2.0;
-							if( positioned_rotamer_score < -5.0 ) dump_chance *= 2.0;
-							if( positioned_rotamer_score < -6.0 ) dump_chance *= 2.0;
-							if( n_sat_groups > 0 && sat1 >= 0 && sat2 >= 0 ) dump_chance *= 10.0;
+							// if( positioned_rotamer_score < -2.0 ) dump_chance *= 2.0;
+							// if( positioned_rotamer_score < -3.0 ) dump_chance *= 2.0;
+							// if( positioned_rotamer_score < -4.0 ) dump_chance *= 2.0;
+							// if( positioned_rotamer_score < -5.0 ) dump_chance *= 2.0;
+							// if( positioned_rotamer_score < -6.0 ) dump_chance *= 2.0;
+							// if( n_sat_groups > 0 && sat1 >= 0 && sat2 >= 0 ) dump_chance *= 10.0;
 							if( runif < dump_chance ){
 								// std::cout << "do test output" << std::endl;
 								omp_set_lock(&io_lock);
 								if( rif_hbond_vis_out == nullptr ){
-									std::string outfilename = params->output_dir+"/RifGen_"+target_tag+"_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb";
+									std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb";
 									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 									rif_hbond_vis_out = new utility::io::ozstream( outfilename );
 								}
@@ -620,8 +652,8 @@ struct HBJob {
 									if( sat1 >= 0 && sat2 >= 0 ){
 										if( sat1 < sat2 ) std::swap(sat1,sat2);
 										if( rif_hbond_vis_out_double_satgroups[sat1][sat2] == nullptr ){
-											std::string outfilename = params->output_dir+"/RifGen_"+target_tag+"_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb";
-											std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+											std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb";
+											// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 											rif_hbond_vis_out_double_satgroups[sat1][sat2] = new utility::io::ozstream( outfilename );
 										}
 										*rif_hbond_vis_out_double_satgroups[sat1][sat2] << "MODEL " << irot << endl;
@@ -638,8 +670,8 @@ struct HBJob {
 											if( sat >= 0 ){
 												runtime_assert( sat < n_sat_groups );
 												if( rif_hbond_vis_out_satgroups[sat] == nullptr ){
-													std::string outfilename = params->output_dir+"/RifGen_"+target_tag+"_Hbond_vis_sat"+I(4,sat)+".pdb";
-													std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+													std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_sat"+I(4,sat)+".pdb";
+													// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 													rif_hbond_vis_out_satgroups[sat] = new utility::io::ozstream( outfilename );
 												}
 												*rif_hbond_vis_out_satgroups[sat] << "MODEL " << irot << endl;
@@ -741,6 +773,9 @@ struct HBJob {
 		omp_destroy_lock( & pose_lock );
 		omp_destroy_lock( & hbond_geoms_cache_lock );
 
+		if( accumulator->total_samples() == 0 ){
+			utility_exit_with_message("no hbonds found, something is wrong");
+		}
 	}
 
 

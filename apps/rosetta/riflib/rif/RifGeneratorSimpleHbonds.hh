@@ -34,18 +34,18 @@ struct RifGeneratorSimpleHbondsOpts {
 
 struct RifGeneratorSimpleHbonds : public RifGenerator {
 
-	utility::vector1<std::string> donresn_all;
-	utility::vector1<std::string> accresn_all;
+	utility::vector1<std::string> donresn_user;
+	utility::vector1<std::string> accresn_user;
 	RifGeneratorSimpleHbondsOpts opts;
 
 
 	RifGeneratorSimpleHbonds(
-		  utility::vector1<std::string> donresn_all
-		, utility::vector1<std::string> accresn_all
+		  utility::vector1<std::string> donresn_user
+		, utility::vector1<std::string> accresn_user
 		, RifGeneratorSimpleHbondsOpts opts
 	)
-	: donresn_all( donresn_all )
-	, accresn_all( accresn_all )
+	: donresn_user( donresn_user )
+	, accresn_user( accresn_user )
 
 	, opts( opts )
 	{}

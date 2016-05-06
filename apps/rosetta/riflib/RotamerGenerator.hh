@@ -64,6 +64,7 @@ void get_donor_rays   ( core::pose::Pose const & pose, int ir, bool withbb,
 void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
 	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames );
 
+void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor );
 
 
 core::pack::rotamer_set::RotamerSetOP

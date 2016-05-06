@@ -41,7 +41,7 @@ typedef shared_ptr<RifAccumulator> RifAccumulatorP;
 struct RifGenParams {
   	core::pose::PoseOP             target = nullptr;
 	std::string                    target_tag;
-	std::string                    output_dir="./";
+	std::string                    output_prefix="./default_";
 	utility::vector1<int>          target_res;
 	shared_ptr<RotamerIndex const> rot_index_p = nullptr;
 	std::vector<std::string>       cache_data_path;

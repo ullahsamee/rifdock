@@ -95,7 +95,6 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Real          , rifgen, max_rf_bounding_ratio )
 	OPT_1GRP_KEY( Real          , rifgen, hbond_cart_sample_hack_range )
 	OPT_1GRP_KEY( Real          , rifgen, hbond_cart_sample_hack_resl )
-	OPT_1GRP_KEY( Integer       , rifgen, dump_ntries )
 	OPT_1GRP_KEY( Integer       , rifgen, rif_accum_scratch_size_M )
 	OPT_1GRP_KEY( Boolean       , rifgen, make_shitty_rpm_file )
 	OPT_1GRP_KEY( Boolean       , rifgen, test_without_rosetta_fields )
@@ -149,7 +148,6 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::max_rf_bounding_ratio            , "" , 4 );
 		NEW_OPT(  rifgen::hbond_cart_sample_hack_range     , "" , 0.375 );
 		NEW_OPT(  rifgen::hbond_cart_sample_hack_resl      , "" , 0.375 );
-		NEW_OPT(  rifgen::dump_ntries                      , "" , 8000 );
 		NEW_OPT(  rifgen::rif_accum_scratch_size_M         , "" , 32000 );
 		NEW_OPT(  rifgen::make_shitty_rpm_file             , "" , false );
 		NEW_OPT(  rifgen::test_without_rosetta_fields      , "" , false );
@@ -585,7 +583,7 @@ int main(int argc, char *argv[]) {
 		auto params = make_shared<::devel::scheme::rif::RifGenParams>();
 	  	params->target = target;
 		params->target_tag = target_tag;
-		params->output_dir = outdir;
+		params->output_prefix = outfile+"_";
 		params->target_res = target_res;
 		params->rot_index_p = rot_index_p;
 		params->cache_data_path = cache_data_path;
@@ -618,8 +616,10 @@ int main(int argc, char *argv[]) {
 		// __gnu_parallel::for_each( rif.map_.begin(), rif.map_.end(), assert_is_sorted  <XMap::Map::value_type> );
 
 
-		cout << "RIF " << " non0 in RIF: " << KMGT(rif->size()) << " N_motifs_found: "
-			  << KMGT(N_motifs_found) << " coverage: " << N_motifs_found*1.f/rif->size() << endl;
+		cout << "RIF " 
+		     << " non0 in RIF: " << KMGT(rif->size()) 
+		     << " N_motifs_found: " << KMGT(N_motifs_found) 
+		     << " coverage: " << N_motifs_found*1.f/rif->size() << endl;
 
 		rif->collision_analysis(cout);
 
@@ -638,27 +638,31 @@ int main(int argc, char *argv[]) {
 			cout << "dumping rif to: " << fname << endl;
 
 			std::string description = "from Will's rifgen app\n";
-			description += "    value stored : " + rif->value_name()+"\n";
 			description += "          target : " + (std::string)option[rifgen::target]()+"\n";
 			description += "      target_res : " ; BOOST_FOREACH( int ir, target_res ) description += str(ir)+" "; description += "\n";
 			description += "          apores : " ; BOOST_FOREACH( std::string s, option[rifgen::apores]() ) description += s+" "; description += "\n";
 			description += "          donres : " ; BOOST_FOREACH( std::string s, option[rifgen::donres]() ) description += s+" "; description += "\n";
 			description += "          accres : " ; BOOST_FOREACH( std::string s, option[rifgen::accres]() ) description += s+" "; description += "\n";
 			description += "       beam_size : " + KMGT(option[rifgen::beam_size_M]()*1000000)+"\n";
+			description += "    value stored : " + rif->value_name()+"\n";
 			description += "apo_search_resls : " ; BOOST_FOREACH( float r, RESLS ) description += str(r)+" "; description += "\n";
+			description += " score_cut_adjust..............." + str(option[rifgen::score_cut_adjust]())+"\n";
+			description += " score_threshold................" + str(option[rifgen::score_threshold]())+"\n";
+			description += " hbond_weight..................." + str(option[rifgen::hbond_weight]())+"\n";
+			description += " upweight_multi_hbond..........." + str(option[rifgen::upweight_multi_hbond]())+"\n";			
 			description += " tip_tol_deg...................." + str(option[rifgen::tip_tol_deg]())+"\n";
 			description += " rot_samp_range................." + str(option[rifgen::rot_samp_range]())+"\n";
 			description += " rot_samp_resl.................." + str(option[rifgen::rot_samp_resl]())+"\n";
-			description += " rosetta_field_resl............." + str(option[rifgen::rosetta_field_resl]())+"\n";
-			description += " hash_cart_resl................." + str(option[rifgen::hash_cart_resl]())+"\n";
-			description += " hash_angle_resl................" + str(option[rifgen::hash_angle_resl]())+"\n";
-			description += " score_threshold................" + str(option[rifgen::score_threshold]())+"\n";
-			description += " score_cut_adjust..............." + str(option[rifgen::score_cut_adjust]())+"\n";
-			description += " rf_oversample.................." + str(option[rifgen::rf_oversample]())+"\n";
-			description += " score_cut_adjust................." + str(option[rifgen::score_cut_adjust]())+"\n";
-			description += " max_rf_bounding_ratio.........." + str(option[rifgen::max_rf_bounding_ratio]())+"\n";
 			description += " hbond_cart_sample_hack_range..." + str(option[rifgen::hbond_cart_sample_hack_range]())+"\n";
 			description += " hbond_cart_sample_hack_resl...." + str(option[rifgen::hbond_cart_sample_hack_resl]())+"\n";
+			description += " rosetta_field_resl............." + str(option[rifgen::rosetta_field_resl]())+"\n";
+			description += " max_rf_bounding_ratio.........." + str(option[rifgen::max_rf_bounding_ratio]())+"\n";
+			description += " rf_oversample.................." + str(option[rifgen::rf_oversample]())+"\n";
+			description += " hash_cart_resl................." + str(option[rifgen::hash_cart_resl]())+"\n";
+			description += " hash_angle_resl................" + str(option[rifgen::hash_angle_resl]())+"\n";
+		    description += "       RIF cells : " + KMGT(rif->size()) + "\n";
+		    description += "  Nrots inserted : " + KMGT(N_motifs_found) + "\n";
+		    description += "        coverage : " + str( N_motifs_found*1.f/rif->size()) + "\n";
 
 			std::cout << "===================================== rif description ======================================" << std::endl;
 			std::cout << description << std::endl;
@@ -830,15 +834,16 @@ int main(int argc, char *argv[]) {
 	std::cout << "rif_hier_DONE" << std::endl;
 	std::sort( bounding_grid_fnames.begin(), bounding_grid_fnames.end() );
 	std::reverse( bounding_grid_fnames.begin(), bounding_grid_fnames.end() );
-	std::cout << "######################## what you need for docking ########################################" << std::endl;
+	std::cout << "########################################### what you need for docking ###########################################" << std::endl;
 		std::cout << "-rif_dock:target_pdb            " << centered_target_pdbfile << std::endl;
 	if( target_reslist_file.size() )
 		std::cout << "-rif_dock:target_res            " << target_reslist_file << std::endl;
+	    std::cout << "-rif_dock:target_rf_resl        " << rf_resl << std::endl;
 		std::cout << "-rif_dock:target_rf_cache       " << fname_grids_for_docking << std::endl;
 	for( auto s : bounding_grid_fnames )
 		std::cout << "-rif_dock:target_bounding_xmaps " << s << std::endl;
 		std::cout << "-rif_dock:target_rif            " << outfile << std::endl;
-	std::cout << "###########################################################################################" << std::endl;
+	std::cout << "#################################################################################################################" << std::endl;
 
 	return 0;
  }

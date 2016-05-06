@@ -183,7 +183,7 @@ void make_hbond_geometries(
 	}
 	while( gen.has_more_samples() ){
 		++totcount;
-		if(totcount%1000000==999999){
+		if(totcount%100000==99999){
 			#ifdef USE_OPENMP
 			#pragma omp critical
 			#endif
@@ -195,7 +195,7 @@ void make_hbond_geometries(
 
 		// static int count = 0;
 		// pose.dump_pdb( "hbgen_test_" + boost::lexical_cast<std::string>(++count) + ".pdb" );
-		// if( count > 500 ) utility_exit_with_message("check hbond gen");
+		// if( count > 1000 ) utility_exit_with_message("check hbond gen");
 		// #ifdef DEBUG
 		// Xform hbonder_frame( pose.xyz(AtomID(frame_atomno_1,ifixed)), pose.xyz(AtomID(frame_atomno_2,ifixed)), pose.xyz(AtomID(frame_atomno_3,ifixed)) );
 		// runtime_assert( hbonder_frame == Xform::identity() );
@@ -212,10 +212,10 @@ void make_hbond_geometries(
 
 		float score = gen.score_of_current();
 
-		if( score > 0.0 ){
-			pose.dump_pdb("hbond_bad_score.pdb");
-			utility_exit_with_message("bad score hbond generator");
-		}
+		// if( score > 0.0 ){
+		// 	pose.dump_pdb("hbond_bad_score.pdb");
+		// 	utility_exit_with_message("bad score hbond generator");
+		// }
 
 		int rotamer_num = imove==1 ? gen.rot1_of_current() : gen.rot2_of_current();
 
@@ -271,7 +271,7 @@ void make_hbond_geometries(
 	#endif
 	std::cout << "total " << resn1 << " " << resn2 << " " << KMGT(totcount) << std::endl;
 
-
+	// utility_exit_with_message("debug hbgeom");
 
  }
 

@@ -146,9 +146,9 @@ public:
 	);
 	bool has_more_samples() const { return irot1_!=0; }
 	core::Size raw_num_samples() const {
-		core::Size nacc_orbs = 1;
+		core::Size nacc_orbs = 0;
 		for(core::Size i = 1; i <= acceptor_orbitals_.size(); ++i)
-			nacc_orbs *= acceptor_orbitals_[i].size();
+			nacc_orbs += acceptor_orbitals_[i].size();
 		return rot_samples_.size()              *
 			   nacc_orbs                        *
 		       nrots2_                          *

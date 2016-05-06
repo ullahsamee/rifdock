@@ -888,7 +888,34 @@ void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
 
 }
 
-
+void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor ){
+	int anum=0, rnum=0;
+	for( auto hbr : hbonders ){
+		for( int ibase = 0; ibase < 2; ibase++ ){
+			float x = hbr.horb_cen[0] + ( ibase? 0.0f : hbr.direction[0] );
+			float y = hbr.horb_cen[1] + ( ibase? 0.0f : hbr.direction[1] );
+			float z = hbr.horb_cen[2] + ( ibase? 0.0f : hbr.direction[2] );						
+			char buf[128];
+			std::string aname;
+			if( isdonor ) aname = ibase? "DBSE" : "DHPL";
+			else          aname = ibase? "ABSE" : "AORB";			
+			snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
+				"HETATM",
+				++anum,
+				aname.c_str(),
+				isdonor? "DON" : "ACC",
+				isdonor? "D" : "A",
+				rnum,
+				x,y,z,
+				1.0,
+				1.0,
+				"HB"
+			);
+			out << buf;
+		}
+		++rnum;
+	}
+}
 
 
 

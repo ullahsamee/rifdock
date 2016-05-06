@@ -569,7 +569,7 @@ namespace rif {
 			accumulator->checkpoint( cout );
 
 			if( test_hits.size() ){
-				utility::io::ozstream out( params->output_dir+"/RifGen_"+target_tag+"_Apo_test_hits_"+resn+boost::lexical_cast<std::string>(irot)+".pdb" );
+				utility::io::ozstream out( params->output_prefix+"RifGen_Apo_test_hits_"+resn+boost::lexical_cast<std::string>(irot)+".pdb" );
 				for( auto index : test_hits ){
 					dump_scene( d, scene_per_thread[omp_get_thread_num()], rot_index, index, RESLS.size()-1, out );
 				}

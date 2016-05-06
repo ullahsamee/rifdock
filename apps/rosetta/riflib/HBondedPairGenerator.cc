@@ -11,6 +11,35 @@ namespace devel {
 namespace scheme {
 
 typedef numeric::xyzVector<core::Real> Vec;
+typedef numeric::xyzMatrix<core::Real> Mat;
+typedef numeric::xyzTransform<core::Real> Xform;
+
+
+
+
+
+Xform
+my_align( Vec to, Vec from )
+{
+	double const angle = std::acos(to.normalized().dot(from.normalized()));
+	if( fabs( angle ) < 0.0001 ){
+		return Xform::identity();
+	} else if( fabs(angle) > 2*M_PI-0.0001 ){
+		// arbitrary perp. vector
+		Xform(numeric::rotation_matrix(to.cross(Vec(1,2,3)),-angle));
+	}
+	return Xform(numeric::rotation_matrix(to.cross(from),-angle));
+}
+// // broken!
+// Xform
+// align_fast( Vec to, Vec from )
+// {
+// 	// rot 180 around avg. axis
+// 	return Xform( 2.0*numeric::projection_matrix<double>(to+from)-Mat::identity() );
+// }
+
+
+
 
 core::Real
 get_rot_score(
@@ -445,8 +474,15 @@ void HBondedPairGenerator::init(
 			Vec acco = Vec( pose0_.residue(2).orbital_xyz(acceptor_orbitals_.at(iacc_).at(iorb_)));
 			// Vec d = (don-donb).normalized();
 			// Vec a = (acc-acco).normalized();
-			Xform xd = Xform::align_fast( Vec(1,0,0), don-donb );
-			Xform xa = Xform::align_fast( Vec(1,0,0), acc-acco );
+			Xform xd = my_align( Vec(1,0,0), don-donb );
+			Xform xa = my_align( Vec(1,0,0), acc-acco );
+
+
+			// std::cout << xd*(don-donb).normalized() << std::endl;
+			// std::cout << xa*(acc-acco).normalized() << std::endl;
+			runtime_assert( fabs( (xd*((don-donb).normalized())).dot(Vec(1,0,0)) - 1.0 ) < 0.001 );
+			runtime_assert( fabs( (xa*((acc-acco).normalized())).dot(Vec(1,0,0)) - 1.0 ) < 0.001 );			
+
 			if( fabs((don-donb).y()) < 0.00001 && fabs((don-donb).z()) < 0.00001 ) xd = Xform::identity();
 			if( fabs((acc-acco).y()) < 0.00001 && fabs((acc-acco).z()) < 0.00001 ) xa = Xform::identity();
 			// std::cout << "ddon " << don-donb << std::endl;
@@ -462,6 +498,8 @@ void HBondedPairGenerator::init(
 			core::scoring::motif::xform_pose( pose0_, Vec(-1.15,0,0)-pose0_.residue(1).xyz(donor_atoms_   [idon_]), 1, 1 );
 			core::scoring::motif::xform_pose( pose0_, Vec( 0.65,0,0)-pose0_.residue(2).xyz(acceptor_atoms_[iacc_]), 2, 2 );
 			pose_ = pose0_;
+
+
 		} else {
 			for(core::Size ia = 1; ia <= pose0_.residue(1).natoms(); ++ia)
 				pose_.set_xyz( core::id::AtomID(ia,1) , pose0_.residue(1).xyz(ia) );
