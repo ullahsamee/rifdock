@@ -136,8 +136,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
 
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_and_score_below_thresh )
-	// OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_and_score_rank_on_total_energy )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )	
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_cut )	
 
 
 
@@ -222,8 +225,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
 
-		NEW_OPT(  rif_dock::rosetta_min_and_score_below_thresh, "", -9e9 );
-		// NEW_OPT(  rif_dock::rosetta_min_and_score_rank_on_total_energy, "", false );
+		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
+		NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
+		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
+		NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
+		NEW_OPT(  rif_dock::rosetta_score_cut  , "", -10.0 );
 
 
 
@@ -592,10 +598,16 @@ int main(int argc, char *argv[]) {
 		float const target_rf_resl = option[rif_dock::target_rf_resl]()<=0.0 ? RESLS.back()/2.0 : option[rif_dock::target_rf_resl]();
 
 		bool align_to_scaffold = option[rif_dock::align_output_to_scaffold]();
-		float rosetta_min_and_score_below_thresh = option[rif_dock::rosetta_min_and_score_below_thresh]();
-		if( rosetta_min_and_score_below_thresh < -9e8 )	std::cout << "rosetta_min_and_score_below_thresh: No" << std::endl;
-		else std::cout << "rosetta_min_and_score_below_thresh: " << rosetta_min_and_score_below_thresh << std::endl;
-
+		float rosetta_score_then_min_below_thresh = option[rif_dock::rosetta_score_then_min_below_thresh]();
+		float rosetta_score_at_least = option[rif_dock::rosetta_score_at_least]();
+		float rosetta_score_at_most  = option[rif_dock::rosetta_score_at_most]();		
+		float rosetta_min_fraction = option[rif_dock::rosetta_min_fraction]();		
+		float rosetta_score_cut = option[rif_dock::rosetta_score_cut]();		
+		std::cout << "rosetta_score_then_min_below_thresh: " << rosetta_score_then_min_below_thresh << std::endl;
+		std::cout << "rosetta_score_at_least: " << rosetta_score_at_least << std::endl;
+		std::cout << "rosetta_score_at_most: " << rosetta_score_at_most << std::endl;		
+		std::cout << "rosetta_min_fraction: " << rosetta_min_fraction << std::endl;
+		std::cout << "rosetta_score_cut: " << rosetta_score_cut << std::endl;
 
 		std::cout << "//////////////////////////// end options /////////////////////////////////" << std::endl;
 
@@ -1315,12 +1327,12 @@ int main(int argc, char *argv[]) {
 				    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 			        start = std::chrono::high_resolution_clock::now();
 
-					size_t last_good_samp = 0;
-					for( last_good_samp; last_good_samp < samples.back().size(); ++last_good_samp ){
-						if( samples.back()[last_good_samp].score > 0 ) break;
+					size_t n_packsamp = 0;
+					for( n_packsamp; n_packsamp < samples.back().size(); ++n_packsamp ){
+						if( samples.back()[n_packsamp].score > 0 ) break;
 					}
 					int const config = RESLS.size()-1;
-					npack = std::min( last_good_samp, (size_t)(beam_size * hack_pack_frac) );
+					npack = std::min( n_packsamp, (size_t)(beam_size * hack_pack_frac) );
 					packed_results.resize( npack );
 					print_header( "hack-packing top " + KMGT(npack) );
 					std::cout << "packing options: " << hackpackopts << std::endl;
@@ -1356,7 +1368,7 @@ int main(int argc, char *argv[]) {
 					__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 
 					std::chrono::duration<double> elapsed_seconds_pack = end-start;
-					std::cout << "packing rate: " << (double)npack / elapsed_seconds_pack.count() << " iface packs per second" << std::endl;
+					std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
 					std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
 
 				} else {
@@ -1376,135 +1388,183 @@ int main(int argc, char *argv[]) {
 
 
 
+			bool const do_rosetta_score = rosetta_score_then_min_below_thresh > -9e8 || rosetta_score_at_least > 0;
 
+			if( do_rosetta_score && option[rif_dock::hack_pack]() ){
 
-			if( rosetta_min_and_score_below_thresh > -9e8 && option[rif_dock::hack_pack]() ){
+				int n_score_calculations = 0;
 
-				std::chrono::duration<double> time_copy, time_min;
+				for( int do_min = 0; do_min < 2; ++do_min ){
 
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				print_header( "rosetta min and score" ); /////////////////////////////////////////////////////////////////////////////////
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+					std::chrono::duration<double> time_copy, time_score, time_min;
 
-				runtime_assert_msg( target_res.size() == 1, "rosetta_min_and_score_below_thresh is intended for use with small molecules" );
+					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+					if( do_min ) print_header( "rosetta min and score" ); ////////////////////////////////////////////////////////////////////
+					else         print_header( "rosetta score" ); ////////////////////////////////////////////////////////////////////////////
+					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-				std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
-				std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
-				std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
-				std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
-				std::vector<core::pose::Pose> target_pt                (omp_max_threads());
-				for( int i = 0; i < omp_max_threads(); ++i){
-					both_full_per_thread[i] = both_full_pose;
-					both_per_thread[i] = both_pose;
-					scorefunc_pt[i] = core::scoring::get_score_function();
-					// scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
-					// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, 0.35 ); // half weight
-					scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
-					scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
-					core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
-					core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
-					hopts.use_hb_env_dep( false );
-					opts.hbond_options( hopts );
-					scorefunc_pt[i]->set_energy_method_options( opts );
-					core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
-					movemap->set_chi(true);
-					movemap->set_jump(true);
-					movemap->set_bb(false);
-					minmover_pt[i] = protocols::simple_moves::MinMoverOP(
-						new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
-				}
+					runtime_assert_msg( target_res.size() == 1, "rosetta_minim_below_thresh is intended for use with small molecules" );
 
-			    std::chrono::time_point<std::chrono::high_resolution_clock> startallmin = std::chrono::high_resolution_clock::now();
-
-				size_t last_good_samp = 0;
-				for( last_good_samp; last_good_samp < packed_results.size(); ++last_good_samp ){
-					if( packed_results[last_good_samp].score > rosetta_min_and_score_below_thresh ) break;
-				}
-				packed_results.resize(last_good_samp);
-				int64_t const out_interval = std::max<int64_t>(1,last_good_samp/50);
-				std::cout << "rosetta min on " << KMGT(last_good_samp) << ": ";
-				#ifdef USE_OPENMP
-				#pragma omp parallel for schedule(dynamic,1)
-				#endif
-				for( int imin = 0; imin < last_good_samp; ++imin )
-				{
-					if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
-
-					int const ithread = omp_get_thread_num();
-
-					director->set_scene( packed_results[imin].index, RESLS.size()-1, *scene_pt[ithread] );
-					EigenXform xposition1 = scene_pt[ithread]->position(1);
-					EigenXform xalignout = EigenXform::Identity();
-					if( align_to_scaffold ) xalignout = xposition1.inverse();
-
-				    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-			        start = std::chrono::high_resolution_clock::now();
-
-					core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
-					core::pose::Pose & pose_to_min(*pose_to_min_ptr);
-
-					if( option[rif_dock::full_scaffold_output]() ) pose_to_min = both_full_per_thread[ithread];
-					else                                           pose_to_min = both_per_thread[ithread];
-					xform_pose( pose_to_min, eigen2xyz(xalignout)            , pose_to_min.n_residue(), pose_to_min.n_residue()   );
-					xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) , 1                      , pose_to_min.n_residue()-1 );
-
-
-					// place the rotamers
-					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-
-					for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
-						int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
-						int irot =                  packed_results[imin].rotamers().at(ipr).second;
-						core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
-						pose_to_min.replace_residue( ires+1, *newrsd, true );
-						for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
-							pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+					std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
+					std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
+					std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
+					std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
+					std::vector<core::pose::Pose> target_pt           (omp_max_threads());
+					std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());					
+					for( int i = 0; i < omp_max_threads(); ++i){
+						both_full_per_thread[i] = both_full_pose;
+						both_per_thread[i] = both_pose;
+						scorefunc_pt[i] = core::scoring::get_score_function();
+						scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
+						if( !do_min ){
+							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, 0.6*scorefunc_pt[i]->get_weight(core::scoring::fa_dun) );
+							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						}
+						scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.5 );
+						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
+						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
+						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
+						// core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
+						// hopts.use_hb_env_dep( false );
+						// opts.hbond_options( hopts );
+						// scorefunc_pt[i]->set_energy_method_options( opts );
+						core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
+						movemap->set_chi(true);
+						movemap->set_jump(true);
+						movemap->set_bb(false);
+						minmover_pt[i] = protocols::simple_moves::MinMoverOP(
+							new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
 					}
-					end = std::chrono::high_resolution_clock::now();
-					std::chrono::duration<double> elapsed_seconds_copypose = end-start;
-					#pragma omp critical
-					time_copy += elapsed_seconds_copypose;
-					// pose_to_min.dump_pdb("test_pre.pdb");
 
-					// scorefunc_pt[ithread]->score( pose_to_min );
-					// float e_pre_min = pose_to_min.energies().total_energy();
-			        start = std::chrono::high_resolution_clock::now();
-					minmover_pt[ithread]->apply( pose_to_min );
-			        end = std::chrono::high_resolution_clock::now();
-					std::chrono::duration<double> elapsed_seconds_min = end-start;
-					#pragma omp critical
-					time_min += elapsed_seconds_min;
+				    std::chrono::time_point<std::chrono::high_resolution_clock> startall = std::chrono::high_resolution_clock::now();
 
-					// net output is 3x hbond score
-					packed_results[imin].score  =     pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
-					packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
-					packed_results[imin].pose_ = pose_to_min_ptr;
-					// #pragma omp critical
-					// pose_to_min.energies().show(cout,pose_to_min.n_residue());
-					// pose_to_min.dump_pdb("test_post.pdb");
-					// #pragma omp critical
-					// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
-					// utility_exit_with_message("testing");
-				}
-				cout << endl;
-				__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
-				{
-					size_t last_good_samp = 0;
-					for( last_good_samp; last_good_samp < packed_results.size(); ++last_good_samp ){
-						if( packed_results[last_good_samp].score > global_score_cut ) break;
+					size_t n_scormin = 0;
+					if( do_min ){
+						// min take ~10x score time, so do on 1/10th of the scored
+						n_scormin = n_score_calculations * rosetta_min_fraction;
+					} else {
+						// for scoring, use user cut
+						for( n_scormin; n_scormin < packed_results.size(); ++n_scormin ){
+							if( packed_results[n_scormin].score > rosetta_score_then_min_below_thresh )
+								break;
+						}
+						n_scormin = std::min<int>( std::max<int>( n_scormin, rosetta_score_at_least ), rosetta_score_at_most );
+						n_scormin = std::min<int>( n_scormin, packed_results.size() );
+						n_score_calculations = n_scormin;
 					}
-					packed_results.resize(last_good_samp);
+					packed_results.resize(n_scormin);
+					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
+					if( do_min) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
+					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";					
+					#ifdef USE_OPENMP
+					#pragma omp parallel for schedule(dynamic,1)
+					#endif
+					for( int imin = 0; imin < n_scormin; ++imin )
+					{
+						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
+
+						int const ithread = omp_get_thread_num();
+
+						director->set_scene( packed_results[imin].index, RESLS.size()-1, *scene_pt[ithread] );
+						EigenXform xposition1 = scene_pt[ithread]->position(1);
+						EigenXform xalignout = EigenXform::Identity();
+						if( align_to_scaffold ) xalignout = xposition1.inverse();
+
+					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+				        start = std::chrono::high_resolution_clock::now();
+
+						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
+						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
+
+						if( option[rif_dock::full_scaffold_output]() ) pose_to_min = both_full_per_thread[ithread];
+						else                                           pose_to_min = both_per_thread[ithread];
+						xform_pose( pose_to_min, eigen2xyz(xalignout)            , pose_to_min.n_residue(), pose_to_min.n_residue()   );
+						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) , 1                      , pose_to_min.n_residue()-1 );
+
+
+						// place the rotamers
+						core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+
+						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+							int irot =                  packed_results[imin].rotamers().at(ipr).second;
+							core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
+							pose_to_min.replace_residue( ires+1, *newrsd, true );
+							for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
+								pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+							}
+						}
+						end = std::chrono::high_resolution_clock::now();
+						std::chrono::duration<double> elapsed_seconds_copypose = end-start;
+						#pragma omp critical
+						time_copy += elapsed_seconds_copypose;
+						// pose_to_min.dump_pdb("test_pre.pdb");
+
+						if( do_min ){
+							// std::cout << "MIN!" << std::endl;
+					        start = std::chrono::high_resolution_clock::now();
+							minmover_pt[ithread]->apply( pose_to_min );
+					        end = std::chrono::high_resolution_clock::now();
+							std::chrono::duration<double> elapsed_seconds_min = end-start;
+							#pragma omp critical
+							time_min += elapsed_seconds_min;
+						} else {
+							// std::cout << "SCORE!" << std::endl;							
+					        start = std::chrono::high_resolution_clock::now();
+							scorefunc_pt[ithread]->score( pose_to_min );
+					        end = std::chrono::high_resolution_clock::now();
+							std::chrono::duration<double> elapsed_seconds_score = end-start;
+							#pragma omp critical
+							time_score += elapsed_seconds_score;
+						}
+
+						float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
+						      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
+						      total_lj_neg = std::max(0.0f,total_lj_neg);
+						packed_results[imin].score  = 1.00*total_lj_neg;
+						packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
+						packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
+						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+							packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
+						}
+
+
+						if( do_min && packed_results[imin].score < rosetta_score_cut ){
+							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+						}
+
+						// #pragma omp critical
+						// pose_to_min.energies().show(cout,pose_to_min.n_residue());
+						// pose_to_min.dump_pdb("test_post.pdb");
+						// #pragma omp critical
+						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
+						// utility_exit_with_message("testing");
+					}
+					cout << endl;
+					__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
+					{
+						size_t n_scormin = 0;
+						for( n_scormin; n_scormin < packed_results.size(); ++n_scormin ){
+							if( do_min && packed_results[n_scormin].score > rosetta_score_cut ) break;
+						}
+						packed_results.resize(n_scormin);
+					}
+
+				    std::chrono::time_point<std::chrono::high_resolution_clock> stopall = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double> elap_sec = stopall - startall;
+
+					if( do_min ){
+						std::cout << "total pose copy time: " << time_copy.count() << "s total min time: " << time_min.count() << "s" << " walltime total " << elap_sec.count() << std::endl;
+						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count()                     << " sc/rb minimizations per second" << std::endl;
+						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count() / omp_max_threads() << " sc/rb minimizations per second per thread" << std::endl;
+					} else {
+						std::cout << "total pose copy time: " << time_copy.count() << "s total score time: " << time_score.count() << "s" << " walltime total " << elap_sec.count() << std::endl;						
+						std::cout << "score rate: " << (double)n_scormin / elap_sec.count()                     << " rosetta scores per second" << std::endl;
+						std::cout << "score rate: " << (double)n_scormin / elap_sec.count() / omp_max_threads() << " rosetta scores per second per thread" << std::endl;						
+					}
 				}
-
-			    std::chrono::time_point<std::chrono::high_resolution_clock> stopallmin = std::chrono::high_resolution_clock::now();
-				std::chrono::duration<double> elapsed_seconds_allmin = stopallmin - startallmin;
-
-				std::cout << "total pose copy time: " << time_copy.count() << "s total min time: " << time_min.count() << "s" << " walltime total " << elapsed_seconds_allmin.count() << std::endl;
-				std::cout << "min rate: " << (double)last_good_samp / elapsed_seconds_allmin.count() << " sc/rb minimizations per second" << std::endl;
-				std::cout << "min rate: " << (double)last_good_samp / elapsed_seconds_allmin.count() / omp_max_threads() << " sc/rb minimizations per second per thread" << std::endl;
 			}
-
 
 
 
