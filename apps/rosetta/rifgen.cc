@@ -837,7 +837,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "########################################### what you need for docking ###########################################" << std::endl;
 		std::cout << "-rif_dock:target_pdb            " << centered_target_pdbfile << std::endl;
 	if( option[basic::options::OptionKeys::in::file::extra_res_fa].size() == 1 )
-		std::cout << "-extra_res_fa                   " << option[basic::options::OptionKeys::in::file::extra_res_fa]()[1] << std::endl;
+		std::cout << "-in:file:extra_res_fa           " << option[basic::options::OptionKeys::in::file::extra_res_fa]()[1] << std::endl;
 	if( target_reslist_file.size() )
 		std::cout << "-rif_dock:target_res            " << target_reslist_file << std::endl;
 	    std::cout << "-rif_dock:target_rf_resl        " << rf_resl << std::endl;
