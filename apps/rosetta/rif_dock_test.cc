@@ -126,7 +126,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, full_scaffold_output )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dump_resfile )
-	OPT_1GRP_KEY(  Boolean    , rif_dock, extra_pdb_info )
+	OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pikaa )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, cache_scaffold_data )
 
@@ -136,6 +136,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
 
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )		
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
@@ -181,7 +182,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rotrf_cache_dir, "" , "./" );
 
 		NEW_OPT(  rif_dock::hack_pack, "" , true );
-		NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.25 );
+		NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 		NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
 		NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
 		NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
@@ -215,7 +216,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::full_scaffold_output, "", false );
 		NEW_OPT(  rif_dock::dump_resfile, "", false );
-		NEW_OPT(  rif_dock::extra_pdb_info, "", false );
+		NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
 
 		NEW_OPT(  rif_dock::cache_scaffold_data, "", false );
 
@@ -225,6 +226,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
 
+		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );		
 		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
 		NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
@@ -598,16 +600,21 @@ int main(int argc, char *argv[]) {
 		float const target_rf_resl = option[rif_dock::target_rf_resl]()<=0.0 ? RESLS.back()/2.0 : option[rif_dock::target_rf_resl]();
 
 		bool align_to_scaffold = option[rif_dock::align_output_to_scaffold]();
+		float rosetta_score_fraction = option[rif_dock::rosetta_score_fraction]();				
 		float rosetta_score_then_min_below_thresh = option[rif_dock::rosetta_score_then_min_below_thresh]();
 		float rosetta_score_at_least = option[rif_dock::rosetta_score_at_least]();
 		float rosetta_score_at_most  = option[rif_dock::rosetta_score_at_most]();		
 		float rosetta_min_fraction = option[rif_dock::rosetta_min_fraction]();		
 		float rosetta_score_cut = option[rif_dock::rosetta_score_cut]();		
+		std::cout << "rosetta_score_fraction: " << rosetta_score_fraction << std::endl;		
 		std::cout << "rosetta_score_then_min_below_thresh: " << rosetta_score_then_min_below_thresh << std::endl;
 		std::cout << "rosetta_score_at_least: " << rosetta_score_at_least << std::endl;
 		std::cout << "rosetta_score_at_most: " << rosetta_score_at_most << std::endl;		
 		std::cout << "rosetta_min_fraction: " << rosetta_min_fraction << std::endl;
 		std::cout << "rosetta_score_cut: " << rosetta_score_cut << std::endl;
+		double time_rif=0, time_pck=0, time_ros=0;
+
+		bool pdb_info_pikaa = option[rif_dock::pdb_info_pikaa]();
 
 		std::cout << "//////////////////////////// end options /////////////////////////////////" << std::endl;
 
@@ -729,6 +736,7 @@ int main(int argc, char *argv[]) {
 			rfopts.oversample = option[rif_dock::target_rf_oversample]();
 			rfopts.block_hbond_sites = false;
 			rfopts.max_bounding_ratio = option[rif_dock::max_rf_bounding_ratio]();
+			rfopts.fail_if_no_cached_data = true;
 			rfopts.repulsive_only_boundary = true; // default
 			devel::scheme::get_rosetta_bounding_fields_from_fba(
 				RESLS,
@@ -1207,7 +1215,10 @@ int main(int argc, char *argv[]) {
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			int64_t non0_space_size = 0;
 			int64_t npack = 0;
+			int64_t total_search_effort = 0;
 			{
+		        std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
+
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1223,6 +1234,7 @@ int main(int argc, char *argv[]) {
 						std::exception_ptr exception = nullptr;
 					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 				        start = std::chrono::high_resolution_clock::now();
+				        total_search_effort += samples[iresl].size();
 
 						#ifdef USE_OPENMP
 						#pragma omp parallel for schedule(dynamic,64)
@@ -1294,12 +1306,16 @@ int main(int argc, char *argv[]) {
 					std::cout << "full sort of final samples" << std::endl;
 					__gnu_parallel::sort( samples.back().begin(), samples.back().end() );
 				}
+				std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
+				time_rif += elapsed_seconds_rif.count();
 
 				std::cout << "total non-0 space size was approx " << float(non0_space_size)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
-
+				std::cout << "total search effort " << KMGT(total_search_effort) << std::endl;
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
+
 				if( option[rif_dock::hack_pack]() ){
 
 					if( use_scaffold_bounding_grids ){
@@ -1332,7 +1348,7 @@ int main(int argc, char *argv[]) {
 						if( samples.back()[n_packsamp].score > 0 ) break;
 					}
 					int const config = RESLS.size()-1;
-					npack = std::min( n_packsamp, (size_t)(beam_size * hack_pack_frac) );
+					npack = std::min( n_packsamp, (size_t)(total_search_effort * ( hack_pack_frac / hackpackopts.pack_iter_mult) ) );
 					packed_results.resize( npack );
 					print_header( "hack-packing top " + KMGT(npack) );
 					std::cout << "packing options: " << hackpackopts << std::endl;
@@ -1381,6 +1397,9 @@ int main(int argc, char *argv[]) {
 						packed_results[ipack].index = samples.back()[ipack].index;
 					}
 				}
+
+				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
+				time_pck += elapsed_seconds_pack.count();
 			}
 
 
@@ -1388,9 +1407,11 @@ int main(int argc, char *argv[]) {
 
 
 
-			bool const do_rosetta_score = rosetta_score_then_min_below_thresh > -9e8 || rosetta_score_at_least > 0;
+			bool const do_rosetta_score = rosetta_score_fraction > 0 || rosetta_score_then_min_below_thresh > -9e8 || rosetta_score_at_least > 0;
 
 			if( do_rosetta_score && option[rif_dock::hack_pack]() ){
+
+				std::chrono::time_point<std::chrono::high_resolution_clock> start_rosetta = std::chrono::high_resolution_clock::now();
 
 				int n_score_calculations = 0;
 
@@ -1417,10 +1438,13 @@ int main(int argc, char *argv[]) {
 						scorefunc_pt[i] = core::scoring::get_score_function();
 						scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
 						if( !do_min ){
-							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, 0.6*scorefunc_pt[i]->get_weight(core::scoring::fa_dun) );
-							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
+							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.8 );
+							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.8 );
+						} else {
+							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*1.2 );							
+							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*1.2 );
 						}
-						scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.5 );
+						scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.3 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
 						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
@@ -1444,9 +1468,12 @@ int main(int argc, char *argv[]) {
 						n_scormin = n_score_calculations * rosetta_min_fraction;
 					} else {
 						// for scoring, use user cut
-						for( n_scormin; n_scormin < packed_results.size(); ++n_scormin ){
-							if( packed_results[n_scormin].score > rosetta_score_then_min_below_thresh )
-								break;
+						n_scormin = rosetta_score_fraction/40.0 * total_search_effort;
+						if( rosetta_score_then_min_below_thresh > -9e8 ){
+							for( n_scormin=0; n_scormin < packed_results.size(); ++n_scormin ){
+								if( packed_results[n_scormin].score > rosetta_score_then_min_below_thresh )
+									break;
+							}
 						}
 						n_scormin = std::min<int>( std::max<int>( n_scormin, rosetta_score_at_least ), rosetta_score_at_most );
 						n_scormin = std::min<int>( n_scormin, packed_results.size() );
@@ -1564,6 +1591,10 @@ int main(int argc, char *argv[]) {
 						std::cout << "score rate: " << (double)n_scormin / elap_sec.count() / omp_max_threads() << " rosetta scores per second per thread" << std::endl;						
 					}
 				}
+
+				std::chrono::duration<double> elapsed_seconds_rosetta = std::chrono::high_resolution_clock::now()-start_rosetta;
+				time_ros += elapsed_seconds_rosetta.count();
+
 			}
 
 
@@ -1675,6 +1706,14 @@ int main(int argc, char *argv[]) {
 			std::cout << "allresults.size(): " << allresults.size() << " selected_results.size(): " << selected_results.size() << std::endl;
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			print_header( "timing info" ); //////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+			std::cout<<"total RIF     time: "<<KMGT(time_rif)<<" fraction: "<<time_rif/(time_rif+time_pck+time_ros)<<std::endl;
+			std::cout<<"total Pack    time: "<<KMGT(time_pck)<<" fraction: "<<time_pck/(time_rif+time_pck+time_ros)<<std::endl;
+			std::cout<<"total Rosetta time: "<<KMGT(time_ros)<<" fraction: "<<time_ros/(time_rif+time_pck+time_ros)<<std::endl;			
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1772,11 +1811,11 @@ int main(int argc, char *argv[]) {
 
 					}
 
-					core::pose::Pose pose_to_dump;
-					if( option[rif_dock::full_scaffold_output]() ) pose_to_dump = both_full_pose;
-					else                                           pose_to_dump = both_pose;
-					xform_pose( pose_to_dump, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_to_dump.n_residue() );
-					xform_pose( pose_to_dump, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );
+					core::pose::Pose pose_from_rif;
+					if( option[rif_dock::full_scaffold_output]() ) pose_from_rif = both_full_pose;
+					else                                           pose_from_rif = both_pose;
+					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_from_rif.n_residue() );
+					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );
 
 					// place the rotamers
 					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
@@ -1789,31 +1828,39 @@ int main(int argc, char *argv[]) {
 						int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
 						int irot =                  selected_result.rotamers().at(ipr).second;
 						core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
-						pose_to_dump.replace_residue( ires+1, *newrsd, true );
+						pose_from_rif.replace_residue( ires+1, *newrsd, true );
 						resfile << ires+1 << " A NATRO" << std::endl;
 						expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one
 						for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
-							pose_to_dump.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+							pose_from_rif.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
 						}
 					}
 
+					core::pose::Pose & pose_to_dump( *(selected_result.pose_ ? selected_result.pose_.get() : &pose_from_rif) );
 					utility::io::ozstream out1( pdboutfile );
 					// scene_full->set_position( 1, xalignout * xposition1 );
 					// write_pdb( out1, dynamic_cast<Scene&>(*scene_full), rot_index.chem_index_ );
-					typedef std::pair<int,std::string> PairIS;
-					BOOST_FOREACH( PairIS p, pikaa ){
-						std::sort( p.second.begin(), p.second.end() );
-						pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
-						pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
-					}
-					if( option[rif_dock::extra_pdb_info]() ) out1 << expdb.str() << std::endl;
-					if( selected_result.pose_ ){
-						// utility::io::ozstream out( pdboutfile + "_min.pdb" );
-						selected_result.pose_->dump_pdb(out1);
-						// out.close();
+					if( pdb_info_pikaa ){
+						for( auto p : pikaa ){
+							std::sort( p.second.begin(), p.second.end() );
+							pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
+							pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
+						}
 					} else {
-						pose_to_dump.dump_pdb(out1);
+						for( auto p : pikaa ){
+							pose_to_dump.pdb_info()->add_reslabel(p.first, "RIFRES" );
+						}
 					}
+					// if( selected_result.pose_ ){
+					// 	for( auto p : pikaa ){
+					// 		std::cout << "residue " << p.first << " " << selected_result.pose_->residue(p.first).name() << " fa_rep: "
+					// 		          << selected_result.pose_->energies().residue_total_energies(p.first)[core::scoring::fa_rep] << std::endl;
+					// 	}
+					// }
+
+					out1 << expdb.str() << std::endl;
+					pose_to_dump.dump_pdb(out1);
+
 					out1.close();
 
 					if( option[rif_dock::dump_resfile]() ){
