@@ -3,9 +3,7 @@
 #include "bloom/bloom_filter.hpp"
 
 #include <boost/foreach.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 
 #include <sparsehash/dense_hash_map>
@@ -46,8 +44,8 @@ using std::endl;
 //    	cout << cdf[1] << endl;
 //    	cout << cdf[0] << endl;
 
-// 	boost::random::mt19937 rng((uint64_t)time(0));	
-// 	boost::uniform_real<> uniform;
+// 	std::mt19937 rng((uint64_t)time(0));	
+// 	std::uniform_real_distribution<> uniform;
 
 // 	int NSAMP = 10000000;
 	
@@ -92,8 +90,8 @@ TEST( bloom , bloom_filter_example ){
 	 	<< " table_size: " << parameters.optimal_parameters.table_size/8000000.0 << "M " 
 		<< " Nhash: " << parameters.optimal_parameters.number_of_hashes << std::endl;
 
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 
 	ASSERT_FALSE( !parameters );
 

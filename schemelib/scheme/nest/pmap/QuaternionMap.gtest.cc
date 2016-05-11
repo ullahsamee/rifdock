@@ -3,9 +3,7 @@
 #include "scheme/nest/NEST.hh"
 #include "scheme/nest/pmap/QuaternionMap.hh"
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
@@ -64,9 +62,9 @@ TEST( QuaternionMap, test_cell_validity_check ){
 	}
 	cout << "Num QuaternionMap checks: " << (double)count/1000000.0 << endl;
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	// test that the indices of all valid quats are valid for set_state
 	for(int i = 0; i < 10000; ++i){
@@ -81,9 +79,9 @@ TEST( QuaternionMap, test_cell_validity_check ){
 
 }
 TEST( QuaternionMap, covering ){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 
 	// 	// 	1                   16 119.1666

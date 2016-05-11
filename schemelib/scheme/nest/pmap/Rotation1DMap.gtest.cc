@@ -6,9 +6,7 @@
 #include "scheme/nest/NEST.hh"
 
 #include <Eigen/Dense>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 #include <boost/lexical_cast.hpp>
 
@@ -102,9 +100,9 @@ TEST( Rotation1DMap , lookup ){
 	Matrix3d m = Matrix3d::Identity();
 	ASSERT_EQ( 0, nestp->virtual_get_index( &m , 0 ) );
 
-	boost::random::mt19937 rng(0);
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng(0);
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 	for(int i = 0; i < NITER; ++i){
 		Vector3d axis( gauss(rng), gauss(rng), gauss(rng) );
 		axis.normalize();
@@ -140,9 +138,9 @@ TEST( Rotation1DMap , lookup_flip ){
 	Matrix3d m = Matrix3d::Identity();
 	ASSERT_EQ( 0, nestp->virtual_get_index( &m , 0 ) );
 
-	boost::random::mt19937 rng(0);
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng(0);
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 	for(int i = 0; i < NITER; ++i){
 		Vector3d axis( gauss(rng), gauss(rng), gauss(rng) );
 		axis.normalize();

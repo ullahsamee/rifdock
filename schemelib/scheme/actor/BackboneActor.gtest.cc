@@ -10,7 +10,7 @@
 #include "scheme/io/dump_pdb_atom.hh"
 
 #include <boost/foreach.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 
 
@@ -74,7 +74,7 @@ TEST( BackboneActor, test_get_N_CA_C ){
 		// cout <<  c2.transpose() << endl;			
 
 
-	boost::random::mt19937 rng((uint64_t)time(0)+65346);
+	std::mt19937 rng((uint64_t)time(0)+65346);
 
 	for( int i = 0; i < 100; ++i ){
 		Xform x;

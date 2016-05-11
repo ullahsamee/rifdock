@@ -6,9 +6,7 @@
 
 #include <Eigen/Geometry>
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
@@ -21,9 +19,9 @@ using std::endl;
 
 TEST( EulerAnglesMap, covering ){
 	using namespace Eigen;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	cout << "EulerAnglesMap Covrad" << endl;
 	int NRES = 7;
@@ -60,9 +58,9 @@ TEST( EulerAnglesMap, covering ){
 
 
 TEST( EulerAnglesMap, shapes ){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	/// inspect maxdiff/avgdiff for some simple shapes
 	int NITER = 10000;
@@ -122,9 +120,9 @@ TEST( EulerAnglesMap, shapes ){
 // TEST( EulerAnglesMap, visualize ){
 // 	using namespace Eigen;
 
-// 	boost::random::mt19937 rng((unsigned int)time(0));
-// 	boost::normal_distribution<> gauss;
-// 	boost::uniform_real<> uniform;
+// 	std::mt19937 rng((unsigned int)time(0));
+// 	std::normal_distribution<> gauss;
+// 	std::uniform_real_distribution<> uniform;
 
 // 	Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
 // 	// Quaterniond qrand( 1,0,0,0 );

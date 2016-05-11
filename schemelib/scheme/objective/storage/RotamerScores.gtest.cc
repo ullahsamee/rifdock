@@ -2,10 +2,7 @@
 
 #include "scheme/objective/storage/RotamerScores.hh"
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 namespace scheme { namespace objective { namespace storage { namespace rstest {
 
@@ -18,9 +15,9 @@ TEST( RotamerScore, test_RotamerScore ){
     int mask = RotamerScore<>::RotamerMask;
 	float divisor = RotamerScore<>::divisor();
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform( 127.0/divisor, 0.0 );
-    boost::random::uniform_int_distribution<> rand_rot(0,511);
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform( 127.0/divisor, 0.0 );
+    std::uniform_int_distribution<> rand_rot(0,511);
 
     ASSERT_EQ(   9, bits );
     ASSERT_EQ( 511, mask );
@@ -294,8 +291,8 @@ TEST( RotamerScores, test_sort_sat ) {
 // }
 
 // TEST( RotamerScores, sort ){
-// 	boost::random::mt19937 rng((unsigned int)time(0));
-// 	boost::uniform_real<> uniform;
+// 	std::mt19937 rng((unsigned int)time(0));
+// 	std::uniform_real_distribution<> uniform;
 
 // 	for( int iter = 0; iter < 100; ++iter ){
 

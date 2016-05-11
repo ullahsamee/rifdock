@@ -11,9 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <boost/foreach.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/lexical_cast.hpp>
 
 namespace scheme { namespace nest { namespace pmap { namespace hecat_test {
@@ -173,8 +171,8 @@ double min_cube_side(T const & coords){
 // 	          Vector3d(     -r,    0  , -1.0/r ).normalized();
 // 	// dumppoints("dodec0.pdb",dodec0);
 
-// 	boost::random::mt19937 mt((unsigned int)time(0));
-// 	boost::normal_distribution<> rnorm;
+// 	std::mt19937 mt((unsigned int)time(0));
+// 	std::normal_distribution<> rnorm;
  
 // 	 // 0.90919
 // 	Quaterniond Q0( 
@@ -401,8 +399,8 @@ vector<Quaterniond> make_half120cell();
 // 	vector<Quaterniond> half120cell = make_half120cell();
 // 	Array<uint8_t,60,12> nbrs = make_half120cell_neighbors(half120cell);
 
-// 	boost::random::mt19937 mt((unsigned int)time(0));
-// 	boost::normal_distribution<> rnorm;
+// 	std::mt19937 mt((unsigned int)time(0));
+// 	std::normal_distribution<> rnorm;
  
 // 	Matrix<double,4,13> dodec0;
 // 	for(size_t inbr = 0; inbr < 12; ++inbr){
@@ -621,9 +619,9 @@ TEST(hecatonicosachoron,covering){
 		NITER = 1000*1000;
 	#endif
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	NEST<3,Matrix3d,HecatonicosachoronMap> nest;
 	for(int r = 0; r <= NRES; ++r){
@@ -650,9 +648,9 @@ TEST(hecatonicosachoron,covering){
 
 // TEST( hecatonicosachoron, visualize ){
 
-// 	boost::random::mt19937 rng((unsigned int)time(0));
-// 	boost::normal_distribution<> gauss;
-// 	boost::uniform_real<> uniform;
+// 	std::mt19937 rng((unsigned int)time(0));
+// 	std::normal_distribution<> gauss;
+// 	std::uniform_real_distribution<> uniform;
 
 // 	// Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
 // 	Quaterniond qrand( 1,0,0,0 );

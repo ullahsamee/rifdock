@@ -5,9 +5,7 @@
 #include "scheme/numeric/rand_xform.hh"
 
 #include <Eigen/Geometry>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <sparsehash/dense_hash_set>
 
 namespace scheme { namespace objective { namespace hash { namespace xhnbtest {
@@ -29,7 +27,7 @@ void get_neighbors_ref(
 ){
 	std::set<typename XH::Key> keys;
 	double quat_bound = numeric::deg2quat(ang_bound);
-	boost::random::mt19937 rng((unsigned int)time(0) + 9384756);
+	std::mt19937 rng((unsigned int)time(0) + 9384756);
 	Xform xrand;
 	for(int i = 0; i < NSAMP; ++i){
 		numeric::rand_xform_quat(rng,xrand,cart_bound,quat_bound);
@@ -42,8 +40,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_can_repr_identity ){
 	double eps_tol = 0.0000001;
 	if( sizeof(Float) == 4 ) eps_tol = 0.0001;
 	typedef uint64_t Key;
-	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 94586049);
+	std::uniform_real_distribution<> runif;
 	using namespace Eigen;
 	for(int j = 0; j < 10000; ++j){
 		for(int i = 2; i < 10; ++i){
@@ -72,9 +70,9 @@ TEST( XformHashNeighbors, DISABLED_Quat_BCC7_Zorder_quaternion_reflection_symmet
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
 	typedef util::SimpleArray<7,Key> I7;
-	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
+	std::mt19937 rng((unsigned int)time(0) + 293457);
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;
 
 	for(int iter1 = 0; iter1 < 100; ++iter1){
 		XformHash_Quat_BCC7_Zorder<Xform> xh( runif(rng)+0.1, 2+(int)(runif(rng)*60.0), runif(rng)*400+10.0 );
@@ -170,8 +168,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 	typedef uint64_t Key;
 	typedef util::SimpleArray<7,double> F7;
 	typedef util::SimpleArray<7,Key> I7;
-	boost::random::mt19937 rng((unsigned int)time(0) + 293457);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 293457);
+	std::uniform_real_distribution<> runif;
 
 	XformHash_Quat_BCC7_Zorder<Xform> xh( runif(rng)+0.1, 2+(int)(runif(rng)*60.0), runif(rng)*400+10.0 );
 
@@ -249,8 +247,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_key_symmetry ){
 // 	NSAMP = 20;
 // 	THRESH = 0.001;
 // 	#endif
-// 	boost::random::mt19937 rng((unsigned int)time(0) + 4564631);
-// 	boost::uniform_real<> runif;
+// 	std::mt19937 rng((unsigned int)time(0) + 4564631);
+// 	std::uniform_real_distribution<> runif;
 
 // 	// double cart_bound=1.0+runif(rng)*4.0, ang_bound=20.0;
 // 	double cart_bound=2.0, ang_bound=20.0;
@@ -363,8 +361,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_ori_neighbors ){
 	NSAMP = 8;
 	THRESH = 0.001;
 	#endif
-	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 94586049);
+	std::uniform_real_distribution<> runif;
 
 	double cart_bound=2.0, ang_bound=10.0+runif(rng)*30.0;
 	// double cart_bound=1.0, ang_bound=20.0;
@@ -442,8 +440,8 @@ TEST( XformHashNeighbors, Quat_BCC7_Zorder_check_general_neighbors ){
 	NSAMP = 8;
 	THRESH = 0.002;
 	#endif
-	boost::random::mt19937 rng((unsigned int)time(0) + 94586049);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 94586049);
+	std::uniform_real_distribution<> runif;
 
 
 	for(int iter1 = 0; iter1 < NSAMP; ++iter1){

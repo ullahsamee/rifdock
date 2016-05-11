@@ -8,9 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 
 #include <fstream>
@@ -54,9 +52,9 @@ TEST( hbond_5dof, DISABLED_test ){
 	 // -1.109  -1.823  -2.927
 	 // -2.113  -1.882  -3.017
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 
 	Eigen::Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );

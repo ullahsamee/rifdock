@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 #include "scheme/rosetta/score/EtableParams_init.hh"
 #include "scheme/rosetta/score/RosettaField.hh"
@@ -89,8 +88,8 @@ TEST( RosettaField, test_faster_atombin_calc ){
 
 	RosettaField<Atom,EtableParamsInit> rf(atoms);
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	for(int i = 0; i < NITER; ++i){
 		F3 testp = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rf.atom_bins_ub_-rf.atom_bins_lb_+12) + rf.atom_bins_lb_ - 6.0;
 		// cout << "TEST ITER " << i << " " << testp << endl;
@@ -146,8 +145,8 @@ TEST( RosettaField, test_btn ){
 		objective::voxel::FieldCache3D<float> rc(rfa,lb-6.0f,ub+6.0f,1.0);
 		objective::voxel::BoundingFieldCache3D<float> brc(rc,2.0,1.0);
 
-		boost::random::mt19937 rng((unsigned int)time(0));
-		boost::uniform_real<> uniform;
+		std::mt19937 rng((unsigned int)time(0));
+		std::uniform_real_distribution<> uniform;
 		for(int i = 0; i < NITER; ++i){
 			F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (rc.ub_-rc.lb_) + rc.lb_;
 			ASSERT_LE( brc[idx], rc[idx] );

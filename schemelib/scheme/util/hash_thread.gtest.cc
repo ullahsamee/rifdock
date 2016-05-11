@@ -3,8 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 #include <boost/foreach.hpp>
 #include <boost/multi_array.hpp>
@@ -64,8 +63,8 @@ template<class Map>
 void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 	int64_t NFILL = MAXIDX/sparsity;
 
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
 	util::Timer<> t;
@@ -79,7 +78,7 @@ void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 }
 
 template<class Map>
-void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost::random::mt19937 * rng0 ){
+void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, std::mt19937 * rng0 ){
 	Map const & h(*hp);
 
 	int64_t NROW=1;
@@ -87,8 +86,8 @@ void test_map( Map * hp, double * runtime, int64_t MAXIDX, int64_t NITER, boost:
 
 	static std::mutex m;
 
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
-	boost::random::mt19937 rng( randindex( *rng0 ) );
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	std::mt19937 rng( randindex( *rng0 ) );
 
 	// h.resize(NFILL/2);
 
@@ -120,7 +119,7 @@ TEST( test_hash_thread, google_hash_thread ){
  	int64_t NSAMP_TOT = 100ll*1000ll*1000ll;
  	int maxNthread = 16;
  	
-	boost::random::mt19937 rng( (unsigned int)time(0) );
+	std::mt19937 rng( (unsigned int)time(0) );
  	typedef google::dense_hash_map<uint64_t,util::SimpleArray<8,double> > D;
  	D d;
  	d.set_empty_key(std::numeric_limits<uint64_t>::max());
@@ -170,11 +169,11 @@ void test_array(
 	double * runtime,
 	size_t N,
 	int64_t NITER,
-	boost::random::mt19937 * rng
+	std::mt19937 * rng
 ){
 
 
-	boost::random::uniform_int_distribution<int64_t> randindex(0,N);
+	std::uniform_int_distribution<int64_t> randindex(0,N);
 	// h.resize(NFILL/2);
 
 	util::Timer<> t;
@@ -209,7 +208,7 @@ TEST( test_hash_thread, simple_array_thread ){
  	}
  	cout << "done fill " << (double)SIZE*4.0/1000000000.0 << "GB" << endl;
 
-	boost::random::mt19937 rng( (unsigned int)time(0) );
+	std::mt19937 rng( (unsigned int)time(0) );
 
  	// test_map(n,"google_dense",m,"segment_gdh ");
  	cout << "====================== ARRAY_TEST ======================" << endl;
@@ -241,11 +240,11 @@ void test_multiarray(
 	boost::multi_array<float,1> const * hp,
 	double * runtime,
 	int64_t NITER,
-	boost::random::mt19937 * rng
+	std::mt19937 * rng
 ){
 
 
-	boost::random::uniform_int_distribution<int64_t> randindex( 0, hp->shape()[0] );
+	std::uniform_int_distribution<int64_t> randindex( 0, hp->shape()[0] );
 	// h.resize(NFILL/2);
 
 	util::Timer<> t;
@@ -283,7 +282,7 @@ TEST( test_hash_thread, multi_array_thread ){
  	}
  	cout << "done fill " << (double)SIZE*4.0/1000000000.0 << "GB" << endl;
 
-	boost::random::mt19937 rng( (unsigned int)time(0) );
+	std::mt19937 rng( (unsigned int)time(0) );
 
  	// test_map(n,"google_dense",m,"segment_gdh ");
  	cout << "====================== MULTI_ARRAY_TEST ======================" << endl;

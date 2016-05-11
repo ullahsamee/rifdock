@@ -4,9 +4,7 @@
 
 #include <Eigen/Geometry>
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 
 namespace scheme { namespace numeric { namespace pref_test {
@@ -25,7 +23,7 @@ void test_xform_perf(){
 	#ifdef SCHEME_BENCHMARK
 	NSAMP = 10*1000*1000;
 	#endif
-	boost::random::mt19937 rng;
+	std::mt19937 rng;
 	Xform x,sum = Xform::Identity();
 	rand_xform(rng,x);
 

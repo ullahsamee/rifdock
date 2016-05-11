@@ -1,10 +1,8 @@
 #include "scheme/objective/storage/TwoBodyTable.hh"
 
-	#include <boost/random/mersenne_twister.hpp>
+	#include <random>
 	#include <boost/foreach.hpp>
-	#include <boost/random/uniform_int_distribution.hpp>
-	#include <boost/random/uniform_real.hpp>
-
+		
 
 namespace scheme { namespace search {
 
@@ -59,7 +57,7 @@ struct HackPack
 	std::vector< RotInfos > res_rots_; // iresapp + list of irottwob/onebody pairs
 	std::vector< std::pair<int32_t,int32_t> > rot_list_; // list of ireslocal / irotlocal pairs
 	std::vector< int32_t > current_rots_, trial_best_rots_, global_best_rots_; // current rotamer in local numbering
-	boost::mt19937 rng;
+	std::mt19937 rng;
 	::scheme::objective::storage::TwoBodyTable<float> const & twob_; // dangerous, but faster than ptr / shared_ptr
 	float score_, trial_best_score_, global_best_score_;
 	HackPackOpts opts_;
@@ -239,14 +237,14 @@ struct HackPack
 	}
 	int32_t randres()
 	{
-		boost::random::uniform_int_distribution<> rand_idx(0,nres_-1);
+		std::uniform_int_distribution<> rand_idx(0,nres_-1);
 		return rand_idx( rng );
 	}
 	int32_t randrot( int32_t const & ires )
 	{
 		assert( res_rots_.at(ires).second.size() > 0 );
 		// if( res_rots_[ires].second.size() == 1 ) return 0;
-		boost::random::uniform_int_distribution<> rand_idx(0,res_rots_.at(ires).second.size()-1);
+		std::uniform_int_distribution<> rand_idx(0,res_rots_.at(ires).second.size()-1);
 		return rand_idx( rng );
 	}
 	void randrot_not_current_uniform_res( int32_t & ires, int32_t & irot )
@@ -266,7 +264,7 @@ struct HackPack
 	}
 	void randrot_not_current_uniform_rot( int32_t & ires, int32_t & irot )
 	{
-		boost::random::uniform_int_distribution<> rand_idx(0,rot_list_.size()-1);
+		std::uniform_int_distribution<> rand_idx(0,rot_list_.size()-1);
 		for( int i = 0; i < 1000; ++i ){
 			int const irand = rand_idx(rng);
 			ires = rot_list_.at(irand).first;
@@ -277,7 +275,7 @@ struct HackPack
 		std::exit(-1);
 	}
 	void random_substitution_test( float temperature ){
-		boost::uniform_real<float> runif(0,1);
+		std::uniform_real_distribution<float> runif(0,1);
 
 		int32_t ires, irot;
 		randrot_not_current_uniform_rot( ires, irot );

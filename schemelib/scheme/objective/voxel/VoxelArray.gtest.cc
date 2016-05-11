@@ -3,8 +3,7 @@
 #include "scheme/objective/voxel/VoxelArray.hh"
 #include "scheme/io/cache.hh"
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 
 
@@ -65,8 +64,8 @@ TEST(VoxelArray,bounds3d){
 }
 
 TEST(VoxelArray,io){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 
 	VoxelArray<3,double> a(-6,7,1.6345);
 	for(size_t i = 0; i < a.num_elements(); ++i) a.data()[i] = uniform(rng);

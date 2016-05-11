@@ -4,9 +4,7 @@
 #include "scheme/numeric/rand_xform.hh"
 #include <Eigen/Geometry>
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 #include <sparsehash/dense_hash_set>
 
@@ -21,7 +19,7 @@ typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 
 template< template<class X> class XformHash >
 int get_num_ori_cells( int ori_nside, double & xcov ){
-	boost::random::mt19937 rng((unsigned int)time(0) + 7693487);
+	std::mt19937 rng((unsigned int)time(0) + 7693487);
 	XformHash<Xform> xh( 1.0, ori_nside, 512.0 );
 		int n_ori_bins;
 	{
@@ -125,7 +123,7 @@ TEST( XformHash_Quat_BCC7_Zorder, num_ori_cells ){
 
 template< template<class X> class XformHash >
 void test_xform_hash_perf( double cart_resl, double ang_resl, int const N2=100*1000, unsigned int seed = 0){
-	boost::random::mt19937 rng((unsigned int)time(0) + seed);
+	std::mt19937 rng((unsigned int)time(0) + seed);
 
 	double time_key = 0.0, time_cen = 0.0;
 	double cart_resl2 = cart_resl*cart_resl;
@@ -240,8 +238,8 @@ TEST( XformHash, XformHash_bt24_BCC6 ){
 
 
 TEST( XformHash, XformHash_Quat_BCC7_Zorder_cart_shift ){
-	boost::random::mt19937 rng((unsigned int)time(0) + 23908457);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 23908457);
+	std::uniform_real_distribution<> runif;
 	int NSAMP = 3;
 	#ifdef SCHEME_BENCHMARK
 	NSAMP = 20;

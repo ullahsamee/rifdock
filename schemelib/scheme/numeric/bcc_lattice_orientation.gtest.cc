@@ -4,9 +4,7 @@
 #include "scheme/io/dump_pdb_atom.hh"
 #include "scheme/nest/pmap/TetracontoctachoronMap.hh"
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 
 #include <sparsehash/dense_hash_set>
@@ -34,9 +32,9 @@ void test_orientatin_coverage_4d( size_t Nside, int NSAMP ){
 	typedef uint64_t S;
 	typedef util::SimpleArray<4,F> V;
 	typedef util::SimpleArray<4,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> rnorm;
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
 
 	// Cubic<4,F,S> bcc(I(Nside),V(-1),V(1.0));
 	// BCC<4,F,S> bcc(I(Nside+2),V(-1.0-2.0/Nside),V(1.0+2.0/Nside));
@@ -84,9 +82,9 @@ void test_orientatin_coverage_3d_bt24( size_t Nside, int NSAMP){
 	typedef util::SimpleArray<4,S> I;
 	typedef util::SimpleArray<3,F> V3;
 	typedef util::SimpleArray<3,S> I3;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	// boost::random::mt19937 rng((unsigned int)0);
-	boost::normal_distribution<> rnorm;
+	std::mt19937 rng((unsigned int)time(0));
+	// std::mt19937 rng((unsigned int)0);
+	std::normal_distribution<> rnorm;
 
 	// BCC<3,F,S> bcc(I3(Nside),V3( 0.0 ),V3( 1.0));	
 	// BCC<3,F,S> bcc(I3(3*Nside),V3(-1.0 ),V3( 2.0));
@@ -179,8 +177,8 @@ TEST( bcc_lattice, orientatin_coverage_4d ){
 }
 
 TEST( bcc_lattice, orientatin_coverage_3d_bt24 ){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> runif;
 	cout << "RESOL         COUNT     CovRad     AvgRad     mx/avg    VolFrac    AvgFrac" << endl;
 	for(int i = 1; i < NSIDE; ++i){
 		test_orientatin_coverage_3d_bt24( i , NSAMP ); std::cout.flush();

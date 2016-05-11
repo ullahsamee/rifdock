@@ -4,7 +4,7 @@
 #include "scheme/nest/NEST_concepts.hh"
 #include "scheme/nest/NEST_test_util.hh"
 #include <gtest/gtest.h>
-#include <boost/random.hpp>
+#include <random>
 
 namespace scheme {
 namespace nest {
@@ -116,8 +116,8 @@ TEST( SphereQuad, test_index_nesting_of_bincenters_various_valuetypes ){
 TEST(SphereQuad, test_coverage){
 	typedef NEST<2,RowVector3d,SphereQuad> NestType;
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gaussian;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gaussian;
 	
 	size_t max_resl = 9;
 	std::vector<double> largest_d2_for_r(max_resl+1,0.0);

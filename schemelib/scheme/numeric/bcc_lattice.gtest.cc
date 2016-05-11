@@ -4,9 +4,7 @@
 #include "scheme/io/dump_pdb_atom.hh"
 #include "scheme/util/Timer.hh"
 #include <fstream>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 #include <iterator>     // std::back_inserter
 #include <boost/format.hpp>
@@ -21,8 +19,8 @@ using std::endl;
 
 // TEST(TEMPORARY,gm_20140905){
 // 	int NSAMP = 1000000;
-// 	boost::random::mt19937 r((unsigned int)time(0));
-// 	boost::uniform_real<> u;
+// 	std::mt19937 r((unsigned int)time(0));
+// 	std::uniform_real_distribution<> u;
 // 	Eigen::Matrix<double,6,6> dis; dis.fill(0);
 // 	for(int idata = 1; idata <= 6; ++idata ){
 // 		for(int irep  = 1; irep <= idata; ++irep ){
@@ -86,8 +84,8 @@ test_bcc_performance(
 ){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> runif;
 	BCC<N,F,S> bcc(I(Nside),V(-Width/2),V(Width/2));
 
 	std::vector<V> samples(NSAMP);
@@ -145,9 +143,9 @@ F
 test_bcc_inradius(){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;	
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;	
 	S const Nside = 5;
 	BCC<N,F,S> bcc(I(5),V(-(F)Nside/2.0),V((F)Nside/2.0));
 	BOOST_VERIFY( bcc[bcc[V(0.0)]] == V(0.0) );
@@ -187,9 +185,9 @@ F
 test_bcc_neighbors( size_t NSAMP ){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;	
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;	
 	S const Nside = 5;
 	BCC<N,F,S> bcc(I(5),V(-(F)Nside/2.0),V((F)Nside/2.0));
 	BOOST_VERIFY( bcc[bcc[V(0.0)]] == V(0.0) );
@@ -327,8 +325,8 @@ TEST(bcc_lattice,neighbors){
 // 	typedef util::SimpleArray<7,double> V;
 // 	typedef util::SimpleArray<7,size_t> I;
 // 	typedef Matrix<double,7,1> Vector7d;
-// 	boost::random::mt19937 mt((unsigned int)time(0));
-// 	boost::normal_distribution<> rnorm;
+// 	std::mt19937 mt((unsigned int)time(0));
+// 	std::normal_distribution<> rnorm;
 // 	size_t Nside = 64;
 // 	V bounds = V(1.5,1.5,1.5,1.5,10,10,10);
 // 	BCC<7,double> bcc(I(Nside),-bounds,bounds);
@@ -383,9 +381,9 @@ F
 test_bcc_children( size_t NSAMP ){
 	typedef util::SimpleArray<N,F> V;
 	typedef util::SimpleArray<N,S> I;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;	
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;	
 	S const Nside = 5;
 	BCC<N,F,S> bcc_parent(I(5),V(-(F)Nside),V((F)Nside));
 	BCC<N,F,S> bcc(I(5),V(-(F)Nside/2.0),V((F)Nside/2.0));

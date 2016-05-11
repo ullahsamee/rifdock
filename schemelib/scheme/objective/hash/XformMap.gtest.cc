@@ -6,9 +6,7 @@
 
 #include <sparsehash/dense_hash_set>
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 
 #include <fstream>
@@ -27,8 +25,8 @@ typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 TEST( XformMap, stores_correctly ){
 	int NSAMP = 100000;
 
-	boost::random::mt19937 rng((unsigned int)time(0) + 296720384);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 296720384);
+	std::uniform_real_distribution<> runif;
 
 	XformMap< Xform, double> xmap( 0.5, 10.0 );
 	std::vector< std::pair<Xform,double> > dat;
@@ -102,8 +100,8 @@ TEST( XformMap, insert_sphere ){
 
 	// typedef XformMap< Xform, double, 0 > XMap;
 	typedef XformMap< Xform, double> XMap;	
-	boost::random::mt19937 rng((unsigned int)time(0) + 3457820);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 3457820);
+	std::uniform_real_distribution<> runif;
 	Xform x;
 	double cart_resl = 1.0;
 	double lever = 3.0;

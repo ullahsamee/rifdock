@@ -12,7 +12,7 @@ using std::endl;
 
 typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 
-	// boost::random::mt19937 & rng,
+	// std::mt19937 & rng,
 	// Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	// double cart_bound, double quat_bound
 
@@ -22,7 +22,7 @@ TEST( rand_xform, cart_correctness ){
 	NSAMP = 10000;
 	#endif
 
-	boost::random::mt19937 rng((unsigned int)time(0) + 934875);
+	std::mt19937 rng((unsigned int)time(0) + 934875);
 
 	double cart_bound=6.0, max_cart=0.0;
 	Xform x;
@@ -43,8 +43,8 @@ TEST( rand_xform, ori_correctness ){
 	NSAMP = 1000;
 	#endif
 
-	boost::random::mt19937 rng((unsigned int)time(0) + 934875);
-	boost::uniform_real<> runif;
+	std::mt19937 rng((unsigned int)time(0) + 934875);
+	std::uniform_real_distribution<> runif;
 
 	for(int a = 0; a < NSAMP; ++a){
 

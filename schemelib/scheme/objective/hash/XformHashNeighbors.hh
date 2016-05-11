@@ -10,7 +10,7 @@
 
 #include <sparsehash/dense_hash_map>
 #include <sparsehash/dense_hash_set>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <set>
 #include <map>
 #include <boost/iterator/iterator_facade.hpp>
@@ -180,7 +180,7 @@ struct XformHashNeighbors {
 			// TODO: figure out how to get quat key symmetries working
 			if( true ){
 				// std::cout << "get_asym nbrs the hard way, store in " << ori_key << std::endl;
-				boost::random::mt19937 rng((unsigned int)time(0) + 23058704);
+				std::mt19937 rng((unsigned int)time(0) + 23058704);
 				Xform c = hasher_.get_center(key);
 				// c.translation()[0] = c.translation()[1] = c.translation()[2] = 0;
 				std::set<Key> keys;

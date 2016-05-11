@@ -7,9 +7,7 @@
 #include "scheme/nest/NEST.hh"
 
 #include <Eigen/Dense>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 #include <boost/lexical_cast.hpp>
 
@@ -80,10 +78,10 @@ TEST( TetracontoctachoronMap , covering ){
 		NITER *= 50;
 	#endif
 
-	// boost::random::mt19937 rng((unsigned int)time(0));
-	boost::random::mt19937 rng(0);
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	// std::mt19937 rng((unsigned int)time(0));
+	std::mt19937 rng(0);
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	NEST<3,Matrix3d,TetracontoctachoronMap> nest;
 
@@ -131,10 +129,10 @@ TEST( TetracontoctachoronMap , nside_covering ){
 		NITER *= 50;
 	#endif
 
-	// boost::random::mt19937 rng((unsigned int)time(0));
-	boost::random::mt19937 rng(0);
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	// std::mt19937 rng((unsigned int)time(0));
+	std::mt19937 rng(0);
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 
 	cout << "nside              N     covrad     avgrad    cov/avg  overcover     avgcov  fracused" << endl;
@@ -175,9 +173,9 @@ TEST( TetracontoctachoronMap , nside_covering ){
 
 // TEST( TetracontoctachoronMap , visualize ){
 
-// 	boost::random::mt19937 rng((unsigned int)time(0));
-// 	boost::normal_distribution<> gauss;
-// 	boost::uniform_real<> uniform;
+// 	std::mt19937 rng((unsigned int)time(0));
+// 	std::normal_distribution<> gauss;
+// 	std::uniform_real_distribution<> uniform;
 
 // 	Quaterniond qrand( gauss(rng), gauss(rng), gauss(rng), gauss(rng) );
 // 	// Quaterniond qrand( 1,0,0,0 );
@@ -227,9 +225,9 @@ TEST( TetracontoctachoronMap , nside_covering ){
 
 TEST( TetracontoctachoronMap , check_unit ){
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	TetracontoctachoronMap<> map;
 

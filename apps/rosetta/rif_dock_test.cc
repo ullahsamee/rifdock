@@ -43,6 +43,7 @@
 	#include <scheme/kinematics/Director.hh>
 	#include <scheme/kinematics/SceneBase.hh>
 	#include <scheme/nest/pmap/OriTransMap.hh>
+	#include <scheme/numeric/rand_xform.hh>
 	// #include <scheme/objective/ObjectiveFunction.hh>
 	#include <scheme/objective/voxel/FieldCache.hh>
 	// #include <scheme/objective/voxel/VoxelArray.hh>
@@ -59,12 +60,14 @@
 	#include <utility/io/ozstream.hh>
 
 	#include <chrono>
+	#include <random>
 
 OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala_selonly )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
 	OPT_1GRP_KEY(  String      , rif_dock, target_pdb )
@@ -155,6 +158,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
 		NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
+		NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
 
 		NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
 		NEW_OPT(  rif_dock::target_pdb, "" , "" );
@@ -623,7 +627,7 @@ int main(int argc, char *argv[]) {
 
 		////////////////////////////// should be no more use of options at this point! ///////////////////////////
 
-
+		std::mt19937 rng( std::random_device{}() );
 
 
 
@@ -879,6 +883,13 @@ int main(int argc, char *argv[]) {
 			shared_ptr<TBT> local_twobody;
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
+				if( option[rif_dock::random_perturb_scaffold]() ){
+					runtime_assert_msg( !use_scaffold_bounding_grids, 
+						"use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
+					auto x = ::scheme::numeric::rand_xform<EigenXform>(rng,16.0);
+					xform_pose( scaffold, eigen2xyz(x) );
+				}
+
 				scaffold_full_centered = scaffold;
 
 				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){

@@ -1,13 +1,9 @@
 #ifndef INCLUDED_numeric_rand_xform_HH
 #define INCLUDED_numeric_rand_xform_HH
 
-
+#include "scheme/numeric/util.hh"
 #include <Eigen/Geometry>
-
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/timer/timer.hpp>
+#include <random>
 
 namespace scheme { namespace numeric {
 
@@ -15,12 +11,12 @@ namespace scheme { namespace numeric {
 template<class T>
 void
 rand_xform(
-	boost::random::mt19937 & rng,
+	std::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::Affine> & x,
 	T cart_bound = 512.0
 ){
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;
 	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
 	qrand.normalize();
 	Eigen::Matrix3d m = qrand.matrix();
@@ -37,12 +33,12 @@ rand_xform(
 template<class T>
 void
 rand_xform(
-	boost::random::mt19937 & rng,
+	std::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T cart_bound = 512.0
 ){
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;
 	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
 	qrand.normalize();
 	Eigen::Matrix3d m = qrand.matrix();
@@ -53,15 +49,26 @@ rand_xform(
 	x.data()[11] = runif(rng) * cart_bound - cart_bound/2.0;
 }
 
+
+template<class X>
+X rand_xform( 
+	std::mt19937 & rng,
+	scalar<X> cart_bound = 512.0
+){
+	X x;
+	rand_xform(rng,x,cart_bound);
+	return x;
+}
+
 template<class T>
 void
 rand_xform_cartnormal(
-	boost::random::mt19937 & rng,
+	std::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T const & cart_sd
 ){
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;
 	Eigen::Quaterniond qrand( rnorm(rng), rnorm(rng), rnorm(rng), rnorm(rng) );
 	qrand.normalize();
 	Eigen::Matrix3d m = qrand.matrix();
@@ -74,12 +81,12 @@ rand_xform_cartnormal(
 template<class T>
 void
 rand_xform_quat(
-	boost::random::mt19937 & rng,
+	std::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	double cart_bound, double quat_bound
 ){
-	boost::uniform_real<> runif;
-	boost::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
+	std::normal_distribution<> rnorm;
 
 	assert( quat_bound < sqrt(3.0)/2.0 );
 
@@ -112,13 +119,13 @@ rand_xform_quat(
 template<class T>
 void
 rand_xform_sphere(
-	boost::random::mt19937 & rng,
+	std::mt19937 & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T const cart_radius,
 	T const ang_radius
 ){
-	boost::normal_distribution<> rnorm;
-	boost::uniform_real<> runif;
+	std::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
 
 	float ang = (1.0 - runif(rng)*runif(rng)) * ang_radius;
 	Eigen::Matrix<float,1,3> axis( rnorm(rng), rnorm(rng), rnorm(rng) );

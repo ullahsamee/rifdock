@@ -4,9 +4,7 @@
 
 #include <Eigen/Geometry>
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
@@ -19,9 +17,9 @@ using std::endl;
 
 TEST(euler_angles,test){
 	using namespace Eigen;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	for(int i = 0; i < 10000; ++i){
 		Quaterniond q( fabs(gauss(rng)), gauss(rng), gauss(rng), gauss(rng) );
@@ -48,9 +46,9 @@ TEST(euler_angles,test){
 
 TEST( euler_angles, performance ){
 	using namespace Eigen;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::normal_distribution<> gauss;
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::normal_distribution<> gauss;
+	std::uniform_real_distribution<> uniform;
 
 	int NSAMP = 1*1000*1000;
 

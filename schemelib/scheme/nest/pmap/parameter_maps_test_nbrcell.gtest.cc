@@ -3,8 +3,7 @@
 #include "scheme/nest/NEST.hh"
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 
 namespace scheme {

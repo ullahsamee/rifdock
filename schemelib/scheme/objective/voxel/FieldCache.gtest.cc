@@ -2,8 +2,7 @@
 
 #include "scheme/objective/voxel/FieldCache.hh"
 
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 
 #include <sstream>
@@ -34,8 +33,8 @@ double test_cache_vs_field(Cache const & cache, Field field, int nsamp=10000){
 	// cout << cache.num_elements()/1000000.0 <<"M" << endl;
 	BOOST_STATIC_ASSERT((Cache::DIM==3));
 	typedef util::SimpleArray<3,double> F3;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	double maxerr = 0.0;
 	for(int i = 0; i < nsamp; ++i){
 		F3 samp = F3(uniform(rng),uniform(rng),uniform(rng)) * (cache.ub_-cache.lb_) + cache.lb_;
@@ -100,8 +99,8 @@ TEST(BoundingFieldCache,test_bounding_ellipse_max){
 	FieldCache3D<double> f1(field,-11,13,0.824234);
 	BoundingFieldCache3D<double,AggMax> bf1(f1,2.873,1.234);
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	for(int i = 0; i < 10000; ++i){
 		F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (f1.ub_-f1.lb_) + f1.lb_;
 		if( f1[idx] > bf1[idx] ) cout << idx << endl;
@@ -129,8 +128,8 @@ TEST(BoundingFieldCache,test_bounding_delta){
 
 	double spread = 5.4;
 	BoundingFieldCache3D<double,AggMax> bf1(f1,spread,1.0);
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	for(int i = 0; i < 100000; ++i){
 		F3 idx = F3( uniform(rng), uniform(rng), uniform(rng) ) * (bf1.ub_-bf1.lb_) + bf1.lb_;
 		// if( idx.norm() < spread-sqrt(3.0) && bf1[idx]!=1.0) cout << "FAIL1 " << idx << " " << idx.norm()-spread << endl;

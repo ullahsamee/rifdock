@@ -2,8 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/util/Timer.hh"
 #include <boost/foreach.hpp>
 
@@ -59,9 +58,9 @@ void test_map( Map * hp, int64_t MAXIDX, int64_t NSAMP ){
 	int64_t NROW=1;
 	NSAMP /= NROW;
 
-	// boost::random::mt19937 rng((unsigned int64_t)time(0));
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	// std::mt19937 rng((unsigned int64_t)time(0));
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
 	util::Timer<> t;
@@ -83,8 +82,8 @@ template<class Map>
 void fill_map(Map & h, int64_t MAXIDX, int64_t sparsity=100ll ){
 	int64_t NFILL = MAXIDX/sparsity;
 
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
 	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
@@ -105,8 +104,8 @@ void fill_and_test_map(Map * hp){
 	int64_t NROW = 1;
 	int64_t NSAMP = 10ll*1000ll*1000ll / NROW;
 
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 	// h.resize(NFILL/2);
 
 	for(int64_t i = 0; i < NFILL; ++i) h[randindex(rng)] = i;
@@ -117,7 +116,7 @@ void fill_and_test_map(Map * hp){
 	     << (double)h.size() / h.bucket_count()
 	     << endl;	     	     
 
-	boost::random::mt19937 rng2((uint64_t)0);	
+	std::mt19937 rng2((uint64_t)0);	
 
 	util::Timer<> t;
 	size_t count = 0;
@@ -179,9 +178,9 @@ void test_2map(
 	int64_t NROW = 1;
 	int64_t NSAMP = 100*1000*1000 / NROW;
 
-	// boost::random::mt19937 rng((unsigned int64_t)time(0));
-	boost::random::mt19937 rng((uint64_t)0);	
-	boost::random::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
+	// std::mt19937 rng((unsigned int64_t)time(0));
+	std::mt19937 rng((uint64_t)0);	
+	std::uniform_int_distribution<int64_t> randindex(0,MAXIDX);
 
 	for(int64_t i = 0; i < NFILL; ++i){
 		size_t ri = randindex(rng);

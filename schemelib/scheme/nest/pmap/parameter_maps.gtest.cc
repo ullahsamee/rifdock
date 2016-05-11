@@ -5,8 +5,7 @@
 #include "scheme/nest/NEST_test_util.hh"
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include <boost/foreach.hpp>
 
 namespace scheme {
@@ -259,8 +258,8 @@ void test_bin_circumradius(
 	#ifdef SCHEME_BENCHMARK
 	NITER *= 50;
 	#endif
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	typename NEST::ValueType randpt;
 	for(size_t r = 0; r <= std::min((size_t)10,(size_t)NEST::MAX_RESL_ONE_CELL); ++r){
 		double maxdis = 0;
@@ -323,8 +322,8 @@ void test_coverage_random_ScaleMap(){
 	FUDGE = 0.03;
 	#endif
 
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	
 	// set up random bounds
 	typename NestType::Params lb,ub;

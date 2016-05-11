@@ -1,8 +1,7 @@
 #include "scheme/nest/NEST.hh"
 #include <gtest/gtest.h>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-// #include <boost/random/uniform_real.hpp>
-// #include <boost/random/mersenne_twister.hpp>
+// // #include <random>
 #include "scheme/nest/pmap/UnitMap.hh"
 #include "scheme/nest/pmap/ScaleMap.hh"
 #include "scheme/nest/pmap/DiscreteChoiceMap.hh"
@@ -428,8 +427,8 @@ void generic_test_neighbors(
 	typedef typename NestType::IndexType Index;
 	typedef std::vector<typename NestType::IndexType> IndexVec;
 	typedef std::set<typename NestType::IndexType> IndexSet;
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	typename NestType::ValueType randpt;
 	for(size_t r = 0; r <= 9; ++r){
 		// typename NestType::FloatType maxdis = 0;

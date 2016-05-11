@@ -5,8 +5,7 @@
 #include "scheme/nest/NEST_test_util.hh"
 #include "scheme/util/meta/util.hh"
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 #include "scheme/nest/pmap/UnitMap.hh"
 #include "scheme/nest/pmap/DiscreteChoiceMap.hh"
 #include <boost/foreach.hpp>
@@ -85,8 +84,8 @@ TEST(NEST,map_discrete) {
 
 template<int DIM>
 void test_coverage_unit1cell(){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 	NEST<DIM> nest;
 	size_t rmax = 9/DIM+1;
 	for(size_t r = 0; r <= rmax; ++r){
@@ -222,8 +221,8 @@ TEST(NEST,bounds){
 }
 
 TEST(NEST,virtual_get_index){
-	boost::random::mt19937 rng((unsigned int)time(0));
-	boost::uniform_real<> uniform;
+	std::mt19937 rng((unsigned int)time(0));
+	std::uniform_real_distribution<> uniform;
 
 	typedef util::SimpleArray<2,double> VAL;
 	NEST<2,VAL,UnitMap,util::StoreNothing,uint64_t,double,true> nest;

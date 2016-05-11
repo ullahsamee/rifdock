@@ -6,9 +6,7 @@
 #include "scheme/numeric/geom_4d.hh"
 
 #include <Eigen/Dense>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <random>
 
 #include "scheme/util/Timer.hh"
 
@@ -47,9 +45,9 @@ TEST( geom_4d , tetracontoctachoron_cell_lookup )
 	// }
 	// out.close();
 
-	boost::random::mt19937 mt((unsigned int)time(0));
-	boost::normal_distribution<> rnorm;
-	boost::uniform_real<> runif;
+	std::mt19937 mt((unsigned int)time(0));
+	std::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
 
 	int NITER = 200*1000;
 	#ifdef SCHEME_BENCHMARK
@@ -124,9 +122,9 @@ TEST( geom_4d , tetracontoctachoron_half_cell_lookup )
 	// }
 	// out.close();
 
-	boost::random::mt19937 mt((unsigned int)time(0));
-	boost::normal_distribution<> rnorm;
-	boost::uniform_real<> runif;
+	std::mt19937 mt((unsigned int)time(0));
+	std::normal_distribution<> rnorm;
+	std::uniform_real_distribution<> runif;
 
 	int NITER = 200*1000;
 	#ifdef SCHEME_BENCHMARK
