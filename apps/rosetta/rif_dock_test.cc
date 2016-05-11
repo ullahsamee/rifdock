@@ -145,6 +145,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )	
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )	
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_allbb )	
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_cut )	
 
 
@@ -237,6 +239,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 		NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
+		NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
+		NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
 		NEW_OPT(  rif_dock::rosetta_score_cut  , "", -10.0 );
 
 
@@ -614,12 +618,16 @@ int main(int argc, char *argv[]) {
 		float rosetta_score_at_least = option[rif_dock::rosetta_score_at_least]();
 		float rosetta_score_at_most  = option[rif_dock::rosetta_score_at_most]();		
 		float rosetta_min_fraction = option[rif_dock::rosetta_min_fraction]();		
+		bool  rosetta_min_targetbb = option[rif_dock::rosetta_min_targetbb]();		
+		bool  rosetta_min_allbb = option[rif_dock::rosetta_min_allbb]();		
 		float rosetta_score_cut = option[rif_dock::rosetta_score_cut]();		
 		std::cout << "rosetta_score_fraction: " << rosetta_score_fraction << std::endl;		
 		std::cout << "rosetta_score_then_min_below_thresh: " << rosetta_score_then_min_below_thresh << std::endl;
 		std::cout << "rosetta_score_at_least: " << rosetta_score_at_least << std::endl;
 		std::cout << "rosetta_score_at_most: " << rosetta_score_at_most << std::endl;		
 		std::cout << "rosetta_min_fraction: " << rosetta_min_fraction << std::endl;
+		std::cout << "rosetta_min_targetbb: " << rosetta_min_targetbb << std::endl;
+		std::cout << "rosetta_min_allbb: " << rosetta_min_allbb << std::endl;
 		std::cout << "rosetta_score_cut: " << rosetta_score_cut << std::endl;
 		double time_rif=0, time_pck=0, time_ros=0;
 
@@ -1442,7 +1450,12 @@ int main(int argc, char *argv[]) {
 					else         print_header( "rosetta score" ); ////////////////////////////////////////////////////////////////////////////
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-					runtime_assert_msg( target_res.size() == 1, "rosetta_minim_below_thresh is intended for use with small molecules" );
+					if( target_res.size() > 1 ){
+						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
+						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
+						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
+						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;																		
+					}
 
 					std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
 					std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
@@ -1473,7 +1486,16 @@ int main(int argc, char *argv[]) {
 						core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
 						movemap->set_chi(true);
 						movemap->set_jump(true);
-						movemap->set_bb(false);
+						if( rosetta_min_allbb ){
+							movemap->set_bb(true);
+						} else if( rosetta_min_targetbb ){
+							movemap->set_bb(false);
+							for( int ir = 1; ir <= target.n_residue(); ++ir ){
+								movemap->set_bb(ir,true);
+							}
+						} else {
+							movemap->set_bb(false);
+						}
 						minmover_pt[i] = protocols::simple_moves::MinMoverOP(
 							new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
 					}
@@ -1520,11 +1542,9 @@ int main(int argc, char *argv[]) {
 
 						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
 						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
-
-						if( option[rif_dock::full_scaffold_output]() ) pose_to_min = both_full_per_thread[ithread];
-						else                                           pose_to_min = both_per_thread[ithread];
-						xform_pose( pose_to_min, eigen2xyz(xalignout)            , pose_to_min.n_residue(), pose_to_min.n_residue()   );
-						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) , 1                      , pose_to_min.n_residue()-1 );
+						pose_to_min = both_per_thread[ithread];
+						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.n_residue()+1 , pose_to_min.n_residue() );
+						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.n_residue() );
 
 
 						// place the rotamers
@@ -1547,8 +1567,14 @@ int main(int argc, char *argv[]) {
 
 						if( do_min ){
 							// std::cout << "MIN!" << std::endl;
-					        start = std::chrono::high_resolution_clock::now();
-							minmover_pt[ithread]->apply( pose_to_min );
+					        // start = std::chrono::high_resolution_clock::now();
+					        // #pragma omp critical
+					        // {
+						       //  pose_to_min.dump_pdb("min_"+str(imin)+"_before.pdb");
+								minmover_pt[ithread]->apply( pose_to_min );
+						    //     pose_to_min.dump_pdb("min_"+str(imin)+"_after.pdb");
+						    //     utility_exit_with_message("test_min");
+						    // }
 					        end = std::chrono::high_resolution_clock::now();
 							std::chrono::duration<double> elapsed_seconds_min = end-start;
 							#pragma omp critical
