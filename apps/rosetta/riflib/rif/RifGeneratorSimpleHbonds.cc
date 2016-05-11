@@ -528,7 +528,7 @@ struct HBJob {
 					    rel_rot_pos.ca.distance_squared( rel_rot_pos.c  ) < 1.0 ||
 					    rel_rot_pos.c .distance_squared( rel_rot_pos.n  ) < 1.0  )
 					{ 
-						std::cout << "bad data in rel_rot_pos!" << std::endl;
+						std::cout << "bad data in rel_rot_pos, sourced from: " << hbgeomtag << std::endl;
 						continue;
 					}
 					Xform const hbondbbf     ( rel_rot_pos.n    , rel_rot_pos.ca   , rel_rot_pos.c     );
@@ -605,7 +605,8 @@ struct HBJob {
 							// if( sat1 < 0 || sat2 >= 0 ){
 							// 	#pragma omp critical
 							// 	{
-							// 		std::cout << "bad_sat score: " << positioned_rotamer_score << " " << opts.score_threshold << " " << sat1 << " " << sat2 << std::endl;
+							// 		std::cout << "bad_sat score: " << positioned_rotamer_score << " " 
+							//             << opts.score_threshold << " " << sat1 << " " << sat2 << std::endl;
 							// 		utility::io::ozstream out("bad_sat.pdb");
 							// 		for( auto a : res_atoms ){
 							// 			Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
@@ -701,7 +702,8 @@ struct HBJob {
 						// 				rif_hbond_vis_out = new utility::io::ozstream("rif_hbond_vis_"+I(3,ir)+hbgeomtag+".pdb");
 						// 			}
 						// 			omp_set_lock(&io_lock);
-						// 			// std::cout << "CLOSE ROTAMER " << irot << " hbond_atom_num " << rel_rot_pos.hbonding_atom_num << " score: " << rel_rot_pos.score << std::endl;
+						// 			// std::cout << "CLOSE ROTAMER " << irot << " hbond_atom_num " << 
+						//                rel_rot_pos.hbonding_atom_num << " score: " << rel_rot_pos.score << std::endl;
 						// 			*rif_hbond_vis_out << "MODEL " << boost::lexical_cast<std::string>(key) << endl;
 						// 			for( auto a: res_atoms ){
 						// 				Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
