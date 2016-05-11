@@ -83,6 +83,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, max_rf_bounding_ratio )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, make_bounding_plot_data )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, align_output_to_scaffold )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
@@ -170,6 +171,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
 		NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 		NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
+		NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
 		NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
 
 		NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
@@ -600,6 +602,7 @@ int main(int argc, char *argv[]) {
 		float const target_rf_resl = option[rif_dock::target_rf_resl]()<=0.0 ? RESLS.back()/2.0 : option[rif_dock::target_rf_resl]();
 
 		bool align_to_scaffold = option[rif_dock::align_output_to_scaffold]();
+		bool output_scaffold_only = option[rif_dock::output_scaffold_only]();
 		float rosetta_score_fraction = option[rif_dock::rosetta_score_fraction]();				
 		float rosetta_score_then_min_below_thresh = option[rif_dock::rosetta_score_then_min_below_thresh]();
 		float rosetta_score_at_least = option[rif_dock::rosetta_score_at_least]();
@@ -860,7 +863,7 @@ int main(int argc, char *argv[]) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-			core::pose::Pose scaffold, scaffold_centered, scaffold_full_centered, both_pose, both_full_pose;
+			core::pose::Pose scaffold, scaffold_centered, scaffold_full_centered, both_pose, both_full_pose, scaffold_only_pose;
 			float scaff_radius = 0.0;
 			float redundancy_filter_rg = 0.0;
 
@@ -930,6 +933,7 @@ int main(int argc, char *argv[]) {
 
 				both_pose      = scaffold_centered;
 				both_full_pose = scaffold_full_centered;
+				scaffold_only_pose = scaffold_centered;
 				core::pose::append_pose_to_pose( both_pose, target );
 				core::pose::append_pose_to_pose( both_full_pose, target );
 				runtime_assert( both_pose.n_residue() == scaffold.n_residue() + target.n_residue() );
@@ -1813,6 +1817,7 @@ int main(int argc, char *argv[]) {
 
 					core::pose::Pose pose_from_rif;
 					if( option[rif_dock::full_scaffold_output]() ) pose_from_rif = both_full_pose;
+					else if( output_scaffold_only )                pose_from_rif = scaffold_only_pose;					
 					else                                           pose_from_rif = both_pose;
 					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_from_rif.n_residue() );
 					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );

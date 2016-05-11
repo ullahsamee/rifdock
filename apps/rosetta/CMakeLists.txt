@@ -46,3 +46,8 @@ add_executable( rif_dock_test rif_dock_test.cc  )
 target_link_libraries ( rif_dock_test riflib ${ALL_ROSETTA_LIBS} )
 install ( TARGETS rif_dock_test RUNTIME DESTINATION bin )
 
+add_executable( scheme_make_bounding_grids scheme_make_bounding_grids.cc  )
+target_link_libraries ( scheme_make_bounding_grids riflib ${ALL_ROSETTA_LIBS} )
+install ( TARGETS scheme_make_bounding_grids RUNTIME DESTINATION bin )
+
+
