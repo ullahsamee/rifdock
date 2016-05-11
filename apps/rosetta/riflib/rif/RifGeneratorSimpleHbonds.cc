@@ -470,19 +470,21 @@ struct HBJob {
 				anchor_atom1 = "HG"; // special case for ser because so small, use HG, CB, OG
 			}
 			if( don_or_acc == "DON_" && don == "GLY" ){
+				runtime_assert( acc != "PRO" );
 				anchor_atom1 = "H";
 				anchor_atom2 = "N";
 				anchor_atom3 = "CA";
 			}
 			if( don_or_acc == "ACC_" && acc == "GLY" ){
+				runtime_assert( don != "PRO" );				
 				anchor_atom1 = "O";
 				anchor_atom2 = "C";
 				anchor_atom3 = "CA";
 			}
 			// std::cout << "HBOND ALIGN STUB " << anchor_atom1 << " " << anchor_atom2 << " " << anchor_atom3 << std::endl;
 			Xform target_frame( target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom1),ir)),
-									  target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom2),ir)),
-									  target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom3),ir)) );
+			                    target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom2),ir)),
+			                    target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom3),ir)) );
 
 			// #pragma omp critical
 			// std::cout << std::endl << "FRAME ALIGN: " << AtomID(target.residue(ir).atom_index(anchor_atom1),ir) << " "

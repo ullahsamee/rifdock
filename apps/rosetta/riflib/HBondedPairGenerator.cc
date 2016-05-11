@@ -328,10 +328,10 @@ void HBondedPairGenerator::init(
 
 	if( fix_donor && fix_acceptor ) std::cout << "WARNING: doesn't make sense to fix both donor and acceptor" << std::endl;
 	donor_atoms_ = rtype1.Hpos_polar_sc();
-	if( resn1 == "GLY" ) donor_atoms_ = rtype1.Hpos_polar();
+	if( resn1=="GLY" ) donor_atoms_ = rtype1.Hpos_polar();
 	for( auto i : donor_atoms_) donor_bases_.push_back( rtype1.atom_base(i) );
 	acceptor_atoms_ = rtype2.accpt_pos_sc();
-	if( resn2 == "GLY" ) acceptor_atoms_ = rtype2.accpt_pos();
+	if( resn2=="GLY" || resn2=="PRO" ) acceptor_atoms_ = rtype2.accpt_pos();
 	acceptor_orbitals_.resize(acceptor_atoms_.size());
 	std::vector< Vec > orbseenit;
 	std::vector<int> acceptors_to_remove;

@@ -63,12 +63,14 @@ namespace scheme {
 
 utility::vector1<core::Size> get_res(
 	std::string fname,
-	core::pose::Pose const & pose
+	core::pose::Pose const & pose,
+	bool nocgp = true
  );
 
 utility::vector1<core::Size> get_res_by_sasa(
 	  core::pose::Pose pose
 	, bool noloops
+	, bool nocpg = true
  );
 
 

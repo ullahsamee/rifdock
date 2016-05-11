@@ -406,7 +406,8 @@ awful_compile_output_helper(
 	ObjectivePtr objective,
 	int & nclose,
 	int nclosemax,
-	float nclosethresh
+	float nclosethresh,
+	EigenXform scaffold_perturb
 ){
 	SearchPointWithRots const & sp = packed_results[isamp];
 	if( sp.score >= 0.0f ) return;
@@ -418,6 +419,7 @@ awful_compile_output_helper(
 	float const stericscore = sc[1]; //result.template get<MyClashScore>();
 	float dist0; {
 		EigenXform x = scene_minimal->position(1);
+		x = scaffold_perturb * x;
 		x.translation() -= scaffold_center;
 		dist0 = ::devel::scheme::xform_magnitude( x, redundancy_filter_rg );
 	}
@@ -698,7 +700,7 @@ int main(int argc, char *argv[]) {
 		if( option[rif_dock::target_res].user() ){
 			target_res_fname = option[rif_dock::target_res]();
 		}
-		target_res = devel::scheme::get_res( target_res_fname , target );
+		target_res = devel::scheme::get_res( target_res_fname , target, /*nocgp*/false );
 		get_rg_radius( target, target_redundancy_filter_rg, rif_radius, target_res, true ); // allatom for target
 		rif_radius += 7.0; // hacky guess
 		BOOST_FOREACH( core::Size ir, target_res ){
@@ -881,13 +883,14 @@ int main(int argc, char *argv[]) {
 			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
 			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.n_residue(), rot_index.size()  );
 			shared_ptr<TBT> local_twobody;
+			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
 				if( option[rif_dock::random_perturb_scaffold]() ){
 					runtime_assert_msg( !use_scaffold_bounding_grids, 
 						"use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
-					auto x = ::scheme::numeric::rand_xform<EigenXform>(rng,16.0);
-					xform_pose( scaffold, eigen2xyz(x) );
+					::scheme::numeric::rand_xform(rng,scaffold_perturb);
+					xform_pose( scaffold, eigen2xyz(scaffold_perturb) );
 				}
 
 				scaffold_full_centered = scaffold;
@@ -1674,7 +1677,8 @@ int main(int argc, char *argv[]) {
 						#ifdef USE_OPENMP
 							dump_lock,
 						#endif
-						objectives.back(), nclose, nclosemax, nclosethresh
+						objectives.back(), nclose, nclosemax, nclosethresh,
+						scaffold_perturb
 					);
 				}
 				std::cout << std::endl;
@@ -1696,7 +1700,8 @@ int main(int argc, char *argv[]) {
 							#ifdef USE_OPENMP
 								dump_lock,
 							#endif
-							objectives.back(), nclose, nclosemax, nclosethresh
+							objectives.back(), nclose, nclosemax, nclosethresh,
+							scaffold_perturb
 						);
 					} catch(...) {
 						#pragma omp critical

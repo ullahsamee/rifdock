@@ -39,13 +39,15 @@ add_res_if_not_CGP(
 utility::vector1<core::Size>
 get_res(
 	std::string fname,
-	core::pose::Pose const & pose
+	core::pose::Pose const & pose,
+	bool nocgp
  ){
  	using core::Size;
 	utility::vector1<core::Size> res;
 	if(fname==""){
-		for(Size i = 1; i <= pose.n_residue(); ++i){
-			add_res_if_not_CGP( pose, i, res );
+		for(Size ir = 1; ir <= pose.n_residue(); ++ir){
+			if( nocgp )	add_res_if_not_CGP( pose, ir, res );
+			else res.push_back(ir);
 		}
 		return res;
 	}
@@ -58,17 +60,19 @@ get_res(
 			// cout << splt << endl;
 			if(splt.size()==1){
 				// std::cout << "'" << splt.front() << "'" << std::endl;
-				Size i = boost::lexical_cast<Size>(splt.front());
-				runtime_assert_msg( i > 0 && i <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(i) );
-				add_res_if_not_CGP( pose, i, res );
+				Size ir = boost::lexical_cast<Size>(splt.front());
+				runtime_assert_msg( ir > 0 && ir <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
+				if( nocgp )	add_res_if_not_CGP( pose, ir, res );
+				else res.push_back(ir);
 			}
 			else if(splt.size()==2){
 				Size lb = boost::lexical_cast<Size>(splt.front());
 				Size ub = boost::lexical_cast<Size>(splt.back());
 				if( ub < lb ) std::swap(lb,ub);
-				for(Size i = lb; i <= ub; ++i){
-					runtime_assert_msg( i > 0 && i <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(i) );
-					add_res_if_not_CGP( pose, i, res );
+				for(Size ir = lb; ir <= ub; ++ir){
+					runtime_assert_msg( ir > 0 && ir <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
+				if( nocgp )	add_res_if_not_CGP( pose, ir, res );
+				else res.push_back(ir);
 				}
 			} else {
 				utility_exit_with_message("get_res: can't parse res line "+s);
@@ -95,6 +99,7 @@ get_res(
 utility::vector1<core::Size> get_res_by_sasa(
 	  core::pose::Pose pose
 	, bool noloops
+	, bool nocgp
  ){
  	core::scoring::dssp::Dssp dssp( pose );
  	dssp.insert_ss_into_pose( pose );
@@ -112,7 +117,8 @@ utility::vector1<core::Size> get_res_by_sasa(
 			scsasa += atom_sasa[core::id::AtomID(ia,ir)];
 		}
 		if( scsasa > 0.0 ){
-			add_res_if_not_CGP( pose, ir, res );
+			if( nocgp )	add_res_if_not_CGP( pose, ir, res );
+			else res.push_back(ir);
 		} else {
 			// std::cout << "pruned res by sasa " << ir << std::endl;
 		}
