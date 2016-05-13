@@ -400,7 +400,12 @@ std::string get_rif_type_from_file( std::string fname )
 				if( nsat < require_satisfaction ){
 					result.val_ = 99.0f;
 				}
-				result.val_ += -4.0f * (nsat - require_satisfaction);
+				if( nsat - require_satisfaction < 0 ){
+					result.val_ = 9e9;
+				} else {
+					result.val_ += -4.0f * (nsat - require_satisfaction);
+				}
+
 				delete scratch.is_satisfied_;
 			}
 

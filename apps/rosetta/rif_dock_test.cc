@@ -1325,7 +1325,7 @@ int main(int argc, char *argv[]) {
 								samples[iresl+1].push_back( SearchPoint(isamp) );
 							}
 						}
-						runtime_assert_msg( samples[iresl+1].size() , "search fail, no valid samples!" );
+						if( 0 == samples[iresl+1].size() ) std::cout << "search fail, no valid samples!" << std::endl;
 						samples[iresl].clear();
 
 					}

@@ -97,17 +97,20 @@ void make_hbond_geometries(
 
 		core::Size totcount = 0;
 
+		omp_lock_t init_lock, cout_lock;
+		omp_init_lock(&init_lock);
+		omp_init_lock(&cout_lock);		
+
 	devel::scheme::HBondedPairGenerator * gen_ptr = new devel::scheme::SingleHbondedPairGenerator;
 	devel::scheme::HBondedPairGenerator & gen(*gen_ptr);
-	#ifdef USE_OPENMP
-	#pragma omp critical
-	#endif
-	{
-		cout << "==================================================================================================================" << endl;
-		cout << "===================== Thread " << omp_thread_num_1() << " HBondedPairGenerator "
-			  << resn1 << " " << resn2 << " ================================================" << endl;
-		cout << "==================================================================================================================" << endl;
-	}
+
+	omp_set_lock( &cout_lock );
+	cout << "==================================================================================================================" << endl;
+	cout << "===================== Thread " << omp_thread_num_1() << " HBondedPairGenerator "
+		  << resn1 << " " << resn2 << " ================================================" << endl;
+	cout << "==================================================================================================================" << endl;
+	omp_unset_lock( &cout_lock );
+
 	int frame_atomno_1 = 1;
 	int frame_atomno_2 = 2;
 	int frame_atomno_3 = 3;
@@ -154,9 +157,7 @@ void make_hbond_geometries(
 
 
 
-	#ifdef USE_OPENMP
-	#pragma omp critical
-	#endif
+	omp_set_lock( &init_lock );
 	gen.init(
 		rot_index,
 		resn1,
@@ -171,25 +172,25 @@ void make_hbond_geometries(
 		core::id::AtomID(frame_atomno_3, ifixed),
 		exemplars
 	);
+	omp_unset_lock( &init_lock );
 
-	#ifdef USE_OPENMP
-	#pragma omp critical
-	#endif
+	omp_set_lock( &cout_lock );
 	{
 		cout << "==================================================================================================================" << endl;
 		cout << "============ Thread " << omp_thread_num_1() << " generating hotspot geometries "
 				<< resn1 << " " << resn2 << " =======================================" << endl;
 		cout << "==================================================================================================================" << endl;
 	}
+	omp_unset_lock( &cout_lock );
+
 	while( gen.has_more_samples() ){
 		++totcount;
 		if(totcount%100000==99999){
-			#ifdef USE_OPENMP
-			#pragma omp critical
-			#endif
+			omp_set_lock(&cout_lock);
 			std::cout << "Thread " << omp_thread_num_1() << " Samples " << resn1 << " -> " << resn2 << " "
 						 << (fix_donor?"fix_donor":"fix_acceptor") << " " << KMGT(totcount+1) << " of at most " << KMGT(gen.raw_num_samples())
 						 << " progress:  " << 100.0*(double)totcount/(double)gen.raw_num_samples() << "%" << std::endl;
+			omp_unset_lock(&cout_lock);						 
 		}
 		core::pose::Pose const & pose(*gen);
 
@@ -265,13 +266,14 @@ void make_hbond_geometries(
 
 	delete gen_ptr; // total hack , use shared_ptr!
 
-
-	#ifdef USE_OPENMP
-	#pragma omp critical
-	#endif
+	omp_set_lock( &cout_lock );	
 	std::cout << "total " << resn1 << " " << resn2 << " " << KMGT(totcount) << std::endl;
+	omp_unset_lock( &cout_lock );
 
 	// utility_exit_with_message("debug hbgeom");
+	omp_destroy_lock( &init_lock );
+	omp_destroy_lock( &cout_lock );		
+
 
  }
 

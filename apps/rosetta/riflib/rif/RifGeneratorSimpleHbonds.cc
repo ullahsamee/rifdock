@@ -223,6 +223,7 @@ struct HBJob {
 
 		// build up a joblist for hbond rif gen
 		std::vector<HBJob> hb_jobs;
+		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 		for(int ires = 1; ires <= target_res.size(); ++ires){
 			int const ir = target_res[ires];
 			std::string resn = target.residue(ir).name();
@@ -230,6 +231,10 @@ struct HBJob {
 			HBJob j;
 			j.ires = ir;
 			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
+				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
+					std::cout << "not putting " << accresn_user[iacc] << " into rif, no N,CA,C" << std::endl;
+				}
 				j.don = "GLY";
 				j.acc = accresn_user[iacc];
 				if( std::find( accresn_std.begin(), accresn_std.end(), j.acc ) == accresn_std.end() ) continue; // no non-standard res in RIF
@@ -243,6 +248,10 @@ struct HBJob {
 				}
 			}
 			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_user[idon]);
+				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
+					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
+				}
 				j.don = donresn_user[idon];
 				if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF
 				j.acc = "GLY";
