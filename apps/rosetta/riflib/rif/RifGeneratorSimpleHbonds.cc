@@ -234,6 +234,7 @@ struct HBJob {
 				core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << accresn_user[iacc] << " into rif, no N,CA,C" << std::endl;
+					continue;
 				}
 				j.don = "GLY";
 				j.acc = accresn_user[iacc];
@@ -251,6 +252,7 @@ struct HBJob {
 				core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_user[idon]);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
+					continue;
 				}
 				j.don = donresn_user[idon];
 				if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF

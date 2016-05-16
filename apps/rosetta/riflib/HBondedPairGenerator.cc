@@ -173,29 +173,39 @@ void HBondedPairGenerator::init(
 	// #endif
 	{
 		// only hb score
-		score_func_ = core::scoring::ScoreFunctionOP( new core::scoring::ScoreFunction );
-		// score_func_ = core::scoring::get_score_function();
-		if( resn1=="GLY" || resn2=="GLY" ){
-			score_func_->set_weight( core::scoring::hbond_bb_sc, 1.1 );
-		} else {
-			score_func_->set_weight( core::scoring::hbond_sc, 1.1 );
+		#pragma omp critical
+		{
+			// make sure this has been done in a critical block
+			core::pack::rotamers::SingleResidueRotamerLibraryFactory::get_instance();
+
+			score_func_ = core::scoring::ScoreFunctionOP( new core::scoring::ScoreFunction );
+			// score_func_ = core::scoring::get_score_function();
+			if( resn1=="GLY" || resn2=="GLY" ){
+				score_func_->set_weight( core::scoring::hbond_bb_sc, 1.1 );
+			} else {
+				score_func_->set_weight( core::scoring::hbond_sc, 1.1 );
+			}
+			// score_func_->set_weight( core::scoring::fa_atr, 0.8 );
+			// score_func_->set_weight( core::scoring::fa_rep, 0.44 );
+			// score_func_->set_weight( core::scoring::fa_sol, 0.75 );
+			// set use_hb_env_dep false
+				core::scoring::methods::EnergyMethodOptions opts = score_func_->energy_method_options();
+				core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
+				// std::cout << "use_hb_env_dep " <<  hopts.use_hb_env_dep() << std::endl;
+				hopts.use_hb_env_dep( false );
+				opts.hbond_options( hopts );
+				// std::cout << score_func_->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
+				score_func_->set_energy_method_options( opts );
+				// std::cout << score_func_->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
+				// std::cout << core::scoring::get_score_function()->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
+				// std::cout << "SCORE_FUNCTION: " << std::endl << *score_func_ << std::endl;
+				// utility_exit_with_message("roitsn");
 		}
-		// score_func_->set_weight( core::scoring::fa_atr, 0.8 );
-		// score_func_->set_weight( core::scoring::fa_rep, 0.44 );
-		// score_func_->set_weight( core::scoring::fa_sol, 0.75 );
-		// set use_hb_env_dep false
-			core::scoring::methods::EnergyMethodOptions opts = score_func_->energy_method_options();
-			core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
-			// std::cout << "use_hb_env_dep " <<  hopts.use_hb_env_dep() << std::endl;
-			hopts.use_hb_env_dep( false );
-			opts.hbond_options( hopts );
-			// std::cout << score_func_->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
-			score_func_->set_energy_method_options( opts );
-			// std::cout << score_func_->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
-			// std::cout << core::scoring::get_score_function()->energy_method_options().hbond_options().use_hb_env_dep() << std::endl;
-			// std::cout << "SCORE_FUNCTION: " << std::endl << *score_func_ << std::endl;
-			// utility_exit_with_message("roitsn");
-		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+		core::chemical::ResidueTypeSetCAP rts;
+		#pragma omp critical
+		{		
+			rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+		}
  		rtype1op_ = rts.lock()->name_map(resn1).clone();
 		rtype2op_ = rts.lock()->name_map(resn2).clone();
 		if( rtype1op_->has( "H" ) && resn1 != "GLY" ) rtype1op_->set_atom_type( "H", "VIRT" );
@@ -206,10 +216,14 @@ void HBondedPairGenerator::init(
 		// core::chemical::ResidueType const & rtype2 = rts.lock()->name_map(resn2);
 	}
 
-		core::chemical::ResidueType const & rtype1 = *rtype1op_;
+	core::chemical::ResidueType const & rtype1 = *rtype1op_;
 	core::chemical::ResidueType const & rtype2 = *rtype2op_;
-	core::conformation::ResidueOP res1op = core::conformation::ResidueFactory::create_residue(rtype1);
-	core::conformation::ResidueOP res2op = core::conformation::ResidueFactory::create_residue(rtype2);
+	core::conformation::ResidueOP res1op, res2op;
+	#pragma omp critical
+	{
+		res1op = core::conformation::ResidueFactory::create_residue(rtype1);
+		res2op = core::conformation::ResidueFactory::create_residue(rtype2);
+	}
 
 	if( exemplars.find(resn1) == exemplars.end() ){
 		pose0_.append_residue_by_jump( *res1op, 1 );
