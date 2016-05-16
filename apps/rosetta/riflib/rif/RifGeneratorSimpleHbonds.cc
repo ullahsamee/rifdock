@@ -242,7 +242,7 @@ struct HBJob {
 				j.don_or_acc = "DON_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
 				j.nrots = b.second-b.first;
-				if( target.residue(ir).has("H") ) hb_jobs.push_back( j );
+				if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
 				if( std::find(donresn_std.begin(),donresn_std.end(),resn)!=donresn_std.end() ){ // is donor
 					j.don = resn;
 					hb_jobs.push_back( j );
@@ -260,7 +260,7 @@ struct HBJob {
 				j.don_or_acc = "ACC_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
 				j.nrots = b.second-b.first;
-				if( target.residue(ir).has("O") ) hb_jobs.push_back( j );
+				if( target.residue(ir).is_protein() && target.residue(ir).has("O") && target.residue(ir).name3()!="PRO" ) hb_jobs.push_back( j );
 				if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
 					j.acc = resn;
 					hb_jobs.push_back( j );
