@@ -16,7 +16,7 @@
 
 cmake_minimum_required (VERSION 3.3)
 
-set( PYTHON_VERSION 2 )
+set( PYTHON_VERSION $ENV{PYVERSION} )
 set( CXX_STD 14 )
 message( "build type .................... " ${CMAKE_BUILD_TYPE} )
 message( "python version ................ " ${PYTHON_VERSION} )
