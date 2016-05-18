@@ -25,7 +25,8 @@ include_directories( . )
 
 
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ERROR_CODE_HEADER_ONLY -DBOOST_SYSTEM_NO_DEPRECATED -DBOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS" )
-SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCXX11 -DPTR_STD -DMULTI_THREADED" )
+SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCXX11 -DPTR_STD" )
+#SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMULTI_THREADED" )
 
 add_subdirectory( python )
 
@@ -33,21 +34,14 @@ add_subdirectory( python )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENMP -fopenmp" )
 LIST( APPEND ALL_ROSETTA_LIBS gomp )
 
-add_subdirectory( riflib)
+add_subdirectory( riflib )
 
-add_executable( test_librosetta test_librosetta.cc  )
-target_link_libraries ( test_librosetta ${ALL_ROSETTA_LIBS} )
+set( EXES "test_librosetta" "rifgen" "rif_dock_test" "scheme_make_bounding_grids" )
+foreach( EXE ${EXES} )
+	message( "riflib exe: " ${EXE} )
 
-add_executable( rifgen rifgen.cc  )
-target_link_libraries ( rifgen riflib ${ALL_ROSETTA_LIBS} )
-install ( TARGETS rifgen RUNTIME DESTINATION bin )
+	add_executable( ${EXE} ${EXE}.cc  )
+	target_link_libraries ( ${EXE} ${ALL_ROSETTA_LIBS} riflib )
+	install ( TARGETS ${EXE} RUNTIME DESTINATION bin )
 
-add_executable( rif_dock_test rif_dock_test.cc  )
-target_link_libraries ( rif_dock_test riflib ${ALL_ROSETTA_LIBS} )
-install ( TARGETS rif_dock_test RUNTIME DESTINATION bin )
-
-add_executable( scheme_make_bounding_grids scheme_make_bounding_grids.cc  )
-target_link_libraries ( scheme_make_bounding_grids riflib ${ALL_ROSETTA_LIBS} )
-install ( TARGETS scheme_make_bounding_grids RUNTIME DESTINATION bin )
-
-
+endforeach( EXE )

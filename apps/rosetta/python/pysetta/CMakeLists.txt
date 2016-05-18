@@ -9,7 +9,9 @@ foreach( SRC_PATH ${PYSETTA_SOURCES} )
   message( "process pysetta source file: " ${PYSETTA_SRC}.cc )
 
   add_library(${PYSETTA_SRC} SHARED ${PYSETTA_SRC}.cc )
-  target_link_libraries( ${PYSETTA_SRC} python2.7 ${ALL_ROSETTA_LIBS} )
+
+  target_link_libraries( ${PYSETTA_SRC} ${PYTHON_LIB_NAME} ${ALL_ROSETTA_LIBS} )
+
   set_target_properties( ${PYSETTA_SRC}  PROPERTIES PREFIX "")
   install ( TARGETS ${PYSETTA_SRC} LIBRARY DESTINATION lib/python${PYTHON_VERSION} )
 
@@ -17,6 +19,7 @@ foreach( SRC_PATH ${PYSETTA_SOURCES} )
 
   # Strip unnecessary sections of the binary on Linux/Mac OS
   if(APPLE)
+    # message("using APPLE settings")
     set_target_properties(${PYSETTA_SRC}  PROPERTIES MACOSX_RPATH ".")
     set_target_properties(${PYSETTA_SRC}  PROPERTIES LINK_FLAGS "-undefined dynamic_lookup ")
     if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG)
