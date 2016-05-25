@@ -641,9 +641,20 @@ int main(int argc, char *argv[]) {
 		std::mt19937 rng( std::random_device{}() );
 
 
-
+		{
+			std::string dokfile_fname_orig = dokfile_fname;
+			int i = 2;
+			while( utility::file::file_exists(dokfile_fname) ){
+				dokfile_fname = dokfile_fname_orig + "." + str(i);
+				++i;
+			}
+			if( i != 2)
+				std::cout << "WARNING!" << dokfile_fname_orig << " already exists, using " 
+			              << dokfile_fname << " instead!" << std::endl;
+             else
+             	std::cout << "output scores to " << dokfile_fname << std::endl;
+		}
 		utility::io::ozstream dokout( dokfile_fname );
-
 
 
 		devel::scheme::RifFactoryConfig rif_factory_config;
