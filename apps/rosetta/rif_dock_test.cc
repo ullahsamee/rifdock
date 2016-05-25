@@ -17,6 +17,7 @@
 	#include <core/pose/Pose.hh>
 	#include <core/pose/PDBInfo.hh>
 	#include <core/pose/util.hh>
+	#include <core/scoring/EnergyGraph.hh>
 	#include <core/scoring/ScoreFunction.hh>
 	#include <core/scoring/ScoreFunctionFactory.hh>
 	#include <core/scoring/hbonds/HBondOptions.hh>
@@ -1440,13 +1441,15 @@ int main(int argc, char *argv[]) {
 				std::chrono::time_point<std::chrono::high_resolution_clock> start_rosetta = std::chrono::high_resolution_clock::now();
 
 				int n_score_calculations = 0;
+				int do_min = 2;
+				if( rosetta_min_fraction == 0.0 ) do_min = 1;
 
-				for( int do_min = 0; do_min < 2; ++do_min ){
+				for( int minimizing = 0; minimizing < do_min; ++minimizing ){
 
 					std::chrono::duration<double> time_copy, time_score, time_min;
 
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-					if( do_min ) print_header( "rosetta min and score" ); ////////////////////////////////////////////////////////////////////
+					if( minimizing ) print_header( "rosetta min and score" ); ////////////////////////////////////////////////////////////////////
 					else         print_header( "rosetta score" ); ////////////////////////////////////////////////////////////////////////////
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1468,14 +1471,16 @@ int main(int argc, char *argv[]) {
 						both_per_thread[i] = both_pose;
 						scorefunc_pt[i] = core::scoring::get_score_function();
 						scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
-						if( !do_min ){
+						if( !minimizing ){
 							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.8 );
 							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.8 );
 						} else {
 							scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*1.2 );							
 							scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*1.2 );
 						}
-						scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.3 );
+						if( target.n_residue() == 1 ){
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.3 );
+						}
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
 						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
@@ -1503,7 +1508,7 @@ int main(int argc, char *argv[]) {
 				    std::chrono::time_point<std::chrono::high_resolution_clock> startall = std::chrono::high_resolution_clock::now();
 
 					size_t n_scormin = 0;
-					if( do_min ){
+					if( minimizing ){
 						// min take ~10x score time, so do on 1/10th of the scored
 						n_scormin = n_score_calculations * rosetta_min_fraction;
 					} else {
@@ -1521,7 +1526,7 @@ int main(int argc, char *argv[]) {
 					}
 					packed_results.resize(n_scormin);
 					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
-					if( do_min) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
+					if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
 					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";					
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,1)
@@ -1565,7 +1570,7 @@ int main(int argc, char *argv[]) {
 						time_copy += elapsed_seconds_copypose;
 						// pose_to_min.dump_pdb("test_pre.pdb");
 
-						if( do_min ){
+						if( minimizing ){
 							// std::cout << "MIN!" << std::endl;
 					        // start = std::chrono::high_resolution_clock::now();
 					        // #pragma omp critical
@@ -1589,20 +1594,43 @@ int main(int argc, char *argv[]) {
 							time_score += elapsed_seconds_score;
 						}
 
-						float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
-						      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
-						      total_lj_neg = std::max(0.0f,total_lj_neg);
-						packed_results[imin].score  = 1.00*total_lj_neg;
-						packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
-						packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
-						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
-							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
-							packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
+						if( target.n_residue() == 1 ){
+							// ligand!
+							float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
+							      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
+							      total_lj_neg = std::max(0.0f,total_lj_neg);
+							packed_results[imin].score  = 1.00*total_lj_neg;
+							packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
+							packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
+							for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+								int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+								packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
+							}
+						} else {
+							// not ligand! compute the fixed-everything ddg
+							double ddg = 0.0;
+							auto const & egraph = pose_to_min.energies().energy_graph();
+							auto const & weights = pose_to_min.energies().weights();
+							for(int ir = 1; ir <= egraph.num_nodes(); ++ir){
+								for ( core::graph::Graph::EdgeListConstIter
+										iru  = egraph.get_node(ir)->const_upper_edge_list_begin(),
+										irue = egraph.get_node(ir)->const_upper_edge_list_end();
+										iru != irue; ++iru
+								){
+									EnergyEdge const & edge( static_cast< EnergyEdge const & > (**iru) );
+									int jr = edge.get_second_node_ind();
+									// continue if both in scaff or both in target
+									if( ir <= scaffold.n_residue() && jr <= scaffold.n_residue() ) continue;
+									if( ir >  scaffold.n_residue() && jr >  scaffold.n_residue() ) continue;
+									ddg += edge.dot(weights);
+								}
+							}
+							packed_results[imin].score = ddg;
 						}
 
 
-						if( do_min && packed_results[imin].score < rosetta_score_cut ){
-							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+						if( minimizing && packed_results[imin].score < rosetta_score_cut ){
+							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );							
 						}
 
 						// #pragma omp critical
@@ -1617,7 +1645,7 @@ int main(int argc, char *argv[]) {
 					{
 						size_t n_scormin = 0;
 						for( n_scormin; n_scormin < packed_results.size(); ++n_scormin ){
-							if( do_min && packed_results[n_scormin].score > rosetta_score_cut ) break;
+							if( minimizing && packed_results[n_scormin].score > rosetta_score_cut ) break;
 						}
 						packed_results.resize(n_scormin);
 					}
@@ -1625,7 +1653,7 @@ int main(int argc, char *argv[]) {
 				    std::chrono::time_point<std::chrono::high_resolution_clock> stopall = std::chrono::high_resolution_clock::now();
 					std::chrono::duration<double> elap_sec = stopall - startall;
 
-					if( do_min ){
+					if( minimizing ){
 						std::cout << "total pose copy time: " << time_copy.count() << "s total min time: " << time_min.count() << "s" << " walltime total " << elap_sec.count() << std::endl;
 						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count()                     << " sc/rb minimizations per second" << std::endl;
 						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count() / omp_max_threads() << " sc/rb minimizations per second per thread" << std::endl;
@@ -1783,7 +1811,7 @@ int main(int argc, char *argv[]) {
 				std::ostringstream oss;
 		        oss << "rif score: " << I(4,i_selected_result)
 		            << " rank "       << I(9,selected_result.isamp)
-		            << " dist0:    "  << F(7,4,selected_result.dist0)
+		            << " dist0:    "  << F(7,2,selected_result.dist0)
 		            << " packscore: " << F(7,3,selected_result.packscore)
 		            << " score: "     << F(7,3,selected_result.nopackscore)
 		            << " rif: "       << F(7,3,selected_result.rifscore)

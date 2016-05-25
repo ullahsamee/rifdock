@@ -297,6 +297,8 @@ int main(int argc, char *argv[]) {
 
 	std::string outdir = option[ rifgen::outdir ]();
 	std::string outfile = outdir + "/" + option[ rifgen::outfile ]();
+	runtime_assert_msg( outfile != "", "rifgen::outfine is blank!");
+	runtime_assert_msg( outfile.find('/') != outfile.size(), "rifgen:outfile should not contain '/'!");
 
 	std::vector<std::string> bounding_grid_fnames;
 
@@ -336,7 +338,7 @@ int main(int argc, char *argv[]) {
 		int count = 0;
 		BOOST_FOREACH( core::Size ir, target_res ){
 			for( int ia = 1; ia <= target0.residue(ir).nheavyatoms(); ++ia ){
-				std::cout << ir << " " << ia << " " << target0.residue(ir).xyz(ia) << std::endl;
+				// std::cout << ir << " " << ia << " " << target0.residue(ir).xyz(ia) << std::endl;
 				target_center += target0.residue(ir).xyz(ia);
 				++count;
 			}

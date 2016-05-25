@@ -84,12 +84,14 @@ get_res(
 	in.close();
 
 	std::sort( res.begin(), res.end() );
-	for( int iri = 1; iri <= res.size(); ++iri ){
-		int ir = res[iri];
-		// std::cout << "selected res " << ir << " " << pose.residue(ir).name3() << std::endl;
-		runtime_assert( pose.residue(ir).name3() != "CYD" );
-		runtime_assert( pose.residue(ir).name3() != "GLY" );
-		runtime_assert( pose.residue(ir).name3() != "PRO" );
+	if( nocgp ){
+		for( int iri = 1; iri <= res.size(); ++iri ){
+			int ir = res[iri];
+			// std::cout << "selected res " << ir << " " << pose.residue(ir).name3() << std::endl;
+			runtime_assert( pose.residue(ir).name3() != "CYD" );
+			runtime_assert( pose.residue(ir).name3() != "GLY" );
+			runtime_assert( pose.residue(ir).name3() != "PRO" );
+		}
 	}
 	// utility_exit_with_message("oriestnd");
 
