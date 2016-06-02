@@ -30,7 +30,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	float scratch_size_M_;
 	uint64_t N_motifs_found_;
 
-	shared_ptr<XMap> rif_;
+	shared_ptr<XMap> xmap_ptr_;
 
 	RIFAccumulatorMapThreaded(
 		shared_ptr<RifFactory const> rif_factory,
@@ -44,20 +44,20 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	 	, N_motifs_found_(0)
 	{
 		clear();
-		rif_ = make_shared<XMap>( cart_resl, ang_resl );
+		xmap_ptr_ = make_shared<XMap>( cart_resl, ang_resl );
 	}
 
 	virtual uint64_t n_motifs_found() const { return N_motifs_found_; }
 
 	virtual shared_ptr<RifBase> rif() const {
 		shared_ptr<RifBase> r = rif_factory_->create_rif();
-		r->set_xmap_ptr( rif_ );
+		r->set_xmap_ptr( xmap_ptr_ );
 		return r;
 	}
 
 	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2 ){
 		if( score > 0.0 ) return;
-		uint64_t const key = rif_->hasher_.get_key( x );
+		uint64_t const key = xmap_ptr_->hasher_.get_key( x );
 		typename XMap::Map & map_for_this_thread( to_insert_[ omp_get_thread_num() ] );
 		// std::cerr << "INSERT mapsize: " << map_for_this_thread.size() << " thread: " << omp_get_thread_num() << " nmaps: " << to_insert_.size() << std::endl;
 		typename XMap::Map::iterator iter = map_for_this_thread.find(key);
@@ -91,9 +91,9 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 				if( ++count%out_interval == 0 ){ std::cout << '*'; std::cout.flush(); }
 				typename XMap::Key const key = value.first;
 				typename XMap::Value const & rotsc = value.second;
-				typename XMap::Map::iterator iter = rif_->map_.find(key);
-				if( iter == rif_->map_.end() ){
-					rif_->map_.insert( std::make_pair( key, rotsc ) );
+				typename XMap::Map::iterator iter = xmap_ptr_->map_.find(key);
+				if( iter == xmap_ptr_->map_.end() ){
+					xmap_ptr_->map_.insert( std::make_pair( key, rotsc ) );
 					// for( int i = 0; i < rotsc.maxsize(); ++i ) runtime_assert( rotsc.score(i) > -9.0 );
 				} else {
 					iter->second.merge( rotsc );
@@ -108,7 +108,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	void report( std::ostream & out ) const {
 		out << "RIFAccum nrots: " << devel::scheme::KMGT(N_motifs_found_+total_samples())
 		    << " mem: " << devel::scheme::KMGT(mem_use())
-		    << " rif_mem: " << devel::scheme::KMGT(rif_->mem_use()) << std::endl;
+		    << " rif_mem: " << devel::scheme::KMGT(xmap_ptr_->mem_use()) << std::endl;
 	}
 
 	uint64_t mem_use() const {
@@ -142,8 +142,11 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 			condense();
 			N_motifs_found_ += total_samples();
 			clear();
-			out << "RIF so far: " << " non0 in RIF: " << KMGT(rif_->size()) << " N_motifs_found_: "
-			    << KMGT(N_motifs_found_) << " coverage: " << (double)N_motifs_found_/rif_->size() << ", mem_use: " << KMGT(rif_->mem_use()) << std::endl;
+			out << "RIF so far: " << " non0 in RIF: " << KMGT(xmap_ptr_->size()) << " N_motifs_found_: "
+			    << KMGT(N_motifs_found_) << " coverage: " << (double)N_motifs_found_/xmap_ptr_->size()
+			    << ", mem_use: " << KMGT(xmap_ptr_->mem_use())
+			    << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
+			    << std::endl;
 		}
 		report( out );
 	}

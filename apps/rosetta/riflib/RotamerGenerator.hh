@@ -77,6 +77,7 @@ get_rosetta_rot_set(
 void
 get_rotamer_index(
 	RotamerIndex & rot_index,
+	bool extra_rotamers,
 	std::string cachefile=""
 );
 

@@ -83,6 +83,36 @@ std::string str(T const & t, core::Size N=0){
 	return s;
 }
 
+
+
+
+void
+append_pose_to_pose(
+	core::pose::Pose & pose1,
+	core::pose::Pose const & pose2,
+	bool new_chain = true
+);
+
+/// @brief Append specified residues of pose2 to pose1.
+void
+append_subpose_to_pose(
+	core::pose::Pose & pose1,
+	core::pose::Pose const & pose2,
+	core::Size start_res,
+	core::Size end_res,
+	bool new_chain = true
+);
+
+
+
+
+
+
+
+
+
+
+
 template<class Float>
 Eigen::Matrix<Float,3,3>
 xyz2eigen( numeric::xyzMatrix<Float> const & m ){
@@ -186,6 +216,45 @@ open_for_write_on_path(
 template< class Float > Float
 sqr( Float const & x ) { return x*x; }
 
+
+
+
+// template< class HBondRay >
+// float score_hbond_rays(
+// 	HBondRay const & don,
+// 	HBondRay const & acc,
+// 	float non_directional_fraction = 0.0 // 0.0 - 1.0
+// ){
+// 	Eigen::Vector3f ho = acc.horb_cen - don.horb_cen;
+// 	float ho_dist = ho.norm() - 1.05 ;
+// 	ho_dist = ho_dist < 0 ? ho_dist*1.5 : ho_dist; // increase dis pen if too close
+// 	float const max_diff = 1.3;
+// 	ho_dist = ho_dist >  max_diff ?  max_diff : ho_dist;
+// 	ho_dist = ho_dist < -max_diff ? -max_diff : ho_dist;
+
+// 	ho.normalize();
+// 	float bho_dot = don.direction.dot(ho);
+// 	float hoa_dot = -ho.dot(acc.direction);
+	
+// 	if( hoa_dot < 0 ) hoa_dot = 0;
+// 	if( bho_dot < 0 ) bho_dot = 0;
+
+// 	// if( ho_dist > max_diff ) return 0.0;
+// 	// sigmoid -like shape on distance score
+// 	float score = -sqr( 1.0 - sqr( ho_dist/max_diff ) );
+
+// 	// score -= bho_dot;
+// 	// score -= hoa_dot;
+// 	// score /= 3.0;
+
+// 	score *= bho_dot;
+// 	score *= hoa_dot;
+
+// 	return score;
+// }
+
+
+
 template< class HBondRay >
 float score_hbond_rays(
 	HBondRay const & don,
@@ -194,7 +263,7 @@ float score_hbond_rays(
 ){
 	float diff = ( (don.horb_cen-acc.horb_cen).norm() - 1.05 );
 	diff = diff < 0 ? diff*1.5 : diff; // increase dis pen if too close
-	float const max_diff = 1.0;
+	float const max_diff = 1.3;
 	diff = diff >  max_diff ?  max_diff : diff;
 	diff = diff < -max_diff ? -max_diff : diff;
 	// if( diff > max_diff ) return 0.0;

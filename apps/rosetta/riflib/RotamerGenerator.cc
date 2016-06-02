@@ -345,8 +345,16 @@ get_rosetta_rot_set(
 
 void
 get_richardson_rot_data(
-	std::map<std::string,std::vector<RichardsonRotData> > & rrdata
+	std::map<std::string,std::vector<RichardsonRotData> > & rrdata,
+	bool extra_rots = true
 ){
+	bool const ER = extra_rots;
+	if( extra_rots ){
+		std::cout << "get_richardson_rot_data: USING EXTRA ROTS" << std::endl;
+		std::cout << "extra rotamers aren't well tested yet, don't use" << std::endl;
+		std::exit(-1);
+	}
+
 	rrdata.insert( std::make_pair( "ARG", std::vector<RichardsonRotData>() ) );
 
 	rrdata["ARG"].push_back( RichardsonRotData( "ptp85b ",   3,      62,   180,    65,    85,   14, 17, 10, 13 ) );
@@ -506,11 +514,21 @@ get_richardson_rot_data(
 
 
 			// Leucine
-	rrdata["LEU"].push_back( RichardsonRotData( "pp",        21,      62,   80,             10, 10 ) );//
-	rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   65,             10, 10 ) );//
-	rrdata["LEU"].push_back( RichardsonRotData( "tt",        49,    -172,  145,              9, 15 ) );//   120 to 180
-	rrdata["LEU"].push_back( RichardsonRotData( "mp",        63,     -85,   65,             11, 14 ) );//    45 to 105
-	rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65,  175,             11, 11 ) );//
+	       rrdata["LEU"].push_back( RichardsonRotData( "pp",        21,      62,   80,             10, 10 ) );//
+
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   50,             10, 10 ) );// NOT FOLLOWING STATS
+	       rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   65,             10, 10 ) );//
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   80,             10, 10 ) );// NOT FOLLOWING STATS
+
+	       rrdata["LEU"].push_back( RichardsonRotData( "tt",        49,    -172,  145,              9, 15 ) );//   120 to 180
+
+	       rrdata["LEU"].push_back( RichardsonRotData( "mp",        63,     -85,   65,             11, 14 ) );//    45 to 105
+
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65,  160,             11, 11 ) );// NOT FOLLOWING STATS
+	       rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65,  175,             11, 11 ) );//
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65, -170,             11, 11 ) );// NOT FOLLOWING STATS
+
+
 
 			// Histidine
 	rrdata["HIS"].push_back( RichardsonRotData( "p80 ",      51,      62,  -75,             10, 12 ) ); //  -120 to -50
@@ -523,26 +541,33 @@ get_richardson_rot_data(
 	rrdata["HIS"].push_back( RichardsonRotData( "m80 ",      78,     -65,   80,             11, 18 ) ); //   50 to 120
 
 
-			// Tryptophan
-	// rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     47,  -90,             12, 10 ) );//   -130 to -60
-	rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62,  -90,             12, 10 ) );//   -130 to -60
-	// rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     77,  -90,             12, 10 ) );//   -130 to -60
 
-	rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      34 ,     62,   90,             12,  8 ) );//   60 to 130
-	rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177, -105,             16, 14 ) );//   -130 to -60
-	rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,   90,             10, 11 ) );//   0 to 100
-	rrdata["TRP"].push_back( RichardsonRotData( "m90 ",      31 ,    -65,  -90,              9, 12 ) );//   -130 to -60
-	rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+			// Tryptophan // added ex2 "std dev" ex1 handled as "child" rotamer
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62, -100,             12, 10 ) );//   -130 to -60
+	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62,  -90,             12, 10 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62,  -80,             12, 10 ) );//   -130 to -60
 
-	rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	// rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
+	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      34 ,     62,   90,             12,  8 ) );//   60 to 130
+
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177, -119,             16, 14 ) );//   -130 to -60
+	       rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177, -105,             16, 14 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177,  -92,             16, 14 ) );//   -130 to -60
+
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,   79,             10, 11 ) );//   0 to 100
+	       rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,   90,             10, 11 ) );//   0 to 100
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,  101,             10, 11 ) );//   0 to 100
+
+	       rrdata["TRP"].push_back( RichardsonRotData( "m90 ",      31 ,    -65,  -90,              9, 12 ) );//   -130 to -60
+
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,  -25,              9, 20 ) );//   -40 to 20
+	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   15,              9, 20 ) );//   -40 to 20
+
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   76,             11, 19 ) );//   60 to 130
+	       rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,  114,             11, 19 ) );//   60 to 130
+
+
 
 
 			// Tyrosine
@@ -600,11 +625,25 @@ get_richardson_rot_data(
 	rrdata["TYR"].push_back( RichardsonRotData( "Sm35",      40,     -85,   30,   180,        11, 18, 0 ) );//
 
 			// Phenylalanine
-	rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,   90,             11, 11 ) );//   60 to 90, -90 to-60
-	rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   80,             13, 17 ) );//   20 to 90, -90 to -75
-	rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65,  -85,             12, 17 ) );//   50 to 90, -90 to -50
-	rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -30,              9, 20 ) );//   -50 to 0, 0 to 50
-	rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   30,              9, 20 ) );//
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,   79,             11, 11 ) );//   60 to 90, -90 to-60
+	       rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,   90,             11, 11 ) );//   60 to 90, -90 to-60
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,  101,             11, 11 ) );//   60 to 90, -90 to-60
+
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   63,             13, 17 ) );//   20 to 90, -90 to -75
+	       rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   80,             13, 17 ) );//   20 to 90, -90 to -75
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   97,             13, 17 ) );//   20 to 90, -90 to -75
+
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65, -102,             12, 17 ) );//   50 to 90, -90 to -50
+	       rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65,  -85,             12, 17 ) );//   50 to 90, -90 to -50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65,  -68,             12, 17 ) );//   50 to 90, -90 to -50
+
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -50,              9, 20 ) );//   -50 to 0, 0 to 50
+	       rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -30,              9, 20 ) );//   -50 to 0, 0 to 50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -10,              9, 20 ) );//   -50 to 0, 0 to 50
+
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   10,              9, 20 ) );//
+	       rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   30,              9, 20 ) );//
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   50,              9, 20 ) );//
 
 			// Proline
 	// rrdata["PRO"].push_back( RichardsonRotData( "Cyendo",   379,     30,                    7  ) );//        15 to 60
@@ -649,6 +688,7 @@ get_richardson_rot_data(
 void
 get_rotamer_index(
 	RotamerIndex & rot_index,
+	bool extra_rotamers,
 	std::string cachefile
 ){
 	// todo cache
@@ -682,7 +722,7 @@ get_rotamer_index(
 
 
 	std::map<std::string,std::vector<RichardsonRotData> > rrdata;
-	get_richardson_rot_data( rrdata );
+	get_richardson_rot_data( rrdata, extra_rotamers );
 
 	for( auto resname : resnames ){
 
@@ -762,13 +802,26 @@ get_rotamer_index(
 				using namespace basic::options;
 				// cout << "RichardsonRotData " << rrd.name << " " << rrd.nchi << endl;
 				std::vector< std::vector<float> > exchis;
+				bool ex1=false, ex2=false;
+				if( extra_rotamers){
+					if( resname == "PHE" ||
+						resname == "TRP" ||
+						resname == "LEU" ||
+						resname == "VAL" ||
+						resname == "MET" ||
+						resname == "ILE" )
+					{
+						ex1 = true;
+					}
+				}
 				rrd.get_ex_chis(
-				    option[ex1::ex1](),
-				    option[ex2::ex2](),
-				    option[ex3::ex3](),
-				    option[ex4::ex4](),
+				    ex1, //option[ex1::ex1](),
+				    ex2, //option[ex2::ex2](),
+				    false, //option[ex3::ex3](),
+				    false, //option[ex4::ex4](),
 				    exchis
 				);
+				// runtime_assert( exchis.size() == 1 );
 
 				int n_proton_chi = 0;
 				if( resname=="TYR" ) n_proton_chi = 1;
@@ -894,11 +947,11 @@ void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool i
 		for( int ibase = 0; ibase < 2; ibase++ ){
 			float x = hbr.horb_cen[0] + ( ibase? 0.0f : hbr.direction[0] );
 			float y = hbr.horb_cen[1] + ( ibase? 0.0f : hbr.direction[1] );
-			float z = hbr.horb_cen[2] + ( ibase? 0.0f : hbr.direction[2] );						
+			float z = hbr.horb_cen[2] + ( ibase? 0.0f : hbr.direction[2] );
 			char buf[128];
 			std::string aname;
 			if( isdonor ) aname = ibase? "DBSE" : "DHPL";
-			else          aname = ibase? "ABSE" : "AORB";			
+			else          aname = ibase? "ABSE" : "AORB";
 			snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
 				"HETATM",
 				++anum,

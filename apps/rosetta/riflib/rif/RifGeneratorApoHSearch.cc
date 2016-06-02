@@ -46,6 +46,7 @@
 	// #include <scheme/objective/voxel/VoxelArray.hh>
 	#include <scheme/rosetta/score/RosettaField.hh>
 	#include <scheme/util/StoragePolicy.hh>
+	#include <scheme/chemical/stub.hh>
 
 	#include <utility/file/file_sys_util.hh>
 	#include <utility/io/izstream.hh>
@@ -127,6 +128,8 @@ namespace rif {
 		using ObjexxFCL::format::F;
 		using ObjexxFCL::format::I;
 		using devel::scheme::KMGT;
+		using ::scheme::chemical::make_stub;
+		using ::Eigen::Vector3f;
 
 		typedef ::scheme::util::SimpleArray<3,float> F3;
 		typedef ::scheme::util::SimpleArray<3,int> I3;
@@ -193,8 +196,6 @@ namespace rif {
 		omp_init_lock( &cout_lock );
 		omp_init_lock( &io_lock );
 
-		RotamerIndex const & rot_index( *rot_index_p );
-
 		std::vector<boost::random::mt19937> rngs;
 		for( int i = 0; i < omp_max_threads_1(); ++i ){
 			rngs.push_back( boost::random::mt19937( (unsigned int)time(0) + i) );
@@ -207,16 +208,21 @@ namespace rif {
 			if( resn.size() > 3 ){
 				int irot = boost::lexical_cast<int>(resn.substr(3,resn.size()-3));
 				std::string threeletter = resn.substr(0,3);
-				std::cerr << rot_index.rotamers_[irot].resname_ << std::endl;
-				if( rot_index.rotamers_[irot].resname_ == threeletter ){
-					rots.push_back( irot );
+				std::cerr << rot_index_p->rotamers_[irot].resname_ << std::endl;
+				if( rot_index_p->rotamers_[irot].resname_ == threeletter ){
+					if( rot_index_p->is_primary(irot) ){
+						rots.push_back( irot );
+					} else {
+						utility_exit_with_message(
+							"rotamer number " + str(irot) + " is not primary rotamer of " + resn);
+					}
 				} else {
 					utility_exit_with_message("residue name3 dosen't match: "+resn);
 				}
 			} else {
-				std::pair<int,int> bounds = rot_index.index_bounds( resn );
+				std::pair<int,int> bounds = rot_index_p->index_bounds( resn );
 				for( int irot = bounds.first; irot < bounds.second; ++irot ){
-					if( rot_index.is_primary(irot) ){
+					if( rot_index_p->is_primary(irot) ){
 						rots.push_back( irot );
 					}
 				}
@@ -239,7 +245,7 @@ namespace rif {
 
 
 			int irot = rots[ijob];
-			std::string resn = rot_index.rotamers_[irot].resname_;
+			std::string resn = rot_index_p->rotamers_[irot].resname_;
 			runtime_assert_msg( abs_score_cut_by_res.find(resn) != abs_score_cut_by_res.end(), "unsupported res "+resn );
 			float const abs_score_cut_by_res_thisres = abs_score_cut_by_res[resn] * opts.score_cut_adjust;
 
@@ -249,32 +255,68 @@ namespace rif {
 				omp_set_lock(&cout_lock);
 				// cout << "========================================================================================================" << endl;
 				cout << "================== ApoHSearch rotamer " << irot << " " << resn << " chis: ";
-				for( int i = 0; i < rot_index.rotamers_[irot].chi_.size(); ++i ) cout << " " << rot_index.rotamers_[irot].chi_[i];
-				cout << " ================== Progress: " << ijob*1.f/rots.size()*100.0f << "\% ==================" << endl;
+				for( int i = 0; i < rot_index_p->rotamers_[irot].chi_.size(); ++i ) cout << " " << rot_index_p->rotamers_[irot].chi_[i];
+				cout << " ================== Progress: " << ijob << " of " << rots.size() << " " << ijob*1.f/rots.size()*100.0f << "\% ==================" << endl;
 				// cout << "========================================================================================================" << endl;
 				omp_unset_lock(&cout_lock);
 			}
 
 			Scene scene_proto(2);
 			float rotamer_radius = 0;
+			Eigen::Vector3f rotamer_center(0,0,0);
 			{
-				Eigen::Vector3f cen(0,0,0);
-				for( auto const & a : rot_index.rotamers_[irot].atoms_ )
-					cen += a.position();
-				cen /= rot_index.rotamers_[irot].atoms_.size();
-				BOOST_FOREACH( SchemeAtom const & a, rot_index.rotamers_[irot].atoms_ )
-					rotamer_radius = std::max( (a.position()-cen).norm(), rotamer_radius );
-				for( int ia = 0; ia < rot_index.rotamers_[irot].atoms_.size(); ++ia){
-					SchemeAtom const & a( rot_index.rotamers_[irot].atoms_[ia] );
+				for( auto const & a : rot_index_p->rotamers_[irot].atoms_ )
+					rotamer_center += a.position();
+				rotamer_center /= rot_index_p->rotamers_[irot].atoms_.size();
+				BOOST_FOREACH( SchemeAtom const & a, rot_index_p->rotamers_[irot].atoms_ )
+					rotamer_radius = std::max( (a.position()-rotamer_center).norm(), rotamer_radius );
+				for( int ia = 0; ia < rot_index_p->rotamers_[irot].atoms_.size(); ++ia){
+					SchemeAtom const & a( rot_index_p->rotamers_[irot].atoms_[ia] );
 					if( a.type() >= 21 ) continue;
-					runtime_assert( rot_index.chem_index_.resname2num_.find(resn) != rot_index.chem_index_.resname2num_.end() );
-					int restype = rot_index.chem_index_.resname2num_.find(resn)->second;
-					SceneAtom sa( a.position()-cen, a.type(), restype, ia );
-					runtime_assert( rot_index.chem_index_.atom_data( restype, ia ) == a.data() );
+					runtime_assert( rot_index_p->chem_index_.resname2num_.find(resn) != rot_index_p->chem_index_.resname2num_.end() );
+					int restype = rot_index_p->chem_index_.resname2num_.find(resn)->second;
+					SceneAtom sa( a.position()-rotamer_center, a.type(), restype, ia );
+					runtime_assert( rot_index_p->chem_index_.atom_data( restype, ia ) == a.data() );
 					scene_proto.add_actor(1,sa);
 				}
 				scene_proto.add_actor( 0, VoxelActor( bounding_by_atype ) );
 			}
+
+
+			// struct RotChild {
+			// 	int rotid;
+			// 	Eigen::Vector3f Ncen, CAcen, Ccen;
+			// };
+			// std::vector<RotChild> rotamer_children;
+
+			// for( size_t crot = 0; crot < rot_index_p->size(); ++crot ){
+			// 	if( rot_index_p->parent_irot(crot) == irot && crot != irot ){
+			// 		RotChild child;
+			// 		child.rotid = crot;
+			// 		size_t natom = rot_index_p->nheavyatoms(irot);
+			// 		// assume aligning on last 3 atoms is ok...
+			// 		Vector3f pa1 = rot_index_p->atom(irot, natom-1).position() - rotamer_center;
+			// 		Vector3f pa2 = rot_index_p->atom(irot, natom-2).position() - rotamer_center;
+			// 		Vector3f pa3 = rot_index_p->atom(irot, natom-3).position() - rotamer_center;
+			// 		Vector3f ca1 = rot_index_p->atom(crot, natom-1).position() - rotamer_center;
+			// 		Vector3f ca2 = rot_index_p->atom(crot, natom-2).position() - rotamer_center;
+			// 		Vector3f ca3 = rot_index_p->atom(crot, natom-3).position() - rotamer_center;
+			// 		EigenXform xalign = make_stub<EigenXform>(pa1,pa2,pa3) *
+			// 		                    make_stub<EigenXform>(ca1,ca2,ca3).inverse();
+			// 		child.Ncen  = xalign * (rot_index_p->atom(crot,0).position() - rotamer_center);
+			// 		child.CAcen = xalign * (rot_index_p->atom(crot,1).position() - rotamer_center);
+			// 		child.Ccen  = xalign * (rot_index_p->atom(crot,2).position() - rotamer_center);
+			// 		runtime_assert( abs((xalign*ca1 - pa1).norm()) < 0.001 );
+			// 		runtime_assert( abs((xalign*ca2 - pa2).norm()) < 0.001 );
+			// 		runtime_assert( abs((xalign*ca3 - pa3).norm()) < 0.001 );
+			// 		rotamer_children.push_back(child);
+			// 		std::cout << "RifGeneratorApoHSearch: add child rotamer " << resn << " " << crot << std::endl;
+			// 	}
+			// }
+			// for( auto const & child : rotamer_children ){
+			// 	runtime_assert( !rot_index_p->is_primary(child.rotid) );
+			// 	runtime_assert( rot_index_p->parent_irot(child.rotid) == irot );
+			// }
 
 			float const half_tgt_resl = RESLS.front()/2.0;
 			float rot_resl_deg;
@@ -456,11 +498,56 @@ namespace rif {
 								}
 							}
 							// std::cout << "DUMP TO test_hits" << std::endl;
-							Eigen::Vector3f N  = tscene.template get_actor<SceneAtom>(1,0).position(); // N
-							Eigen::Vector3f CA = tscene.template get_actor<SceneAtom>(1,1).position(); // CA
-							Eigen::Vector3f C  = tscene.template get_actor<SceneAtom>(1,2).position(); // C
+							Vector3f N  = tscene.template get_actor<SceneAtom>(1,0).position(); // N
+							Vector3f CA = tscene.template get_actor<SceneAtom>(1,1).position(); // CA
+							Vector3f C  = tscene.template get_actor<SceneAtom>(1,2).position(); // C
 							::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
 							accumulator->insert( bbactor.position_, score_weight*score, irot );
+
+							// // blindly intert child rotamers (should only be small chi1 variations) with same score
+							// for( auto const & child : rotamer_children ){
+							// 	int crot = child.rotid;
+							// 	Vector3f Nchild  = tscene.position(1) * child.Ncen;
+							// 	Vector3f CAchild = tscene.position(1) * child.CAcen;
+							// 	Vector3f Cchild  = tscene.position(1) * child.Ccen;
+							// 	// child rots should vary only chi1... not move CA
+							// 	runtime_assert( abs((CAchild-CA).squaredNorm()) < 0.001 );
+							// 	::scheme::actor::BackboneActor<EigenXform> bbactor_child( Nchild, CAchild , Cchild );
+							// 	accumulator->insert( bbactor_child.position_, score_weight*score, crot );
+							// }
+
+							// // a bit of manual test code for extra rotamer handling
+							// #pragma omp critical
+							// {
+							// 	std::cout << endl;
+							// 	for( auto const & child : rotamer_children){
+							// 		int crot = child.rotid;
+							// 		Vector3f Nchild  = tscene.position(1) * child.Ncen;
+							// 		Vector3f CAchild = tscene.position(1) * child.CAcen;
+							// 		Vector3f Cchild  = tscene.position(1) * child.Ccen;
+							// 		std::cout << irot << " child: " << crot << std::endl;
+							// 		std::cout << N .transpose() << " " << Nchild .transpose() << " " << (N -Nchild ).norm() << std::endl;
+							// 		std::cout << CA.transpose() << " " << CAchild.transpose() << " " << (CA-CAchild).norm() << std::endl;
+							// 		std::cout << C .transpose() << " " << Cchild .transpose() << " " << (C -Cchild ).norm() << std::endl;
+							// 	}
+							// 	// Vector3f testN  = tscene.position(1) * (rot_index_p->atom(irot,0).position() - rotamer_center);
+							// 	// Vector3f testCA = tscene.position(1) * (rot_index_p->atom(irot,1).position() - rotamer_center);
+							// 	// Vector3f testC  = tscene.position(1) * (rot_index_p->atom(irot,2).position() - rotamer_center);
+							// 	// std::cout << endl;
+							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,0).type() << std::endl;
+							// 	// std::cout << rot_index_p->atom(irot,0).type() << std::endl;
+							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,1).type() << std::endl;
+							// 	// std::cout << rot_index_p->atom(irot,1).type() << std::endl;
+							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,2).type() << std::endl;
+							// 	// std::cout << rot_index_p->atom(irot,2).type() << std::endl;
+							// 	// std::cout <<     N.transpose() << std::endl;
+							// 	// std::cout << testN.transpose() << std::endl;
+							// 	// std::cout <<     CA.transpose() << std::endl;
+							// 	// std::cout << testCA.transpose() << std::endl;
+							// 	// std::cout <<     C.transpose() << std::endl;
+							// 	// std::cout << testC.transpose() << std::endl;
+							// 	utility_exit_with_message("testing extra rotamer positioning");
+							// }
 
 							// // crappy test stuff
 							// for( int itest = 0; itest < test_bbs.size(); ++itest ){
@@ -571,7 +658,7 @@ namespace rif {
 			if( test_hits.size() ){
 				utility::io::ozstream out( params->output_prefix+"RifGen_Apo_test_hits_"+resn+boost::lexical_cast<std::string>(irot)+".pdb" );
 				for( auto index : test_hits ){
-					dump_scene( d, scene_per_thread[omp_get_thread_num()], rot_index, index, RESLS.size()-1, out );
+					dump_scene( d, scene_per_thread[omp_get_thread_num()], *rot_index_p, index, RESLS.size()-1, out );
 				}
 				out.close();
 			}

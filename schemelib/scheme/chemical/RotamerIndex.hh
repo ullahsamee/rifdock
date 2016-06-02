@@ -115,8 +115,10 @@ struct RotamerIndex {
 	size_t nprotonchi( size_t i ) const { return rotamers_.at(i).n_proton_chi_; }
 	float   chi( size_t i, size_t j ) const { return rotamers_.at(i).chi_.at(j); }
 	size_t nhbonds( size_t i ) const { return rotamers_.at(i).hbonders_.size(); }
+	Atom const & atom( size_t i, size_t iatm) const { return rotamers_.at(i).atoms_.at(iatm); }
 	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
 	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
+	size_t parent_irot( size_t i ) const { return parent_rotamer_.at(i); }
 
 	std::map<std::string,char> oneletter_map_;
 
@@ -460,26 +462,26 @@ template<class A, class RG>
 std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG> const & ridx ){
 	out << "RotamerIndex:" << std::endl;
 	std::pair<int,int> ib;
-	ib=ridx.index_bounds("ALA"); out<<"    ALA "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("CYS"); out<<"    CYS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("ASP"); out<<"    ASP "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("GLU"); out<<"    GLU "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("PHE"); out<<"    PHE "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("GLY"); out<<"    GLY "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("HIS"); out<<"    HIS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("ILE"); out<<"    ILE "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("LYS"); out<<"    LYS "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("LEU"); out<<"    LEU "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("MET"); out<<"    MET "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("ASN"); out<<"    ASN "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("PRO"); out<<"    PRO "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("GLN"); out<<"    GLN "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("ARG"); out<<"    ARG "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("SER"); out<<"    SER "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("THR"); out<<"    THR "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("VAL"); out<<"    VAL "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("TRP"); out<<"    TRP "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
-	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ALA"); out<<"    ALA "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("CYS"); out<<"    CYS "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ASP"); out<<"    ASP "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLU"); out<<"    GLU "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("PHE"); out<<"    PHE "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLY"); out<<"    GLY "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("HIS"); out<<"    HIS "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ILE"); out<<"    ILE "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("LYS"); out<<"    LYS "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("LEU"); out<<"    LEU "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("MET"); out<<"    MET "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ASN"); out<<"    ASN "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("PRO"); out<<"    PRO "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("GLN"); out<<"    GLN "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("ARG"); out<<"    ARG "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("SER"); out<<"    SER "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("THR"); out<<"    THR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("VAL"); out<<"    VAL "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("TRP"); out<<"    TRP "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
  	return out;
 }
 

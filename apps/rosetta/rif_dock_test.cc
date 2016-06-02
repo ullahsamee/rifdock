@@ -430,8 +430,9 @@ int main(int argc, char *argv[]) {
 	print_header( "create rotamer index" );
 		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();
 		RotamerIndex & rot_index( *rot_index_p );
-		::devel::scheme::get_rotamer_index( rot_index );
+		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rif_rotamers );
 		std::cout << "================ RotamerIndex ===================" << std::endl;
+		std::cout << rot_index.size() << std::endl;
 		std::cout << rot_index << std::endl;
 		// {
 		// 	utility::io::ozstream out("rot_index.pdb");
@@ -446,8 +447,8 @@ int main(int argc, char *argv[]) {
 		rotrfopts.field_spread   = opt.rotrf_spread;
 		rotrfopts.data_dir       = opt.rotrf_cache_dir;
 		rotrfopts.scale_atr      = opt.rotrf_scale_atr;
-		::devel::scheme::RotamerRFTablesManager rotrftables( rot_index_p, rotrfopts );
-		// rotrftables.preinit_all();
+		::devel::scheme::RotamerRFTablesManager rotrf_table_manager( rot_index_p, rotrfopts );
+		// rotrf_table_manager.preinit_all();
 
 
 
@@ -727,8 +728,8 @@ int main(int argc, char *argv[]) {
 				both_pose      = scaffold_centered;
 				both_full_pose = scaffold_full_centered;
 				scaffold_only_pose = scaffold_centered;
-				core::pose::append_pose_to_pose( both_pose, target );
-				core::pose::append_pose_to_pose( both_full_pose, target );
+				::devel::scheme::append_pose_to_pose( both_pose, target );
+				::devel::scheme::append_pose_to_pose( both_full_pose, target );
 				runtime_assert( both_pose.n_residue() == scaffold.n_residue() + target.n_residue() );
 				runtime_assert( both_pose.n_residue() == both_full_pose.n_residue() );
 
@@ -779,7 +780,17 @@ int main(int argc, char *argv[]) {
 				make2bopts.distance_cut = 15.0;
 				make2bopts.hbond_weight = hackpackopts.hbond_weight;
 				std::string dscrtmp;
-				get_twobody_tables( opt.data_cache_path, cachefile2b, dscrtmp, scaffold, rot_index, scaffold_onebody_glob0, rotrftables, make2bopts, *scaffold_twobody );
+				get_twobody_tables(
+						opt.data_cache_path,
+						cachefile2b,
+						dscrtmp,
+						scaffold,
+						rot_index,
+						scaffold_onebody_glob0,
+						rotrf_table_manager,
+						make2bopts,
+						*scaffold_twobody
+					);
 				std::cout << "twobody memuse: " << (float)scaffold_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
 				for( int i = 0; i < scaffold_onebody_glob0.size(); ++i ){
 					runtime_assert( scaffold_onebody_glob0[i].size() == rot_index.size() );
@@ -1434,6 +1445,8 @@ int main(int argc, char *argv[]) {
 											} else if( is_rif_res[ir-1] && is_rif_res[jr-1] ){
 												// both rif residues
 												rosetta_score += opt.rosetta_score_rifres_rifres_weight * edgescore;
+												// bonus for hbonds between rif residues
+												rosetta_score += edge[core::scoring::hbond_sc];
 											} else {
 												// rest: one rif res, one other scaff res
 												rosetta_score += opt.rosetta_score_rifres_scaffold_weight * edgescore;

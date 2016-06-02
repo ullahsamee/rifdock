@@ -7,8 +7,9 @@ namespace scheme {
 namespace chemical {
 
 
-template<class Xform,class Point>
-void backbone_stub(Point n, Point ca, Point c, Xform & out){
+	template<class Xform,class Point>
+	Xform make_stub(Point n, Point ca, Point c){
+		Xform out;
 		Point cen = ca;
 		Point e1( n - ca );
 		e1.normalize();
@@ -20,7 +21,7 @@ void backbone_stub(Point n, Point ca, Point c, Xform & out){
 		out.linear().col(1) = e2;
 		out.linear().col(2) = e3;				
 		out.translation() = cen;
-
+		return out;
 	}
 
 

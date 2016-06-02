@@ -162,6 +162,7 @@ compute_onebody_rotamer_energies(
 			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
 			if( ! work_pose.residue(ir).is_protein()   ) continue;
 			if(   work_pose.residue(ir).name3()=="GLY" ) continue;
+			if(   work_pose.residue(ir).name3()=="PRO" ) continue;
 			#ifdef USE_OPENMP
 			#pragma omp critical
 			#endif

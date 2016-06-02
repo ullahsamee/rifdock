@@ -80,20 +80,21 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
 
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )		
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )	
-	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )	
-	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_allbb )	
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_cut )	
-	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_hard_min )	
-	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_total )	
-	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_ddg_only )	
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_rifres_weight )	
-	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_scaffold_weight )	
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_allbb )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_cut )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_hard_min )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_total )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_ddg_only )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_rifres_weight )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_scaffold_weight )
 
+	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 
 
 	void register_options() {
@@ -179,7 +180,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
 
-		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );		
+		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
 		NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
@@ -191,46 +192,48 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rosetta_score_total  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_ddg_only  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.8 );
-		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.6 );		
+		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.6 );
+
+		NEW_OPT(  rif_dock::extra_rif_rotamers, "", false );
 
 	}
 
 struct RifDockOpt
-{	
+{
 	std::vector<std::string> scaffold_fnames;
 	std::vector<std::string> scaffold_res_fnames;
 	std::vector<std::string> data_cache_path;
 	std::vector<std::string> rif_files;
-	
-	bool        VERBOSE                              ;	
-	double      resl0                                ;	
-	int64_t     DIM                                  ;	
-	int64_t     DIMPOW2                              ;	
-	int64_t     beam_size                            ;	
-	bool        replace_all_with_ala_1bre            ;	
-	bool        lowres_sterics_cbonly                ;	
-	float       tether_to_input_position_cut         ;	
-	bool        tether_to_input_position             ;	
-	float       global_score_cut                     ;	
+
+	bool        VERBOSE                              ;
+	double      resl0                                ;
+	int64_t     DIM                                  ;
+	int64_t     DIMPOW2                              ;
+	int64_t     beam_size                            ;
+	bool        replace_all_with_ala_1bre            ;
+	bool        lowres_sterics_cbonly                ;
+	float       tether_to_input_position_cut         ;
+	bool        tether_to_input_position             ;
+	float       global_score_cut                     ;
 	std::string target_pdb                           ;
-	std::string outdir                               ;	
-	std::string output_tag                           ;	
-	std::string dokfile_fname                        ;	
-	bool        dump_all_rif_rots                    ;	
-	bool        add_native_scaffold_rots_when_packing;	
-	bool        restrict_to_native_scaffold_res      ;	
-	float       bonus_to_native_scaffold_res         ;	
-	float       hack_pack_frac                       ;	
-	float       hsearch_scale_factor                 ;	
-	float       search_diameter                      ;	
-	bool        use_scaffold_bounding_grids          ;	
-	bool        scaff2ala                            ;	
-	bool        scaff2alaselonly                     ;	
-	int         require_satisfaction                 ;	
-	float       target_rf_resl                       ;	
-	bool        align_to_scaffold                    ;	
-	bool        output_scaffold_only                 ;	
-	bool        pdb_info_pikaa                       ;	
+	std::string outdir                               ;
+	std::string output_tag                           ;
+	std::string dokfile_fname                        ;
+	bool        dump_all_rif_rots                    ;
+	bool        add_native_scaffold_rots_when_packing;
+	bool        restrict_to_native_scaffold_res      ;
+	float       bonus_to_native_scaffold_res         ;
+	float       hack_pack_frac                       ;
+	float       hsearch_scale_factor                 ;
+	float       search_diameter                      ;
+	bool        use_scaffold_bounding_grids          ;
+	bool        scaff2ala                            ;
+	bool        scaff2alaselonly                     ;
+	int         require_satisfaction                 ;
+	float       target_rf_resl                       ;
+	bool        align_to_scaffold                    ;
+	bool        output_scaffold_only                 ;
+	bool        pdb_info_pikaa                       ;
 	bool        full_scaffold_output                 ;
 	bool        dump_resfile                         ;
 	std::string target_res_fname                     ;
@@ -260,20 +263,22 @@ struct RifDockOpt
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
 	int         n_pdb_out                            ;
+	bool        extra_rif_rotamers                   ;
 
-	float       rosetta_score_fraction               ;	
-	float       rosetta_score_then_min_below_thresh  ;	
-	float       rosetta_score_at_least               ;	
-	float       rosetta_score_at_most                ;	
-	float       rosetta_min_fraction                 ;	
-	bool        rosetta_min_targetbb                 ;	
-	bool        rosetta_min_allbb                    ;	
-	float       rosetta_score_cut                    ;	
-	float       rosetta_hard_min                     ;	
-	bool        rosetta_score_total                  ;	
-	bool        rosetta_score_ddg_only               ;	
+	float       rosetta_score_fraction               ;
+	float       rosetta_score_then_min_below_thresh  ;
+	float       rosetta_score_at_least               ;
+	float       rosetta_score_at_most                ;
+	float       rosetta_min_fraction                 ;
+	bool        rosetta_min_targetbb                 ;
+	bool        rosetta_min_allbb                    ;
+	float       rosetta_score_cut                    ;
+	float       rosetta_hard_min                     ;
+	bool        rosetta_score_total                  ;
+	bool        rosetta_score_ddg_only               ;
 	float       rosetta_score_rifres_rifres_weight   ;
 	float       rosetta_score_rifres_scaffold_weight ;
+
 
 	void init_from_cli()
 	{
@@ -281,7 +286,7 @@ struct RifDockOpt
 		using namespace basic::options::OptionKeys;
 
 		runtime_assert( option[rif_dock::target_rif].user() );
-		
+
 		VERBOSE                                = false;
 		resl0                                  = 16.0;
 		DIM                                    = 6;
@@ -324,7 +329,7 @@ struct RifDockOpt
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
-		rf_oversample                          = option[rif_dock::rf_oversample                         ]();		
+		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		rotrf_oversample                       = option[rif_dock::rotrf_oversample                      ]();
 		rotrf_resl                             = option[rif_dock::rotrf_resl                            ]();
@@ -340,25 +345,27 @@ struct RifDockOpt
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();
 		n_pdb_out                              = option[rif_dock::n_pdb_out                             ]();
-  
-  		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();				
+		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
+
+  		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();
   		rosetta_score_then_min_below_thresh    = option[rif_dock::rosetta_score_then_min_below_thresh   ]();
   		rosetta_score_at_least                 = option[rif_dock::rosetta_score_at_least                ]();
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
-  		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();		
-  		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();		
-  		rosetta_min_allbb                      = option[rif_dock::rosetta_min_allbb                     ]();		
-  		rosetta_score_cut                      = option[rif_dock::rosetta_score_cut                     ]();		
-  		rosetta_hard_min                       = option[rif_dock::rosetta_hard_min                      ]();		
-  		rosetta_score_total                    = option[rif_dock::rosetta_score_total                   ]();		
-  		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();		
-  		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();		
-		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();		
+  		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
+  		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
+  		rosetta_min_allbb                      = option[rif_dock::rosetta_min_allbb                     ]();
+  		rosetta_score_cut                      = option[rif_dock::rosetta_score_cut                     ]();
+  		rosetta_hard_min                       = option[rif_dock::rosetta_hard_min                      ]();
+  		rosetta_score_total                    = option[rif_dock::rosetta_score_total                   ]();
+  		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();
+  		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();
+		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();
+
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
 		for( std::string s : option[rif_dock::scaffold_res  ]() ) scaffold_res_fnames.push_back(s);
 		for( std::string s : option[rif_dock::data_cache_dir]() )     data_cache_path.push_back(s);
-		
+
 		for( std::string fn : option[rif_dock::target_bounding_xmaps]() ) rif_files.push_back(fn);
 		rif_files.push_back( option[rif_dock::target_rif]() );
 

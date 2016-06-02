@@ -642,6 +642,34 @@ create_rif_factory( RifFactoryConfig const & config )
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
+	else if( config.rif_type == "RotScore64" )
+	{
+		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScores< 28, crfRotScore > crfXMapValue;
+		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+		typedef ::scheme::objective::hash::XformMap<
+				EigenXform,
+				crfXMapValue,
+				::scheme::objective::hash::XformHash_bt24_BCC6
+			> crfXMap;
+		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
+	}
+	else if( config.rif_type == "RotScore128" )
+	{
+		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScores< 60, crfRotScore > crfXMapValue;
+		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 120 );
+		typedef ::scheme::objective::hash::XformMap<
+				EigenXform,
+				crfXMapValue,
+				::scheme::objective::hash::XformHash_bt24_BCC6
+			> crfXMap;
+		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
+
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
+	}
 	else if( config.rif_type == "RotScoreSat" )
 	{
 		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
