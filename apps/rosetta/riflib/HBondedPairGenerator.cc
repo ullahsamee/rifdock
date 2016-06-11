@@ -345,7 +345,11 @@ void HBondedPairGenerator::init(
 	if( resn1=="GLY" ) donor_atoms_ = rtype1.Hpos_polar();
 	for( auto i : donor_atoms_) donor_bases_.push_back( rtype1.atom_base(i) );
 	acceptor_atoms_ = rtype2.accpt_pos_sc();
-	if( resn2=="GLY" || resn2=="PRO" ) acceptor_atoms_ = rtype2.accpt_pos();
+	if( resn2=="GLY" || resn2=="PRO" ||
+	    resn2=="ADX" || resn2=="CYX" || resn2=="GUX" || resn2=="THX" // bbonly dna stuff
+	){
+		acceptor_atoms_ = rtype2.accpt_pos();
+	}
 	acceptor_orbitals_.resize(acceptor_atoms_.size());
 	std::vector< Vec > orbseenit;
 	std::vector<int> acceptors_to_remove;

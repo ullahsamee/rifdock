@@ -149,6 +149,11 @@ void make_hbond_geometries(
 			frame_atomno_2 = 3; // C
 			frame_atomno_3 = 2; // CA
 		}
+		if( resn2=="ADX" || resn2=="CYX" || resn2=="GUX" || resn2=="THX" ){
+			frame_atomno_1 = rtype.atom_index("OP1");
+			frame_atomno_2 = rtype.atom_index("P");
+			frame_atomno_3 = rtype.atom_index("OP2");
+		}
 		// runtime_assert( frame_atomno_1 > 4 );
 	}
 	if( fix_donor && fix_acceptor ) utility_exit_with_message("can't fix donor and acceptor");
@@ -190,7 +195,7 @@ void make_hbond_geometries(
 			std::cout << "Thread " << omp_thread_num_1() << " Samples " << resn1 << " -> " << resn2 << " "
 						 << (fix_donor?"fix_donor":"fix_acceptor") << " " << KMGT(totcount+1) << " of at most " << KMGT(gen.raw_num_samples())
 						 << " progress:  " << 100.0*(double)totcount/(double)gen.raw_num_samples() << "%" << std::endl;
-			omp_unset_lock(&cout_lock);						 
+			omp_unset_lock(&cout_lock);
 		}
 		core::pose::Pose const & pose(*gen);
 

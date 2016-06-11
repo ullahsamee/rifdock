@@ -24,11 +24,11 @@ message( "c++ standard .................. " "c++${CXX_STD}" )
 
 
 if( ${CXX_STD} MATCHES 11 )
-  set( CXX_DIR cxx11 )
+  set( CXX_DIR cxx11_omp )
   add_definitions( -DCXX11 )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -w -fno-omit-frame-pointer" )
 elseif( ${CXX_STD} MATCHES 14 )
-	set( CXX_DIR cxx14 )
+	set( CXX_DIR cxx14_omp )
   add_definitions( -DCXX11 )
   add_definitions( -DCXX14 )
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -w -fno-omit-frame-pointer" )

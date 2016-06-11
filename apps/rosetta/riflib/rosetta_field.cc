@@ -132,9 +132,7 @@ get_scheme_atoms(
 				int at = atypemap[ r.atom_type_index(ia) ];
 				if( at > 21 ){
 					// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-					std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-					std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon!" << std::endl;
-					std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+					std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon for sterics!" << std::endl;
 					at = 5;
 				}
 				::scheme::actor::Atom< Eigen::Vector3f > a( r.xyz(ia), at );
@@ -305,9 +303,7 @@ get_rosetta_fields_specified_cache_prefix(
 					int at = atypemap[ r.atom_type_index(ia) ];
 					if( at > 21 ){
 						// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-						std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-						std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon!" << std::endl;
-						std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+						std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon for sterics!" << std::endl;
 						at = 5;
 					}
 

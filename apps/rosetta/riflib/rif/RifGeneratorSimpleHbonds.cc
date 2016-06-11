@@ -313,11 +313,17 @@ struct HBJob {
 			if( override ){
 				std::cout << "add " << target.residue(ir).name() << " to hbgeom_exemplars_rtype_override" << std::endl;
 				omp_set_lock(&pose_lock);
-				hbgeom_exemplars_rtype_override[ target.residue(ir).name() ] = target;
+				core::pose::Pose tmp0;
+				tmp0.append_residue_by_jump(target.residue(ir),1);
+				hbgeom_exemplars_rtype_override[ target.residue(ir).name() ] = tmp0;
 				auto & tmp = hbgeom_exemplars_rtype_override[ target.residue(ir).name() ];
-				if( tmp.residue(ir).is_lower_terminus() ) core::pose::remove_lower_terminus_type_from_pose_residue( tmp, ir );
-				if( tmp.residue(ir).is_upper_terminus() ) core::pose::remove_upper_terminus_type_from_pose_residue( tmp, ir );
-
+				runtime_assert( tmp.n_residue() == 1 );
+				if( tmp.residue(1).is_lower_terminus() ) core::pose::remove_lower_terminus_type_from_pose_residue( tmp, 1 );
+				if( tmp.residue(1).is_upper_terminus() ) core::pose::remove_upper_terminus_type_from_pose_residue( tmp, 1 );
+				using core::chemical::VIRTUAL_DNA_PHOSPHATE;
+				if( tmp.residue(1).has_variant_type(VIRTUAL_DNA_PHOSPHATE) ){
+					core::pose::remove_variant_type_from_pose_residue(tmp, VIRTUAL_DNA_PHOSPHATE, 1);
+				}
 				omp_unset_lock(&pose_lock);
 				hbgeomtag += "__" + target_tag;
 			}
@@ -487,11 +493,17 @@ struct HBJob {
 				anchor_atom3 = "CA";
 			}
 			if( don_or_acc == "ACC_" && acc == "GLY" ){
-				runtime_assert( don != "PRO" );				
+				runtime_assert( don != "PRO" );
 				anchor_atom1 = "O";
 				anchor_atom2 = "C";
 				anchor_atom3 = "CA";
 			}
+			if( don_or_acc == "ACC_" && ( acc=="ADX" || acc=="CYX" || acc=="GUX" || acc=="THX" ) ){
+				anchor_atom1 = "OP1";
+				anchor_atom2 = "P";
+				anchor_atom3 = "OP2";
+			}
+
 			// std::cout << "HBOND ALIGN STUB " << anchor_atom1 << " " << anchor_atom2 << " " << anchor_atom3 << std::endl;
 			Xform target_frame( target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom1),ir)),
 			                    target.xyz(AtomID(target.residue(ir).atom_index(anchor_atom2),ir)),
