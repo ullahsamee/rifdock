@@ -46,6 +46,7 @@ struct RifGenParams {
 	shared_ptr<RotamerIndex const> rot_index_p = nullptr;
 	std::vector<std::string>       cache_data_path;
 	std::vector< VoxelArray* >     field_by_atype;
+	HBRayOpts                      hbopt;
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;
 

@@ -191,8 +191,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rosetta_hard_min  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_total  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_ddg_only  , "", false );
-		NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.8 );
-		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.6 );
+		NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.75 );
+		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
 
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", false );
 

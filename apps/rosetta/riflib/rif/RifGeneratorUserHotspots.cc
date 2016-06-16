@@ -56,8 +56,8 @@ namespace rif {
 		{
 			std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
 			for( auto ir : params->target_res ){
-				::devel::scheme::get_donor_rays   ( *params->target, ir, true, target_donors );
-				::devel::scheme::get_acceptor_rays( *params->target, ir, true, target_acceptors );
+				::devel::scheme::get_donor_rays   ( *params->target, ir, params->hbopt, target_donors );
+				::devel::scheme::get_acceptor_rays( *params->target, ir, params->hbopt, target_acceptors );
 			}
 			std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
 			{

@@ -386,16 +386,34 @@ int main(int argc, char *argv[]) {
 			}
 			cout << endl;
 
-		std::cout << "opt.rosetta_score_fraction: " << opt.rosetta_score_fraction << std::endl;		
+		std::cout << "opt.rosetta_score_fraction: " << opt.rosetta_score_fraction << std::endl;
 		std::cout << "opt.rosetta_score_then_min_below_thresh: " << opt.rosetta_score_then_min_below_thresh << std::endl;
 		std::cout << "opt.rosetta_score_at_least: " << opt.rosetta_score_at_least << std::endl;
-		std::cout << "opt.rosetta_score_at_most: " << opt.rosetta_score_at_most << std::endl;		
+		std::cout << "opt.rosetta_score_at_most: " << opt.rosetta_score_at_most << std::endl;
 		std::cout << "opt.rosetta_min_fraction: " << opt.rosetta_min_fraction << std::endl;
 		std::cout << "opt.rosetta_min_targetbb: " << opt.rosetta_min_targetbb << std::endl;
 		std::cout << "opt.rosetta_min_allbb: " << opt.rosetta_min_allbb << std::endl;
 		std::cout << "opt.rosetta_score_cut: " << opt.rosetta_score_cut << std::endl;
 
 		std::cout << "//////////////////////////// end options /////////////////////////////////" << std::endl;
+
+
+
+		// for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
+		// {
+		// 	std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
+		// 	std::cout << scaff_fname << std::endl;
+		// 	core::pose::Pose scaffold;
+		// 	utility::vector1<core::Size> scaffold_res;
+		// 	core::import_pose::pose_from_file(scaffold, scaff_fname);
+		// 	scaff_fname = utility::file::file_basename(utility::file_basename(scaff_fname));
+		// 	scaffold.dump_pdb(scaff_fname+"_0.pdb");
+		// 	scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
+		// 	::devel::scheme::pose_to_ala( scaffold, scaffold_res );
+		// 	scaffold.dump_pdb(scaff_fname+"_1.pdb");
+		// }
+		// utility_exit_with_message("test_scaff sel");
+
 
 		////////////////////////////// should be no more use of options at this point! ///////////////////////////
 
@@ -413,7 +431,7 @@ int main(int argc, char *argv[]) {
 				++i;
 			}
 			if( i != 2)
-				std::cout << "WARNING!" << dokfile_fname_orig << " already exists, using " 
+				std::cout << "WARNING!" << dokfile_fname_orig << " already exists, using "
 			              << opt.dokfile_fname << " instead!" << std::endl;
              else
              	std::cout << "output scores to " << opt.dokfile_fname << std::endl;
@@ -483,11 +501,73 @@ int main(int argc, char *argv[]) {
 		target_res = devel::scheme::get_res( opt.target_res_fname , target, /*nocgp*/false );
 		get_rg_radius( target, target_redundancy_filter_rg, rif_radius, target_res, true ); // allatom for target
 		rif_radius += 7.0; // hacky guess
+		::devel::scheme::HBRayOpts hbopt;
+		// hbopt.withbb = true;
+		// hbopt.lkball = true;
+		// hbopt.add_acceptor_mid = true;
+		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+// rif score:    0 rank         0 dist0:      20.44 packscore: -30.391 steric:  -1.096 cluster:       0 rifrank:  268480 0.04808 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000000.pdb
+// rif score:    1 rank         1 dist0:      20.30 packscore: -29.679 steric:   1.352 cluster:       0 rifrank:  535822 0.09596 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000001.pdb
+// rif score:    2 rank         2 dist0:      20.30 packscore: -29.463 steric:  -0.926 cluster:       0 rifrank:  295509 0.05292 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000002.pdb
+// rif score:    3 rank         3 dist0:      19.78 packscore: -29.328 steric:   1.009 cluster:       0 rifrank:  163867 0.02935 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000003.pdb
+// rif score:    4 rank         4 dist0:      19.74 packscore: -28.592 steric:  -1.015 cluster:       0 rifrank:  151703 0.02717 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000004.pdb
+// rif score:    5 rank         5 dist0:      19.78 packscore: -28.512 steric:  -0.840 cluster:       0 rifrank:   63255 0.01133 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000005.pdb
+// rif score:    6 rank         6 dist0:      19.52 packscore: -28.471 steric:   3.097 cluster:       0 rifrank:   83780 0.01500 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000006.pdb
+// rif score:    7 rank         7 dist0:      20.40 packscore: -28.236 steric:  -0.913 cluster:       0 rifrank:  409585 0.07336 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000007.pdb
+// rif score:    8 rank         8 dist0:      20.30 packscore: -27.996 steric:  -1.081 cluster:       0 rifrank:  172518 0.03090 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000008.pdb
+// rif score:    9 rank         9 dist0:      19.88 packscore: -27.802 steric:   1.592 cluster:       0 rifrank:  435730 0.07804 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000009.pdb
+// rif score:   10 rank        10 dist0:      20.05 packscore: -27.500 steric:   0.539 cluster:       0 rifrank:  426173 0.07633 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000010.pdb
+// rif score:   11 rank        11 dist0:      20.30 packscore: -27.491 steric:  -0.683 cluster:       0 rifrank:   52799 0.00946 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000011.pdb
+// rif score:   12 rank        12 dist0:      19.88 packscore: -27.474 steric:   0.449 cluster:       0 rifrank:  309114 0.05536 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000012.pdb
+// rif score:   13 rank        13 dist0:      19.88 packscore: -27.209 steric:  -0.946 cluster:       0 rifrank:  152655 0.02734 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000013.pdb
+// rif score:   14 rank        14 dist0:      20.17 packscore: -27.184 steric:  -0.464 cluster:       0 rifrank:  116844 0.02093 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000014.pdb
+// rif score:   15 rank        15 dist0:      20.70 packscore: -27.138 steric:  -1.345 cluster:       0 rifrank:  398589 0.07139 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000015.pdb
+// rif score:   16 rank        16 dist0:      20.17 packscore: -26.992 steric:   2.271 cluster:       0 rifrank:  353244 0.06326 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000016.pdb
+// rif score:   17 rank        17 dist0:      20.00 packscore: -26.914 steric:   1.221 cluster:       0 rifrank:  787232 0.14099 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000017.pdb
+// rif score:   18 rank        18 dist0:      19.69 packscore: -26.807 steric:   1.547 cluster:       0 rifrank:  336496 0.06027 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000018.pdb
+// rif score:   19 rank        19 dist0:      20.14 packscore: -26.777 steric:  -1.035 cluster:       0 rifrank:  295196 0.05287 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000019.pdb
+		hbopt.withbb = true;
+		hbopt.lkball = false;
+		hbopt.add_acceptor_mid = false;
+		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+
+		utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
+
+
 		BOOST_FOREACH( core::Size ir, target_res ){
-			::devel::scheme::get_donor_rays   ( target, ir, true, target_donors );
-			::devel::scheme::get_acceptor_rays( target, ir, true, target_acceptors );
+			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors );
+			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors );
 		}
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+		// {
+		// 	{
+		// 		std::vector<HBondRay> tmpdon, tmpacc, tmpacclk;
+		// 		::devel::scheme::HBRayOpts hbopt;
+		// 		hbopt.lkball = false;
+		// 		hbopt.withbb = true;
+		// 		hbopt.add_acceptor_mid = true;
+		// 		hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+		// 		BOOST_FOREACH( core::Size ir, target_res ){
+		// 			::devel::scheme::get_donor_rays   ( target, ir, hbopt, tmpdon );
+		// 			::devel::scheme::get_acceptor_rays( target, ir, hbopt, tmpacc );
+		// 		}
+		// 		hbopt.lkball = true;
+		// 		BOOST_FOREACH( core::Size ir, target_res ){
+		// 			::devel::scheme::get_acceptor_rays( target, ir, hbopt, tmpacclk );
+		// 		}
+		// 		target.dump_pdb("target.pdb");
+		// 		utility::io::ozstream donout(utility::file_basename(opt.target_pdb)+"_donors.pdb");
+		// 		::devel::scheme::dump_hbond_rays( donout, tmpdon, true );
+		// 		donout.close();
+		// 		utility::io::ozstream accout(utility::file_basename(opt.target_pdb)+"_orb_acceptors.pdb");
+		// 		::devel::scheme::dump_hbond_rays( accout, tmpacc, false );
+		// 		accout.close();
+		// 		utility::io::ozstream accoutlk(utility::file_basename(opt.target_pdb)+"_lkb_acceptors.pdb");
+		// 		::devel::scheme::dump_hbond_rays( accoutlk, tmpacclk, false );
+		// 		accoutlk.close();
+		// 		utility_exit_with_message("testing lkball replace orbs");
+		// 	}
+		// }
 	}
 	std::vector< VoxelArrayPtr > target_field_by_atype;
 	std::vector< std::vector< VoxelArrayPtr > > target_bounding_by_atype;
@@ -690,10 +770,12 @@ int main(int argc, char *argv[]) {
 					}
 					scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
 				} else {
-					scaffold_res = devel::scheme::get_res_by_sasa( scaffold, opt.dont_use_scaffold_loops );
+					scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
 				}
 				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
 				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
+
+				scaffold.dump_pdb( utility::file_basename(scaff_fname)+"_pruned.pdb");
 
 				float scaff_redundancy_filter_rg=0;
 				get_rg_radius( scaffold, scaff_redundancy_filter_rg, scaff_radius, scaffold_res, false ); // not allatom for scaff
@@ -1238,7 +1320,7 @@ int main(int argc, char *argv[]) {
 						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
 						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
 						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
-						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;																		
+						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
 					}
 
 					std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
@@ -1246,7 +1328,7 @@ int main(int argc, char *argv[]) {
 					std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
 					std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
 					std::vector<core::pose::Pose> target_pt           (omp_max_threads());
-					std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());					
+					std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());
 					for( int i = 0; i < omp_max_threads(); ++i){
 						both_full_per_thread[i] = both_full_pose;
 						both_per_thread[i] = both_pose;
@@ -1255,7 +1337,7 @@ int main(int argc, char *argv[]) {
 							if( opt.rosetta_hard_min ){
 								scorefunc_pt[i]->set_etable( "FA_STANDARD" );
 							} else {
-								scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );								
+								scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
 							}
 						} else if( do_min==2 ){
 							// not minimizing, but will do minimization

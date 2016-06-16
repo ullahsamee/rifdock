@@ -14,7 +14,14 @@
 #include <core/id/AtomID_Map.hh>
 #include <core/conformation/Residue.hh>
 #include <core/conformation/ResidueFactory.hh>
+#include <core/scoring/ScoreFunctionFactory.hh>
+#include <core/scoring/ScoreFunction.hh>
+#include <core/scoring/methods/EnergyMethodOptions.hh>
+#include <core/scoring/Energies.hh>
 #include <core/scoring/sasa.hh>
+#include <core/scoring/hbonds/hbonds.hh>
+#include <core/scoring/hbonds/HBondSet.hh>
+#include <core/scoring/hbonds/HBondOptions.hh>
 #include <utility/file/file_sys_util.hh>
 #include <core/scoring/dssp/Dssp.hh>
 #include <utility/io/izstream.hh>
@@ -98,27 +105,72 @@ get_res(
 	return res;
  }
 
-utility::vector1<core::Size> get_res_by_sasa(
+utility::vector1<core::Size> get_designable_positions_best_guess(
 	  core::pose::Pose pose
 	, bool noloops
 	, bool nocgp
  ){
  	core::scoring::dssp::Dssp dssp( pose );
  	dssp.insert_ss_into_pose( pose );
+
+ 	core::pose::Pose allgly = pose;
+ 	pose_to_gly(allgly);
+
+ 	core::scoring::ScoreFunctionOP sf = core::scoring::get_score_function(true);
+ 	sf->score(allgly);
+
+	core::scoring::methods::EnergyMethodOptions myopt = sf->energy_method_options();
+	myopt.hbond_options().decompose_bb_hb_into_pair_energies(true);
+	sf->set_energy_method_options(myopt);
+ 	sf->score(pose);
+	core::scoring::hbonds::HBondSet hbset;
+	core::scoring::hbonds::fill_hbond_set(pose,false,hbset);
+
+	std::vector<float> sc2bb_energy(pose.n_residue(),false);
+	for(core::Size ihb = 1; ihb <= hbset.nhbonds(); ++ihb){
+		core::scoring::hbonds::HBond const & hb(hbset.hbond(ihb));
+		if(  hb.don_hatm_is_protein_backbone() && !hb.acc_atm_is_protein_backbone() ) sc2bb_energy[hb.acc_res()-1] += hb.energy();
+		if( !hb.don_hatm_is_protein_backbone() &&  hb.acc_atm_is_protein_backbone() ) sc2bb_energy[hb.don_res()-1] += hb.energy();
+	}
+
 	utility::vector1<core::Size> res;
 	// Real calc_per_atom_sasa( pose::Pose const & pose, id::AtomID_Map< Real > & atom_sasa, utility::vector1< Real > & rsd_sasa,
 	// Real const probe_radius, bool const use_big_polar_H = false );
 	core::id::AtomID_Map< core::Real > atom_sasa;
 	utility::vector1< core::Real > rsd_sasa;
-	core::scoring::calc_per_atom_sasa( pose, atom_sasa, rsd_sasa, 2.0 );
+	core::scoring::calc_per_atom_sasa( pose, atom_sasa, rsd_sasa, 2.1 );
 	for( int ir = 1; ir <= pose.n_residue(); ++ir ){
 		// std::cout << pose.secstruct(ir) << std::endl;
-		if( noloops && pose.secstruct(ir) == 'L' ) continue;
+		bool isloop = pose.secstruct(ir) == 'L';
+		int natoms = pose.residue(ir).nheavyatoms()-pose.residue(ir).last_backbone_atom();
 		core::Real scsasa = 0;
-		for( int ia = 5; ia <= pose.residue(ir).natoms(); ++ia ){
+		for( int ia = pose.residue(ir).first_sidechain_atom(); ia <= pose.residue(ir).natoms(); ++ia ){
 			scsasa += atom_sasa[core::id::AtomID(ia,ir)];
 		}
-		if( scsasa > 0.0 ){
+		float scsasa_per_atom = scsasa / float(natoms);
+
+		bool is_exposed = scsasa_per_atom > 5.5;
+		is_exposed |= scsasa > 18.0;
+		bool has_bbsc = sc2bb_energy[ir-1] < -0.2;
+		// if(pose.residue(ir).nchi()==4) has_bbsc = false;
+
+		float datr =    pose.energies().residue_total_energies(ir)[core::scoring::fa_atr]
+		             -allgly.energies().residue_total_energies(ir)[core::scoring::fa_atr];
+		// float dhb  =    pose.energies().residue_total_energies(ir)[core::scoring::hbond_sc]
+		//              -allgly.energies().residue_total_energies(ir)[core::scoring::hbond_sc];
+		//       dhb +=    pose.energies().residue_total_energies(ir)[core::scoring::fa_elec]
+		//              -allgly.energies().residue_total_energies(ir)[core::scoring::fa_elec];
+
+		bool lowenergy = false;
+		// lowenergy |= (( datr ) / float(natoms+1)) < -0.9;
+		// lowenergy |= ( dhb  ) < -1.8;
+		lowenergy |= has_bbsc;
+
+		bool design_res = !lowenergy && is_exposed;
+
+		if(noloops) design_res = design_res & !isloop;
+
+		if( design_res ){
 			if( nocgp )	add_res_if_not_CGP( pose, ir, res );
 			else res.push_back(ir);
 		} else {
@@ -126,8 +178,8 @@ utility::vector1<core::Size> get_res_by_sasa(
 		}
 	}
 	runtime_assert_msg( res.size() > 0, "no residues selected!" );
-	std::cout << "get_res_by_sasa keep " << res.size() << " of " << pose.n_residue() << std::endl;
-	std::cout << "select res_by_sasa=resi " << res[1];
+	std::cout << "get_designable_positions_best_guess keep " << res.size() << " of " << pose.n_residue() << std::endl;
+	std::cout << "select designable_positions_best_guess=resi " << res[1];
 	for(int i = 2; i <= res.size(); ++i ) std::cout << "+"<<res[i];
 	std::cout << std::endl;
 
@@ -160,6 +212,17 @@ void pose_to_ala( core::pose::Pose & pose ){
 		if(   pose.residue(ir).name3()=="PRO" ) continue;
 		if(   pose.residue(ir).name3()=="CYD" ) continue;
 		pose.replace_residue( ir, *ala, true );
+	}
+}
+void pose_to_gly( core::pose::Pose & pose ){
+	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+	core::conformation::ResidueOP gly = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("GLY") );
+	for( int ir = 1; ir <= pose.n_residue(); ++ir ){
+		if( ! pose.residue(ir).is_protein()   ) continue;
+		if(   pose.residue(ir).name3()=="GLY" ) continue;
+		if(   pose.residue(ir).name3()=="PRO" ) continue;
+		if(   pose.residue(ir).name3()=="CYD" ) continue;
+		pose.replace_residue( ir, *gly, true );
 	}
 }
 void pose_to_ala( core::pose::Pose & pose, utility::vector1<core::Size> const & res_sel ){

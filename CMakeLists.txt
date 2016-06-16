@@ -43,8 +43,8 @@ if( ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG )
 	set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR}_debug )
 else()
 	# set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR}_omp )
-	set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR} )	
-endif()  
+	set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR} )
+endif()
 message( "path to rosetta binaries ...... " ${ROSETTA_BIN} )
 
 
@@ -79,7 +79,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
 # when building, don't use the install RPATH already
 # (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 

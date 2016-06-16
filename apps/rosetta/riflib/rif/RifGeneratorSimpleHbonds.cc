@@ -179,8 +179,8 @@ struct HBJob {
 		}
 		std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
 		for( auto ir : target_res ){
-			::devel::scheme::get_donor_rays   ( target, ir, true, target_donors );
-			::devel::scheme::get_acceptor_rays( target, ir, true, target_acceptors );
+			::devel::scheme::get_donor_rays   ( target, ir, params->hbopt, target_donors );
+			::devel::scheme::get_acceptor_rays( target, ir, params->hbopt, target_acceptors );
 		}
 		{
 			if( target_donors.size() ){
@@ -189,8 +189,8 @@ struct HBJob {
 				donout.close();
 			}
 			if( target_acceptors.size() ){
-				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb");		
-				::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );			
+				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb");
+				::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
 				accout.close();
 			}
 			// utility_exit_with_message("debug hbonds");

@@ -357,11 +357,6 @@ int main(int argc, char *argv[]) {
 	std::string centered_target_pdbfile = outfile + "_target.pdb";
 	target->dump_pdb( centered_target_pdbfile );
 
-	bool ootmp = basic::options::option[basic::options::OptionKeys::out::file::output_orbitals]();
-	basic::options::option[basic::options::OptionKeys::out::file::output_orbitals]( true );
-	target->dump_pdb( outfile + "_with_orbitals.pdb" );
-	basic::options::option[basic::options::OptionKeys::out::file::output_orbitals]( ootmp );
-
 			/// shitty test code to look for particular backbones
 				float test_rms2_cut = 0.7*0.7;
 				std::vector< std::vector< Eigen::Vector3f > > test_bbs;

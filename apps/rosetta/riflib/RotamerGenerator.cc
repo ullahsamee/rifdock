@@ -21,7 +21,10 @@
 #include <core/conformation/ResidueFactory.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/scoring/hbonds/HBondOptions.hh>
+#include <core/scoring/hbonds/hbonds.hh>
+#include <core/scoring/hbonds/HBondSet.hh>
 #include <core/scoring/methods/EnergyMethodOptions.hh>
+#include <core/scoring/lkball/LK_BallInfo.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/pack/dunbrack/RotamerLibrary.hh>
 #include <core/scoring/ScoreFunction.hh>
@@ -192,9 +195,10 @@ struct RichardsonRotData {
 			atoms.push_back(a);
 		}
 
-
-		get_donor_rays   ( pose, 1, false, donors );
-		get_acceptor_rays( pose, 1, false, acceptors );
+		HBRayOpts hbopt;
+		hbopt.withbb = false;
+		get_donor_rays   ( pose, 1, hbopt, donors );
+		get_acceptor_rays( pose, 1, hbopt, acceptors );
 		// std::cout << bbactor.position().rotation() << std::endl;
 		// std::cout << bbactor.position().translation().transpose() << std::endl;
 		for( int i = 0; i < donors.size(); ++i ){
@@ -349,11 +353,11 @@ get_richardson_rot_data(
 	bool extra_rots = true
 ){
 	bool const ER = extra_rots;
-	if( extra_rots ){
-		std::cout << "get_richardson_rot_data: USING EXTRA ROTS" << std::endl;
-		std::cout << "extra rotamers aren't well tested yet, don't use" << std::endl;
-		std::exit(-1);
-	}
+	// if( extra_rots ){
+	// 	std::cout << "get_richardson_rot_data: USING EXTRA ROTS" << std::endl;
+	// 	std::cout << "extra rotamers aren't well tested yet, don't use" << std::endl;
+	// 	std::exit(-1);
+	// }
 
 	rrdata.insert( std::make_pair( "ARG", std::vector<RichardsonRotData>() ) );
 
@@ -862,25 +866,63 @@ get_rotamer_index(
 }
 
 
-void get_donor_rays(core::pose::Pose const& pose, int ir, bool withbb, std::vector<HBondRay>& donors )
-{
-    std::vector<std::pair<int,std::string>> tmp;
-	get_donor_rays(pose,ir,withbb,donors,tmp);
+
+
+
+
+
+
+std::set<std::pair<int,int>>
+get_satisfied_atoms(core::pose::Pose pose, float ethresh){
+ 	std::set<std::pair<int,int>> sat;
+
+ 	core::scoring::ScoreFunctionOP sf = core::scoring::get_score_function(true);
+	core::scoring::methods::EnergyMethodOptions myopt = sf->energy_method_options();
+	myopt.hbond_options().decompose_bb_hb_into_pair_energies(true);
+	sf->set_energy_method_options(myopt);
+ 	sf->score(pose);
+	core::scoring::hbonds::HBondSet hbset;
+	core::scoring::hbonds::fill_hbond_set(pose,false,hbset);
+
+	for(core::Size ihb = 1; ihb <= hbset.nhbonds(); ++ihb){
+		core::scoring::hbonds::HBond const & hb(hbset.hbond(ihb));
+		if( hb.energy() <= ethresh ){
+			int dr = hb.don_res();
+			int dh = hb.don_hatm();
+			int ar = hb.acc_res();
+			int aa = hb.acc_atm();
+			sat.insert(std::make_pair(dh,dr));
+			sat.insert(std::make_pair(aa,ar));
+		}
+	}
+
+	return sat;
 }
 
-void get_acceptor_rays(core::pose::Pose const& pose, int ir, bool withbb, std::vector<HBondRay>& donors )
+
+
+void get_donor_rays(core::pose::Pose const& pose, int ir, HBRayOpts const & opt, std::vector<HBondRay>& donors )
 {
     std::vector<std::pair<int,std::string>> tmp;
-	get_acceptor_rays(pose,ir,withbb,donors,tmp);
+	get_donor_rays(pose,ir,opt,donors,tmp);
+}
+
+void get_acceptor_rays(core::pose::Pose const& pose, int ir, HBRayOpts const & opt, std::vector<HBondRay>& donors )
+{
+    std::vector<std::pair<int,std::string>> tmp;
+	get_acceptor_rays(pose,ir,opt,donors,tmp);
 }
 
 
-void get_donor_rays( core::pose::Pose const & pose, int ir, bool withbb,
+void get_donor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
 	std::vector<HBondRay> & donors, std::vector<std::pair<int,std::string>> & anames )
 {
 	core::chemical::AtomIndices const * positions = &pose.residue_type(ir).Hpos_polar_sc();
-	if( withbb )                        positions = &pose.residue_type(ir).Hpos_polar();
+	if( opt.withbb )                    positions = &pose.residue_type(ir).Hpos_polar();
 	for( auto ih : *positions ){
+		if( opt.satisfied_atoms.count(std::make_pair(int(ih),int(ir))) ){
+			continue; // is satisfied internally
+		}
 		core::Size ib = pose.residue_type(ir).atom_base(ih);
 		HBondRay hray;
 		::Eigen::Vector3f base;
@@ -894,36 +936,217 @@ void get_donor_rays( core::pose::Pose const & pose, int ir, bool withbb,
 		anames.push_back( std::make_pair(ir,pose.residue(ir).atom_name(ih)));
 	}
 }
-void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
+
+
+
+
+void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
 	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames )
 {
-	core::chemical::AtomIndices const * positions = &pose.residue_type(ir).accpt_pos_sc();
-	if( withbb )                        positions = &pose.residue_type(ir).accpt_pos();
+	core::conformation::Residue const & rsd = pose.residue(ir);
+	core::chemical::AtomIndices const * positions = &rsd.accpt_pos_sc();
+	if( opt.withbb )                    positions = &rsd.accpt_pos();
+	auto lkbinfo = core::scoring::lkball::LKB_ResidueInfo( rsd );
+	for( auto iacc : *positions ){
+		if( opt.satisfied_atoms.count(std::make_pair(int(iacc),int(ir))) )
+		{
+			continue; // is satisfied internally
+		}
+		else if( rsd.is_protein() && rsd.atom_is_backbone(iacc) )
+		{
+			// std::cout << "IS BB " << ir << " " << iacc << std::endl;
+			std::string aname = rsd.atom_name(iacc);
+			auto caxyz = rsd.xyz("CA");
+			auto cxyz = rsd.xyz("C");
+			if( aname==" O  " || (rsd.is_upper_terminus() && aname==" OXT")){
+				auto oxyz = rsd.xyz("O");
+				if( aname==" OXT" ) oxyz = rsd.xyz("OXT");
+				auto const dir1 = (cxyz-caxyz).normalized();
+				auto const dir2 = -(dir1+(cxyz-oxyz).normalized()).normalized();
+				auto const dir3 = (oxyz-cxyz).normalized();
+				auto const cen1 = oxyz + dir1*opt.orblen;
+				auto const cen2 = oxyz + dir2*opt.orblen;
+				auto const cen3 = oxyz + dir3*opt.orblen;
+				HBondRay hr1, hr2, hr3;
+				for( int k = 0; k < 3; ++k) hr1.direction[k] = dir1[k];
+				for( int k = 0; k < 3; ++k) hr1.horb_cen[k] = cen1[k];
+				for( int k = 0; k < 3; ++k) hr2.direction[k] = dir2[k];
+				for( int k = 0; k < 3; ++k) hr2.horb_cen[k] = cen2[k];
+				for( int k = 0; k < 3; ++k) hr3.direction[k] = dir3[k];
+				for( int k = 0; k < 3; ++k) hr3.horb_cen[k] = cen3[k];
+				acceptors.push_back(hr1);
+				anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				if(opt.add_acceptor_mid){
+					acceptors.push_back(hr3);
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				}
+				acceptors.push_back(hr2);
+				anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+			} else {
+				std::cout << "WARNING: unknown backbone acceptor '" << rsd.atom_name(iacc) << "'" << std::endl;
+			}
+		}
+		else if( rsd.is_DNA() && rsd.atom_is_backbone(iacc) )
+		{
+			if(rsd.is_terminus()){
+				std::cout << "need to implement DNA backbone termini " << ir << " " << rsd.atom_name(iacc) << std::endl;
+			} else {
+				std::string aname = rsd.atom_name(iacc);
+				if(aname==" OP1" || aname==" OP2"){
+					auto opxyz = rsd.xyz(iacc);
+					auto pxyz = rsd.xyz("P");
+					auto oxyz = rsd.xyz("O5'");
+					auto op_p = (opxyz-pxyz).normalized();
+					auto o_p = oxyz-pxyz;
+					o_p -= o_p.dot(op_p)*op_p;
+					o_p.normalize();
+					runtime_assert( fabs(o_p.dot(op_p)) < 0.001 );
+					auto dir0 = 0.5*op_p + sqrt(3.0)/2.0*o_p;
+					HBondRay hr0;
+					for( int k = 0; k < 3; ++k) hr0.direction[k] = dir0[k];
+					for( int k = 0; k < 3; ++k) hr0.horb_cen[k] = (opxyz + dir0*opt.orblen)[k];
+					acceptors.push_back(hr0);
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+					auto rot = numeric::rotation_matrix_degrees(opxyz-pxyz,60.0);
+					for(int j = 1; j < 6; ++j){
+						dir0 = rot*dir0; // rotate by 60 degrees
+						HBondRay hr;
+						for( int k = 0; k < 3; ++k) hr.direction[k] = dir0[k];
+						for( int k = 0; k < 3; ++k) hr.horb_cen[k] = (opxyz + dir0*opt.orblen)[k];
+						acceptors.push_back(hr);
+						anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+					}
+				}
+				else if(aname==" O4'") // C1'		O4'		C4'
+				{
+					auto c1 = rsd.xyz("C1'");
+					auto o4 = rsd.xyz("O4'");
+					auto c4 = rsd.xyz("C4'");
+					auto ocen = (o4 - (c1+c4)/2.0).normalized();
+					auto operp = (o4-c1);
+					operp -= operp.dot(ocen)*ocen;
+					operp.normalize();
+					operp = numeric::rotation_matrix_degrees(ocen,90.0)*operp;
+					float sn = sin(numeric::conversions::radians((180.0-109.5)/2.0));
+					float cs = cos(numeric::conversions::radians((180.0-109.5)/2.0));
+					auto dir1 = sn*ocen + cs*operp;
+					auto dir2 = sn*ocen - cs*operp;
+					HBondRay hr0, hr1;
+					for( int k = 0; k < 3; ++k) hr0.direction[k] = dir1[k];
+					for( int k = 0; k < 3; ++k) hr0.horb_cen[k] = (o4 + dir1*opt.orblen)[k];
+					for( int k = 0; k < 3; ++k) hr1.direction[k] = dir2[k];
+					for( int k = 0; k < 3; ++k) hr1.horb_cen[k] = (o4 + dir2*opt.orblen)[k];
+					acceptors.push_back(hr0);
+					acceptors.push_back(hr1);
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				}
+				else if( aname==" O5'" || (aname==" O3'" && ir < pose.n_residue() && pose.residue(ir+1).is_DNA()) )
+				{
+					auto cxyz = rsd.xyz("C5'");
+					auto oxyz = rsd.xyz("O5'");
+					auto pxyz = rsd.xyz("P");
+					if( aname==" O3'" ){
+						cxyz = rsd.xyz("C3'");
+						oxyz = rsd.xyz("O3'");
+						pxyz = pose.residue(ir+1).xyz("P");
+					}
+					auto dir = ( oxyz - (cxyz+pxyz)/2.0 ).normalized();
+					HBondRay hr;
+					for( int k = 0; k < 3; ++k) hr.direction[k] = dir[k];
+					for( int k = 0; k < 3; ++k) hr.horb_cen[k] = (oxyz + dir*opt.orblen)[k];
+					acceptors.push_back(hr);
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				}
+				else
+				{
+					std::cout << "WARNING: unknown DNA backbone acceptor '" << rsd.atom_name(iacc) << "'" << std::endl;
+				}
+			}
+
+		}
+		else if( rsd.is_RNA() && rsd.atom_is_backbone(iacc) ){
+			std::cout << "need to implement RNA backbone" << std::endl;
+		}
+		else // use lkball for sidechains
+		{
+			auto waters = lkbinfo.waters()[iacc];
+			auto basexyz = rsd.xyz(iacc);
+			std::vector<HBondRay> rays_this_atom;
+			for( auto watxyz : waters ){
+				bool is_donor_wat = false;
+				for( core::Size ih = rsd.attached_H_begin(iacc); ih <= rsd.attached_H_end(iacc); ++ih){
+					auto hxyz = rsd.xyz(ih);
+					if( (hxyz-basexyz).normalized().dot((watxyz-basexyz).normalized()) > 0.8 ){
+						is_donor_wat = true;
+					}
+				}
+				if( is_donor_wat ) continue;
+				HBondRay hray;
+				::Eigen::Vector3f base, wat;
+				for(int k = 0; k < 3; ++k) wat[k] = watxyz[k];
+				for(int k = 0; k < 3; ++k) base[k] = basexyz[k];
+				hray.direction = wat - base;
+				hray.direction.normalize();
+				hray.horb_cen = base + hray.direction*opt.orblen; // 0.61 seems to be what the rosetta orbitals use
+				rays_this_atom.push_back(hray);
+			}
+			if( rays_this_atom.size()==2 && opt.add_acceptor_mid ){
+				HBondRay hray, ray1=rays_this_atom[0], ray2=rays_this_atom[1];
+				hray.direction = (ray1.direction + ray2.direction).normalized();
+				hray.horb_cen = ray1.horb_cen - ray1.direction*opt.orblen + hray.direction*opt.orblen;
+				acceptors.push_back(rays_this_atom[0]);
+				acceptors.push_back(hray);
+				acceptors.push_back(rays_this_atom[1]);
+				anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+			} else {
+				for(auto hray: rays_this_atom){
+					acceptors.push_back(hray);
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
+				}
+			}
+			// std::cout << ir << " " << rsd.name3() << " " << rsd.atom_name(iacc) << " " << rays_this_atom.size() << std::endl;
+		}
+	}
+
+}
+
+void get_acceptor_rays_rosetta_orbitals( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
+	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames )
+{
+	core::conformation::Residue const & rsd = pose.residue(ir);
+	core::chemical::AtomIndices const * positions = &rsd.accpt_pos_sc();
+	if( opt.withbb )                    positions = &rsd.accpt_pos();
 	std::vector< ::Eigen::Vector3f> seenit;
 	for( auto iacc : *positions ){
-		for( auto jorb : pose.residue_type(ir).bonded_orbitals( iacc ) ){
-			if( // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::C_pi_sp2    ||
-			    // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::N_pi_sp2    ||
-			    pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::N_p_sp2     ||
-			    // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_pi_sp2    ||
-			    pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp2     ||
-			    // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::S_p_sp3     ||
-			    // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_pi_sp2_bb ||
-			    // pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp2_bb  ||
-			    pose.residue_type(ir).orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp3
+		if( opt.satisfied_atoms.count(std::make_pair(int(iacc),int(ir))) ){
+			continue; // is satisfied internally
+		}
+		for( auto jorb : rsd.bonded_orbitals( iacc ) ){
+			if( // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::C_pi_sp2    ||
+			    // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::N_pi_sp2    ||
+			    rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::N_p_sp2     ||
+			    // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_pi_sp2    ||
+			    rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp2     ||
+			    // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::S_p_sp3     ||
+			    // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_pi_sp2_bb ||
+			    // rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp2_bb  ||
+			    rsd.orbital_type(jorb).orbital_enum() == core::chemical::orbitals::O_p_sp3
 			){
 				HBondRay hray;
 				::Eigen::Vector3f base;
-				for(int k = 0; k < 3; ++k) hray.horb_cen[k] = pose.residue(ir).orbital_xyz(jorb)[k];
-				for(int k = 0; k < 3; ++k)          base[k] = pose.residue(ir).        xyz(iacc)[k];
+				for(int k = 0; k < 3; ++k) hray.horb_cen[k] = rsd.orbital_xyz(jorb)[k];
+				for(int k = 0; k < 3; ++k)          base[k] = rsd.        xyz(iacc)[k];
 				// sometimes rosetta generates duplicate orbitals???
 				bool isnew = true;
 				for( int i = 0; i < seenit.size(); ++i ){
 					if( (seenit[i]-hray.horb_cen).squaredNorm() < 0.001 ) isnew = false;
 				}
 				if( !isnew ){
-					std::cout << "DUPLICATE ORBITAL! WHY DOES ROSETTA DO THIS??? " << pose.residue(ir).name3() << " "
-				              << pose.residue(ir).atom_name(iacc) << " orb " << pose.residue(ir).orbital_name(jorb)
+					std::cout << "DUPLICATE ORBITAL! WHY DOES ROSETTA DO THIS??? " << rsd.name3() << " "
+				              << rsd.atom_name(iacc) << " orb " << rsd.orbital_name(jorb)
 				              << " orb# = " << jorb << std::endl;
 				} else {
 					seenit.push_back( hray.horb_cen );
@@ -931,15 +1154,22 @@ void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
 					hray.direction.normalize();
 					// hray.horb_cen += hray.direction * ( 2.7 - 1.01 - 0.61 )/2.0; // move so position is at cen of ideal hbond
 					// hray.horb_cen += hray.direction * 0.1;
-					// std::cout << "ACCEPTOR " << pose.residue(ir).atom_name(iacc) << std::endl;
+					// std::cout << "ACCEPTOR " << rsd.atom_name(iacc) << std::endl;
 					acceptors.push_back(hray);
-					anames.push_back( std::make_pair(ir,pose.residue(ir).atom_name(iacc)));
+					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
 				}
 			}
 		}
 	}
 
 }
+
+void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
+	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames ){
+		if(opt.lkball) get_acceptor_rays_lkball(pose, ir, opt, acceptors, anames);
+		else get_acceptor_rays_rosetta_orbitals(pose, ir, opt, acceptors, anames);
+}
+
 
 void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor ){
 	int anum=0, rnum=0;

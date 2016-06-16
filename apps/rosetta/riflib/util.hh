@@ -67,7 +67,7 @@ utility::vector1<core::Size> get_res(
 	bool nocgp = true
  );
 
-utility::vector1<core::Size> get_res_by_sasa(
+utility::vector1<core::Size> get_designable_positions_best_guess(
 	  core::pose::Pose pose
 	, bool noloops
 	, bool nocpg = true
@@ -190,6 +190,7 @@ float xform_magnitude(
 }
 
 void pose_to_ala( core::pose::Pose & pose );
+void pose_to_gly( core::pose::Pose & pose );
 void pose_to_ala( core::pose::Pose & pose, utility::vector1<core::Size> const & res_sel );
 
 

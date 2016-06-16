@@ -55,13 +55,24 @@ struct RosettaRotamerGenerator {
 
 };
 
+// makes copy of pose to score
+std::set<std::pair<int,int>>
+get_satisfied_atoms(core::pose::Pose pose, float ethresh=-0.1);
 
-void get_donor_rays   ( core::pose::Pose const & pose, int ir, bool withbb, std::vector<HBondRay> & donors );
-void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb, std::vector<HBondRay> & acceptors );
+struct HBRayOpts {
+	bool withbb = true;
+	bool lkball = true;
+	bool add_acceptor_mid = true;
+	float orblen = 0.61;
+	std::set<std::pair<int,int>> satisfied_atoms;
+};
 
-void get_donor_rays   ( core::pose::Pose const & pose, int ir, bool withbb,
+void get_donor_rays   ( core::pose::Pose const & pose, int ir, HBRayOpts const & opt, std::vector<HBondRay> & donors );
+void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const & opt, std::vector<HBondRay> & acceptors );
+
+void get_donor_rays   ( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
 	std::vector<HBondRay> & donors,std::vector<std::pair<int,std::string>> & anames );
-void get_acceptor_rays( core::pose::Pose const & pose, int ir, bool withbb,
+void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
 	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames );
 
 void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor );
