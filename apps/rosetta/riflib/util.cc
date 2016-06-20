@@ -327,6 +327,49 @@ append_subpose_to_pose(
 
 
 
+std::vector<int>
+get_rif_atype_map()
+{
+	core::chemical::AtomTypeSetCOP ats = core::chemical::ChemicalManager::get_instance()->atom_type_set("fa_standard");
+	// 147 CH0
+	// 148 HS
+	// 149 NtrR
+	// 150 SH1
+
+
+	std::vector<int> atypemap;
+	atypemap.resize( ats->n_atomtypes()+1, 12345 );
+	atypemap[ ats->atom_type_index("CNH2") ] =  1;
+	atypemap[ ats->atom_type_index("COO" ) ] =  2;
+	atypemap[ ats->atom_type_index("CH1" ) ] =  3;
+	atypemap[ ats->atom_type_index("CH2" ) ] =  4;
+	atypemap[ ats->atom_type_index("CH3" ) ] =  5;
+	atypemap[ ats->atom_type_index("aroC") ] =  6;
+	atypemap[ ats->atom_type_index("Ntrp") ] =  7;
+	atypemap[ ats->atom_type_index("Nhis") ] =  8;
+	atypemap[ ats->atom_type_index("NH2O") ] =  9;
+	atypemap[ ats->atom_type_index("Nlys") ] = 10;
+	atypemap[ ats->atom_type_index("Narg") ] = 11;
+	atypemap[ ats->atom_type_index("Npro") ] = 12;
+	atypemap[ ats->atom_type_index("OH"  ) ] = 13;
+	atypemap[ ats->atom_type_index("ONH2") ] = 14;
+	atypemap[ ats->atom_type_index("OOC" ) ] = 15;
+	atypemap[ ats->atom_type_index("Oaro") ] = 16;
+	atypemap[ ats->atom_type_index("S"   ) ] = 17;
+	atypemap[ ats->atom_type_index("Nbb" ) ] = 18;
+	atypemap[ ats->atom_type_index("CAbb") ] = 19;
+	atypemap[ ats->atom_type_index("CObb") ] = 20;
+	atypemap[ ats->atom_type_index("OCbb") ] = 21;
+
+	// -beta stuff
+	if(ats->has_atom("CH0" )) atypemap[ ats->atom_type_index("CH0" ) ] = 6;
+	// if(ats->has_atom("HS")) atypemap[ ats->atom_type_index("HS"  ) ] = ??;
+	if(ats->has_atom("NtrR")) atypemap[ ats->atom_type_index("NtrR") ] = 11;
+	if(ats->has_atom("SH1" )) atypemap[ ats->atom_type_index("SH1" ) ] = 17;
+
+	return atypemap;
+}
+
 
 }
 }

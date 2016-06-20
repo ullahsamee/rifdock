@@ -1,4 +1,5 @@
 #include <basic/options/option_macros.hh>
+#include <basic/options/keys/corrections.OptionKeys.gen.hh>
 #include <vector>
 
 
@@ -85,7 +86,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_fix_target )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_scaffoldbb )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_allbb )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_cut )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_hard_min )
@@ -93,6 +96,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_ddg_only )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_rifres_weight )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_scaffold_weight )
+	OPT_1GRP_KEY(  String      , rif_dock, rosetta_soft_score )
+	OPT_1GRP_KEY(  String      , rif_dock, rosetta_hard_score )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 
@@ -186,13 +191,17 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 		NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
 		NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
+		NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 		NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
+		NEW_OPT(  rif_dock::rosetta_min_fix_target, "",  false );
 		NEW_OPT(  rif_dock::rosetta_score_cut  , "", -10.0 );
 		NEW_OPT(  rif_dock::rosetta_hard_min  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_total  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_ddg_only  , "", false );
 		NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.75 );
 		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
+		NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
+		NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
 
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", false );
 
@@ -270,7 +279,9 @@ struct RifDockOpt
 	float       rosetta_score_at_least               ;
 	float       rosetta_score_at_most                ;
 	float       rosetta_min_fraction                 ;
+	bool        rosetta_min_fix_target               ;
 	bool        rosetta_min_targetbb                 ;
+	bool        rosetta_min_scaffoldbb               ;
 	bool        rosetta_min_allbb                    ;
 	float       rosetta_score_cut                    ;
 	float       rosetta_hard_min                     ;
@@ -278,6 +289,10 @@ struct RifDockOpt
 	bool        rosetta_score_ddg_only               ;
 	float       rosetta_score_rifres_rifres_weight   ;
 	float       rosetta_score_rifres_scaffold_weight ;
+
+	bool        rosetta_beta                         ;
+	std::string rosetta_soft_score                   ;
+	std::string rosetta_hard_score                   ;
 
 
 	void init_from_cli()
@@ -352,7 +367,9 @@ struct RifDockOpt
   		rosetta_score_at_least                 = option[rif_dock::rosetta_score_at_least                ]();
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
   		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
+  		rosetta_min_fix_target                 = option[rif_dock::rosetta_min_fix_target                ]();
   		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
+  		rosetta_min_scaffoldbb                 = option[rif_dock::rosetta_min_scaffoldbb                ]();
   		rosetta_min_allbb                      = option[rif_dock::rosetta_min_allbb                     ]();
   		rosetta_score_cut                      = option[rif_dock::rosetta_score_cut                     ]();
   		rosetta_hard_min                       = option[rif_dock::rosetta_hard_min                      ]();
@@ -360,7 +377,9 @@ struct RifDockOpt
   		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();
   		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();
 		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();
-
+		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  ]();
+		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score  ]();
+		rosetta_beta                           = option[corrections::beta]();
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
 		for( std::string s : option[rif_dock::scaffold_res  ]() ) scaffold_res_fnames.push_back(s);

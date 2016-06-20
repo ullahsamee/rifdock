@@ -104,12 +104,7 @@ append_subpose_to_pose(
 );
 
 
-
-
-
-
-
-
+std::vector<int> get_rif_atype_map();
 
 
 

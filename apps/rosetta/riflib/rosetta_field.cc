@@ -17,6 +17,8 @@
 	#include <riflib/util.hh>
 	#include <riflib/EtableParams_init.hh>
 
+	#include <core/chemical/AtomType.hh>
+
 	#include <utility/io/izstream.hh>
 	#include <utility/io/ozstream.hh>
 	#include <utility/file/file_sys_util.hh>
@@ -75,8 +77,6 @@ parse_atomids(
 }
 
 
-
-
 void
 get_scheme_atoms(
 	core::pose::Pose const & target,
@@ -86,32 +86,7 @@ get_scheme_atoms(
 ){
 	// if(target_res.size()==0) for(core::Size i=1; i<=target.n_residue(); ++i) target_res.push_back(i);
 
-		std::vector<int> atypemap;
-		{
-			core::chemical::AtomTypeSetCOP ats = core::chemical::ChemicalManager::get_instance()->atom_type_set("fa_standard");
-			atypemap.resize( ats->n_atomtypes()+1, 12345 );
-			atypemap[ ats->atom_type_index("CNH2") ] =  1;
-			atypemap[ ats->atom_type_index("COO" ) ] =  2;
-			atypemap[ ats->atom_type_index("CH1" ) ] =  3;
-			atypemap[ ats->atom_type_index("CH2" ) ] =  4;
-			atypemap[ ats->atom_type_index("CH3" ) ] =  5;
-			atypemap[ ats->atom_type_index("aroC") ] =  6;
-			atypemap[ ats->atom_type_index("Ntrp") ] =  7;
-			atypemap[ ats->atom_type_index("Nhis") ] =  8;
-			atypemap[ ats->atom_type_index("NH2O") ] =  9;
-			atypemap[ ats->atom_type_index("Nlys") ] = 10;
-			atypemap[ ats->atom_type_index("Narg") ] = 11;
-			atypemap[ ats->atom_type_index("Npro") ] = 12;
-			atypemap[ ats->atom_type_index("OH"  ) ] = 13;
-			atypemap[ ats->atom_type_index("ONH2") ] = 14;
-			atypemap[ ats->atom_type_index("OOC" ) ] = 15;
-			atypemap[ ats->atom_type_index("Oaro") ] = 16;
-			atypemap[ ats->atom_type_index("S"   ) ] = 17;
-			atypemap[ ats->atom_type_index("Nbb" ) ] = 18;
-			atypemap[ ats->atom_type_index("CAbb") ] = 19;
-			atypemap[ ats->atom_type_index("CObb") ] = 20;
-			atypemap[ ats->atom_type_index("OCbb") ] = 21;
-		}
+		std::vector<int> atypemap = get_rif_atype_map();
 
 		for(int ires = 1; ires <= target_res.size(); ++ires){
 			int ir = target_res[ires];
@@ -132,7 +107,8 @@ get_scheme_atoms(
 				int at = atypemap[ r.atom_type_index(ia) ];
 				if( at > 21 ){
 					// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-					std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon for sterics!" << std::endl;
+					std::cout << "WARNING: heavy atom type "<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+					          << " will treat as carbon for sterics!" << std::endl;
 					at = 5;
 				}
 				::scheme::actor::Atom< Eigen::Vector3f > a( r.xyz(ia), at );
@@ -256,32 +232,7 @@ get_rosetta_fields_specified_cache_prefix(
 	float field_resl = opts.field_resl;
 	int oversample = opts.oversample;
 
-		std::vector<int> atypemap;
-		{
-			core::chemical::AtomTypeSetCOP ats = core::chemical::ChemicalManager::get_instance()->atom_type_set("fa_standard");
-			atypemap.resize( ats->n_atomtypes()+1, 12345 );
-			atypemap[ ats->atom_type_index("CNH2") ] =  1;
-			atypemap[ ats->atom_type_index("COO" ) ] =  2;
-			atypemap[ ats->atom_type_index("CH1" ) ] =  3;
-			atypemap[ ats->atom_type_index("CH2" ) ] =  4;
-			atypemap[ ats->atom_type_index("CH3" ) ] =  5;
-			atypemap[ ats->atom_type_index("aroC") ] =  6;
-			atypemap[ ats->atom_type_index("Ntrp") ] =  7;
-			atypemap[ ats->atom_type_index("Nhis") ] =  8;
-			atypemap[ ats->atom_type_index("NH2O") ] =  9;
-			atypemap[ ats->atom_type_index("Nlys") ] = 10;
-			atypemap[ ats->atom_type_index("Narg") ] = 11;
-			atypemap[ ats->atom_type_index("Npro") ] = 12;
-			atypemap[ ats->atom_type_index("OH"  ) ] = 13;
-			atypemap[ ats->atom_type_index("ONH2") ] = 14;
-			atypemap[ ats->atom_type_index("OOC" ) ] = 15;
-			atypemap[ ats->atom_type_index("Oaro") ] = 16;
-			atypemap[ ats->atom_type_index("S"   ) ] = 17;
-			atypemap[ ats->atom_type_index("Nbb" ) ] = 18;
-			atypemap[ ats->atom_type_index("CAbb") ] = 19;
-			atypemap[ ats->atom_type_index("CObb") ] = 20;
-			atypemap[ ats->atom_type_index("OCbb") ] = 21;
-		}
+		std::vector<int> atypemap = get_rif_atype_map();
 
 		std::vector<SchemeAtom> target_atoms;
 		{
@@ -303,7 +254,8 @@ get_rosetta_fields_specified_cache_prefix(
 					int at = atypemap[ r.atom_type_index(ia) ];
 					if( at > 21 ){
 						// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-						std::cout << "WARNING: heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) << " will treat as carbon for sterics!" << std::endl;
+						std::cout << "WARNING: heavy atom type"<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+						          << " will treat as carbon for sterics!" << std::endl;
 						at = 5;
 					}
 
@@ -411,15 +363,17 @@ get_rosetta_fields_specified_cache_prefix(
 					field_by_atype[itype]->save( out );
 					out.close();
 				}
-				double erf = static_cast<FieldCache&>(*field_by_atype[itype]).check_against_field( rfa, oversample, opts.cache_mismatch_tolerance );
-				if( erf > 0.0 ){
-					#ifdef USE_OPENMP
-					#pragma omp critical
-					#endif
-					{
-						cout << "FIELD MISMATCH ERROR ATYPE " << itype << " error_frac: " << erf << endl;
-						cout << "ERROR ON " << cachefile << endl;
-						utility_exit_with_message("field cache errors!");
+				if( opts.cache_mismatch_tolerance < 9e8 ){
+					double erf = static_cast<FieldCache&>(*field_by_atype[itype]).check_against_field( rfa, oversample, opts.cache_mismatch_tolerance );
+					if( erf > 0.0 ){
+						#ifdef USE_OPENMP
+						#pragma omp critical
+						#endif
+						{
+							cout << "FIELD MISMATCH ERROR ATYPE " << itype << " error_frac: " << erf << endl;
+							cout << "ERROR ON " << cachefile << endl;
+							utility_exit_with_message("field cache errors!");
+						}
 					}
 				}
 			} catch( ... ) {

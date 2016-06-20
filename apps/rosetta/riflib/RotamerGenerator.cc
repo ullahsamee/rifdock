@@ -110,32 +110,7 @@ struct RichardsonRotData {
 		std::vector<HBondRay> & acceptors
 	){
 
-		std::vector<int> atypemap;
-		{
-			core::chemical::AtomTypeSetCOP ats = core::chemical::ChemicalManager::get_instance()->atom_type_set("fa_standard");
-			atypemap.resize( ats->n_atomtypes()+1, 12345 );
-			atypemap[ ats->atom_type_index("CNH2") ] =  1;
-			atypemap[ ats->atom_type_index("COO" ) ] =  2;
-			atypemap[ ats->atom_type_index("CH1" ) ] =  3;
-			atypemap[ ats->atom_type_index("CH2" ) ] =  4;
-			atypemap[ ats->atom_type_index("CH3" ) ] =  5;
-			atypemap[ ats->atom_type_index("aroC") ] =  6;
-			atypemap[ ats->atom_type_index("Ntrp") ] =  7;
-			atypemap[ ats->atom_type_index("Nhis") ] =  8;
-			atypemap[ ats->atom_type_index("NH2O") ] =  9;
-			atypemap[ ats->atom_type_index("Nlys") ] = 10;
-			atypemap[ ats->atom_type_index("Narg") ] = 11;
-			atypemap[ ats->atom_type_index("Npro") ] = 12;
-			atypemap[ ats->atom_type_index("OH"  ) ] = 13;
-			atypemap[ ats->atom_type_index("ONH2") ] = 14;
-			atypemap[ ats->atom_type_index("OOC" ) ] = 15;
-			atypemap[ ats->atom_type_index("Oaro") ] = 16;
-			atypemap[ ats->atom_type_index("S"   ) ] = 17;
-			atypemap[ ats->atom_type_index("Nbb" ) ] = 18;
-			atypemap[ ats->atom_type_index("CAbb") ] = 19;
-			atypemap[ ats->atom_type_index("CObb") ] = 20;
-			atypemap[ ats->atom_type_index("OCbb") ] = 21;
-		}
+		std::vector<int> atypemap = get_rif_atype_map();
 
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );

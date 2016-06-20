@@ -129,10 +129,11 @@ compute_onebody_rotamer_energies(
 
 	std::vector<core::scoring::ScoreFunctionOP> score_func_per_thread(omp_max_threads_1());
 	for( auto & score_func : score_func_per_thread ){
-		score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
-		score_func->set_etable( "FA_STANDARD_SOFT" );
-		// score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
-		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+		// score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
+		// score_func->set_etable( "FA_STANDARD_SOFT" );
+		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
+		// score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+		score_func = core::scoring::get_score_function();
 		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
 		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
 		hopts.use_hb_env_dep( false );
@@ -497,9 +498,9 @@ make_twobody_tables(
 									twob.twobody_[ir][jr][irotsel][jrotsel] += atomscore;
 								}
 							} else {
-								if( rot_index.resname(irot)!="ALA"&&rot_index.resname(irot)!="GLY" ||
-									rot_index.resname(jrot)!="ALA"&&rot_index.resname(jrot)!="GLY" ){
-									utility_exit_with_message( "reading bad rotrf table irot,jrot = " + rot_index.resname(irot)+", "+rot_index.resname(jrot) );
+								if( rot_index.resname(irot)!="ALA"&&rot_index.resname(irot)!="GLY" ){
+									utility_exit_with_message( "no rotrf table for "+str(irot)+" / "+ str(ir)+rot_index.resname(irot)
+									    + " other is" + str(jr)+rot_index.resname(jrot) );
 								}
 							}
 						} else {
@@ -518,9 +519,9 @@ make_twobody_tables(
 									twob.twobody_[ir][jr][irotsel][jrotsel] += atomscore;
 								}
 							} else {
-								if( rot_index.resname(irot)!="ALA"&&rot_index.resname(irot)!="GLY" ||
-									rot_index.resname(jrot)!="ALA"&&rot_index.resname(jrot)!="GLY" ){
-									utility_exit_with_message( "reading bad rotrf table irot,jrot = " + rot_index.resname(irot)+", "+rot_index.resname(jrot) );
+								if( rot_index.resname(jrot)!="ALA"&&rot_index.resname(jrot)!="GLY" ){
+									utility_exit_with_message( "no rotrf table for "+str(jrot)+" / "+str(jr)+rot_index.resname(jrot)
+									    + " other is" + str(ir)+rot_index.resname(irot) );
 								}
 							}
 						}

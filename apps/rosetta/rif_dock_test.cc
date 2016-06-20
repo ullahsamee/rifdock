@@ -62,6 +62,7 @@
 	#include <chrono>
 	#include <random>
 
+
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
@@ -506,32 +507,32 @@ int main(int argc, char *argv[]) {
 		// hbopt.lkball = true;
 		// hbopt.add_acceptor_mid = true;
 		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
-// rif score:    0 rank         0 dist0:      20.44 packscore: -30.391 steric:  -1.096 cluster:       0 rifrank:  268480 0.04808 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000000.pdb
-// rif score:    1 rank         1 dist0:      20.30 packscore: -29.679 steric:   1.352 cluster:       0 rifrank:  535822 0.09596 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000001.pdb
-// rif score:    2 rank         2 dist0:      20.30 packscore: -29.463 steric:  -0.926 cluster:       0 rifrank:  295509 0.05292 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000002.pdb
-// rif score:    3 rank         3 dist0:      19.78 packscore: -29.328 steric:   1.009 cluster:       0 rifrank:  163867 0.02935 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000003.pdb
-// rif score:    4 rank         4 dist0:      19.74 packscore: -28.592 steric:  -1.015 cluster:       0 rifrank:  151703 0.02717 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000004.pdb
-// rif score:    5 rank         5 dist0:      19.78 packscore: -28.512 steric:  -0.840 cluster:       0 rifrank:   63255 0.01133 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000005.pdb
-// rif score:    6 rank         6 dist0:      19.52 packscore: -28.471 steric:   3.097 cluster:       0 rifrank:   83780 0.01500 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000006.pdb
-// rif score:    7 rank         7 dist0:      20.40 packscore: -28.236 steric:  -0.913 cluster:       0 rifrank:  409585 0.07336 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000007.pdb
-// rif score:    8 rank         8 dist0:      20.30 packscore: -27.996 steric:  -1.081 cluster:       0 rifrank:  172518 0.03090 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000008.pdb
-// rif score:    9 rank         9 dist0:      19.88 packscore: -27.802 steric:   1.592 cluster:       0 rifrank:  435730 0.07804 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000009.pdb
-// rif score:   10 rank        10 dist0:      20.05 packscore: -27.500 steric:   0.539 cluster:       0 rifrank:  426173 0.07633 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000010.pdb
-// rif score:   11 rank        11 dist0:      20.30 packscore: -27.491 steric:  -0.683 cluster:       0 rifrank:   52799 0.00946 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000011.pdb
-// rif score:   12 rank        12 dist0:      19.88 packscore: -27.474 steric:   0.449 cluster:       0 rifrank:  309114 0.05536 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000012.pdb
-// rif score:   13 rank        13 dist0:      19.88 packscore: -27.209 steric:  -0.946 cluster:       0 rifrank:  152655 0.02734 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000013.pdb
-// rif score:   14 rank        14 dist0:      20.17 packscore: -27.184 steric:  -0.464 cluster:       0 rifrank:  116844 0.02093 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000014.pdb
-// rif score:   15 rank        15 dist0:      20.70 packscore: -27.138 steric:  -1.345 cluster:       0 rifrank:  398589 0.07139 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000015.pdb
-// rif score:   16 rank        16 dist0:      20.17 packscore: -26.992 steric:   2.271 cluster:       0 rifrank:  353244 0.06326 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000016.pdb
-// rif score:   17 rank        17 dist0:      20.00 packscore: -26.914 steric:   1.221 cluster:       0 rifrank:  787232 0.14099 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000017.pdb
-// rif score:   18 rank        18 dist0:      19.69 packscore: -26.807 steric:   1.547 cluster:       0 rifrank:  336496 0.06027 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000018.pdb
-// rif score:   19 rank        19 dist0:      20.14 packscore: -26.777 steric:  -1.035 cluster:       0 rifrank:  295196 0.05287 test_full_pack/test_fz7_nofull_10_1.2_2_0.5/HHH_rd2_0005.pdb.ec50rise_2.54_000000019.pdb
+// rif score:    0 rank         0 dist0:      20.44 packscore: -30.391 steric:  -1.096 cluster:       0 rifrank:  268480 0.04808 test_ful
+// rif score:    1 rank         1 dist0:      20.30 packscore: -29.679 steric:   1.352 cluster:       0 rifrank:  535822 0.09596 test_ful
+// rif score:    2 rank         2 dist0:      20.30 packscore: -29.463 steric:  -0.926 cluster:       0 rifrank:  295509 0.05292 test_ful
+// rif score:    3 rank         3 dist0:      19.78 packscore: -29.328 steric:   1.009 cluster:       0 rifrank:  163867 0.02935 test_ful
+// rif score:    4 rank         4 dist0:      19.74 packscore: -28.592 steric:  -1.015 cluster:       0 rifrank:  151703 0.02717 test_ful
+// rif score:    5 rank         5 dist0:      19.78 packscore: -28.512 steric:  -0.840 cluster:       0 rifrank:   63255 0.01133 test_ful
+// rif score:    6 rank         6 dist0:      19.52 packscore: -28.471 steric:   3.097 cluster:       0 rifrank:   83780 0.01500 test_ful
+// rif score:    7 rank         7 dist0:      20.40 packscore: -28.236 steric:  -0.913 cluster:       0 rifrank:  409585 0.07336 test_ful
+// rif score:    8 rank         8 dist0:      20.30 packscore: -27.996 steric:  -1.081 cluster:       0 rifrank:  172518 0.03090 test_ful
+// rif score:    9 rank         9 dist0:      19.88 packscore: -27.802 steric:   1.592 cluster:       0 rifrank:  435730 0.07804 test_ful
+// rif score:   10 rank        10 dist0:      20.05 packscore: -27.500 steric:   0.539 cluster:       0 rifrank:  426173 0.07633 test_ful
+// rif score:   11 rank        11 dist0:      20.30 packscore: -27.491 steric:  -0.683 cluster:       0 rifrank:   52799 0.00946 test_ful
+// rif score:   12 rank        12 dist0:      19.88 packscore: -27.474 steric:   0.449 cluster:       0 rifrank:  309114 0.05536 test_ful
+// rif score:   13 rank        13 dist0:      19.88 packscore: -27.209 steric:  -0.946 cluster:       0 rifrank:  152655 0.02734 test_ful
+// rif score:   14 rank        14 dist0:      20.17 packscore: -27.184 steric:  -0.464 cluster:       0 rifrank:  116844 0.02093 test_ful
+// rif score:   15 rank        15 dist0:      20.70 packscore: -27.138 steric:  -1.345 cluster:       0 rifrank:  398589 0.07139 test_ful
+// rif score:   16 rank        16 dist0:      20.17 packscore: -26.992 steric:   2.271 cluster:       0 rifrank:  353244 0.06326 test_ful
+// rif score:   17 rank        17 dist0:      20.00 packscore: -26.914 steric:   1.221 cluster:       0 rifrank:  787232 0.14099 test_ful
+// rif score:   18 rank        18 dist0:      19.69 packscore: -26.807 steric:   1.547 cluster:       0 rifrank:  336496 0.06027 test_ful
+// rif score:   19 rank        19 dist0:      20.14 packscore: -26.777 steric:  -1.035 cluster:       0 rifrank:  295196 0.05287 test_ful
 		hbopt.withbb = true;
-		hbopt.lkball = false;
+		hbopt.lkball = true;
 		hbopt.add_acceptor_mid = false;
-		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+		hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
 
-		utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
+		// utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
 
 
 		BOOST_FOREACH( core::Size ir, target_res ){
@@ -747,7 +748,7 @@ int main(int argc, char *argv[]) {
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
 				if( opt.random_perturb_scaffold ){
-					runtime_assert_msg( !opt.use_scaffold_bounding_grids, 
+					runtime_assert_msg( !opt.use_scaffold_bounding_grids,
 						"opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
 					::scheme::numeric::rand_xform(rng,scaffold_perturb);
 					xform_pose( scaffold, eigen2xyz(scaffold_perturb) );
@@ -771,11 +772,14 @@ int main(int argc, char *argv[]) {
 					scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
 				} else {
 					scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
+					std::cout << "using scaffold residues: ";
+					for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
+					std::cout << std::endl;
 				}
 				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
 				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
 
-				scaffold.dump_pdb( utility::file_basename(scaff_fname)+"_pruned.pdb");
+				// scaffold.dump_pdb( utility::file_basename(scaff_fname)+"_pruned.pdb");
 
 				float scaff_redundancy_filter_rg=0;
 				get_rg_radius( scaffold, scaff_redundancy_filter_rg, scaff_radius, scaffold_res, false ); // not allatom for scaff
@@ -855,6 +859,9 @@ int main(int argc, char *argv[]) {
 						BOOST_FOREACH( float & f, scaffold_onebody_glob0[i] ) f = 9e9;
 					}
 				}
+
+
+
 				std::string cachefile2b = "__2BE_" + scaff_tag + "_GLOBAL" + ".bin.gz";
 				if( ! opt.cache_scaffold_data ) cachefile2b = "";
 				MakeTwobodyOpts make2bopts;
@@ -1307,6 +1314,11 @@ int main(int argc, char *argv[]) {
 				int do_min = 2;
 				if( opt.rosetta_min_fraction == 0.0 ) do_min = 1;
 
+				std::vector<bool> is_scaffold_fixed_res(scaffold.n_residue()+1,true);
+				for(int designable : scaffold_res){
+					is_scaffold_fixed_res[designable] = false;
+				}
+
 				for( int minimizing = 0; minimizing < do_min; ++minimizing ){
 
 					std::chrono::duration<double> time_copy, time_score, time_min;
@@ -1325,30 +1337,30 @@ int main(int argc, char *argv[]) {
 
 					std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
 					std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
-					std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
+					// std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
 					std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
 					std::vector<core::pose::Pose> target_pt           (omp_max_threads());
 					std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());
 					for( int i = 0; i < omp_max_threads(); ++i){
-						both_full_per_thread[i] = both_full_pose;
-						both_per_thread[i] = both_pose;
-						scorefunc_pt[i] = core::scoring::get_score_function();
+						// both_full_per_thread[i] = both_full_pose;
+						both_per_thread[i] = both_full_pose;
+						scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_soft_score);
 						if( minimizing ){
 							if( opt.rosetta_hard_min ){
-								scorefunc_pt[i]->set_etable( "FA_STANDARD" );
+								scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_hard_score);
 							} else {
-								scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
+								scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_soft_score);
 							}
 						} else if( do_min==2 ){
 							// not minimizing, but will do minimization
-							scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
+							scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_soft_score);
 							if( !opt.rosetta_hard_min ){
 								scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.7 );
 								scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.7 );
 							}
 						} else {
 							// not minimizing at all, score pass only
-							scorefunc_pt[i]->set_etable( "FA_STANDARD_SOFT" );
+							scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_soft_score);
 							if( !opt.rosetta_hard_min ){
 								scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*1.0 );
 								scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*1.0 );
@@ -1356,8 +1368,13 @@ int main(int argc, char *argv[]) {
 						}
 						if( target.n_residue() == 1 ){
 							// assume this is a ligand, so hbonding is important
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::fa_elec)*1.5 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.5 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.5 );
+						} else {
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::fa_elec)*1.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
 						}
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
@@ -1369,15 +1386,13 @@ int main(int argc, char *argv[]) {
 						core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
 						movemap->set_chi(true);
 						movemap->set_jump(true);
-						if( opt.rosetta_min_allbb ){
-							movemap->set_bb(true);
-						} else if( opt.rosetta_min_targetbb ){
-							movemap->set_bb(false);
-							for( int ir = 1; ir <= target.n_residue(); ++ir ){
-								movemap->set_bb(ir,true);
+						for(int ir = 1; ir <= both_full_pose.n_residue(); ++ir){
+							bool is_scaffold = ir <= scaffold.n_residue();
+							if( is_scaffold ) movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_scaffoldbb );
+							else              movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_targetbb );
+							if( opt.rosetta_min_fix_target && !is_scaffold ){
+								movemap->set_chi(ir,false);
 							}
-						} else {
-							movemap->set_bb(false);
 						}
 						minmover_pt[i] = protocols::simple_moves::MinMoverOP(
 							new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
@@ -1389,6 +1404,7 @@ int main(int argc, char *argv[]) {
 					if( minimizing ){
 						// min take ~10x score time, so do on 1/10th of the scored
 						n_scormin = n_score_calculations * opt.rosetta_min_fraction;
+						n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
 					} else {
 						// for scoring, use user cut
 						n_scormin = opt.rosetta_score_fraction/40.0 * total_search_effort;
@@ -1405,7 +1421,7 @@ int main(int argc, char *argv[]) {
 					packed_results.resize(n_scormin);
 					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
 					if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
-					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";					
+					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,1)
 					#endif
@@ -1442,6 +1458,71 @@ int main(int argc, char *argv[]) {
 								pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
 							}
 						}
+
+						EigenXform Xtorifframe = xalignout.inverse();
+						// clash check existing scaffold rotamers
+						// #pragma omp critical
+						// {
+						// 	pose_to_min.dump_pdb("test0.pdb");
+						// 	xform_pose(pose_to_min, eigen2xyz(Xtorifframe));
+						// 	pose_to_min.dump_pdb("test1.pdb");
+						// 	utility_exit_with_message("foo");
+						// }
+
+						std::vector<int> replaced_scaffold_res;
+						auto alaop = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA" ) );
+
+						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
+
+						std::vector<int> rifatypemap = get_rif_atype_map();
+						for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
+							auto const & ires = pose_to_min.residue(ir);
+							if( !ires.is_protein() ) continue;
+							if( ires.aa()==core::chemical::aa_gly ||
+								ires.aa()==core::chemical::aa_ala ||
+								ires.aa()==core::chemical::aa_pro ) continue;
+							if(is_rif_res[ir-1]) continue;
+							if(is_scaffold_fixed_res[ir]) continue;
+							bool ir_clash = false;
+
+							// check against target_field_by_atype
+							float evtarget = 0.0;
+							for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+								auto const & ixyz = ires.xyz(ia);
+
+								Eigen::Vector3f satm;
+								for(int k = 0; k < 3; ++k) satm[k] = ixyz[k];
+								satm = Xtorifframe * satm;
+								int const irifatype = rifatypemap[ires.atom_type_index(ia)];
+								evtarget += target_field_by_atype.at(irifatype)->at(satm);
+							}
+							if( evtarget > 3.0f ) ir_clash = true;
+
+							// check against other rif res
+							for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+								int jr = 1+scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+								auto const & jres = pose_to_min.residue(jr);
+								// should do rsd nbr check... but speed not critical here ATM...
+								for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+									auto const & ixyz = ires.xyz(ia);
+									for( int ja = 6; ja <= jres.nheavyatoms(); ++ja){
+										auto const & jxyz = jres.xyz(ja);
+										if( ixyz.distance_squared(jxyz) < 9.0 ){
+											ir_clash = true;
+										}
+									}
+								}
+							}
+							if(ir_clash){
+								pose_to_min.replace_residue(ir, *alaop, true);
+								replaced_scaffold_res.push_back(ir);
+							}
+						}
+
+						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_after.pdb");
+						// if(imin >= 9) utility_exit_with_message("testing...aorsenoi");
+
+
 						end = std::chrono::high_resolution_clock::now();
 						std::chrono::duration<double> elapsed_seconds_copypose = end-start;
 						#pragma omp critical
@@ -1463,7 +1544,7 @@ int main(int argc, char *argv[]) {
 							#pragma omp critical
 							time_min += elapsed_seconds_min;
 						} else {
-							// std::cout << "SCORE!" << std::endl;							
+							// std::cout << "SCORE!" << std::endl;
 					        start = std::chrono::high_resolution_clock::now();
 							scorefunc_pt[ithread]->score( pose_to_min );
 					        end = std::chrono::high_resolution_clock::now();
@@ -1515,8 +1596,8 @@ int main(int argc, char *argv[]) {
 									// this is DDG
 									if( ir <= scaffold.n_residue() && jr > scaffold.n_residue() ){
 										// ir in scaff, jr in target
-										rosetta_score += edge.dot(weights);										
-									} 
+										rosetta_score += edge.dot(weights);
+									}
 									if( !opt.rosetta_score_ddg_only && jr <= scaffold.n_residue() ){
 										// ir & jr in scaffold
 										if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
@@ -1546,7 +1627,10 @@ int main(int argc, char *argv[]) {
 
 
 						if( minimizing && packed_results[imin].score < opt.rosetta_score_cut ){
-							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );							
+							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+							for(int ir : replaced_scaffold_res){
+								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "PRUNED" );
+							}
 						}
 
 						// #pragma omp critical
@@ -1574,9 +1658,9 @@ int main(int argc, char *argv[]) {
 						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count()                     << " sc/rb minimizations per second" << std::endl;
 						std::cout << "min rate: "   << (double)n_scormin / elap_sec.count() / omp_max_threads() << " sc/rb minimizations per second per thread" << std::endl;
 					} else {
-						std::cout << "total pose copy time: " << time_copy.count() << "s total score time: " << time_score.count() << "s" << " walltime total " << elap_sec.count() << std::endl;						
+						std::cout << "total pose copy time: " << time_copy.count() << "s total score time: " << time_score.count() << "s" << " walltime total " << elap_sec.count() << std::endl;
 						std::cout << "score rate: " << (double)n_scormin / elap_sec.count()                     << " rosetta scores per second" << std::endl;
-						std::cout << "score rate: " << (double)n_scormin / elap_sec.count() / omp_max_threads() << " rosetta scores per second per thread" << std::endl;						
+						std::cout << "score rate: " << (double)n_scormin / elap_sec.count() / omp_max_threads() << " rosetta scores per second per thread" << std::endl;
 					}
 				}
 
@@ -1803,7 +1887,7 @@ int main(int argc, char *argv[]) {
 
 					core::pose::Pose pose_from_rif;
 					if     ( opt.full_scaffold_output ) pose_from_rif = both_full_pose;
-					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;					
+					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;
 					else                                pose_from_rif = both_pose;
 					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_from_rif.n_residue() );
 					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );
