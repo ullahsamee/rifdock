@@ -849,6 +849,7 @@ int main(int argc, char *argv[]) {
 	for( auto s : bounding_grid_fnames )
 		std::cout << "-rif_dock:target_bounding_xmaps " << s << std::endl;
 		std::cout << "-rif_dock:target_rif            " << outfile << std::endl;
+		std::cout << "-rif_dock:extra_rif_rotamers    " << option[rifgen::extra_rif_rotamers]() << std::endl;
 	std::cout << "#################################################################################################################" << std::endl;
 
 	return 0;
