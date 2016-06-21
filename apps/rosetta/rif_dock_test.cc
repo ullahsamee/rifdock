@@ -1469,7 +1469,7 @@ int main(int argc, char *argv[]) {
 						// 	utility_exit_with_message("foo");
 						// }
 
-						std::vector<int> replaced_scaffold_res;
+						std::vector<int> replaced_scaffold_res, rifres;
 						auto alaop = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA" ) );
 
 						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
@@ -1481,7 +1481,10 @@ int main(int argc, char *argv[]) {
 							if( ires.aa()==core::chemical::aa_gly ||
 								ires.aa()==core::chemical::aa_ala ||
 								ires.aa()==core::chemical::aa_pro ) continue;
-							if(is_rif_res[ir-1]) continue;
+							if(is_rif_res[ir-1]){
+								rifres.push_back(ir);
+								continue;
+							}
 							if(is_scaffold_fixed_res[ir]) continue;
 							bool ir_clash = false;
 
@@ -1628,6 +1631,9 @@ int main(int argc, char *argv[]) {
 
 						if( minimizing && packed_results[imin].score < opt.rosetta_score_cut ){
 							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+							for(int ir : rifres){
+								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
+							}
 							for(int ir : replaced_scaffold_res){
 								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "PRUNED" );
 							}
@@ -1911,19 +1917,22 @@ int main(int argc, char *argv[]) {
 						}
 					}
 
+					bool using_rosetta_model = selected_result.pose_ != nullptr;
 					core::pose::Pose & pose_to_dump( *(selected_result.pose_ ? selected_result.pose_.get() : &pose_from_rif) );
 					utility::io::ozstream out1( pdboutfile );
 					// scene_full->set_position( 1, xalignout * xposition1 );
 					// write_pdb( out1, dynamic_cast<Scene&>(*scene_full), rot_index.chem_index_ );
-					if( opt.pdb_info_pikaa ){
-						for( auto p : pikaa ){
-							std::sort( p.second.begin(), p.second.end() );
-							pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
-							pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
-						}
-					} else {
-						for( auto p : pikaa ){
-							pose_to_dump.pdb_info()->add_reslabel(p.first, "RIFRES" );
+					if( !using_rosetta_model ){
+						if( opt.pdb_info_pikaa ){
+							for( auto p : pikaa ){
+								std::sort( p.second.begin(), p.second.end() );
+								pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
+								pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
+							}
+						} else {
+							for( auto p : pikaa ){
+								pose_to_dump.pdb_info()->add_reslabel(p.first, "RIFRES" );
+							}
 						}
 					}
 					// if( selected_result.pose_ ){
