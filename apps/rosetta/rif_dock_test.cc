@@ -449,7 +449,7 @@ int main(int argc, char *argv[]) {
 	print_header( "create rotamer index" );
 		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();
 		RotamerIndex & rot_index( *rot_index_p );
-		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rif_rotamers );
+		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rotamers, opt.extra_rif_rotamers );
 		std::cout << "================ RotamerIndex ===================" << std::endl;
 		std::cout << rot_index.size() << std::endl;
 		std::cout << rot_index << std::endl;

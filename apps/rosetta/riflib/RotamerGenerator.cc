@@ -39,6 +39,7 @@
 #include <scheme/actor/BackboneActor.hh>
 
 #include <ObjexxFCL/format.hh>
+#include <utility/io/ozstream.hh>
 
 namespace devel {
 namespace scheme {
@@ -58,14 +59,14 @@ struct RichardsonRotData {
 	RichardsonRotData( S n, F c, F c1, F c2, F s1, F s2 ) : name(n), count(c), chi1(c1), chi2(c2), sd1(s1), sd2(s2) { nchi=2; }
 	RichardsonRotData( S n, F c, F c1, F s1 ) : name(n), count(c), chi1(c1), sd1(s1) { nchi=1; }
 
-	void
-	get_chi(
-		std::vector<float> & chi
-	) const {
+	std::vector<float>
+	get_chi() const {
+		std::vector<float> chi;
 		if( nchi > 0 ) chi.push_back(chi1);
 		if( nchi > 1 ) chi.push_back(chi2);
 		if( nchi > 2 ) chi.push_back(chi3);
 		if( nchi > 3 ) chi.push_back(chi4);
+		return chi;
 	}
 
 	void
@@ -74,7 +75,8 @@ struct RichardsonRotData {
 		bool ex2,
 		bool ex3,
 		bool ex4,
-		std::vector<std::vector<float> > & exchis
+		std::vector<std::vector<float> > & exchis,
+		bool include_primary = true
 	) const {
 		int nex1=1, nex2=1, nex3=1, nex4=1;
 		if( nchi > 0 && ex1 ) nex1 = 3;
@@ -86,12 +88,16 @@ struct RichardsonRotData {
 		for( int i2 = 0; i2 < nex2; ++i2 ){ float exchi2 = chi2; if( i2==1 ) exchi2 += sd2;	else if( i2==2 ) exchi2 -= sd2;
 		for( int i3 = 0; i3 < nex3; ++i3 ){	float exchi3 = chi3; if( i3==1 ) exchi3 += sd3;	else if( i3==2 ) exchi3 -= sd3;
 		for( int i4 = 0; i4 < nex4; ++i4 ){	float exchi4 = chi4; if( i4==1 ) exchi4 += sd4; else if( i4==2 ) exchi4 -= sd4;
-			std::vector<float> chi;
-			if( nchi > 0 ) chi.push_back(exchi1);
-			if( nchi > 1 ) chi.push_back(exchi2);
-			if( nchi > 2 ) chi.push_back(exchi3);
-			if( nchi > 3 ) chi.push_back(exchi4);
-			exchis.push_back( chi );
+			if( include_primary || i1 || i2 || i3 || i4 ){
+				std::vector<float> chi;
+				if( nchi > 0 ) chi.push_back(exchi1);
+				if( nchi > 1 ) chi.push_back(exchi2);
+				if( nchi > 2 ) chi.push_back(exchi3);
+				if( nchi > 3 ) chi.push_back(exchi4);
+				exchis.push_back( chi );
+			} else {
+				// std::cout << "exclude primary " << i1 << " " << i2 << " " << i3 << " " << i4 << std::endl;
+			}
 		}}}}
 
 	}
@@ -325,10 +331,10 @@ get_rosetta_rot_set(
 void
 get_richardson_rot_data(
 	std::map<std::string,std::vector<RichardsonRotData> > & rrdata,
-	bool extra_rots = true
+	bool extra_chi2 = true
 ){
-	bool const ER = extra_rots;
-	// if( extra_rots ){
+	bool const ER = extra_chi2;
+	// if( extra_chi2 ){
 	// 	std::cout << "get_richardson_rot_data: USING EXTRA ROTS" << std::endl;
 	// 	std::cout << "extra rotamers aren't well tested yet, don't use" << std::endl;
 	// 	std::exit(-1);
@@ -363,14 +369,28 @@ get_richardson_rot_data(
 	rrdata["ARG"].push_back( RichardsonRotData( "ttm180 ",  13,    -177,   180,   -65,   175,   15, 12, 11, 15 ) );
 	rrdata["ARG"].push_back( RichardsonRotData( "ttm-85 ",  28,    -177,   180,   -65,   -85,   14, 16, 15, 14 ) );
 	rrdata["ARG"].push_back( RichardsonRotData( "mtp85  ",  22,     -67,   180,    65,    85,   13, 17, 13, 13 ) );
-	rrdata["ARG"].push_back( RichardsonRotData( "mtp180 ",  45,     -67,   180,    65,  -175,   12, 19, 13, 19 ) );
+
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtp180 ", -45,     -67,   161,    65,  -175,   12, 19, 13, 19 ) );
+	       rrdata["ARG"].push_back( RichardsonRotData( "mtp180 ", -45,     -67,   180,    65,  -175,   12, 19, 13, 19 ) );
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtp180 ", -45,     -67,  -161,    65,  -175,   12, 19, 13, 19 ) );
+
 	rrdata["ARG"].push_back( RichardsonRotData( "mtp-105",   7,     -67,   180,    65,  -105,   11, 15, 13, 15 ) );
 	rrdata["ARG"].push_back( RichardsonRotData( "mtt85  ",  34,     -67,   180,   180,    85,   12, 19, 13, 19 ) );
-	rrdata["ARG"].push_back( RichardsonRotData( "mtt180 ",  89,     -67,   180,   180,   180,   14, 13, 13, 21 ) );
-	rrdata["ARG"].push_back( RichardsonRotData( "mtt-85 ",  53,     -67,   180,   180,   -85,   13, 13, 13, 13 ) );
+
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtt180 ", -89,     -67,   167,   180,   180,   14, 13, 13, 21 ) );
+	       rrdata["ARG"].push_back( RichardsonRotData( "mtt180 ", -89,     -67,   180,   180,   180,   14, 13, 13, 21 ) );
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtt180 ", -89,     -67,  -167,   180,   180,   14, 13, 13, 21 ) );
+
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtt-85 ", -53,     -67,   167,   180,   -85,   13, 13, 13, 13 ) );
+	       rrdata["ARG"].push_back( RichardsonRotData( "mtt-85 ", -53,     -67,   180,   180,   -85,   13, 13, 13, 13 ) );
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtt-85 ", -53,     -67,  -167,   180,   -85,   13, 13, 13, 13 ) );
+
 	rrdata["ARG"].push_back( RichardsonRotData( "mtm105 ",  15,     -67,   180,   -65,   105,   12, 13, 13, 15 ) );
 	rrdata["ARG"].push_back( RichardsonRotData( "mtm180 ",  48,     -67,   180,   -65,   175,   14, 17, 13, 29 ) );
-	rrdata["ARG"].push_back( RichardsonRotData( "mtm-85 ",  54,     -67,  -167,   -65,   -85,   14, 13, 13, 13 ) );
+
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtm-85 ", -54,     -67,  -154,   -65,   -85,   14, 13, 13, 13 ) );
+	       rrdata["ARG"].push_back( RichardsonRotData( "mtm-85 ", -54,     -67,  -167,   -65,   -85,   14, 13, 13, 13 ) );
+	if(ER) rrdata["ARG"].push_back( RichardsonRotData( "mtm-85 ", -54,     -67,   180,   -65,   -85,   14, 13, 13, 13 ) );
 
 	rrdata["ARG"].push_back( RichardsonRotData( "mmt85  ",   7,     -62,   -68,   180,    85,   13, 13, 10, 16 ) );
 	rrdata["ARG"].push_back( RichardsonRotData( "mmt180 ",  18,     -62,   -68,   180,   180,   13, 13, 10, 16 ) );
@@ -391,7 +411,11 @@ get_richardson_rot_data(
 	rrdata["LYS"].push_back( RichardsonRotData( "ttpp",     12,    -177,   180,    68,    65,   14, 12, 14, 14 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "ttpt",     25,    -177,   180,    68,   180,   14, 12, 14, 14 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "tttp",     49,    -177,   180,   180,    65,   14, 13, 12, 12 ) );
-	rrdata["LYS"].push_back( RichardsonRotData( "tttt",    162,    -177,   180,   180,   180,   13, 13, 15, 13 ) );
+
+	if(ER) rrdata["LYS"].push_back( RichardsonRotData( "tttt",   -162,    -177,   167,   180,   180,   13, 13, 15, 13 ) );
+	       rrdata["LYS"].push_back( RichardsonRotData( "tttt",   -162,    -177,   180,   180,   180,   13, 13, 15, 13 ) );
+	if(ER) rrdata["LYS"].push_back( RichardsonRotData( "tttt",   -162,    -177,  -167,   180,   180,   13, 13, 15, 13 ) );
+
 	rrdata["LYS"].push_back( RichardsonRotData( "tttm",     37,    -177,   180,   180,   -65,   12, 13, 15, 13 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "ttmt",     20,    -177,   180,   -68,   180,   14, 14, 10, 15 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "ttmm",      5,    -177,   180,   -68,   -65,   14, 14, 10, 15 ) );
@@ -399,7 +423,11 @@ get_richardson_rot_data(
 	rrdata["LYS"].push_back( RichardsonRotData( "mtpp",     12,     -67,   180,    68,    65,   12, 13, 11,  9 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "mtpt",     38,     -67,   180,    68,   180,   13, 13, 14, 14 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "mttp",     42,     -67,   180,   180,    65,   13, 13, 14, 14 ) );
-	rrdata["LYS"].push_back( RichardsonRotData( "mttt",    244,     -67,   180,   180,   180,   14, 13, 12, 14 ) );
+
+	if(ER) rrdata["LYS"].push_back( RichardsonRotData( "mttt",   -244,     -67,   167,   180,   180,   14, 13, 12, 14 ) );
+	       rrdata["LYS"].push_back( RichardsonRotData( "mttt",   -244,     -67,   180,   180,   180,   14, 13, 12, 14 ) );
+	if(ER) rrdata["LYS"].push_back( RichardsonRotData( "mttt",   -244,     -67,  -167,   180,   180,   14, 13, 12, 14 ) );
+
 	rrdata["LYS"].push_back( RichardsonRotData( "mttm",     56,     -67,   180,   180,   -65,   13, 12, 13, 14 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "mtmt",     40,     -67,   180,   -68,   180,   12, 13, 14, 13 ) );
 	rrdata["LYS"].push_back( RichardsonRotData( "mtmm",     12,     -67,   180,   -68,   -65,   12, 12, 12, 11 ) );
@@ -416,12 +444,19 @@ get_richardson_rot_data(
 	rrdata["MET"].push_back( RichardsonRotData( "ttp",      28,    -177,   180,    75,         10, 11, 11 ) );
 	rrdata["MET"].push_back( RichardsonRotData( "ttt",      17,    -177,   180,   180,          9,  9, 19 ) );
 	rrdata["MET"].push_back( RichardsonRotData( "ttm",      36,    -177,   180,   -75,         10, 10, 13 ) );
-	rrdata["MET"].push_back( RichardsonRotData( "mtp",      92,     -67,   180,    75,         10, 12, 14 ) );
 	rrdata["MET"].push_back( RichardsonRotData( "mtt",      43,     -67,   180,   180,         10, 13, 15 ) );
-	rrdata["MET"].push_back( RichardsonRotData( "mtm",      58,     -67,   180,   -75,         12, 11, 16 ) );
 	rrdata["MET"].push_back( RichardsonRotData( "mmp",      15,     -65,   -65,   103,          9, 10, 10 ) );
 	rrdata["MET"].push_back( RichardsonRotData( "mmt",      10,     -65,   -65,   180,         12, 14, 19 ) );
-	rrdata["MET"].push_back( RichardsonRotData( "mmm",     105,     -65,   -65,   -70,         11, 13, 16 ) );
+
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mtm",     -58,     -67,   165,   -75,         12, 11, 16 ) );
+	       rrdata["MET"].push_back( RichardsonRotData( "mtm",     -58,     -67,   180,   -75,         12, 11, 16 ) );
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mtm",     -58,     -67,  -165,   -75,         12, 11, 16 ) );
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mtp",     -92,     -67,   165,    75,         10, 12, 14 ) );
+	       rrdata["MET"].push_back( RichardsonRotData( "mtp",     -92,     -67,   180,    75,         10, 12, 14 ) );
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mtp",     -92,     -67,  -165,    75,         10, 12, 14 ) );
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mmm",    -105,     -65,   -80,   -70,         11, 13, 16 ) );
+	       rrdata["MET"].push_back( RichardsonRotData( "mmm",    -105,     -65,   -65,   -70,         11, 13, 16 ) );
+	if(ER) rrdata["MET"].push_back( RichardsonRotData( "mmm",    -105,     -65,   -50,   -70,         11, 13, 16 ) );
 
 
 			// Glutamate
@@ -430,14 +465,33 @@ get_richardson_rot_data(
 	rrdata["GLU"].push_back( RichardsonRotData( "Spt60 ",    27,     62,   180,    60,         14, 13, 20 ) );//
 	rrdata["GLU"].push_back( RichardsonRotData( "pm0   ",    32,     70,   -80,     0,         14, 13, 17 ) );//   -50 to 50
 	rrdata["GLU"].push_back( RichardsonRotData( "tp10  ",    91,   -177,    65,    10,         14, 13, 17 ) );//   -10 to 90
-	rrdata["GLU"].push_back( RichardsonRotData( "Stt-60",   117,   -177,   180,   -60,         14, 14, 20 ) );//
-	rrdata["GLU"].push_back( RichardsonRotData( "tt0   ",   117,   -177,   180,     0,         14, 14, 20 ) );//   -90 to 90
-	rrdata["GLU"].push_back( RichardsonRotData( "Stt60 ",   117,   -177,   180,    60,         14, 14, 20 ) );//
 	rrdata["GLU"].push_back( RichardsonRotData( "tm20  ",    17,   -177,   -80,   -25,         13, 13, 15 ) );//   -50 to 10
 	rrdata["GLU"].push_back( RichardsonRotData( "mp0   ",    88,    -65,    85,     0,         14, 13, 25 ) );//   -60 to 60
-	rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",   161,    -67,   180,   -60,         13, 16, 20 ) );//
-	rrdata["GLU"].push_back( RichardsonRotData( "mt10  ",   161,    -67,   180,     0,         13, 16, 20 ) );//   -90 to 90
-	rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",   161,    -67,   180,    60,         13, 16, 20 ) );//
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Stt-60",  -117,   -177,   166,   -60,         14, 14, 20 ) );//
+	       rrdata["GLU"].push_back( RichardsonRotData( "Stt-60",  -117,   -177,   180,   -60,         14, 14, 20 ) );//
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Stt-60",  -117,   -177,  -166,   -60,         14, 14, 20 ) );//
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "tt0   ",  -117,   -177,   166,     0,         14, 14, 20 ) );//   -90 to 90
+	       rrdata["GLU"].push_back( RichardsonRotData( "tt0   ",  -117,   -177,   180,     0,         14, 14, 20 ) );//   -90 to 90
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "tt0   ",  -117,   -177,  -166,     0,         14, 14, 20 ) );//   -90 to 90
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Stt60 ",  -117,   -177,   166,    60,         14, 14, 20 ) );//
+	       rrdata["GLU"].push_back( RichardsonRotData( "Stt60 ",  -117,   -177,   180,    60,         14, 14, 20 ) );//
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Stt60 ",  -117,   -177,  -166,    60,         14, 14, 20 ) );//
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,   166,   -60,         13, 16, 20 ) );//
+	       rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,   180,   -60,         13, 16, 20 ) );//
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,  -166,   -60,         13, 16, 20 ) );//
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "mt10  ",  -161,    -67,   166,     0,         13, 16, 20 ) );//   -90 to 90
+	       rrdata["GLU"].push_back( RichardsonRotData( "mt10  ",  -161,    -67,   180,     0,         13, 16, 20 ) );//   -90 to 90
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "mt10  ",  -161,    -67,  -166,     0,         13, 16, 20 ) );//   -90 to 90
+
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,   166,    60,         13, 16, 20 ) );//
+	       rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,   180,    60,         13, 16, 20 ) );//
+	if(ER) rrdata["GLU"].push_back( RichardsonRotData( "Smt60 ",  -161,    -67,  -166,    60,         13, 16, 20 ) );//
+
 	rrdata["GLU"].push_back( RichardsonRotData( "mm40  ",    98,    -65,   -65,   -60,         14, 14, 20 ) );//   -90 to 30
 	rrdata["GLU"].push_back( RichardsonRotData( "Smm0  ",    98,    -65,   -75,     0,         14, 14, 20 ) );//
 
@@ -448,22 +502,37 @@ get_richardson_rot_data(
 	rrdata["GLN"].push_back( RichardsonRotData( "Spt60",     12,      62,  180,    60,         13, 14, 20 ) );//
 	rrdata["GLN"].push_back( RichardsonRotData( "pm0  ",     15,      70,  -75,     0,         13, 14, 16 ) );//   -60 to 60
 	rrdata["GLN"].push_back( RichardsonRotData( "tp100",     14,    -177,   65,  -100,         13, 14, 16 ) );//   -150 to 0
-	rrdata["GLN"].push_back( RichardsonRotData( "tp60 ",     78,    -177,   65,    60,         14, 15, 24 ) );//   0 to 90
 	rrdata["GLN"].push_back( RichardsonRotData( "Stt60",     47,    -177,  180,   -60,         14, 13, 20 ) );//
 	rrdata["GLN"].push_back( RichardsonRotData( "tt0  ",     47,    -177,  180,     0,         14, 13, 20 ) );//   -90 to 90
 	rrdata["GLN"].push_back( RichardsonRotData( "Stt60",     47,    -177,  180,    60,         14, 13, 20 ) );//
 	rrdata["GLN"].push_back( RichardsonRotData( "mp0  ",     24,     -65,   85,     0,         14, 13, 29 ) );//   -60 to 60
-	rrdata["GLN"].push_back( RichardsonRotData( "Smt60",    101,     -67,  180,   -60,         16, 15, 20 ) );//
-	rrdata["GLN"].push_back( RichardsonRotData( "mt30 ",    101,     -67,  180,     0,         16, 15, 20 ) );//    -90 to 90
-	rrdata["GLN"].push_back( RichardsonRotData( "Smt60",    100,     -67,  180,    60,         16, 15, 20 ) );//
-	rrdata["GLN"].push_back( RichardsonRotData( "mm-40",    127,     -65,  -65,   -40,         16, 18, 26 ) );//    -95 to 0
 	rrdata["GLN"].push_back( RichardsonRotData( "mm100",     22,     -65,  -65,   100,         16, 18, 26 ) );//      0 to 150
+
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "tp60 ",    -78,    -177,   50,    60,         14, 15, 24 ) );//   0 to 90
+	       rrdata["GLN"].push_back( RichardsonRotData( "tp60 ",    -78,    -177,   65,    60,         14, 15, 24 ) );//   0 to 90
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "tp60 ",    -78,    -177,   80,    60,         14, 15, 24 ) );//   0 to 90
+
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67,  165,   -60,         16, 15, 20 ) );//
+	       rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67,  180,   -60,         16, 15, 20 ) );//
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67, -165,   -60,         16, 15, 20 ) );//
+
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "mt30 ",   -101,     -67,  165,     0,         16, 15, 20 ) );//    -90 to 90
+	       rrdata["GLN"].push_back( RichardsonRotData( "mt30 ",   -101,     -67,  180,     0,         16, 15, 20 ) );//    -90 to 90
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "mt30 ",   -101,     -67, -165,     0,         16, 15, 20 ) );//    -90 to 90
+
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67,  165,    60,         16, 15, 20 ) );//
+	       rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67,  180,    60,         16, 15, 20 ) );//
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "Smt60",   -101,     -67, -165,    60,         16, 15, 20 ) );//
+
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "mm-40",   -127,     -65,  -83,   -40,         16, 18, 26 ) );//    -95 to 0
+	       rrdata["GLN"].push_back( RichardsonRotData( "mm-40",   -127,     -65,  -65,   -40,         16, 18, 26 ) );//    -95 to 0
+	if(ER) rrdata["GLN"].push_back( RichardsonRotData( "mm-40",   -127,     -65,  -47,   -40,         16, 18, 26 ) );//    -95 to 0
 
 
 			// Aspartate range
-	rrdata["ASP"].push_back( RichardsonRotData( "Sp50",      60,      62,  -50,                9, 19 ) );//
-	rrdata["ASP"].push_back( RichardsonRotData( "p10 ",     143,      62,  -30,                9, 19 ) );//     -90 to 0
-	rrdata["ASP"].push_back( RichardsonRotData( "p30 ",     194,      62,   30,                8, 14 ) );//       0 to 90
+	// rrdata["ASP"].push_back( RichardsonRotData( "Sp50",      60,      62,  -50,                9, 19 ) );//
+	rrdata["ASP"].push_back( RichardsonRotData( "p10 ",     143,      62,  -30,          10/*9*/, 19 ) );//     -90 to 0
+	rrdata["ASP"].push_back( RichardsonRotData( "p30 ",     194,      62,   30,          10/*8*/, 14 ) );//       0 to 90
 	rrdata["ASP"].push_back( RichardsonRotData( "St30",     100,    -170,  -10,               12, 13 ) );//
 	rrdata["ASP"].push_back( RichardsonRotData( "t0  ",     338,    -177,   10,               12, 13 ) );//     -50 to 50
 	rrdata["ASP"].push_back( RichardsonRotData( "t70 ",     118,    -177,   65,               12, 18 ) );//      50 to 90
@@ -472,15 +541,22 @@ get_richardson_rot_data(
 
 
 	// 		// Asparagine
-	rrdata["ASN"].push_back( RichardsonRotData( "Sp50",      60,      62,  -60,               8, 20 ) );//
-	rrdata["ASN"].push_back( RichardsonRotData( "p10 ",      60,      62,    0,               8, 20 ) );//     -90 to 0
-	rrdata["ASN"].push_back( RichardsonRotData( "p30 ",     100,      62,   60,               6, 20 ) );//     0 to 90
-	rrdata["ASN"].push_back( RichardsonRotData( "St80",      77,    -174,  -60,               5, 20 ) );//
-	rrdata["ASN"].push_back( RichardsonRotData( "t20 ",     100,    -174,  -30,               5, 20 ) );//    -120 to 0
-	rrdata["ASN"].push_back( RichardsonRotData( "t30 ",     228,    -177,   30,              14, 15 ) );//    0 to 80
-	rrdata["ASN"].push_back( RichardsonRotData( "m20 ",     580,     -65,  -20,              10, 20 ) );//    -60 to 10
-	rrdata["ASN"].push_back( RichardsonRotData( "m80 ",     118,     -65,  -75,               9,  9 ) );//   -100 to -60
-	rrdata["ASN"].push_back( RichardsonRotData( "m120",      58,     -65,  120,               9, 18 ) );//     60 to 160
+	rrdata["ASN"].push_back( RichardsonRotData( "Sp50",      60,      62,  -60,           10/*8*/, 20 ) );//
+	rrdata["ASN"].push_back( RichardsonRotData( "p10 ",      60,      62,    0,           10/*8*/, 20 ) );//     -90 to 0
+	rrdata["ASN"].push_back( RichardsonRotData( "p30 ",     100,      62,   60,           10/*6*/, 20 ) );//     0 to 90
+	rrdata["ASN"].push_back( RichardsonRotData( "St80",      77,    -174,  -60,           10/*5*/, 20 ) );//
+	rrdata["ASN"].push_back( RichardsonRotData( "t20 ",     100,    -174,  -30,           10/*5*/, 20 ) );//    -120 to 0
+
+	if(ER) rrdata["ASN"].push_back( RichardsonRotData( "t30 ",    -228,    -177,   15,              14, 15 ) );//    0 to 80
+	       rrdata["ASN"].push_back( RichardsonRotData( "t30 ",    -228,    -177,   30,              14, 15 ) );//    0 to 80
+	if(ER) rrdata["ASN"].push_back( RichardsonRotData( "t30 ",    -228,    -177,   45,              14, 15 ) );//    0 to 80
+
+	if(ER) rrdata["ASN"].push_back( RichardsonRotData( "m20 ",    -580,     -65,    0,              10, 20 ) );//    -60 to 10
+	       rrdata["ASN"].push_back( RichardsonRotData( "m20 ",    -580,     -65,  -20,              10, 20 ) );//    -60 to 10
+	if(ER) rrdata["ASN"].push_back( RichardsonRotData( "m20 ",    -580,     -65,  -40,              10, 20 ) );//    -60 to 10
+
+	rrdata["ASN"].push_back( RichardsonRotData( "m80 ",     118,     -65,  -75,              10, 10 ) );//   -100 to -60
+	rrdata["ASN"].push_back( RichardsonRotData( "m120",      58,     -65,  120,              10, 18 ) );//     60 to 160
 
 			// Isoleucine
 	rrdata["ILE"].push_back( RichardsonRotData( "pp",        10,      62,  100,              10, 10 ) );
@@ -495,17 +571,17 @@ get_richardson_rot_data(
 			// Leucine
 	       rrdata["LEU"].push_back( RichardsonRotData( "pp",        21,      62,   80,             10, 10 ) );//
 
-	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   50,             10, 10 ) );// NOT FOLLOWING STATS
-	       rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   65,             10, 10 ) );//
-	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",       750,    -177,   80,             10, 10 ) );// NOT FOLLOWING STATS
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",      -750,    -177,   50,             10, 10 ) );// NOT FOLLOWING STATS
+	       rrdata["LEU"].push_back( RichardsonRotData( "tp",      -750,    -177,   65,             10, 10 ) );//
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "tp",      -750,    -177,   80,             10, 10 ) );// NOT FOLLOWING STATS
 
-	       rrdata["LEU"].push_back( RichardsonRotData( "tt",        49,    -172,  145,              9, 15 ) );//   120 to 180
+	       rrdata["LEU"].push_back( RichardsonRotData( "tt",        49,    -172,  145,             10, 15 ) );//   120 to 180
 
 	       rrdata["LEU"].push_back( RichardsonRotData( "mp",        63,     -85,   65,             11, 14 ) );//    45 to 105
 
-	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65,  160,             11, 11 ) );// NOT FOLLOWING STATS
-	       rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65,  175,             11, 11 ) );//
-	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",      1548,     -65, -170,             11, 11 ) );// NOT FOLLOWING STATS
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",     -1548,     -65,  160,             11, 11 ) );// NOT FOLLOWING STATS
+	       rrdata["LEU"].push_back( RichardsonRotData( "mt",     -1548,     -65,  175,             11, 11 ) );//
+	if(ER) rrdata["LEU"].push_back( RichardsonRotData( "mt",     -1548,     -65, -170,             11, 11 ) );// NOT FOLLOWING STATS
 
 
 
@@ -514,115 +590,102 @@ get_richardson_rot_data(
 	rrdata["HIS"].push_back( RichardsonRotData( "p80 ",      26,      62,   80,             13, 10 ) ); //  50 to 120
 	rrdata["HIS"].push_back( RichardsonRotData( "t160",      31,    -177, -165,             12, 20 ) ); //   150 to -120
 	rrdata["HIS"].push_back( RichardsonRotData( "t80 ",      64,    -177,  -80,             10, 22 ) ); //   -120 to -50
-	rrdata["HIS"].push_back( RichardsonRotData( "t60 ",      94,    -177,   60,             13, 19 ) ); //   50 to 120
-	rrdata["HIS"].push_back( RichardsonRotData( "m70 ",     174,     -65,  -70,             11, 23 ) ); //   -120 to -30
+
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   41,             13, 19 ) ); //   50 to 120
+	       rrdata["HIS"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   60,             13, 19 ) ); //   50 to 120
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   79,             13, 19 ) ); //   50 to 120
+
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -47,             11, 23 ) ); //   -120 to -30
+	       rrdata["HIS"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -70,             11, 23 ) ); //   -120 to -30
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -93,             11, 23 ) ); //   -120 to -30
+
 	rrdata["HIS"].push_back( RichardsonRotData( "m170",      44,     -65,  165,             10, 16 ) ); //   120 to -160
-	rrdata["HIS"].push_back( RichardsonRotData( "m80 ",      78,     -65,   80,             11, 18 ) ); //   50 to 120
+
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   62,             11, 18 ) ); //   50 to 120
+	       rrdata["HIS"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   80,             11, 18 ) ); //   50 to 120
+	if(ER) rrdata["HIS"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   98,             11, 18 ) ); //   50 to 120
+
+			rrdata["HIS_D"].push_back( RichardsonRotData( "p80 ",      51,      62,  -75,             10, 12 ) ); //  -120 to -50
+			rrdata["HIS_D"].push_back( RichardsonRotData( "p80 ",      26,      62,   80,             13, 10 ) ); //  50 to 120
+			rrdata["HIS_D"].push_back( RichardsonRotData( "t160",      31,    -177, -165,             12, 20 ) ); //   150 to -120
+			rrdata["HIS_D"].push_back( RichardsonRotData( "t80 ",      64,    -177,  -80,             10, 22 ) ); //   -120 to -50
+
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   41,             13, 19 ) ); //   50 to 120
+			       rrdata["HIS_D"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   60,             13, 19 ) ); //   50 to 120
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "t60 ",     -94,    -177,   79,             13, 19 ) ); //   50 to 120
+
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -47,             11, 23 ) ); //   -120 to -30
+			       rrdata["HIS_D"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -70,             11, 23 ) ); //   -120 to -30
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "m70 ",    -174,     -65,  -93,             11, 23 ) ); //   -120 to -30
+
+			rrdata["HIS_D"].push_back( RichardsonRotData( "m170",      44,     -65,  165,             10, 16 ) ); //   120 to -160
+
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   62,             11, 18 ) ); //   50 to 120
+			       rrdata["HIS_D"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   80,             11, 18 ) ); //   50 to 120
+			if(ER) rrdata["HIS_D"].push_back( RichardsonRotData( "m80 ",     -78,     -65,   98,             11, 18 ) ); //   50 to 120
 
 
 
 			// Tryptophan // added ex2 "std dev" ex1 handled as "child" rotamer
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62, -100,             12, 10 ) );//   -130 to -60
-	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62,  -90,             12, 10 ) );//   -130 to -60
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      67 ,     62,  -80,             12, 10 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62, -100,             12, 10 ) );//   -130 to -60
+	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -90,             12, 10 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -80,             12, 10 ) );//   -130 to -60
 
 	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      34 ,     62,   90,             12,  8 ) );//   60 to 130
 
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177, -119,             16, 14 ) );//   -130 to -60
-	       rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177, -105,             16, 14 ) );//   -130 to -60
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",     100 ,   -177,  -92,             16, 14 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -119,             16, 14 ) );//   -130 to -60
+	       rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -105,             16, 14 ) );//   -130 to -60
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177,  -92,             16, 14 ) );//   -130 to -60
 
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,   79,             10, 11 ) );//   0 to 100
-	       rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,   90,             10, 11 ) );//   0 to 100
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",     109 ,   -177,  101,             10, 11 ) );//   0 to 100
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,   79,             10, 11 ) );//   0 to 100
+	       rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,   90,             10, 11 ) );//   0 to 100
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,  101,             10, 11 ) );//   0 to 100
 
-	       rrdata["TRP"].push_back( RichardsonRotData( "m90 ",      31 ,    -65,  -90,              9, 12 ) );//   -130 to -60
-
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,  -25,              9, 20 ) );//   -40 to 20
 	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   15,              9, 20 ) );//   -40 to 20
 
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   76,             11, 19 ) );//   60 to 130
-	       rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,   95,             11, 19 ) );//   60 to 130
-	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",     195 ,    -65,  114,             11, 19 ) );//   60 to 130
-
-
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   76,             11, 19 ) );//   60 to 130
+	       rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   95,             11, 19 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,  114,             11, 19 ) );//   60 to 130
 
 
 			// Tyrosine
-	rrdata["TYR"].push_back( RichardsonRotData( "p90 ",     182,      62,   90,     0,        13, 13, 0 ) );//   60 to 90, -90 to-60
-	rrdata["TYR"].push_back( RichardsonRotData( "p90 ",     182,      62,   90,   180,        13, 13, 0 ) );//   60 to 90, -90 to-60
+	for( float chi3 = 0.0f; chi3 < 181.0f; chi3 += 180.0f){
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "p90 ",    -182,      62,   73,     chi3,        13, 13, 0 ) );//   60 to 90, -90 to-60
+		       rrdata["TYR"].push_back( RichardsonRotData( "p90 ",    -182,      62,   90,     chi3,        13, 13, 0 ) );//   60 to 90, -90 to-60
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "p90 ",    -182,      62,  107,     chi3,        13, 13, 0 ) );//   60 to 90, -90 to-60
 
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "t80 ",    -486,    -177,   63,     chi3,        11, 14, 0 ) );//   20 to 90, -90 to -75
+		       rrdata["TYR"].push_back( RichardsonRotData( "t80 ",    -486,    -177,   80,     chi3,        11, 14, 0 ) );//   20 to 90, -90 to -75
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "t80 ",    -486,    -177,   97,     chi3,        11, 14, 0 ) );//   20 to 90, -90 to -75
 
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   63,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   63,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   63,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   63,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   63,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   63,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "m85 ",    -618,     -65, -106,     chi3,        11, 21, 0 ) );//   50 to 90, -90 to -50
+		       rrdata["TYR"].push_back( RichardsonRotData( "m85 ",    -618,     -65,  -85,     chi3,        11, 21, 0 ) );//   50 to 90, -90 to -50
+		if(ER) rrdata["TYR"].push_back( RichardsonRotData( "m85 ",    -618,     -65,  -64,     chi3,        11, 21, 0 ) );//   50 to 90, -90 to -50
 
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   80,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   80,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   80,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   80,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   80,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   80,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   97,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,     169,   97,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   97,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -177,   97,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   97,     0,        11, 14, 0 ) );//   20 to 90, -90 to -75
-	rrdata["TYR"].push_back( RichardsonRotData( "t80 ",     486,    -163,   97,   180,        11, 14, 0 ) );//   20 to 90, -90 to -75
-
-
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76, -106,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76, -106,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65, -106,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65, -106,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54, -106,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54, -106,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76,  -85,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76,  -85,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65,  -85,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65,  -85,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54,  -85,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54,  -85,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76,  -64,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -76,  -64,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65,  -64,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -65,  -64,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54,  -64,     0,        11, 21, 0 ) );//   50 to 90, -90 to -50
-	rrdata["TYR"].push_back( RichardsonRotData( "m85 ",     618,     -54,  -64,   180,        11, 21, 0 ) );//   50 to 90, -90 to -50
-
-
-	rrdata["TYR"].push_back( RichardsonRotData( "m30 ",      84,     -65,  -30,     0,        11, 18, 0 ) );//   -50 to 0, 0 to 50
-	rrdata["TYR"].push_back( RichardsonRotData( "m30 ",      84,     -65,  -30,   180,        11, 18, 0 ) );//   -50 to 0, 0 to 50
-	rrdata["TYR"].push_back( RichardsonRotData( "Sm35",      40,     -85,   30,     0,        11, 18, 0 ) );//
-	rrdata["TYR"].push_back( RichardsonRotData( "Sm35",      40,     -85,   30,   180,        11, 18, 0 ) );//
+		rrdata["TYR"].push_back( RichardsonRotData( "m30 ",      84,     -65,  -30,     chi3,        11, 18, 0 ) );//   -50 to 0, 0 to 50
+		rrdata["TYR"].push_back( RichardsonRotData( "Sm35",      40,     -85,   30,     chi3,        11, 18, 0 ) );//
+	}
 
 			// Phenylalanine
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,   79,             11, 11 ) );//   60 to 90, -90 to-60
-	       rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,   90,             11, 11 ) );//   60 to 90, -90 to-60
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",     202,      62,  101,             11, 11 ) );//   60 to 90, -90 to-60
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",    -202,      62,   79,             11, 11 ) );//   60 to 90, -90 to-60
+	       rrdata["PHE"].push_back( RichardsonRotData( "p90 ",    -202,      62,   90,             11, 11 ) );//   60 to 90, -90 to-60
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "p90 ",    -202,      62,  101,             11, 11 ) );//   60 to 90, -90 to-60
 
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   63,             13, 17 ) );//   20 to 90, -90 to -75
-	       rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   80,             13, 17 ) );//   20 to 90, -90 to -75
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",     522,    -177,   97,             13, 17 ) );//   20 to 90, -90 to -75
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",    -522,    -177,   63,             13, 17 ) );//   20 to 90, -90 to -75
+	       rrdata["PHE"].push_back( RichardsonRotData( "t80 ",    -522,    -177,   80,             13, 17 ) );//   20 to 90, -90 to -75
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "t80 ",    -522,    -177,   97,             13, 17 ) );//   20 to 90, -90 to -75
 
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65, -102,             12, 17 ) );//   50 to 90, -90 to -50
-	       rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65,  -85,             12, 17 ) );//   50 to 90, -90 to -50
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",     697,     -65,  -68,             12, 17 ) );//   50 to 90, -90 to -50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",    -697,     -65, -102,             12, 17 ) );//   50 to 90, -90 to -50
+	       rrdata["PHE"].push_back( RichardsonRotData( "m85 ",    -697,     -65,  -85,             12, 17 ) );//   50 to 90, -90 to -50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m85 ",    -697,     -65,  -68,             12, 17 ) );//   50 to 90, -90 to -50
 
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -50,              9, 20 ) );//   -50 to 0, 0 to 50
-	       rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -30,              9, 20 ) );//   -50 to 0, 0 to 50
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",     100,     -65,  -10,              9, 20 ) );//   -50 to 0, 0 to 50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",    -100,     -65,  -50,              9, 20 ) );//   -50 to 0, 0 to 50
+	       rrdata["PHE"].push_back( RichardsonRotData( "m30 ",    -100,     -65,  -30,              9, 20 ) );//   -50 to 0, 0 to 50
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "m30 ",    -100,     -65,  -10,              9, 20 ) );//   -50 to 0, 0 to 50
 
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   10,              9, 20 ) );//
-	       rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   30,              9, 20 ) );//
-	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",      49,     -85,   50,              9, 20 ) );//
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",     -49,     -85,   10,              9, 20 ) );//
+	       rrdata["PHE"].push_back( RichardsonRotData( "Sm35",     -49,     -85,   30,              9, 20 ) );//
+	if(ER) rrdata["PHE"].push_back( RichardsonRotData( "Sm35",     -49,     -85,   50,              9, 20 ) );//
 
 			// Proline
 	// rrdata["PRO"].push_back( RichardsonRotData( "Cyendo",   379,     30,                    7  ) );//        15 to 60
@@ -630,19 +693,19 @@ get_richardson_rot_data(
 	// rrdata["PRO"].push_back( RichardsonRotData( "cis   ",    56,     30,                    5  ) );//      15 to 60
 
 			// Threonine
-	rrdata["THR"].push_back( RichardsonRotData( "p",       1200,     62,                   10 ) );
-	rrdata["THR"].push_back( RichardsonRotData( "t",        169,   -175,                    6 ) );
-	rrdata["THR"].push_back( RichardsonRotData( "m",       1062,    -65,                    7 ) );
+	rrdata["THR"].push_back( RichardsonRotData( "p",       1200,     62,                 12/*10*/ ) );
+	rrdata["THR"].push_back( RichardsonRotData( "t",        169,   -175,                 12/* 6*/ ) );
+	rrdata["THR"].push_back( RichardsonRotData( "m",       1062,    -65,                 12/* 7*/ ) );
 
 			// Valine
-	rrdata["VAL"].push_back( RichardsonRotData( "p",        169,     63,                    8 ) );
-	rrdata["VAL"].push_back( RichardsonRotData( "t",       1931,    175,                    8 ) );
-	rrdata["VAL"].push_back( RichardsonRotData( "m",        526,    -60,                    7 ) );
+	rrdata["VAL"].push_back( RichardsonRotData( "p",        169,     63,                  12/*8*/) );
+	rrdata["VAL"].push_back( RichardsonRotData( "t",       1931,    175,                  12/*8*/) );
+	rrdata["VAL"].push_back( RichardsonRotData( "m",        526,    -60,                  12/*7*/) );
 
 			// Serine
-	rrdata["SER"].push_back( RichardsonRotData( "p",       1201,     62,                   10 ) );
-	rrdata["SER"].push_back( RichardsonRotData( "t",        541,   -177,                   11 ) );
-	rrdata["SER"].push_back( RichardsonRotData( "m",        714,    -65,                    9 ) );
+	rrdata["SER"].push_back( RichardsonRotData( "p",       1201,     62,                  12/*10*/ ) );
+	rrdata["SER"].push_back( RichardsonRotData( "t",        541,   -177,                  12/*11*/ ) );
+	rrdata["SER"].push_back( RichardsonRotData( "m",        714,    -65,                  12/* 9*/ ) );
 
 			// Cysteine
 			// p         64     62                   14
@@ -668,8 +731,11 @@ void
 get_rotamer_index(
 	RotamerIndex & rot_index,
 	bool extra_rotamers,
+	bool extra_primary_rotamers,
 	std::string cachefile
 ){
+	std::cout << "get_rotamer_index" << std::endl;
+
 	// todo cache
 	std::vector<std::string> resnames;
 		resnames.push_back("ALA");
@@ -679,6 +745,7 @@ get_rotamer_index(
 		resnames.push_back("PHE");
 		resnames.push_back("GLY");
 		resnames.push_back("HIS");
+		resnames.push_back("HIS_D");
 		resnames.push_back("ILE");
 		resnames.push_back("LYS");
 		resnames.push_back("LEU");
@@ -701,7 +768,11 @@ get_rotamer_index(
 
 
 	std::map<std::string,std::vector<RichardsonRotData> > rrdata;
-	get_richardson_rot_data( rrdata, extra_rotamers );
+	get_richardson_rot_data( rrdata, extra_primary_rotamers );
+	std::map<int,std::pair<std::string,RichardsonRotData const *>> rrd_map;
+
+	rot_index.add_rotamer( "ALA", std::vector<float>(), 0 );
+	rot_index.add_rotamer( "GLY", std::vector<float>(), 0 );
 
 	for( auto resname : resnames ){
 
@@ -750,93 +821,105 @@ get_rotamer_index(
 			if( resname=="THR" ) nex *= 18;
 			if( resname=="CYS" ) nex *=  3;
 
-			// std::cout << option[ex1::ex1]() << " " << option[ex1::level]() << std::endl;
-			// std::cout << option[ex2::ex2]() << " " << option[ex2::level]() << std::endl;
-			// std::cout << option[ex3::ex3]() << " " << option[ex3::level]() << std::endl;
-			// std::cout << option[ex4::ex4]() << " " << option[ex4::level]() << std::endl;
-			// std::cout << nex << std::endl;
+			// std::cerr << option[ex1::ex1]() << " " << option[ex1::level]() << std::endl;
+			// std::cerr << option[ex2::ex2]() << " " << option[ex2::level]() << std::endl;
+			// std::cerr << option[ex3::ex3]() << " " << option[ex3::level]() << std::endl;
+			// std::cerr << option[ex4::ex4]() << " " << option[ex4::level]() << std::endl;
+			// std::cerr << nex << std::endl;
 
 			size_t prev_parent_key = -1;
 			for(int irot = 1; irot <= rotset->num_rotamers(); ++irot){
-				bool is_primary = (irot-1)%(nex) == 0;
+				// bool is_primary = (irot-1)%(nex) == 0;
 				std::vector<float> chi;
-				// if( is_primary ) std::cout << "PRIMARY ";
-				// else             std::cout << "        ";
-				// std::cout << irot-1 << " " << resname;
+				// if( is_primary ) std::cerr << "PRIMARY ";
+				// else             std::cerr << "        ";
+				// std::cerr << irot-1 << " " << resname;
 				for(int ichi = 1; ichi <= rotset->rotamer(irot)->nchi(); ++ichi){
 					chi.push_back( rotset->rotamer(irot)->chi(ichi) );
-					// std::cout << " " << rotset->rotamer(irot)->chi(ichi);
+					// std::cerr << " " << rotset->rotamer(irot)->chi(ichi);
 				}
-				// std::cout << " " << prev_parent_key << std::endl;
-				if( is_primary )
-					prev_parent_key = rot_index.add_rotamer( resname, chi, n_proton_chi );
-				else
-					                  rot_index.add_rotamer( resname, chi, n_proton_chi, prev_parent_key );
+				// std::cerr << " " << prev_parent_key << std::endl;
+				// if( is_primary ){
+					// prev_parent_key = rot_index.add_rotamer( resname, chi, n_proton_chi );
+				// } else {
+					// rot_index.add_rotamer( resname, chi, n_proton_chi, prev_parent_key );
+				// }
+				rot_index.add_rotamer( resname, chi, n_proton_chi );
 			}
 
 		} else {
 
 			for( auto const & rrd : rrdata[resname] ){
-				using namespace basic::options::OptionKeys::packing;
-				using namespace basic::options;
-				// cout << "RichardsonRotData " << rrd.name << " " << rrd.nchi << endl;
-				std::vector< std::vector<float> > exchis;
-				bool ex1=false, ex2=false;
-				if( extra_rotamers){
-					if( resname == "PHE" ||
-						resname == "TRP" ||
-						resname == "LEU" ||
-						resname == "VAL" ||
-						resname == "MET" ||
-						resname == "ILE" )
-					{
-						ex1 = true;
-					}
-				}
-				rrd.get_ex_chis(
-				    ex1, //option[ex1::ex1](),
-				    ex2, //option[ex2::ex2](),
-				    false, //option[ex3::ex3](),
-				    false, //option[ex4::ex4](),
-				    exchis
-				);
-				// runtime_assert( exchis.size() == 1 );
-
-				int n_proton_chi = 0;
-				if( resname=="TYR" ) n_proton_chi = 1;
-				int parent_key = rot_index.add_rotamer( resname, exchis.front(), n_proton_chi );
-				for( int iex = 1; iex < exchis.size(); ++iex ){
-					rot_index.add_rotamer( resname, exchis[iex], n_proton_chi, parent_key );
-					// cout << iex;
-					// for( int ichi = 0; ichi < exchis[iex].size(); ++ichi){
-					// 	using ObjexxFCL::format::F;
-					// 	// cout << " " << F(7,3,exchis[iex][ichi]);
-					// }
-					// cout << endl;
-
-				}
+				int key = rot_index.add_rotamer( resname, rrd.get_chi(), n_proton_chi );
+				rrd_map[key] = std::make_pair(resname,&rrd);
 			}
 
-
-
 		}
-			// std::cout << "implement richardson bbind rots ALA" << std::endl;
-			// std::cout << "implement richardson bbind rots ALA" << std::endl;
-			// std::cout << "implement richardson bbind rots ALA" << std::endl;
-			// std::cout << "implement richardson bbind rots ALA" << std::endl;
-			// std::cout << "implement richardson bbind rots ALA" << std::endl;
+
 
 	}
 
-	rot_index.add_rotamer( "GLY", std::vector<float>(), 0, rot_index.size() );
-	rot_index.add_rotamer( "ALA", std::vector<float>(), 0, rot_index.size() );
+	if( extra_rotamers ){
+		int const orig_rotindex_size = rot_index.size();
+		std::cerr << "adding extra rotamers up to " << orig_rotindex_size << std::endl;
+
+		// add exrots here...
+		for( int irot = 0; irot < orig_rotindex_size; ++irot ){
+			if( rrd_map.find(irot) == rrd_map.end() ) continue;
+			std::string resname = rot_index.resname(irot);
+			int n_proton_chi = 0;
+			if( resname=="TYR" ) n_proton_chi = 1;
+			bool ex1 = true;
+			bool ex2 = true;
+			std::string rrdresname = rrd_map[irot].first;
+		 	RichardsonRotData const & rrd = *rrd_map[irot].second;
+			if( extra_primary_rotamers && rrd.count < 0) ex2 = false; // this is already an ex2 rotamer
+			runtime_assert(rot_index.resname(irot) == rrdresname);
+
+			std::vector< std::vector<float> > exchis;
+			rrd.get_ex_chis(
+			    ex1, //option[ex1::ex1](),
+			    ex2, //option[ex2::ex2](),
+			    false, //option[ex3::ex3](),
+			    false, //option[ex4::ex4](),
+			    exchis,
+			    false // is_primary
+			);
+			for( int iex = 0; iex < exchis.size(); ++iex ){
+				// std::cerr << irot << " " << resname << " " << iex << std::endl;
+				rot_index.add_rotamer( resname, exchis[iex], n_proton_chi, irot /*parent*/ );
+			}
+
+		}
+	}
 
 	rot_index.build_index();
+	// std::cerr << "done building index" << std::endl;
 
 	// for( std::string resname : resnames ){
-		// std::cout << resname << " " <<  rot_index.index_bounds( resname ).second - rot_index.index_bounds( resname ).first << std::endl;
+	// 	std::cerr << resname << " " <<  rot_index.index_bounds( resname ).second - rot_index.index_bounds( resname ).first << std::endl;
 	// }
-	// std::cout << rot_index.size() << std::endl;
+	// std::cerr << rot_index.size() << std::endl;
+
+	// for( int irot = 0; irot < rot_index.n_primary_rotamers(); ++irot ){
+	// 	utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 	rot_index.dump_pdb_with_children(out,irot);
+	// 	out.close();
+	// }
+
+	// for( int irot = 0; irot < rot_index.size(); ++irot ){
+	//  	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	//  	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
+	//  	out.close();
+	// }
+
+	// for( int isp : rot_index.structural_parents_ ){
+	// 	utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
+	// 	rot_index.dump_pdb_by_structure(out,isp);
+	// 	out.close();
+	// }
+
+	// utility_exit_with_message("testing out extra rotamers");
 
 }
 
@@ -929,7 +1012,7 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 		}
 		else if( rsd.is_protein() && rsd.atom_is_backbone(iacc) )
 		{
-			// std::cout << "IS BB " << ir << " " << iacc << std::endl;
+			// std::cerr << "IS BB " << ir << " " << iacc << std::endl;
 			std::string aname = rsd.atom_name(iacc);
 			auto caxyz = rsd.xyz("CA");
 			auto cxyz = rsd.xyz("C");

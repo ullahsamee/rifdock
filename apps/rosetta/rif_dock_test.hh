@@ -99,6 +99,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_soft_score )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_hard_score )
 
+	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 
 
@@ -203,7 +204,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
 		NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
 
-		NEW_OPT(  rif_dock::extra_rif_rotamers, "", false );
+		NEW_OPT(  rif_dock::extra_rotamers, "", true );
+		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 
 	}
 
@@ -272,6 +274,7 @@ struct RifDockOpt
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
 	int         n_pdb_out                            ;
+	bool        extra_rotamers                       ;
 	bool        extra_rif_rotamers                   ;
 
 	float       rosetta_score_fraction               ;
@@ -360,6 +363,7 @@ struct RifDockOpt
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();
 		n_pdb_out                              = option[rif_dock::n_pdb_out                             ]();
+		extra_rotamers                         = option[rif_dock::extra_rotamers                        ]();
 		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
 
   		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();

@@ -103,6 +103,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY(  Real         , rifgen, upweight_multi_hbond )
 	OPT_1GRP_KEY( IntegerVector , rifgen, repulsive_atoms )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
+	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rif_rotamers )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
@@ -157,7 +158,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::upweight_multi_hbond             , "" , 0.0 );
 		NEW_OPT(  rifgen::repulsive_atoms                  , "" , utility::vector1<int>() );
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
-		NEW_OPT(  rifgen::extra_rif_rotamers               , "" , false );
+		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
+		NEW_OPT(  rifgen::extra_rif_rotamers               , "" , true );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 1.0 );
@@ -392,7 +394,7 @@ int main(int argc, char *argv[]) {
 
 	shared_ptr<RotamerIndex> rot_index_p( new RotamerIndex );
 		RotamerIndex & rot_index( *rot_index_p );
-		get_rotamer_index( rot_index, option[rifgen::extra_rif_rotamers]() );
+		get_rotamer_index( rot_index, option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers]() );
 		// utility::io::ozstream riout( "trp_rots.pdb" );
 		// rot_index.dump_pdb( riout, "TRP" );
 		// riout.close();
@@ -642,6 +644,7 @@ int main(int argc, char *argv[]) {
 
 			std::string description = "from Will's rifgen app\n";
 			description += "rotamer set size : " + str(rot_index_p->size())+"\n";
+			description += "rotamer nprimary : " + str(rot_index_p->n_primary_rotamers())+"\n";
 			description += "          target : " + (std::string)option[rifgen::target]()+"\n";
 			description += "      target_res : " ; BOOST_FOREACH( int ir, target_res ) description += str(ir)+" "; description += "\n";
 			description += "          apores : " ; BOOST_FOREACH( std::string s, option[rifgen::apores]() ) description += s+" "; description += "\n";
@@ -849,6 +852,7 @@ int main(int argc, char *argv[]) {
 	for( auto s : bounding_grid_fnames )
 		std::cout << "-rif_dock:target_bounding_xmaps " << s << std::endl;
 		std::cout << "-rif_dock:target_rif            " << outfile << std::endl;
+		std::cout << "-rif_dock:extra_rotamers        " << option[rifgen::extra_rotamers]() << std::endl;
 		std::cout << "-rif_dock:extra_rif_rotamers    " << option[rifgen::extra_rif_rotamers]() << std::endl;
 	std::cout << "#################################################################################################################" << std::endl;
 

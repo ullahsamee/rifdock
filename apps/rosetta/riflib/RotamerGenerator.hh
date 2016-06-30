@@ -9,6 +9,7 @@
 #ifndef INCLUDED_riflib_RotamerGenerator_hh
 #define INCLUDED_riflib_RotamerGenerator_hh
 
+#include <riflib/types.hh>
 #include <core/types.hh>
 #include <core/pose/Pose.fwd.hh>
 #include <core/pack/rotamer_set/RotamerSet.fwd.hh>
@@ -33,7 +34,8 @@ struct RosettaRotamerGenerator;
 
 typedef ::scheme::chemical::RotamerIndex<
 	SchemeAtom,
-	RosettaRotamerGenerator
+	RosettaRotamerGenerator,
+	EigenXform
 > RotamerIndex;
 
 using ::scheme::chemical::HBondRay;
@@ -89,6 +91,7 @@ void
 get_rotamer_index(
 	RotamerIndex & rot_index,
 	bool extra_rotamers,
+	bool extra_primary_rotamers,
 	std::string cachefile=""
 );
 

@@ -90,6 +90,10 @@ get_res(
 	}
 	in.close();
 
+	std::set<core::Size> uniq;
+	std::copy(res.begin(), res.end(), std::inserter(uniq, uniq.begin()));
+	res.clear();
+	std::copy(uniq.begin(), uniq.end(), std::back_inserter(res));
 	std::sort( res.begin(), res.end() );
 	if( nocgp ){
 		for( int iri = 1; iri <= res.size(); ++iri ){

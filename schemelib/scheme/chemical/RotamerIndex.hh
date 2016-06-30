@@ -4,9 +4,9 @@
 #include "scheme/util/assert.hh"
 #include "scheme/util/str.hh"
 #include "scheme/chemical/AtomData.hh"
+#include "scheme/chemical/stub.hh"
 #include "scheme/io/dump_pdb_atom.hh"
 
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
 #include <cstdlib>
@@ -14,7 +14,6 @@
 #include <iostream>
 #include <map>
 #include <cmath>
-
 #include <Eigen/Dense>
 
 namespace scheme { namespace chemical {
@@ -88,24 +87,30 @@ struct Rotamer {
 		uint64_t h = (uint64_t)(boost::hash<std::string>()(resname_));
 		h ^= (uint64_t)boost::hash<size_t>()(n_proton_chi_);
 		for(int i = 0; i < chi_.size(); ++i){
-			h ^= (uint64_t)boost::hash<float>()(chi_[i]);
+			h ^= (uint64_t)boost::hash<float>()(chi_.at(i));
 		}
 		return h;
 	}
 };
 
+	template<class F=float>
+	bool angle_is_close( F a, F b, F d ){
+		F diff = std::min( std::abs(a-b+360.0f), std::abs(a-b-360.0f) );
+		diff = std::min( diff, std::abs(a-b) );
+		return diff <= d;
+	}
+
 }
 
 
-template<class _Atom, class RotamerGenerator>
+template<class _Atom, class RotamerGenerator, class Xform>
 struct RotamerIndex {
 	BOOST_STATIC_ASSERT(( ( boost::is_same< _Atom, typename RotamerGenerator::Atom >::value ) ));
 	typedef _Atom Atom;
 	typedef impl::Rotamer<Atom> Rotamer;
-	typedef std::map<std::string,std::pair<int,int> > BoundsMap;
-	typedef std::vector< std::pair<int,int> > ChildMap; // index is "primary" index, not rotamer number
 
 	size_t size() const { return rotamers_.size(); }
+	size_t n_primary_rotamers() const { return n_primary_rotamers_; }
 	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
 	char oneletter(size_t i) const { return oneletter_map_.at(rotamers_.at(i).resname_); }
 	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
@@ -119,23 +124,33 @@ struct RotamerIndex {
 	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
 	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
 	size_t parent_irot( size_t i ) const { return parent_rotamer_.at(i); }
+	int same_struct_start_chi(size_t irot) const { return (resname(irot)=="ILE") ? 1 : 2; }
 
 	std::map<std::string,char> oneletter_map_;
 
 	ChemicalIndex<AtomData> chem_index_;
 
 	std::vector< Rotamer > rotamers_;
-	Rotamer const & rotamer( int irot ) const { return rotamers_[irot]; }
+	Rotamer const & rotamer( int irot ) const { return rotamers_.at(irot); }
 
-	std::vector< int > primary_rotamers_; // rot # of non-ex rotamers
-	std::vector< int > parent_rotamer_; //
-	std::vector< int > parent_primary_; // pri-rot # of primary parent
+	int n_primary_rotamers_ = 0;
+	bool seen_child_rotamer = false;
+	std::vector< int > parent_rotamer_;
+	// std::vector< int > parent_primary_; // pri-rot # of primary parent
 	RotamerGenerator rotgen_;
+
+	typedef std::map<std::string,std::pair<int,int> > BoundsMap;
 	BoundsMap bounds_map_;
+
+	typedef std::vector< std::pair<int,int> > ChildMap; // index is "primary" index, not rotamer number
 	ChildMap child_map_;
-	std::map<int,int> parent_to_primary_;
-	std::vector<int> protonchi_parent_;
+	std::vector<int> protonchi_parent_of_;
 	int ala_rot_;
+
+	std::vector<int> structural_parents_;
+	std::vector<int> structural_parent_of_;
+	std::vector<Xform> to_structural_parent_frame_;
+
 
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
@@ -149,6 +164,9 @@ struct RotamerIndex {
 		int n_proton_chi,
 		int parent_key = -1
 	){
+		ALWAYS_ASSERT_MSG( n_primary_rotamers_!=0 || parent_key == -1, "must add primary rotamers before children" )
+		ALWAYS_ASSERT_MSG( !seen_child_rotamer || parent_key != -1, "can't intsert primary rotamer after inserting child" )
+		ALWAYS_ASSERT( parent_key == -1 || parent_key < n_primary_rotamers_ );
 		Rotamer r;
 		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms, r.donors_, r.acceptors_ );
 		r.resname_ = resname;
@@ -156,76 +174,157 @@ struct RotamerIndex {
 		r.n_proton_chi_ = n_proton_chi;
 		rotamers_.push_back(r);
 		int this_key = rotamers_.size()-1;
-		if( parent_key >= 0 ) parent_rotamer_.push_back( parent_key );
-		else                  parent_rotamer_.push_back( this_key );
-
-
+		if( parent_key == -1 ){
+			n_primary_rotamers_ = this_key+1;
+			parent_rotamer_.push_back( this_key );
+		} else {
+			seen_child_rotamer = true;
+			parent_rotamer_.push_back( parent_key );
+		}
 		return this_key;
 	}
 
 	void
 	build_index()
 	{
+
 		// bounds
 		bounds_map_[ rotamers_.front().resname_ ].first = 0;
-		for(int i = 1; i < rotamers_.size(); ++i){
-			if( rotamers_[i].resname_ != rotamers_[i-1].resname_ ){
-				bounds_map_[ rotamers_[i-1].resname_ ].second = i;
-				bounds_map_[ rotamers_[i  ].resname_ ].first  = i;
+		for(int i = 1; i < n_primary_rotamers_; ++i){
+			if( rotamers_.at(i).resname_ != rotamers_.at(i-1).resname_ ){
+				bounds_map_[ resname(i-1) ].second  = i;
+				bounds_map_[ resname(i  ) ].first   = i;
 			}
 		}
-		bounds_map_[ rotamers_.back().resname_ ].second = rotamers_.size();
+		bounds_map_[ rotamers_.back().resname_ ].second = n_primary_rotamers_;
 
 		// primary rotamers
-		for(int i = 0; i < rotamers_.size(); ++i){
-			if( parent_rotamer_[i]==i ) primary_rotamers_.push_back(i);
-			parent_to_primary_[i] = primary_rotamers_.size()-1;
-		}
+		// for(int i = 0; i < rotamers_.size(); ++i){
+			// if( parent_rotamer_.at(i)==i ) primary_rotamers_.push_back(i);
+			// to_primary_index.at(i) = n_primary_rotamers_-1;
+		// }
 
-		child_map_.resize(primary_rotamers_.size(),std::make_pair( std::numeric_limits<int>::max(),std::numeric_limits<int>::min() ));
+		// assumes all children are contiguous!!!!!!!!!
+		child_map_.resize(n_primary_rotamers_,std::make_pair( std::numeric_limits<int>::max(),std::numeric_limits<int>::min() ));
+		std::vector<int> child_count(n_primary_rotamers_,0);
 		for(int i = 0; i < rotamers_.size(); ++i){
-			int ipri = parent_to_primary_[ parent_rotamer_[i] ];
-			child_map_[ipri].first  = std::min( child_map_[ipri].first , i );
-			child_map_[ipri].second = std::max( child_map_[ipri].second, i );
+			if( is_primary(i) ) continue; // primary not in list of children
+			int ipri = parent_rotamer_.at(i);
+			child_count.at(ipri)++;
+			child_map_.at(ipri).first  = std::min( child_map_.at(ipri).first , i );
+			child_map_.at(ipri).second = std::max( child_map_.at(ipri).second, i );
 		}
-		for(int ipri = 0; ipri < child_map_.size(); ++ipri) ++child_map_[ipri].second;
-
-		for(int i = 0; i < rotamers_.size(); ++i){
-			if( chem_index_.have_res( rotamers_[i].resname_ ) ) continue;
-			for( int ia = 0; ia < rotamers_[i].atoms_.size(); ++ia ){
-				chem_index_.add_atomdata( rotamers_[i].resname_, ia, rotamers_[i].atoms_[ia].data() );
+		for(int ipri = 0; ipri < child_map_.size(); ++ipri){
+			if( child_count.at(ipri) ){
+				++child_map_.at(ipri).second;
+			} else {
+				child_map_.at(ipri).first = 0;
+				child_map_.at(ipri).second = 0;
 			}
 		}
 
+		for(int i = 0; i < size(); ++i){
+			if( chem_index_.have_res( resname(i) ) ) continue;
+			for( int ia = 0; ia < natoms(i); ++ia ){
+				chem_index_.add_atomdata( resname(i), ia, atom(i,ia).data() );
+			}
+		}
 
-		protonchi_parent_.resize(this->size(),-2);
-		protonchi_parent_[0] = 0;
-		int last = 0;
-		for( int i = 1; i < this->size(); ++i ){
-			// cout << this->resname(i) << " " << this->nchi(i) << " " << this->nchi_noproton(i) << endl;
-			if( this->resname(i) != this->resname(i-1) ){
-				protonchi_parent_[i] = i;
-				last = i;
-			} else {
-				for( int j = 0; j < this->nchi_noproton(i); ++j ){
-					if( this->chi(i,j) != this->chi(i-1,j) ){
-						protonchi_parent_[i] = i;
-						last = i;
-					}
+		protonchi_parent_of_.resize(size(),-1);
+		for(int k = 0; k < size(); ++k) protonchi_parent_of_[k] = k;
+		for( int irot = 0; irot < size(); ++irot ){
+			if( nprotonchi(irot) == 0 ) continue;
+			for( int jrot = 0; jrot < irot; ++jrot){
+				if( oneletter(irot) != oneletter(jrot) ) continue;
+				bool same_noproton_chi = true;
+				for( int ichi = 0; ichi < nchi_noproton(irot); ++ichi ){
+					same_noproton_chi &= impl::angle_is_close( chi(irot,ichi), chi(jrot,ichi), 0.001f );
+				}
+				if(same_noproton_chi){
+					protonchi_parent_of_.at(irot) = jrot;
+					// std::cerr << "pcp " << resname(irot) << " " << irot << " " << jrot;
+					// for( int ichi = 0; ichi < nchi(irot); ++ichi){
+						// std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
+					// }
+					// std::cerr << std::endl;
+					break;
 				}
 			}
-			if( protonchi_parent_[i] == -2 ) protonchi_parent_[i] = last;
 		}
-		int uniq_sum = 0;
-		for( int i = 0; i < this->size(); ++i ){
-			// cout << I(3,i) << " " << this->resname(i);
-			for( int j = 0; j < this->nchi(i); ++j ){
-				// cout << " " << F(7,2,this->chi(i,j));
+		{
+			for( int irot = 0; irot < size(); ++irot ){
+				ALWAYS_ASSERT( protonchi_parent_of_.at(irot) >= 0 && protonchi_parent_of_.at(irot) <= irot );
 			}
-			// cout << " " << I(3,protonchi_parent_[i]) << endl;
-			uniq_sum += ( i == protonchi_parent_[i] );
+			int uniq_sum = 0;
+			for( int i = 0; i < this->size(); ++i ){
+				uniq_sum += ( i == protonchi_parent_of_.at(i) );
+			}
+			std::cerr << "total num protonchi_parent_of_ " << uniq_sum << std::endl;
 		}
-		std::cout << "n protonchi_parent_ " << uniq_sum << std::endl;
+
+		structural_parent_of_.resize(size(),-1);
+		for(int k = 0; k < size(); ++k) structural_parent_of_[k] = k;
+		for( int irot = 0; irot < size(); ++irot ){
+			for( int jrot = 0; jrot < irot; ++jrot){
+				if( oneletter(irot) != oneletter(jrot) ) continue;
+				bool same_chi34 = true;
+				for( int ichi = same_struct_start_chi(irot); ichi < nchi_noproton(irot); ++ichi ){
+					same_chi34 &= impl::angle_is_close( chi(irot,ichi), chi(jrot,ichi), 0.001f );
+				}
+				if(same_chi34){
+					structural_parent_of_.at(irot) = jrot;
+					// std::cerr << "chi34 " << resname(irot) << " " << irot << " " << jrot;
+					// for( int ichi = 0; ichi < nchi(irot); ++ichi){
+						// std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
+					// }
+					// std::cerr << std::endl;
+					break;
+				}
+			}
+		}
+		for( int irot = 0; irot < size(); ++irot ){
+			if(structural_parent_of_.at(irot) == irot ) structural_parents_.push_back(irot);
+		}
+		{
+			for( int irot = 0; irot < size(); ++irot ){
+				ALWAYS_ASSERT( structural_parent_of_.at(irot) >= 0 && structural_parent_of_.at(irot) <= irot );
+			}
+			int uniq_sum = 0;
+			for( int irot = 0; irot < size(); ++irot ){
+				uniq_sum += ( irot == structural_parent_of_.at(irot) );
+				if( structural_parent_of_.at(irot)==irot ){
+					std::cerr << "chi12_parent: " << irot << " " << resname(irot);
+					for( int ichi = 0; ichi < nchi(irot); ++ichi){
+						std::cerr << " " << chi(irot,ichi);
+					}
+					// std::cerr << std::endl;
+					int nchild = 0;
+					for( int jrot = irot+1; jrot < size(); ++jrot ){
+						if( structural_parent_of_.at(jrot) == irot ){
+							// std::cerr << "       child: " << jrot << " " << resname(jrot);
+							// for( int ichi = 0; ichi < nchi(jrot); ++ichi){
+								// std::cerr << " " << chi(jrot,ichi);
+							// }
+							// std::cerr << std::endl;
+							nchild++;
+						}
+					}
+					std::cerr << " nchild: " << nchild << std::endl;
+				}
+			}
+			std::cerr << "total num structural_parents_ " << structural_parents_.size() << std::endl;
+		}
+
+		to_structural_parent_frame_.resize(size(),Xform::Identity());
+		for( int irot = 0; irot < size(); ++irot ){
+			int isp = structural_parent_of_.at(irot);
+			if( isp != irot ){ // if same, leave as identity
+				Xform xparent = make_sidechain_stub(isp);
+				Xform xthis   = make_sidechain_stub(irot);
+				to_structural_parent_frame_[irot] = xparent * xthis.inverse();
+			}
+		}
+
 
 		for( int i = 0; i < this->size(); ++i ){
 			if( resname(i) == "ALA" ){
@@ -240,67 +339,117 @@ struct RotamerIndex {
 	bool
 	sanity_check() const
 	{
-		// std::cout << "SANITY_CHECK" << std::endl;
-		typedef std::pair<std::string,std::pair<int,int> > TMP;
-		BOOST_FOREACH( TMP const & tmp, bounds_map_ ){
-			// std::cout << tmp.first << " " << tmp.second.first << " " << tmp.second.second << std::endl;
+		using std::cerr;
+		using std::endl;
+
+		// cerr << "SANITY_CHECK" << endl;
+		for( auto const & tmp : bounds_map_ ){
+			// cerr << tmp.first << " " << tmp.second.first << " " << tmp.second.second << endl;
 			ALWAYS_ASSERT_MSG( tmp.second.first <= tmp.second.second, "RotamerIndex::sanity_check FAIL" );
 		}
-		for(int i = 0; i < primary_rotamers_.size(); ++i){
-			ALWAYS_ASSERT( parent_rotamer_.at(primary_rotamers_.at(i))==primary_rotamers_.at(i) );
+
+		for( int irot = 0; irot < size(); ++irot ){
+			for( int jrot = 0; jrot < irot; ++jrot ){
+				if( resname(irot) != resname(jrot) ) continue;
+				bool duplicate_rotamer = true;
+				for(int ichi = 0; ichi < nchi(irot); ++ichi){
+					duplicate_rotamer &= impl::angle_is_close( chi(irot,ichi), chi(jrot,ichi), 5.0f );
+				}
+				if( duplicate_rotamer ){
+					cerr << "duplicate_rotamer" << endl;
+					cerr << irot << " " << resname(irot);
+					for(int ichi = 0; ichi < nchi(irot); ++ichi) cerr << " " << chi(irot,ichi); cerr << endl;
+					cerr << jrot << " " << resname(jrot);
+					for(int ichi = 0; ichi < nchi(jrot); ++ichi) cerr << " " << chi(jrot,ichi); cerr << endl;
+				}
+				ALWAYS_ASSERT( !duplicate_rotamer )
+			}
 		}
-		for( int irot = 0; irot < rotamers_.size(); ++irot ){
-			int ipri = parent_rotamer_[irot];
-			ALWAYS_ASSERT_MSG( rotamers_.at(irot).resname_ == rotamers_.at(ipri).resname_, "RotamerIndex::sanity_check FAIL" );
+
+		for( int irot = 0; irot < size(); ++irot ){
+			int ipri = parent_rotamer_.at(irot);
+			ALWAYS_ASSERT_MSG( resname(irot) == resname(ipri), "RotamerIndex::sanity_check FAIL" );
 			ALWAYS_ASSERT_MSG( rotamers_.at(irot).chi_.size() == rotamers_.at(ipri).chi_.size(), "RotamerIndex::sanity_check FAIL" );
 			ALWAYS_ASSERT( rotamers_.at(ipri).n_proton_chi_ <= 1 );
 			int nchi = rotamers_.at(ipri).chi_.size() - rotamers_.at(ipri).n_proton_chi_;
 			for(int ichi = 0; ichi < nchi; ++ichi){
-				float child_chi = rotamers_.at(irot).chi_.at(ichi);
-				float parent_chi = rotamers_.at(ipri).chi_.at(ichi);
+				float child_chi = chi(irot,ichi);
+				float parent_chi = chi(ipri,ichi);
 				float chidiff = std::fabs(parent_chi-child_chi);
 				chidiff = std::min( chidiff, 360.0f-chidiff );
-				// std::cout << rotamers_.at(irot).resname_ << " " << ichi << " " << parent_chi << " " << child_chi << " " << chidiff << std::endl;
+				// cerr << resname(irot) << " " << ichi << " " << parent_chi << " " << child_chi << " " << chidiff << endl;
 				if( ichi==nchi-1 ){
 					ALWAYS_ASSERT_MSG( chidiff < 30.0, "parent chi more than 30° from child! "
-						+rotamers_.at(irot).resname_+", "+str(parent_chi)+" vs "+str(child_chi) );
+						+resname(irot)+", "+str(parent_chi)+" vs "+str(child_chi) );
 				} else {
 					ALWAYS_ASSERT_MSG( chidiff < 20.0, "parent chi more than 20° from child! "
-						+rotamers_.at(irot).resname_+", "+str(parent_chi)+" vs "+str(child_chi) );
+						+resname(irot)+", "+str(parent_chi)+" vs "+str(child_chi) );
 				}
 			}
 		}
 
-		for( int irot = 0; irot < rotamers_.size(); ++irot ){
-			int ipri = parent_to_primary_.find( parent_rotamer_.at(irot) )->second;
+		for( int irot = 0; irot < size(); ++irot ){
+			if( is_primary(irot) ) continue;
+			int ipri = parent_rotamer_.at(irot);
 			ALWAYS_ASSERT( child_map_.at(ipri).first <= irot );
 			ALWAYS_ASSERT( child_map_.at(ipri).second > irot )
 		}
 
-		for( int ipri = 0; ipri < primary_rotamers_.size(); ++ipri ){
-			int iparent = primary_rotamers_.at(ipri);
-			for( int irot = child_map_[ipri].first; irot < child_map_[ipri].second; ++irot ){
-				ALWAYS_ASSERT( parent_rotamer_.at(irot) == iparent );
+		for( int ipri = 0; ipri < n_primary_rotamers_; ++ipri ){
+			for( int ichild = child_map_.at(ipri).first; ichild < child_map_.at(ipri).second; ++ichild ){
+				ALWAYS_ASSERT( parent_rotamer_.at(ichild) == ipri )
+				ALWAYS_ASSERT( resname(ipri) == resname(ichild) )
+				ALWAYS_ASSERT( nchi(ipri) == nchi(ichild) )
+				ALWAYS_ASSERT( nprotonchi(ipri) == nprotonchi(ichild) )
+				ALWAYS_ASSERT( natoms(ipri) == natoms(ichild) )
+				ALWAYS_ASSERT( nheavyatoms(ipri) == nheavyatoms(ichild) )
+				for(int ichi = 0; ichi < nchi(ipri); ++ichi){
+					ALWAYS_ASSERT( impl::angle_is_close( chi(ipri,ichi), chi(ichild,ichi), 30.0f ) )
+				}
 			}
 		}
 
-		for( int irot = 0; irot < rotamers_.size(); ++irot ){
-
-			for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
-				AtomData const & ad1( rotamers_[irot].atoms_[ia].data() );
-				// std::cout <<  rotamers_[irot].resname_ << std::endl;
-				AtomData const & ad2( chem_index_.atom_data( rotamers_[irot].resname_, ia ) );
+		for( int irot = 0; irot < size(); ++irot ){
+			for( int ia = 0; ia < rotamers_.at(irot).atoms_.size(); ++ia ){
+				AtomData const & ad1( rotamers_.at(irot).atoms_[ia].data() );
+				// cerr <<  resname(irot) << endl;
+				AtomData const & ad2( chem_index_.atom_data( resname(irot), ia ) );
 				ALWAYS_ASSERT( ad1 == ad2 );
 			}
 		}
 
-		for( int i = 0; i < this->size(); ++i ){
-			ALWAYS_ASSERT( 0 <= protonchi_parent_[i] && protonchi_parent_[i] < this->size() );
-			ALWAYS_ASSERT( resname( protonchi_parent_[i] ) == resname(i) )
-			// this is weak....
+		for( int irot = 0; irot < size(); ++irot ){
+			int ipcp = protonchi_parent_of_.at(irot);
+			ALWAYS_ASSERT( 0 <= protonchi_parent_of_.at(irot) && ipcp < this->size() );
+			ALWAYS_ASSERT( resname(ipcp) == resname(irot) )
+			ALWAYS_ASSERT( nchi(irot) == nchi(ipcp) )
+			ALWAYS_ASSERT( nprotonchi(irot) == nprotonchi(ipcp) )
+			ALWAYS_ASSERT( natoms(irot) == natoms(ipcp) )
+			ALWAYS_ASSERT( nheavyatoms(irot) == nheavyatoms(ipcp) )
+			for(int ichi = 0; ichi < nchi_noproton(irot); ++ichi){
+				ALWAYS_ASSERT( impl::angle_is_close( chi(irot,ichi), chi(ipcp,ichi), 0.001f ) )
+			}
+		}
+
+		for( int irot = 0; irot < size(); ++irot ){
+			int isp = structural_parent_of_.at(irot);
+			ALWAYS_ASSERT( 0 <= structural_parent_of_.at(irot) && isp < this->size() );
+			ALWAYS_ASSERT( resname(isp) == resname(irot) || resname(irot)=="HIS_D" )
+			ALWAYS_ASSERT( nchi(irot) == nchi(isp) )
+			ALWAYS_ASSERT( nprotonchi(irot) == nprotonchi(isp) )
+			ALWAYS_ASSERT( natoms(irot) == natoms(isp) )
+			ALWAYS_ASSERT( nheavyatoms(irot) == nheavyatoms(isp) )
+			for(int ichi = same_struct_start_chi(irot); ichi < nchi_noproton(irot); ++ichi){
+				ALWAYS_ASSERT( impl::angle_is_close( chi(irot,ichi), chi(isp,ichi), 0.001f ) )
+			}
 		}
 
 		ALWAYS_ASSERT( resname(ala_rot_) == "ALA" );
+
+		for( int irot = 0; irot < size(); ++irot ){
+			if( irot < n_primary_rotamers_ ){ ALWAYS_ASSERT(  is_primary(irot) ) }
+			else                            { ALWAYS_ASSERT( !is_primary(irot) ) }
+		}
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
@@ -320,46 +469,77 @@ struct RotamerIndex {
 		return child_map_.at(ipri);
 	}
 
-	bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
+	Xform
+	make_sidechain_stub(int irot) const {
+		// std::cerr << "make_sidechain_stub " << irot << " "<< nheavyatoms(irot) << std::endl;
+		int const n = nheavyatoms(irot);
+		auto p0 = rotamers_.at(irot).atoms_.at(n-1).position();
+		auto p1 = rotamers_.at(irot).atoms_.at(n-2).position();
+		auto p2 = rotamers_.at(irot).atoms_.at(n-3).position();
+		return ::scheme::chemical::make_stub<Xform>(p0, p1, p2);
+	}
 
-	void dump_pdb( std::ostream & out, std::string resname="" ) const {
+	// bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
+	bool is_primary( int irot ) const { return irot < n_primary_rotamers_; }
+
+	void dump_pdb( std::ostream & out, int irot, Xform x=Xform::Identity() ) const {
+		// std::cerr << resname(irot) << " " << irot;
+		// for(int i = 0; i < rotamers_.at(irot).chi_.size(); ++i) std::cerr << " " << rotamers_.at(irot).chi_.at(i);
+		// std::cerr << std::endl;
+		out << "MODEL " << resname(irot) << " " << irot << std::endl;
+		for( auto const & a : rotamers_.at(irot).atoms_ ){
+			auto a2 = a;
+			a2.set_position( x * a2.position() );
+			out << scheme::io::dump_pdb_atom(a2) << std::endl;
+		}
+		// out << "ENDMDL" << irot << std::endl;
+		// out << "MODEL " << resname(irot) << " " << ++rescount << " " << irot << " HBONDERS" << std::endl;
+		// for( auto const & h : rotamers_.at(irot).hbonders_ ){
+		// 	out << scheme::io::dump_pdb_atom(h.first) << std::endl;
+		// 	out << scheme::io::dump_pdb_atom(h.second) << std::endl;
+		// }
+		for( auto const & hr : rotamers_.at(irot).donors_ ){
+			scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "CDON", x*(hr.horb_cen) );
+			scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "DDON", x*(hr.horb_cen+hr.direction) );
+		}
+		for( auto const & hr : rotamers_.at(irot).acceptors_ ){
+			scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "CACC", x*(hr.horb_cen) );
+			scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "DACC", x*(hr.horb_cen+hr.direction) );
+		}
+		out << "ENDMDL" << std::endl;
+	}
+
+	void dump_pdb( std::ostream & out, std::string resn="" ) const {
 		std::pair<int,int> b(0,rotamers_.size());
-		if( resname.size() ) b = index_bounds(resname);
+		if( resn.size() ) b = index_bounds(resn);
 		int rescount = 0;
 		for(int irot = b.first; irot < b.second; ++irot){
-			// std::cout << rotamers_[irot].resname_ << " " << irot;
-			// for(int i = 0; i < rotamers_[irot].chi_.size(); ++i) std::cout << " " << rotamers_[irot].chi_[i];
-			// std::cout << std::endl;
-			out << "MODEL " << rotamers_[irot].resname_ << " " << ++rescount << " " << irot << std::endl;
-			BOOST_FOREACH( Atom const & a, rotamers_[irot].atoms_ ){
-				out << scheme::io::dump_pdb_atom(a) << std::endl;
-			}
-			// out << "ENDMDL" << irot << std::endl;
-			// out << "MODEL " << rotamers_[irot].resname_ << " " << ++rescount << " " << irot << " HBONDERS" << std::endl;
-			typedef std::pair<Atom,Atom> TMP;
-			BOOST_FOREACH( TMP const & h, rotamers_[irot].hbonders_ ){
-				out << scheme::io::dump_pdb_atom(h.first) << std::endl;
-				out << scheme::io::dump_pdb_atom(h.second) << std::endl;
-			}
-			BOOST_FOREACH( HBondRay const & hr, rotamers_[irot].donors_ ){
-				scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "CDON", hr.horb_cen );
-				scheme::io::dump_pdb_atom_resname_atomname( out, "DON", "DDON", hr.horb_cen+hr.direction*0.1 );
-			}
-			BOOST_FOREACH( HBondRay const & hr, rotamers_[irot].acceptors_ ){
-				scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "CACC", hr.horb_cen );
-				scheme::io::dump_pdb_atom_resname_atomname( out, "ACC", "DACC", hr.horb_cen+hr.direction*0.1 );
-			}
-			out << "ENDMDL" << std::endl;
+			dump_pdb( out, irot );
 		}
 	}
 
-	template< class Xform >
-	void dump_pdb( std::ostream & out, int irot, Xform x, int ires ) const {
-		for( int ia = 0; ia < rotamers_[irot].atoms_.size(); ++ia ){
-			io::dump_pdb_atom( out, x*rotamers_[irot].atoms_[ia].position(), rotamers_[irot].atoms_[ia].data(), ires );
+	void dump_pdb_with_children( std::ostream & out, int iparent ) const {
+		ALWAYS_ASSERT( iparent < n_primary_rotamers_ )
+		dump_pdb(out, iparent );
+		for( int ichild = child_map_.at(iparent).first; ichild < child_map_.at(iparent).second; ++ichild ){
+			dump_pdb(out, ichild);
 		}
-		typedef std::pair<Atom,Atom> TMP;
-		BOOST_FOREACH( TMP const & h, rotamers_[irot].hbonders_ ){
+	}
+
+	void dump_pdb_by_structure( std::ostream & out, int isp ) const {
+		for( int isc = 0; isc < size(); ++isc ){
+			if( structural_parent_of_.at(isc) == isp ){
+				dump_pdb( out, isc, to_structural_parent_frame_.at(isc) );
+			}
+		}
+	}
+
+	// template< class Xform >
+	void dump_pdb( std::ostream & out, int irot, Xform x, int ires ) const {
+		for( int ia = 0; ia < rotamers_.at(irot).atoms_.size(); ++ia ){
+			io::dump_pdb_atom( out, x*rotamers_.at(irot).atoms_[ia].position(), rotamers_.at(irot).atoms_[ia].data(), ires );
+		}
+		for( auto const & h : rotamers_.at(irot).hbonders_ ){
 			// io::dump_pdb_atom( out, x*h.first .position(), h.first .data(), ires );
 			if( h.second.type() < 0 ){ // is acceptor orbital
 				io::dump_pdb_atom( out, x*h.second.position(), h.second.data(), ires );
@@ -379,13 +559,14 @@ struct RotamerIndex {
 
 	uint64_t validation_hash() const {
 		uint64_t h = 0;
-		BOOST_FOREACH( Rotamer const & rot, rotamers_  ){
+		for( Rotamer const & rot : rotamers_  ){
 			h ^= rot.validation_hash();
 		}
 		return h;
 	}
 
-	int protonchi_parent( int i ) const { return protonchi_parent_[i]; }
+	int protonchi_parent( int i ) const { return protonchi_parent_of_.at(i); }
+	int chi12_parent( int i ) const { return structural_parent_of_.at(i); }
 
 
 	void fill_oneletter_map( std::map<std::string,char> & oneletter_map ){
@@ -396,6 +577,7 @@ struct RotamerIndex {
 		oneletter_map["PHE"] = 'F';
 		oneletter_map["GLY"] = 'G';
 		oneletter_map["HIS"] = 'H';
+		oneletter_map["HIS_D"] = 'H';
 		oneletter_map["ILE"] = 'I';
 		oneletter_map["LYS"] = 'K';
 		oneletter_map["LEU"] = 'L';
@@ -428,6 +610,7 @@ struct RotamerIndex {
 		oneletter_map["phe"] = 'F';
 		oneletter_map["gly"] = 'G';
 		oneletter_map["his"] = 'H';
+		oneletter_map["his_d"] = 'H';
 		oneletter_map["ile"] = 'I';
 		oneletter_map["lys"] = 'K';
 		oneletter_map["leu"] = 'L';
@@ -458,8 +641,8 @@ struct RotamerIndex {
 };
 
 
-template<class A, class RG>
-std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG> const & ridx ){
+template<class A, class RG, class X>
+std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG,X> const & ridx ){
 	out << "RotamerIndex:" << std::endl;
 	std::pair<int,int> ib;
 	ib=ridx.index_bounds("ALA"); out<<"    ALA "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
