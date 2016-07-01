@@ -451,7 +451,7 @@ int main(int argc, char *argv[]) {
 		RotamerIndex & rot_index( *rot_index_p );
 		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rotamers, opt.extra_rif_rotamers );
 		std::cout << "================ RotamerIndex ===================" << std::endl;
-		std::cout << rot_index.size() << std::endl;
+		// std::cout << rot_index.size() << " " << rot_index.n_primary_rotamers() << std::endl;
 		std::cout << rot_index << std::endl;
 		// {
 		// 	utility::io::ozstream out("rot_index.pdb");
@@ -828,7 +828,16 @@ int main(int argc, char *argv[]) {
 				std::string scaff_tag = utility::file_basename( scaff_fname );
 				std::string cachefile = "__1BE_" + scaff_tag + (opt.replace_all_with_ala_1bre?"_ALLALA":"") + ".bin.gz";
 				if( ! opt.cache_scaffold_data ) cachefile = "";
-				get_onebody_rotamer_energies( scaffold, rot_index, scaffold_onebody_glob0, opt.data_cache_path, cachefile, opt.replace_all_with_ala_1bre );
+				std::cout << "rifdock: get_onebody_rotamer_energies" << std::endl;
+				get_onebody_rotamer_energies(
+						scaffold,
+						scaffold_res,
+						rot_index,
+						scaffold_onebody_glob0,
+						opt.data_cache_path,
+						cachefile,
+						opt.replace_all_with_ala_1bre
+					);
 
 				if( opt.restrict_to_native_scaffold_res ){
 					std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD!!!" << std::endl;
@@ -861,7 +870,7 @@ int main(int argc, char *argv[]) {
 				}
 
 
-
+				std::cout << "rifdock: get_twobody_tables" << std::endl;
 				std::string cachefile2b = "__2BE_" + scaff_tag + "_GLOBAL" + ".bin.gz";
 				if( ! opt.cache_scaffold_data ) cachefile2b = "";
 				MakeTwobodyOpts make2bopts;
@@ -880,19 +889,21 @@ int main(int argc, char *argv[]) {
 						make2bopts,
 						*scaffold_twobody
 					);
-				std::cout << "twobody memuse: " << (float)scaffold_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
-				for( int i = 0; i < scaffold_onebody_glob0.size(); ++i ){
-					runtime_assert( scaffold_onebody_glob0[i].size() == rot_index.size() );
-					for( int j = 0; j < scaffold_onebody_glob0[i].size(); ++j ){
-						scaffold_onebody_glob0[i][j] = rif_using_rot[j] ? scaffold_onebody_glob0[i][j] : 9e9;
-					}
-				}
-				for( int i = 0; i < local_onebody.size(); ++i ){
-					runtime_assert( local_onebody[i].size() == rot_index.size() );
-					for( int j = 0; j < local_onebody[i].size(); ++j ){
-						local_onebody[i][j] = rif_using_rot[j] ? local_onebody[i][j] : 9e9;
-					}
-				}
+				std::cout << "rifdock: twobody memuse: " << (float)scaffold_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
+
+				// // remove rotamers not seen in the rif... removed to test out extra-rotamers
+				// for( int i = 0; i < scaffold_onebody_glob0.size(); ++i ){
+				// 	runtime_assert( scaffold_onebody_glob0[i].size() == rot_index.size() );
+				// 	for( int j = 0; j < scaffold_onebody_glob0[i].size(); ++j ){
+				// 		scaffold_onebody_glob0[i][j] = rif_using_rot[j] ? scaffold_onebody_glob0[i][j] : 9e9;
+				// 	}
+				// }
+				// for( int i = 0; i < local_onebody.size(); ++i ){
+				// 	runtime_assert( local_onebody[i].size() == rot_index.size() );
+				// 	for( int j = 0; j < local_onebody[i].size(); ++j ){
+				// 		local_onebody[i][j] = rif_using_rot[j] ? local_onebody[i][j] : 9e9;
+				// 	}
+				// }
 
 				local_rotamers.clear();
 				for( int i = 0; i < local_onebody.size(); ++i ){

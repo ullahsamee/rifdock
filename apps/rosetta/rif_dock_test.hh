@@ -8,6 +8,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala_selonly )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
@@ -112,6 +113,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
 		NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
+		NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 		NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
 
 		NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
@@ -310,7 +312,7 @@ struct RifDockOpt
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;
-		replace_all_with_ala_1bre              = true; // todo: decide how to handle this
+		replace_all_with_ala_1bre              = option[rif_dock::replace_all_with_ala_1bre          ]();
 
 		target_pdb                             = option[rif_dock::target_pdb                         ]();
 		lowres_sterics_cbonly                  = option[rif_dock::lowres_sterics_cbonly              ]();

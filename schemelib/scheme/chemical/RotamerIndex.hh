@@ -292,25 +292,25 @@ struct RotamerIndex {
 			int uniq_sum = 0;
 			for( int irot = 0; irot < size(); ++irot ){
 				uniq_sum += ( irot == structural_parent_of_.at(irot) );
-				if( structural_parent_of_.at(irot)==irot ){
-					std::cerr << "chi12_parent: " << irot << " " << resname(irot);
-					for( int ichi = 0; ichi < nchi(irot); ++ichi){
-						std::cerr << " " << chi(irot,ichi);
-					}
-					// std::cerr << std::endl;
-					int nchild = 0;
-					for( int jrot = irot+1; jrot < size(); ++jrot ){
-						if( structural_parent_of_.at(jrot) == irot ){
-							// std::cerr << "       child: " << jrot << " " << resname(jrot);
-							// for( int ichi = 0; ichi < nchi(jrot); ++ichi){
-								// std::cerr << " " << chi(jrot,ichi);
-							// }
-							// std::cerr << std::endl;
-							nchild++;
-						}
-					}
-					std::cerr << " nchild: " << nchild << std::endl;
-				}
+				// if( structural_parent_of_.at(irot)==irot ){
+				// 	std::cerr << "chi12_parent: " << irot << " " << resname(irot);
+				// 	for( int ichi = 0; ichi < nchi(irot); ++ichi){
+				// 		std::cerr << " " << chi(irot,ichi);
+				// 	}
+				// 	// std::cerr << std::endl;
+				// 	int nchild = 0;
+				// 	for( int jrot = irot+1; jrot < size(); ++jrot ){
+				// 		if( structural_parent_of_.at(jrot) == irot ){
+				// 			// std::cerr << "       child: " << jrot << " " << resname(jrot);
+				// 			// for( int ichi = 0; ichi < nchi(jrot); ++ichi){
+				// 				// std::cerr << " " << chi(jrot,ichi);
+				// 			// }
+				// 			// std::cerr << std::endl;
+				// 			nchild++;
+				// 		}
+				// 	}
+				// 	std::cerr << " nchild: " << nchild << std::endl;
+				// }
 			}
 			std::cerr << "total num structural_parents_ " << structural_parents_.size() << std::endl;
 		}
@@ -481,6 +481,7 @@ struct RotamerIndex {
 
 	// bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
 	bool is_primary( int irot ) const { return irot < n_primary_rotamers_; }
+	bool is_structural_primary( int irot ) const { return structural_parent_of_.at(irot) == irot; }
 
 	void dump_pdb( std::ostream & out, int irot, Xform x=Xform::Identity() ) const {
 		// std::cerr << resname(irot) << " " << irot;
@@ -566,7 +567,7 @@ struct RotamerIndex {
 	}
 
 	int protonchi_parent( int i ) const { return protonchi_parent_of_.at(i); }
-	int chi12_parent( int i ) const { return structural_parent_of_.at(i); }
+	int structural_parent( int i ) const { return structural_parent_of_.at(i); }
 
 
 	void fill_oneletter_map( std::map<std::string,char> & oneletter_map ){

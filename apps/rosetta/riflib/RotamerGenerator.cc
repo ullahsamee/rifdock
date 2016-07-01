@@ -861,7 +861,7 @@ get_rotamer_index(
 
 	if( extra_rotamers ){
 		int const orig_rotindex_size = rot_index.size();
-		std::cerr << "adding extra rotamers up to " << orig_rotindex_size << std::endl;
+		// std::cerr << "adding extra rotamers up to " << orig_rotindex_size << std::endl;
 
 		// add exrots here...
 		for( int irot = 0; irot < orig_rotindex_size; ++irot ){
@@ -894,7 +894,7 @@ get_rotamer_index(
 	}
 
 	rot_index.build_index();
-	// std::cerr << "done building index" << std::endl;
+	std::cout << "done building rotamer index, size: " << rot_index.size() << ", nprimary: " << rot_index.n_primary_rotamers() << std::endl;
 
 	// for( std::string resname : resnames ){
 	// 	std::cerr << resname << " " <<  rot_index.index_bounds( resname ).second - rot_index.index_bounds( resname ).first << std::endl;

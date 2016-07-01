@@ -356,7 +356,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-	std::string centered_target_pdbfile = outfile + "_target.pdb";
+	std::string centered_target_pdbfile = outfile + "_target.pdb.gz";
 	target->dump_pdb( centered_target_pdbfile );
 
 			/// shitty test code to look for particular backbones
@@ -724,8 +724,10 @@ int main(int argc, char *argv[]) {
 			test.dump_pdb( a_test_struct_fname );
 
 			std::vector<std::vector<float> > onebody_rotamer_energies; {
+				utility::vector1<core::Size> test_res;
+				for( int i = 1; i <= test.n_residue(); ++i) test_res.push_back(i);
 				std::string cachefile = "__1BE_" + utility::file_basename( testfile ) + (replace_all_with_ala_1bre?"_ALLALA":"") + ".bin.gz";
-				get_onebody_rotamer_energies( test, rot_index, onebody_rotamer_energies, cache_data_path, cachefile, replace_all_with_ala_1bre );
+				get_onebody_rotamer_energies( test, test_res, rot_index, onebody_rotamer_energies, cache_data_path, cachefile, replace_all_with_ala_1bre );
 			}
 
 			typedef std::pair<int,Vec> ClashCrd;

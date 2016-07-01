@@ -50,6 +50,7 @@ using ObjexxFCL::format::I;
 
 void get_onebody_rotamer_energies(
 	core::pose::Pose const & scaffold,
+	utility::vector1<core::Size> const & scaffold_res,
 	devel::scheme::RotamerIndex const & rot_index,
 	std::vector<std::vector<float> > & scaffold_onebody_rotamer_energies,
 	std::vector<std::string> const & cachepath,
@@ -80,6 +81,7 @@ void get_onebody_rotamer_energies(
 	} else {
 		devel::scheme::compute_onebody_rotamer_energies(
 			scaffold,
+			scaffold_res,
 			rot_index,
 			scaffold_onebody_rotamer_energies,
 					// this doesn't seem to work the way I expected...
@@ -116,6 +118,7 @@ void get_onebody_rotamer_energies(
 void
 compute_onebody_rotamer_energies(
 	core::pose::Pose const & pose,
+	utility::vector1<core::Size> const & scaffold_res,
 	RotamerIndex const & rot_index,
 	std::vector<std::vector< float > > & onebody_rotamer_energies,
 	bool replace_with_ala
@@ -157,6 +160,10 @@ compute_onebody_rotamer_energies(
 	#endif
 	for( int ir = 1; ir <= bbone.n_residue(); ++ir ){
 		if( exception ) continue;
+		if( std::find(scaffold_res.begin(), scaffold_res.end(), ir) == scaffold_res.end() ){
+			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
+			continue;
+		}
 		try {
 			core::pose::Pose & work_pose( pose_per_thread[ omp_thread_num_1()-1 ] );
 			core::scoring::ScoreFunctionOP score_func = score_func_per_thread[ omp_thread_num_1()-1 ];
@@ -230,7 +237,7 @@ void get_per_rotamer_rf_tables_one(
 	// part 1 of total sync hack... assume ready iff size == N_ATYPE+1
 	field_by_atype.resize(N_ATYPE+2,nullptr);
 
-	if( rot_index.protonchi_parent(irot) != irot ){
+	if( rot_index.structural_parent(irot) != irot ){
 		field_by_atype.resize(N_ATYPE+1,nullptr);
 		return; // will use parent fields
 	}
@@ -285,7 +292,7 @@ void get_per_rotamer_rf_tables_one(
 			#ifdef USE_OPENMP
 			#pragma omp critical
 			#endif
-			std::cout << "thread " << I(3,omp_thread_num_1()) << " init  rot_rf_table CACHE AT " << cachefile << " (only one logged)" << std::endl;
+			std::cout << "thread " << I(3,omp_thread_num_1()) << " init  rot_rf_table CACHE AT " << cachefile << std::endl;
 		}
 		utility::io::izstream in( cachefile, std::ios::binary );
 		for( int itype = 1; itype <= N_ATYPE; ++itype ){
@@ -374,9 +381,9 @@ void get_per_rotamer_rf_tables(
 
 	// fill in pointers to duplicate tables for rotamers with redundand heavy atom positions
 	for( int irot = 0; irot < rot_index.size(); ++irot ){
-		if( rot_index.protonchi_parent(irot) != irot ){ // has protonchi parent
+		if( rot_index.structural_parent(irot) != irot ){
 			for( int itype = 1; itype <= N_ATYPE; ++itype ){
-				fields_by_atype_per_rot[ irot ][ itype ] = fields_by_atype_per_rot[ rot_index.protonchi_parent(irot) ][ itype ];
+				fields_by_atype_per_rot[ irot ][ itype ] = fields_by_atype_per_rot[ rot_index.structural_parent(irot) ][ itype ];
 			}
 		}
 	}
@@ -469,6 +476,7 @@ make_twobody_tables(
 
 				EigenXform X2i = bbi.position().inverse() * bbj.position();
 				EigenXform X2j = bbj.position().inverse() * bbi.position();
+				auto const & to_sp( rot_index.to_structural_parent_frame_ );
 
 				float minscore=9e9, maxscore=-9e9;
 				std::vector<int> randirotsel( twob.nsel_[ir] );
@@ -491,7 +499,7 @@ make_twobody_tables(
 								for( int ja = 4; ja < rot_index.nheavyatoms(jrot); ++ja ){ // use only heavy atoms beyond the CB (which is #3 here)
 									int jatype = rot_index.rotamers_[ jrot ].atoms_[ja].type();
 									runtime_assert( jatype > 0 && jatype < 22 );
-									Eigen::Vector3f pos_ja = X2i * rot_index.rotamers_[ jrot ].atoms_[ja].position();
+									Eigen::Vector3f pos_ja = to_sp.at(irot) * X2i * rot_index.rotamers_[ jrot ].atoms_[ja].position();
 									// runtime_assert( rotrfmanager.get_rotamer_rf_tables(irot).size() );
 									float const atomscore = rotrfmanager.get_rotamer_rf_tables(irot).at( jatype )->at( pos_ja );
 									runtime_assert_msg( atomscore < 9999.0, "very high atomscore" );
@@ -512,7 +520,7 @@ make_twobody_tables(
 										          << rot_index.rotamers_[irot].resname_ << " " << rot_index.nheavyatoms(irot) << std::endl;
 									}
 									runtime_assert( iatype > 0 && iatype < 22 );
-									Eigen::Vector3f pos_ia = X2j * rot_index.rotamers_[ irot ].atoms_[ia].position();
+									Eigen::Vector3f pos_ia = to_sp.at(jrot) * X2j * rot_index.rotamers_[ irot ].atoms_[ia].position();
 									// runtime_assert( rotrfmanager.get_rotamer_rf_tables(jrot).size() );
 									float const atomscore = rotrfmanager.get_rotamer_rf_tables(jrot).at( iatype )->at( pos_ia );
 									runtime_assert_msg( atomscore < 9999.0, "very high atomscore" );

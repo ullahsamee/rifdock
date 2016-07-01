@@ -225,37 +225,32 @@ std::string get_rif_type_from_file( std::string fname )
 		bool * is_satisfied_;
 		// sat group vector goes here
 	};
+
 	template< class BBActor, class RIF, class VoxelArrayPtr >
-	struct ScoreBBActorVsRIF {
+	struct ScoreBBActorVsRIF
+	{
 		typedef boost::mpl::true_ HasPre;
 		typedef boost::mpl::true_ HasPost;
 		typedef ScoreBBActorvsRIFScratch Scratch;
 		typedef ScoreBBActorvsRIFResult Result;
 		typedef std::pair<RIFAnchor,BBActor> Interaction;
-		bool packing;
-		int n_sat_groups, require_satisfaction;
+		bool packing_ = false, use_extra_rotamers_ = true;
+		float rotamer_inclusion_threshold_ = -0.5;
+		int n_sat_groups_ = 0, require_satisfaction_ = 0;
 		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
 	private:
-		shared_ptr<RIF const> rif_;
+		shared_ptr<RIF const> rif_ = nullptr;
 	public:
-		std::vector<std::vector<float> > const * rotamer_energies_1b;
-		std::vector< std::pair<int,int> > const * scaffold_rotamers;
-		bool add_native_scaffold_rots_when_packing;
-		VoxelArrayPtr target_proximity_test_grid;
+		std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
+		std::vector< std::pair<int,int> > const * scaffold_rotamers_;
+		bool add_native_scaffold_rots_when_packing_ = false;
+		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
 		devel::scheme::ScoreRotamerVsTarget<
 				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
 			> rot_tgt_scorer_;
+		std::vector<int> always_available_rotamers_;
 
-
-		ScoreBBActorVsRIF()
-		 : packing(false)
-		 , n_sat_groups(0)
-		 , require_satisfaction(0)
-		 , rif_(nullptr)
-		 , rotamer_energies_1b(nullptr)
-		 , add_native_scaffold_rots_when_packing(false) // this seems to be a bit bugged? leave off for now
-		 , target_proximity_test_grid(nullptr)
-		 {}
+		ScoreBBActorVsRIF() {}
 
 		 void clear() {
 		 	packperthread_.clear();
@@ -275,7 +270,7 @@ std::string get_rif_type_from_file( std::string fname )
 			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
-			packing = true;
+			packing_ = true;
 			packperthread_.clear();
 			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
 				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(twob,hackpackopts,rot_index_p->ala_rot(),i);
@@ -288,18 +283,21 @@ std::string get_rif_type_from_file( std::string fname )
 			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
 			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
 			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+			// for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
+				// if( rot_index_p->resname(irot) == "LYS" ) always_available_rotamers_.push_back(irot);
+			// }
 		}
 
 		template<class Scene, class Config>
 		void pre( Scene const & , Result & result, Scratch & scratch, Config const & config ) const
 		{
 			runtime_assert( rif_ );
-			runtime_assert( rotamer_energies_1b );
-			if( n_sat_groups > 0 ){
-				scratch.is_satisfied_ = new bool[n_sat_groups];
-				for( int i = 0; i < n_sat_groups; ++i ) scratch.is_satisfied_[i] = false;
+			runtime_assert( rotamer_energies_1b_ );
+			if( n_sat_groups_ > 0 ){
+				scratch.is_satisfied_ = new bool[n_sat_groups_];
+				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
 			}
-			if( !packing ) return;
+			if( !packing_ ) return;
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
 			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
@@ -309,7 +307,7 @@ std::string get_rif_type_from_file( std::string fname )
 		template<class Config>
 		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
 		{
-			if( target_proximity_test_grid && target_proximity_test_grid->at( bb.position().translation() ) == 0.0 ){
+			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
 				return 0.0;
 			}
 
@@ -320,44 +318,54 @@ std::string get_rif_type_from_file( std::string fname )
 			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
 				if( rotscores.empty(i_rs) ) break;
 				typename RIF::Value::Data const & irot = rotscores.rotamer(i_rs);
-				float const rot1be = (*rotamer_energies_1b).at(ires).at(irot);
+				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
-				if( packing ){
-					int sat1=-1, sat2=-1;
-					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target(
-						                               irot
-						                              , bb.position(),
-						                              sat1,
-						                              sat2
-						                              // , 10.0 // bad score thresh
-						                              // , 4 // score only atoms above this num... don't score the backbone (default 0)
-						                            );
-					// #pragma omp critical
-					// std::cout << "TEST " << score_rot_v_target << " " << recalc_rot_v_tgt << std::endl;
+				if( packing_ ){
+					int sat1=-1, sat2=-1; // ignored
+					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), sat1, sat2 );
 					score_rot_v_target = recalc_rot_v_tgt;
-					if( score_rot_v_target + rot1be < -0.5 ){
+					if( score_rot_v_target + rot1be < rotamer_inclusion_threshold_ ){
 						scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be );
+					}
+					if( use_extra_rotamers_ ){
+						auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
+						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
+							float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), sat1, sat2 );
+							float const crot1be = (*rotamer_energies_1b_).at(ires).at(crot);
+							if( recalc_rot_v_tgt + rot1be < rotamer_inclusion_threshold_ ){
+								scratch.hackpack_->add_tmp_rot( ires, crot, recalc_rot_v_tgt + crot1be );
+							}
+						}
 					}
 				}
 				float const score_rot_tot = score_rot_v_target + rot1be;
-				if( n_sat_groups > 0 && score_rot_tot < 0.0 ){
+				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}
 				bestsc = std::min( score_rot_tot , bestsc );
 			}
 			// add native scaffold rotamers TODO: this is bugged somehow?
-			if( packing && add_native_scaffold_rots_when_packing ){
-				for( int irot = scaffold_rotamers->at(ires).first; irot < scaffold_rotamers->at(ires).second; ++irot ){
+			if( packing_ && add_native_scaffold_rots_when_packing_ ){
+				for( int irot = scaffold_rotamers_->at(ires).first; irot < scaffold_rotamers_->at(ires).second; ++irot ){
 					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
-						float const rot1be = (*rotamer_energies_1b).at(ires).at(irot);
+						float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position() );
 						float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
-						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){
+						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
 							scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
 						}
 					}
 				}
-
+			}
+			if( packing_ ){
+				for( int irot : always_available_rotamers_ ){
+					int sat1=-1, sat2=-1;
+					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), sat1, sat2 );
+					float const irot1be = (*rotamer_energies_1b_).at(ires).at(irot);
+					if( recalc_rot_v_tgt + irot1be < rotamer_inclusion_threshold_ ){
+						scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
+					}
+				}
 			}
 
 			bestsc = std::min( bestsc, rotscores.score(Nrots-1) ); // in case not all rots stored...
@@ -367,11 +375,11 @@ std::string get_rif_type_from_file( std::string fname )
 		template<class Scene, class Config>
 		void post( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
 		{
-			if( packing ){
+			if( packing_ ){
 
 				::scheme::search::HackPack & packer( *scratch.hackpack_ );
 				result.val_ = packer.pack( result.rotamers_ );
-				if( n_sat_groups > 0 ) for( int i = 0; i < n_sat_groups; ++i ) scratch.is_satisfied_[i] = false;
+				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
 				// std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
@@ -382,7 +390,7 @@ std::string get_rif_type_from_file( std::string fname )
 					// if( recalc_rot_v_tgt < -1.0 ){
 					// 	selected_rotamers.push_back( result.rotamers_[i] );
 					// }
-					if( n_sat_groups > 0 ){
+					if( n_sat_groups_ > 0 ){
 						if( sat1 >= 0 ) scratch.is_satisfied_[ sat1 ] = true;
 						if( sat2 >= 0 ) scratch.is_satisfied_[ sat2 ] = true;
 					}
@@ -391,19 +399,19 @@ std::string get_rif_type_from_file( std::string fname )
 
 			}
 
-			if( n_sat_groups > 0 ){
+			if( n_sat_groups_ > 0 ){
 				int nsat = 0;
-				for( int i = 0; i < n_sat_groups; ++i ){
+				for( int i = 0; i < n_sat_groups_; ++i ){
 					nsat += scratch.is_satisfied_[i];
 				}
-				runtime_assert( 0 <= nsat && nsat <= n_sat_groups );
-				if( nsat < require_satisfaction ){
+				runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
+				if( nsat < require_satisfaction_ ){
 					result.val_ = 99.0f;
 				}
-				if( nsat - require_satisfaction < 0 ){
+				if( nsat - require_satisfaction_ < 0 ){
 					result.val_ = 9e9;
 				} else {
-					result.val_ += -4.0f * (nsat - require_satisfaction);
+					result.val_ += -4.0f * (nsat - require_satisfaction_);
 				}
 
 				delete scratch.is_satisfied_;
@@ -573,7 +581,7 @@ struct RifFactoryImpl :
 					int i_tptg = std::min( 2, i_so-1 );
 					// std::cout << "resl " << config.resolutions[i_so] << " using target_prox_grid " << config.resolutions[i_tptg] << std::endl;
 					// use vdw grids as tgt proximity measure, use CH3 atom
-					objective->objective.template get_objective<MyScoreBBActorRIF>().target_proximity_test_grid = config.target_bounding_by_atype->at(i_tptg).at(5);
+					objective->objective.template get_objective<MyScoreBBActorRIF>().target_proximity_test_grid_ = config.target_bounding_by_atype->at(i_tptg).at(5);
 				}
 				objective->config = i_so;
 				objectives.push_back( objective );
@@ -588,26 +596,26 @@ struct RifFactoryImpl :
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs.back() );
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = config.rif_ptrs.size()-1;
 		if( config.require_satisfaction > 0 ){
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().n_sat_groups = config.n_sat_groups;
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().require_satisfaction = config.require_satisfaction;
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
 		}
 
 
 		for( auto op : objectives ){
-			dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b = config.local_onebody;
-			dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers = config.local_rotamers;
+			dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
+			dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
 			if( config.require_satisfaction > 0 ){
-				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().n_sat_groups = config.n_sat_groups;
-				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_satisfaction = config.require_satisfaction;
+				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
+				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
 			}
 		}
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b = config.local_onebody;
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers = config.local_rotamers;
+		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
+		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
-							.add_native_scaffold_rots_when_packing = config.add_native_scaffold_rots_when_packing;
+							.add_native_scaffold_rots_when_packing_ = config.add_native_scaffold_rots_when_packing;
 		// use 4.0A vdw grid for CH3 atoms as proximity test
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
-							.target_proximity_test_grid = config.target_bounding_by_atype->at(2).at(5);
+							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
 			*config.local_twobody,
 			config.rot_index_p,

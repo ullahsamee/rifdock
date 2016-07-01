@@ -21,6 +21,7 @@ namespace scheme {
 
 void get_onebody_rotamer_energies(
 	core::pose::Pose const & scaffold,
+	utility::vector1<core::Size> const & scaffold_res,
 	devel::scheme::RotamerIndex const & rot_index,
 	std::vector<std::vector<float> > & scaffold_onebody_rotamer_energies,
 	std::vector<std::string> const & cachepath,
@@ -31,6 +32,7 @@ void get_onebody_rotamer_energies(
 void
 compute_onebody_rotamer_energies(
 	core::pose::Pose const & scaffold,
+	utility::vector1<core::Size> const & scaffold_res,
 	RotamerIndex const & rot_index,
 	std::vector<std::vector< float > > & scaffold_onebody_rotamer_energies,
 	bool replace_with_ala = true
@@ -129,8 +131,8 @@ struct RotamerRFTablesManager {
 
 				// check if somebody else already fixed it....
 				if( fields_by_atype_per_rot_[irot].size() != N_ATYPE_+1 ){
-					if( rot_index_p_->protonchi_parent(irot) != irot ){ // has protonchi parent
-						fields_by_atype_per_rot_[irot] = get_rotamer_rf_tables( rot_index_p_->protonchi_parent(irot) );
+					if( rot_index_p_->structural_parent(irot) != irot ){
+						fields_by_atype_per_rot_[irot] = get_rotamer_rf_tables( rot_index_p_->structural_parent(irot) );
 					} else {
 						bool verbose = ( 0==irot );
 						get_per_rotamer_rf_tables_one( *rot_index_p_, irot, opts_, N_ATYPE_, fields_by_atype_per_rot_, verbose );

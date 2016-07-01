@@ -47,6 +47,7 @@
 	#include <scheme/rosetta/score/RosettaField.hh>
 	#include <scheme/util/StoragePolicy.hh>
 	#include <scheme/chemical/stub.hh>
+	#include <scheme/io/dump_pdb_atom.hh>
 
 	#include <utility/file/file_sys_util.hh>
 	#include <utility/io/izstream.hh>
@@ -210,7 +211,7 @@ namespace rif {
 				std::string threeletter = resn.substr(0,3);
 				std::cerr << rot_index_p->rotamers_[irot].resname_ << std::endl;
 				if( rot_index_p->rotamers_[irot].resname_ == threeletter ){
-					if( rot_index_p->is_primary(irot) ){
+					if( rot_index_p->is_primary(irot) && rot_index_p->is_structural_primary(irot) ){
 						rots.push_back( irot );
 					} else {
 						utility_exit_with_message(
@@ -222,7 +223,7 @@ namespace rif {
 			} else {
 				std::pair<int,int> bounds = rot_index_p->index_bounds( resn );
 				for( int irot = bounds.first; irot < bounds.second; ++irot ){
-					if( rot_index_p->is_primary(irot) ){
+					if( rot_index_p->is_primary(irot) && rot_index_p->is_structural_primary(irot) ){
 						rots.push_back( irot );
 					}
 				}
@@ -231,18 +232,18 @@ namespace rif {
 
 		std::map<std::string,float> abs_score_cut_by_res;
 		abs_score_cut_by_res["ALA"] = -0.3;
-		abs_score_cut_by_res["PHE"] = -3.0;
-		abs_score_cut_by_res["ILE"] = -1.4;
+		abs_score_cut_by_res["PHE"] = -2.8;
+		abs_score_cut_by_res["ILE"] = -1.7;
 		abs_score_cut_by_res["LEU"] = -1.4;
-		abs_score_cut_by_res["MET"] = -1.4;
-		abs_score_cut_by_res["VAL"] = -1.1;
-		abs_score_cut_by_res["TRP"] = -3.7;
+		abs_score_cut_by_res["MET"] = -1.7;
+		abs_score_cut_by_res["VAL"] = -1.0;
+		abs_score_cut_by_res["TRP"] = -3.4;
+		abs_score_cut_by_res["LYS"] = -2.6;
 
 		// #ifdef USE_OPENMP
 		// #pragma omp parallel for schedule(dynamic,1)
 		// #endif
 		for( int ijob = 0; ijob < rots.size(); ++ijob ){
-
 
 			int irot = rots[ijob];
 			std::string resn = rot_index_p->rotamers_[irot].resname_;
@@ -256,7 +257,7 @@ namespace rif {
 				// cout << "========================================================================================================" << endl;
 				cout << "================== ApoHSearch rotamer " << irot << " " << resn << " chis: ";
 				for( int i = 0; i < rot_index_p->rotamers_[irot].chi_.size(); ++i ) cout << " " << rot_index_p->rotamers_[irot].chi_[i];
-				cout << " ================== Progress: " << ijob << " of " << rots.size() << " " << ijob*1.f/rots.size()*100.0f << "\% ==================" << endl;
+				cout << " ================== Progress: " << ijob+1 << " of " << rots.size() << " " << ijob*1.f/rots.size()*100.0f << "\% ==================" << endl;
 				// cout << "========================================================================================================" << endl;
 				omp_unset_lock(&cout_lock);
 			}
@@ -265,17 +266,31 @@ namespace rif {
 			float rotamer_radius = 0;
 			Eigen::Vector3f rotamer_center(0,0,0);
 			{
-				for( auto const & a : rot_index_p->rotamers_[irot].atoms_ )
-					rotamer_center += a.position();
-				rotamer_center /= rot_index_p->rotamers_[irot].atoms_.size();
+				int firstatom = 3; // CB
+				if( rot_index_p->nchi(irot) == 0 ) firstatom = 0;
+				if( rot_index_p->nchi(irot) == 1 ) firstatom = 1;
+				// these things are not takin into account below when the N/CA/C score is added in
+				// possible double repulsive for the bb atoms... probably no big deal
+				int natom = 0;
+				for( int ia = firstatom; ia < rot_index_p->nheavyatoms(irot); ++ia){
+					if( ia == 2 && rot_index_p->nchi(irot) > 0 )  continue;
+					rotamer_center += rot_index_p->atom(irot,ia).position();
+					natom++;
+				}
+				rotamer_center /= float(natom);
 				BOOST_FOREACH( SchemeAtom const & a, rot_index_p->rotamers_[irot].atoms_ )
 					rotamer_radius = std::max( (a.position()-rotamer_center).norm(), rotamer_radius );
-				for( int ia = 0; ia < rot_index_p->rotamers_[irot].atoms_.size(); ++ia){
+				for( int ia = firstatom; ia < rot_index_p->rotamers_[irot].atoms_.size(); ++ia){
+					if( ia == 2 && rot_index_p->nchi(irot) > 0 )  continue;
 					SchemeAtom const & a( rot_index_p->rotamers_[irot].atoms_[ia] );
 					if( a.type() >= 21 ) continue;
 					runtime_assert( rot_index_p->chem_index_.resname2num_.find(resn) != rot_index_p->chem_index_.resname2num_.end() );
 					int restype = rot_index_p->chem_index_.resname2num_.find(resn)->second;
-					SceneAtom sa( a.position()-rotamer_center, a.type(), restype, ia );
+					int atype = a.type();
+					if( atype > 6 ) { // polar sidechain or bb atom
+						atype = 20; // Score_Voxel_vs_Atom will treat as replsive-only
+					}
+					SceneAtom sa( a.position()-rotamer_center, atype, restype, ia );
 					runtime_assert( rot_index_p->chem_index_.atom_data( restype, ia ) == a.data() );
 					scene_proto.add_actor(1,sa);
 				}
@@ -283,40 +298,29 @@ namespace rif {
 			}
 
 
-			// struct RotChild {
-			// 	int rotid;
-			// 	Eigen::Vector3f Ncen, CAcen, Ccen;
-			// };
-			// std::vector<RotChild> rotamer_children;
+			struct RotChild {
+				int rotid;
+				Eigen::Vector3f Ncen, CAcen, Ccen;
+			};
+			std::vector<RotChild> inv_rotamer_backbones;
 
-			// for( size_t crot = 0; crot < rot_index_p->size(); ++crot ){
-			// 	if( rot_index_p->parent_irot(crot) == irot && crot != irot ){
-			// 		RotChild child;
-			// 		child.rotid = crot;
-			// 		size_t natom = rot_index_p->nheavyatoms(irot);
-			// 		// assume aligning on last 3 atoms is ok...
-			// 		Vector3f pa1 = rot_index_p->atom(irot, natom-1).position() - rotamer_center;
-			// 		Vector3f pa2 = rot_index_p->atom(irot, natom-2).position() - rotamer_center;
-			// 		Vector3f pa3 = rot_index_p->atom(irot, natom-3).position() - rotamer_center;
-			// 		Vector3f ca1 = rot_index_p->atom(crot, natom-1).position() - rotamer_center;
-			// 		Vector3f ca2 = rot_index_p->atom(crot, natom-2).position() - rotamer_center;
-			// 		Vector3f ca3 = rot_index_p->atom(crot, natom-3).position() - rotamer_center;
-			// 		EigenXform xalign = make_stub<EigenXform>(pa1,pa2,pa3) *
-			// 		                    make_stub<EigenXform>(ca1,ca2,ca3).inverse();
-			// 		child.Ncen  = xalign * (rot_index_p->atom(crot,0).position() - rotamer_center);
-			// 		child.CAcen = xalign * (rot_index_p->atom(crot,1).position() - rotamer_center);
-			// 		child.Ccen  = xalign * (rot_index_p->atom(crot,2).position() - rotamer_center);
-			// 		runtime_assert( abs((xalign*ca1 - pa1).norm()) < 0.001 );
-			// 		runtime_assert( abs((xalign*ca2 - pa2).norm()) < 0.001 );
-			// 		runtime_assert( abs((xalign*ca3 - pa3).norm()) < 0.001 );
-			// 		rotamer_children.push_back(child);
-			// 		std::cout << "RifGeneratorApoHSearch: add child rotamer " << resn << " " << crot << std::endl;
-			// 	}
-			// }
-			// for( auto const & child : rotamer_children ){
-			// 	runtime_assert( !rot_index_p->is_primary(child.rotid) );
-			// 	runtime_assert( rot_index_p->parent_irot(child.rotid) == irot );
-			// }
+			std::cout << "RifGeneratorApoHSearch: add child rotamers:";
+			for( size_t crot = 0; crot < rot_index_p->size(); ++crot ){
+				if( rot_index_p->structural_parent_of_.at(crot) == irot && rot_index_p->is_primary(crot) ){
+					RotChild child;
+					child.rotid = crot;
+					auto x = rot_index_p->to_structural_parent_frame_.at(crot);
+					child.Ncen  = x * rot_index_p->atom(crot,0).position() - rotamer_center;
+					child.CAcen = x * rot_index_p->atom(crot,1).position() - rotamer_center;
+					child.Ccen  = x * rot_index_p->atom(crot,2).position() - rotamer_center;
+					auto testca  = x * rot_index_p->atom(crot,3).position() - rotamer_center;
+					auto primaryca = rot_index_p->atom(irot,3).position()-rotamer_center;
+					runtime_assert( (primaryca - testca).norm() < 0.001 );
+					inv_rotamer_backbones.push_back(child);
+					std::cout << " " << resn << crot;
+				}
+			}
+			std::cout << std::endl;
 
 			float const half_tgt_resl = RESLS.front()/2.0;
 			float rot_resl_deg;
@@ -461,7 +465,8 @@ namespace rif {
 					if( resn == "MET" ) score_weight = 0.7;
 				}
 
-				std::vector< uint64_t > test_hits;
+				typedef std::tuple<float,EigenXform,int> TestHit;
+				std::vector<TestHit> test_hits;
 				int r = RESLS.size()-1;
 				cout << "Hstage: " << r << " resl: " << F(4,2,RESLS.back()) << " nsamp: " << KMGT(num_final_samples*DIMPOW2) << " ";
 				int64_t const out_interval = samples[r-1].size()/50;
@@ -484,92 +489,72 @@ namespace rif {
 							uint64_t isamp = isamp0 * DIMPOW2 + j;
 							Scene & tscene( scene_per_thread[omp_get_thread_num()] );
 							d.set_scene( isamp, r, tscene );
-							float score = objective( tscene, r ).template get<VoxelScore>();// - numeric::random::uniform()/1000.0;
-							if(score < 0){
-								avg_scores[ omp_get_thread_num() ] += score;
+							float score0 = objective( tscene, r ).template get<VoxelScore>();// - numeric::random::uniform()/1000.0;
+							if(score0 < 0){
+								avg_scores[ omp_get_thread_num() ] += score0;
 								avg_scores_count[ omp_get_thread_num() ]++;
 							}
-							if( score > final_score_cut ) continue;
 
-							if( score < min_score ){
-								#pragma omp critical
+							// BB atoms are repulsive-only, so this is ok
+							if( score0 > final_score_cut ) continue;
+
+							for( auto const & child : inv_rotamer_backbones )
+							{
+								int crot = child.rotid;
+								Vector3f Nchild  = tscene.position(1) * child.Ncen;
+								Vector3f CAchild = tscene.position(1) * child.CAcen;
+								Vector3f Cchild  = tscene.position(1) * child.Ccen;
+								::scheme::actor::BackboneActor<EigenXform> bbactor_child( Nchild, CAchild , Cchild );
+
+								// if(runiftest < 0.0001) {
+								// 	utility::io::ozstream out("test"+str(++count)+".pdb");
+
+
+								// 	EigenXform x = tscene.position(1);
+								// 	EigenXform y = EigenXform::Identity();
+								// 	y.translation() = -rotamer_center;
+								// 	EigenXform z = rot_index_p->to_structural_parent_frame_.at(crot);
+								// 	rot_index_p->dump_pdb( out, crot, x*y*z );
+
+								// 	dump_scene( d, tscene, *rot_index_p, isamp, RESLS.size()-1, out );
+
+								// 	out << "MODEL" << std::endl;
+								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  N ",  Nchild );
+								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", " CA ", CAchild );
+								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  C ",  Cchild );
+								// 	out << "ENDMDL" << std::endl;
+								// 	out.close();
+								// }
+
+								float score = score0;
+								// treat all bb atoms as 20 by convention, bb is repl-only
+								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Nchild ));
+								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( CAchild ));
+								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Cchild ));
+
 								if( score < min_score ){
-									min_score = score;
+									#pragma omp critical
+									if( score < min_score ){
+										min_score = score;
+									}
 								}
-							}
-							// std::cout << "DUMP TO test_hits" << std::endl;
-							Vector3f N  = tscene.template get_actor<SceneAtom>(1,0).position(); // N
-							Vector3f CA = tscene.template get_actor<SceneAtom>(1,1).position(); // CA
-							Vector3f C  = tscene.template get_actor<SceneAtom>(1,2).position(); // C
-							::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
-							accumulator->insert( bbactor.position_, score_weight*score, irot );
+								if( score > final_score_cut ) continue;
 
-							// // blindly intert child rotamers (should only be small chi1 variations) with same score
-							// for( auto const & child : rotamer_children ){
-							// 	int crot = child.rotid;
-							// 	Vector3f Nchild  = tscene.position(1) * child.Ncen;
-							// 	Vector3f CAchild = tscene.position(1) * child.CAcen;
-							// 	Vector3f Cchild  = tscene.position(1) * child.Ccen;
-							// 	// child rots should vary only chi1... not move CA
-							// 	runtime_assert( abs((CAchild-CA).squaredNorm()) < 0.001 );
-							// 	::scheme::actor::BackboneActor<EigenXform> bbactor_child( Nchild, CAchild , Cchild );
-							// 	accumulator->insert( bbactor_child.position_, score_weight*score, crot );
-							// }
+								accumulator->insert( bbactor_child.position_, score_weight*score, crot );
 
-							// // a bit of manual test code for extra rotamer handling
-							// #pragma omp critical
-							// {
-							// 	std::cout << endl;
-							// 	for( auto const & child : rotamer_children){
-							// 		int crot = child.rotid;
-							// 		Vector3f Nchild  = tscene.position(1) * child.Ncen;
-							// 		Vector3f CAchild = tscene.position(1) * child.CAcen;
-							// 		Vector3f Cchild  = tscene.position(1) * child.Ccen;
-							// 		std::cout << irot << " child: " << crot << std::endl;
-							// 		std::cout << N .transpose() << " " << Nchild .transpose() << " " << (N -Nchild ).norm() << std::endl;
-							// 		std::cout << CA.transpose() << " " << CAchild.transpose() << " " << (CA-CAchild).norm() << std::endl;
-							// 		std::cout << C .transpose() << " " << Cchild .transpose() << " " << (C -Cchild ).norm() << std::endl;
-							// 	}
-							// 	// Vector3f testN  = tscene.position(1) * (rot_index_p->atom(irot,0).position() - rotamer_center);
-							// 	// Vector3f testCA = tscene.position(1) * (rot_index_p->atom(irot,1).position() - rotamer_center);
-							// 	// Vector3f testC  = tscene.position(1) * (rot_index_p->atom(irot,2).position() - rotamer_center);
-							// 	// std::cout << endl;
-							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,0).type() << std::endl;
-							// 	// std::cout << rot_index_p->atom(irot,0).type() << std::endl;
-							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,1).type() << std::endl;
-							// 	// std::cout << rot_index_p->atom(irot,1).type() << std::endl;
-							// 	// std::cout << tscene.template get_actor<SceneAtom>(1,2).type() << std::endl;
-							// 	// std::cout << rot_index_p->atom(irot,2).type() << std::endl;
-							// 	// std::cout <<     N.transpose() << std::endl;
-							// 	// std::cout << testN.transpose() << std::endl;
-							// 	// std::cout <<     CA.transpose() << std::endl;
-							// 	// std::cout << testCA.transpose() << std::endl;
-							// 	// std::cout <<     C.transpose() << std::endl;
-							// 	// std::cout << testC.transpose() << std::endl;
-							// 	utility_exit_with_message("testing extra rotamer positioning");
-							// }
-
-							// // crappy test stuff
-							// for( int itest = 0; itest < test_bbs.size(); ++itest ){
-							// 	if( (( test_bbs[itest][0]-N ).squaredNorm() +
-							// 		  ( test_bbs[itest][1]-CA).squaredNorm() +
-							// 		  ( test_bbs[itest][2]-C ).squaredNorm() ) / 3.0 < test_rms2_cut
-
-							// 	){
-							// 		omp_set_lock(&io_lock);
-							// 			test_hits.push_back( isamp );
-							// 		omp_unset_lock(&io_lock);
-							// 	}
-							// }
-
-							if( opts.dump_fraction > 0 ){
-								double const runif = uniform(rngs[omp_thread_num_1()-1]);
-								if( runif < opts.dump_fraction ){
-									omp_set_lock(&io_lock);
-										test_hits.push_back( isamp );
-									omp_unset_lock(&io_lock);
+								if( opts.dump_fraction > 0 ){
+									double const runif = uniform(rngs[omp_thread_num_1()-1]);
+									if( runif < opts.dump_fraction ){
+										omp_set_lock(&io_lock);
+											test_hits.push_back( std::make_tuple(score,tscene.position(1),crot) );
+										omp_unset_lock(&io_lock);
+									}
 								}
+
 							}
+							// if(count) utility_exit_with_message("test if apo rif is messed up");
+							// }
+
 						}
 					} catch( ... ) {
 						#ifdef USE_OPENMP
@@ -592,73 +577,22 @@ namespace rif {
 				std::cout << endl << "SCOREINFO " << resn << " min: " << F(7,3,min_score)
 				          << " cut: " << F(3,1,abs_score_cut_by_res_thisres) << " avg: " << F(7,3,avg_score) << " nsamp " << KMGT(tot_samp) << endl;
 
-				// cout << "actual total samples: " << KMGT(tot_samp) << endl;
-			// SearchPoint min_pt = *__gnu_parallel::min_element( samples.back().begin(), samples.back().end() );
-			// // SearchPoint max_pt = *__gnu_parallel::max_element( samples.back().begin(), samples.back().end() );
-			// __gnu_parallel::nth_element( samples.back().begin(), samples.back().begin()+samples.back().size()/2, samples.back().end() );
-			// SearchPoint mid_pt = *(samples.back().begin()+samples.back().size()/2);
-			// __gnu_parallel::nth_element( samples.back().begin(), samples.back().begin()+samples.back().size()/DIMPOW2, samples.back().end() );
-			// SearchPoint m64_pt = *(samples.back().begin()+samples.back().size()/DIMPOW2);
-
-			// // #ifdef USE_OPENMP
-			// // #pragma omp critical
-			// // #endif
-			// {
-			// 	cout << "HSearsh stage " << RESLS.size()-1 << " complete, resl. " << F(7,3,RESLS.back()) << ", " << I(4,irot) << "-" << resn
-			// 		     << " " << KMGT(samples.back().size()) << ", " << "  range: "
-			// 		     << F(9,6,min_pt.score) << " -- " << F(9,6,m64_pt.score) << " -- " << F(9,6,mid_pt.score) << endl;
-			// }
-
-			// float const score_cut = std::min( -0.1, min_pt.score/opts.min_score_frac );
-
-			// std::vector< uint64_t > test_hits;
-			// {
-			// 	runtime_assert( samples.back().size() );
-			// 	std::cout << "begin insert in xmap" << std::endl;
-
-			// 	int64_t const out_interval = samples.back().size()/100;
-			// 	#ifdef USE_OPENMP
-			// 	#pragma omp parallel for schedule(dynamic,1024)
-			// 	#endif
-			// 	for( int64_t i = 0; i < samples.back().size(); ++i ){
-			// 		if( i%out_interval==0 ){
-			// 			cout << '*'; //(float)iter / samples.back().size() * 100.0 << "% ";
-			// 			cout.flush();
-			// 		}
-			// 		float const score = samples.back()[i].score;
-			// 		if( score > score_cut ) continue;
-			// 		Scene & tscene( scene_per_thread[omp_get_thread_num()] );
-			// 		d.set_scene( samples.back()[i].index, RESLS.size()-1 , tscene ); // 28% of runtime...
-			// 		Eigen::Vector3f N  = tscene.template get_actor<SceneAtom>(1,0).position(); // N
-			// 		Eigen::Vector3f CA = tscene.template get_actor<SceneAtom>(1,1).position(); // CA
-			// 		Eigen::Vector3f C  = tscene.template get_actor<SceneAtom>(1,2).position(); // C
-			// 		scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
-			// 		XMap::Key key = rif.hasher_.get_key( bbactor.position_ );
-			// 		rif_accum.insert( key, score, irot );
-
-			// 		// crappy test stuff
-			// 		for( int itest = 0; itest < test_bbs.size(); ++itest ){
-			// 			if( (( test_bbs[itest][0]-N ).squaredNorm() +
-			// 				 ( test_bbs[itest][1]-CA).squaredNorm() +
-			// 				 ( test_bbs[itest][2]-C ).squaredNorm() ) / 3.0 < test_rms2_cut )
-			// 			{
-
-			// 				omp_set_lock(&io_lock);
-			// 					test_hits.push_back( samples.back()[i].index );
-			// 				omp_unset_lock(&io_lock);
-			// 			}
-			// 		}
-			// 	}
-
-			// 	std::cout << "end insert in xmap" << std::endl;
-			// }
 
 			accumulator->checkpoint( cout );
 
 			if( test_hits.size() ){
-				utility::io::ozstream out( params->output_prefix+"RifGen_Apo_test_hits_"+resn+boost::lexical_cast<std::string>(irot)+".pdb" );
-				for( auto index : test_hits ){
-					dump_scene( d, scene_per_thread[omp_get_thread_num()], *rot_index_p, index, RESLS.size()-1, out );
+				std::sort(test_hits.begin(), test_hits.end(),
+					[](TestHit a, TestHit b) { return std::get<0>(a) < std::get<0>(b); });
+				utility::io::ozstream out( params->output_prefix+"RifGen_Apo_test_hits_"+resn+boost::lexical_cast<std::string>(irot)+".pdb.gz" );
+				for( auto h : test_hits ){
+					float score;
+					int irot;
+					EigenXform x;
+					std::tie(score,x,irot) = h;
+					EigenXform y = EigenXform::Identity();
+					y.translation() = -rotamer_center;
+					EigenXform z = rot_index_p->to_structural_parent_frame_.at(irot);
+					rot_index_p->dump_pdb( out, irot, x*y*z );
 				}
 				out.close();
 			}

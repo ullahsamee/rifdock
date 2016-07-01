@@ -184,12 +184,12 @@ struct HBJob {
 		}
 		{
 			if( target_donors.size() ){
-				utility::io::ozstream donout(params->output_prefix+"donors.pdb");
+				utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
 				::devel::scheme::dump_hbond_rays( donout, target_donors, true );
 				donout.close();
 			}
 			if( target_acceptors.size() ){
-				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb");
+				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb.gz");
 				::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
 				accout.close();
 			}
@@ -662,7 +662,7 @@ struct HBJob {
 								// std::cout << "do test output" << std::endl;
 								omp_set_lock(&io_lock);
 								if( rif_hbond_vis_out == nullptr ){
-									std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb";
+									std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb.gz";
 									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 									rif_hbond_vis_out = new utility::io::ozstream( outfilename );
 								}
