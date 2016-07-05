@@ -911,7 +911,7 @@ int main(int argc, char *argv[]) {
 
 				std::cout << "rifdock: get_twobody_tables" << std::endl;
 				std::string cachefile2b = "__2BE_" + scaff_tag + "_GLOBAL" + ".bin.gz";
-				if( ! opt.cache_scaffold_data ) cachefile2b = "";
+				if( ! opt.cache_scaffold_data || opts.use_extra_rotamers ) cachefile2b = "";
 				MakeTwobodyOpts make2bopts;
 				make2bopts.onebody_threshold = 2.0;
 				make2bopts.distance_cut = 15.0;
