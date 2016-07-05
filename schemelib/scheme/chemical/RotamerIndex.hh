@@ -21,6 +21,11 @@ namespace scheme { namespace chemical {
 struct HBondRay {
 	::Eigen::Vector3f horb_cen, direction;
 	int32_t id=1, group=-1;
+	bool operator==(HBondRay const & other) const {
+		float d1 = (horb_cen-other.horb_cen).norm();
+		float d2 = (direction-other.direction).norm();
+		return d1 < 0.0001 && d2 < 0.0001;
+	}
 };
 
 template< class _AtomData >
@@ -65,6 +70,21 @@ struct ChemicalIndex {
 		return i->second;
 	}
 
+	void clear(){
+		resnames_.clear();
+		resname2num_.clear();
+		atomdata_.clear();
+	}
+
+	bool operator==(ChemicalIndex<AtomData> const & other) const {
+		return (
+				resnames_      == other.resnames_    &&
+				resname2num_   == other.resname2num_ &&
+				atomdata_      == other.atomdata_    &&
+				null_atomdata_ == other.null_atomdata_
+			);
+	}
+
 };
 
 
@@ -91,6 +111,27 @@ struct Rotamer {
 		}
 		return h;
 	}
+	bool operator==(Rotamer<Atom> const & other) const {
+		bool atoms_close = atoms_.size() == other.atoms_.size();
+		if( atoms_close ){
+			for( int i = 0; i < atoms_.size(); ++i ){
+				float dist = (atoms_.at(i).position() - other.atoms_.at(i).position()).norm();
+				atoms_close &= dist < 0.00001;
+				atoms_close &= atoms_.at(i).type() == other.atoms_.at(i).type();
+			}
+		}
+		return (
+				resname_ == other.resname_ &&
+				n_proton_chi_ == other.n_proton_chi_ &&
+				chi_ == other.chi_ &&
+				atoms_close &&
+				// atoms_ == other.atoms_ &&
+				// hbonders_ == other.hbonders_ &&
+				donors_ == other.donors_ &&
+				acceptors_ == other.acceptors_ &&
+				nheavyatoms == other.nheavyatoms
+			);
+	}
 };
 
 	template<class F=float>
@@ -106,6 +147,7 @@ struct Rotamer {
 template<class _Atom, class RotamerGenerator, class Xform>
 struct RotamerIndex {
 	BOOST_STATIC_ASSERT(( ( boost::is_same< _Atom, typename RotamerGenerator::Atom >::value ) ));
+	typedef RotamerIndex<_Atom,RotamerGenerator,Xform> THIS;
 	typedef _Atom Atom;
 	typedef impl::Rotamer<Atom> Rotamer;
 
@@ -125,19 +167,20 @@ struct RotamerIndex {
 	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
 	size_t parent_irot( size_t i ) const { return parent_rotamer_.at(i); }
 	int same_struct_start_chi(size_t irot) const { return (resname(irot)=="ILE") ? 1 : 2; }
+	Rotamer const & rotamer( int irot ) const { return rotamers_.at(irot); }
 
 	std::map<std::string,char> oneletter_map_;
 
 	ChemicalIndex<AtomData> chem_index_;
 
 	std::vector< Rotamer > rotamers_;
-	Rotamer const & rotamer( int irot ) const { return rotamers_.at(irot); }
 
 	int n_primary_rotamers_ = 0;
-	bool seen_child_rotamer = false;
-	std::vector< int > parent_rotamer_;
-	// std::vector< int > parent_primary_; // pri-rot # of primary parent
+	bool seen_child_rotamer_ = false;
+	std::vector< int >t_rotamer_;
 	RotamerGenerator rotgen_;
+
+	std::vector<int> parent_rotamer_;
 
 	typedef std::map<std::string,std::pair<int,int> > BoundsMap;
 	BoundsMap bounds_map_;
@@ -145,15 +188,88 @@ struct RotamerIndex {
 	typedef std::vector< std::pair<int,int> > ChildMap; // index is "primary" index, not rotamer number
 	ChildMap child_map_;
 	std::vector<int> protonchi_parent_of_;
-	int ala_rot_;
+	int ala_rot_ = -1;
 
 	std::vector<int> structural_parents_;
 	std::vector<int> structural_parent_of_;
 	std::vector<Xform> to_structural_parent_frame_;
 
-
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
+	}
+
+	void clear(){
+		n_primary_rotamers_ = 0;
+		seen_child_rotamer_ = false;
+		ala_rot_ = -1;
+		chem_index_.clear();
+		rotamers_.clear();
+		parent_rotamer_.clear();
+		bounds_map_.clear();
+		child_map_.clear();
+		protonchi_parent_of_.clear();
+		structural_parents_.clear();
+		structural_parent_of_.clear();
+		to_structural_parent_frame_.clear();
+		// keep oneletter_map_
+	}
+
+	void save(std::ostream & ostrm) const {
+		size_t n = size();
+		ostrm.write((char*)&n,sizeof(size_t));
+		for( size_t i = 0; i < n; ++i ){
+			uint8_t nresn = resname(i).size();
+			ostrm.write((char*)&nresn,sizeof(uint8_t));
+			for( int k = 0; k < nresn; ++k ){
+				ostrm.write((char*)&resname(i)[k],sizeof(char));
+			}
+			uint8_t n_chi = nchi(i);
+			ostrm.write((char*)&n_chi,sizeof(uint8_t));
+			for( int k = 0; k < n_chi; ++k ){
+				float tmpchi = chi(i,k);
+				ostrm.write((char*)&tmpchi,sizeof(float));
+			}
+			int npchi = nprotonchi(i);
+			ostrm.write((char*)&npchi,sizeof(int));
+			int parent = parent_rotamer_.at(i);
+			if( parent == i ) parent = -1;
+			ostrm.write((char*)&parent,sizeof(int));
+		}
+		ostrm << "rot_index_end";
+	}
+
+	void load(std::istream & istrm){
+		clear();
+		size_t n;
+		istrm.read((char*)&n,sizeof(size_t));
+		// std::cout << "read: " << n << std::endl;
+		for( size_t i = 0; i < n; ++i){
+			uint8_t nresn;
+			istrm.read((char*)&nresn,sizeof(uint8_t));
+			std::string resn(nresn,0);
+			for( int k = 0; k < nresn; ++k ){
+				istrm.read((char*)&resn[k],sizeof(char));
+			}
+			// std::cout << "read " << i << " " << resn << std::endl;
+			uint8_t n_chi;
+			istrm.read((char*)&n_chi,sizeof(uint8_t));
+			std::vector<float> mychi(n_chi);
+			for( int k = 0; k < n_chi; ++k ){
+				istrm.read((char*)&mychi[k],sizeof(float));
+			}
+			// std::cout << "read " << i << " " << mychi.size() << " " << n_chi << std::endl;
+			int npchi;
+			istrm.read((char*)&npchi,sizeof(int));
+			// std::cout << "read " << i << " " << npchi << std::endl;
+			int parent;
+			istrm.read((char*)&parent,sizeof(int));
+			// std::cout << "read " << i << " " << parent << std::endl;
+			add_rotamer(resn, mychi, npchi, parent);
+		}
+		std::string endtag;
+		istrm >> endtag;
+		ALWAYS_ASSERT(endtag=="rot_index_end");
+		build_index();
 	}
 
 	// assumes primary parent is added firrt among its class
@@ -165,8 +281,8 @@ struct RotamerIndex {
 		int parent_key = -1
 	){
 		ALWAYS_ASSERT_MSG( n_primary_rotamers_!=0 || parent_key == -1, "must add primary rotamers before children" )
-		ALWAYS_ASSERT_MSG( !seen_child_rotamer || parent_key != -1, "can't intsert primary rotamer after inserting child" )
-		ALWAYS_ASSERT( parent_key == -1 || parent_key < n_primary_rotamers_ );
+		ALWAYS_ASSERT_MSG( !seen_child_rotamer_ || parent_key != -1, "can't intsert primary rotamer after inserting child" )
+		ALWAYS_ASSERT( parent_key == -1 | parent_key < n_primary_rotamers_ );
 		Rotamer r;
 		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms, r.donors_, r.acceptors_ );
 		r.resname_ = resname;
@@ -178,7 +294,7 @@ struct RotamerIndex {
 			n_primary_rotamers_ = this_key+1;
 			parent_rotamer_.push_back( this_key );
 		} else {
-			seen_child_rotamer = true;
+			seen_child_rotamer_ = true;
 			parent_rotamer_.push_back( parent_key );
 		}
 		return this_key;
@@ -548,16 +664,6 @@ struct RotamerIndex {
 		}
 	}
 
-
-
-	void load( std::istream & is ){
-		// read resn/chi angles and rebuild?
-	}
-
-	void save( std::ostream & os ){
-		// save only resn and chi angles?
-	}
-
 	uint64_t validation_hash() const {
 		uint64_t h = 0;
 		for( Rotamer const & rot : rotamers_  ){
@@ -639,6 +745,23 @@ struct RotamerIndex {
 		oneletter_map["vrt"] = 'X';
 	}
 
+
+	bool operator==(THIS const & other) const {
+		return (
+				n_primary_rotamers_         == other.n_primary_rotamers_   &&
+				seen_child_rotamer_         == other.seen_child_rotamer_   &&
+				ala_rot_                    == other.ala_rot_              &&
+				chem_index_                 == other.chem_index_           &&
+				rotamers_                   == other.rotamers_             &&
+				parent_rotamer_             == other.parent_rotamer_       &&
+				bounds_map_                 == other.bounds_map_           &&
+				child_map_                  == other.child_map_            &&
+				protonchi_parent_of_        == other.protonchi_parent_of_  &&
+				structural_parents_         == other.structural_parents_   &&
+				structural_parent_of_       == other.structural_parent_of_ // &&
+				// to_structural_parent_frame_ == other.to_structural_parent_frame_
+			);
+	}
 };
 
 

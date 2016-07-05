@@ -294,12 +294,12 @@ struct ScoreRotamerVsTarget {
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
 		int tmp1=-12345, tmp2=-12345;
-		return score_rotamer_v_target( irot, rbpos, tmp1, tmp2, bad_score_thresh, start_atom );
+		return score_rotamer_v_target_sat( irot, rbpos, tmp1, tmp2, bad_score_thresh, start_atom );
 	}
 
 	template< class Xform, class Int >
 	float
-	score_rotamer_v_target(
+	score_rotamer_v_target_sat(
 		Int const & irot,
 		Xform const & rbpos,
 		int & sat1,
@@ -308,7 +308,6 @@ struct ScoreRotamerVsTarget {
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
 		using devel::scheme::score_hbond_rays;
-		float const hbweight = upweight_iface_ * hbond_weight_;
 		assert( rot_index_p_ );
 		assert( target_field_by_atype_.size() == 22 );
 		float score = 0;
@@ -347,7 +346,7 @@ struct ScoreRotamerVsTarget {
 					{
 						HBondRay const & hr_tgt_don = target_donors_.at(i_hr_tgt_don);
 						float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc );
-						hbscore += thishb * hbweight;
+						hbscore += thishb * hbond_weight_;
 						if( thishb < this->min_hb_quality_for_satisfaction_ ){
 							if(      sat1==-1 ) sat1 = i_hr_tgt_don;
 							else if( sat2==-1 ) sat2 = i_hr_tgt_don;
@@ -369,7 +368,7 @@ struct ScoreRotamerVsTarget {
 					{
 						HBondRay const & hr_tgt_acc = target_acceptors_.at(i_hr_tgt_acc);
 						float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc );
-						hbscore += thishb * hbweight;
+						hbscore += thishb * hbond_weight_;
 						if( thishb < this->min_hb_quality_for_satisfaction_ ){
 							if(      sat1==-1 ) sat1 = i_hr_tgt_acc + target_donors_.size();
 							else if( sat2==-1 ) sat2 = i_hr_tgt_acc + target_donors_.size();

@@ -92,7 +92,7 @@ struct HackPackOpts;
 struct RifSceneObjectiveConfig
 {
 	bool add_native_scaffold_rots_when_packing;
-	::scheme::search::HackPackOpts * hackpackopts;
+	::scheme::search::HackPackOpts * packopts;
 	std::vector<RifPtr> rif_ptrs;
 	std::vector< std::vector< VoxelArrayPtr > > const * target_bounding_by_atype;
 	std::vector< VoxelArrayPtr > const * target_field_by_atype;

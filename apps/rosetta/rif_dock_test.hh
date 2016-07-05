@@ -6,6 +6,7 @@
 OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_res_use_best_guess )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala_selonly )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
@@ -44,6 +45,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, hack_pack )
 	OPT_1GRP_KEY(  Real        , rif_dock, hack_pack_frac )
 	OPT_1GRP_KEY(  Real        , rif_dock, pack_iter_mult )
+	OPT_1GRP_KEY(  Integer     , rif_dock, pack_n_iters )
 	OPT_1GRP_KEY(  Real        , rif_dock, hbond_weight )
 	OPT_1GRP_KEY(  Real        , rif_dock, upweight_multi_hbond )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
@@ -102,6 +104,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
+	OPT_1GRP_KEY(  Integer     , rif_dock, always_available_rotamers_level )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
 
 
 	void register_options() {
@@ -111,6 +115,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::scaffolds, "" , utility::vector1<std::string>() );
 		NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
 		NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
+		NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
 		NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
@@ -146,6 +151,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::hack_pack, "" , true );
 		NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 		NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
+		NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
 		NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
 		NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
 		NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
@@ -166,7 +172,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
 		NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
-		NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", true );
+		NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
 
 		NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 
@@ -208,6 +214,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 		NEW_OPT(  rif_dock::extra_rotamers, "", true );
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
+		NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
+		NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
 
 	}
 
@@ -240,6 +248,7 @@ struct RifDockOpt
 	float       hsearch_scale_factor                 ;
 	float       search_diameter                      ;
 	bool        use_scaffold_bounding_grids          ;
+	bool        scaffold_res_use_best_guess          ;
 	bool        scaff2ala                            ;
 	bool        scaff2alaselonly                     ;
 	int         require_satisfaction                 ;
@@ -267,7 +276,8 @@ struct RifDockOpt
 	std::string rotrf_cache_dir                      ;
 	float       rotrf_scale_atr                      ;
 
-	int         pack_iter_mult                       ;
+	float       pack_iter_mult                       ;
+	int         pack_n_iters                         ;
 	float       hbond_weight                         ;
 	float       upweight_iface                       ;
 	float       upweight_multi_hbond                 ;
@@ -278,6 +288,8 @@ struct RifDockOpt
 	int         n_pdb_out                            ;
 	bool        extra_rotamers                       ;
 	bool        extra_rif_rotamers                   ;
+	int         always_available_rotamers_level      ;
+	int         packing_use_rif_rotamers             ;
 
 	float       rosetta_score_fraction               ;
 	float       rosetta_score_then_min_below_thresh  ;
@@ -330,6 +342,7 @@ struct RifDockOpt
 		hsearch_scale_factor                   = option[rif_dock::hsearch_scale_factor                  ]();
 		search_diameter                        = option[rif_dock::search_diameter                       ]();
 		use_scaffold_bounding_grids            = option[rif_dock::use_scaffold_bounding_grids           ]();
+		scaffold_res_use_best_guess            = option[rif_dock::scaffold_res_use_best_guess           ]();
 		scaff2ala                              = option[rif_dock::scaffold_to_ala                       ]();
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
@@ -357,6 +370,7 @@ struct RifDockOpt
 		rotrf_cache_dir                        = option[rif_dock::rotrf_cache_dir                       ]();
 		rotrf_scale_atr                        = option[rif_dock::rotrf_scale_atr                       ]();
 		pack_iter_mult                         = option[rif_dock::pack_iter_mult                        ]();
+		pack_n_iters                           = option[rif_dock::pack_n_iters                         ]();
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
 		upweight_iface                         = option[rif_dock::upweight_iface                        ]();
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
@@ -367,6 +381,8 @@ struct RifDockOpt
 		n_pdb_out                              = option[rif_dock::n_pdb_out                             ]();
 		extra_rotamers                         = option[rif_dock::extra_rotamers                        ]();
 		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
+		always_available_rotamers_level        = option[rif_dock::always_available_rotamers_level       ]();
+		packing_use_rif_rotamers               = option[rif_dock::packing_use_rif_rotamers              ]();
 
   		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();
   		rosetta_score_then_min_below_thresh    = option[rif_dock::rosetta_score_then_min_below_thresh   ]();

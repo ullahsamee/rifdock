@@ -366,11 +366,19 @@ int main(int argc, char *argv[]) {
 		opt.init_from_cli();
 		utility::file::create_directory_recursive( opt.outdir );
 
-		::scheme::search::HackPackOpts hackpackopts;
-		hackpackopts.pack_iter_mult       = opt.pack_iter_mult;
-		hackpackopts.hbond_weight         = opt.hbond_weight;
-		hackpackopts.upweight_iface       = opt.upweight_iface;
-		hackpackopts.upweight_multi_hbond = opt.upweight_multi_hbond;
+		::scheme::search::HackPackOpts packopts;
+		packopts.pack_n_iters         = opt.pack_n_iters;
+		packopts.pack_iter_mult       = opt.pack_iter_mult;
+		packopts.hbond_weight         = opt.hbond_weight;
+		packopts.upweight_iface       = opt.upweight_iface;
+		packopts.upweight_multi_hbond = opt.upweight_multi_hbond;
+		packopts.use_extra_rotamers   = opt.extra_rotamers;
+		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
+		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
+		packopts.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
+		packopts.rotamer_inclusion_threshold = -0.1;
+		packopts.rotamer_onebody_inclusion_threshold = 5.0;
+		packopts.init_with_best_1be_rots = true;
 
 		std::string const rif_type = get_rif_type_from_file( opt.rif_files.back() );
 		BOOST_FOREACH( std::string fn, opt.rif_files ){
@@ -450,15 +458,35 @@ int main(int argc, char *argv[]) {
 		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();
 		RotamerIndex & rot_index( *rot_index_p );
 		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rotamers, opt.extra_rif_rotamers );
-		std::cout << "================ RotamerIndex ===================" << std::endl;
+
+		// {
+		// 	utility::io::ozstream out("test.rotidx.gz",std::ios_base::binary);
+		// 	rot_index.save(out);
+		// 	out.close();
+		// }
+		// {
+		// 	RotamerIndex ri2;
+		// 	utility::io::izstream in("test.rotidx.gz",std::ios_base::binary);
+		// 	ri2.load(in);
+		// 	in.close();
+
+		// 	std::cout << rot_index << std::endl;
+		// 	std::cout << std::endl;
+		// 	std::cout << ri2 << std::endl;
+
+		// 	runtime_assert( ri2 == rot_index );
+		// 	utility_exit_with_message("test rot index load/save");
+		// }
+
+		// std::cout << "================ RotamerIndex ===================" << std::endl;
 		// std::cout << rot_index.size() << " " << rot_index.n_primary_rotamers() << std::endl;
-		std::cout << rot_index << std::endl;
+		// std::cout << rot_index << std::endl;
 		// {
 		// 	utility::io::ozstream out("rot_index.pdb");
 		// 	rot_index.dump_pdb( out );
 		// 	utility_exit_with_message("ortsdn");
 		// }
-		std::cout << "=================================================" << std::endl;
+		// std::cout << "=================================================" << std::endl;
 
 		RotamerRFOpts rotrfopts;
 		rotrfopts.oversample     = opt.rotrf_oversample;
@@ -769,12 +797,23 @@ int main(int argc, char *argv[]) {
 					} else {
 						utility_exit_with_message( "-scaffold_res list not same length as -scaffolds list" );
 					}
+					if( opt.scaffold_res_use_best_guess ){
+						utility_exit_with_message("should only use -scaffold_res_use_best_guess true iff not specifying scaffold_res");
+					}
 					scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
-				} else {
+				} else if (opt.scaffold_res_use_best_guess ){
 					scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
 					std::cout << "using scaffold residues: ";
 					for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
 					std::cout << std::endl;
+				} else {
+					for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
+						if( !scaffold.residue(ir).is_protein() ) continue;
+						if( scaffold.residue(ir).name3() == "PRO" ) continue;
+						if( scaffold.residue(ir).name3() == "GLY" ) continue;
+						if( scaffold.residue(ir).name3() == "CYS" ) continue;
+						scaffold_res.push_back(ir);
+					}
 				}
 				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
 				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
@@ -876,7 +915,7 @@ int main(int argc, char *argv[]) {
 				MakeTwobodyOpts make2bopts;
 				make2bopts.onebody_threshold = 2.0;
 				make2bopts.distance_cut = 15.0;
-				make2bopts.hbond_weight = hackpackopts.hbond_weight;
+				make2bopts.hbond_weight = packopts.hbond_weight;
 				std::string dscrtmp;
 				get_twobody_tables(
 						opt.data_cache_path,
@@ -926,7 +965,7 @@ int main(int argc, char *argv[]) {
 			// SOMETHING WRONG, SCORES OFF BY A LITTLE
 			// setup objectives, moved into scaffold loop to guarantee clean slate for each scaff...
 			RifSceneObjectiveConfig rso_config;
-				rso_config.hackpackopts = &hackpackopts;
+				rso_config.packopts = &packopts;
 				rso_config.rif_ptrs = rif_ptrs;
 				rso_config.target_bounding_by_atype = &target_bounding_by_atype;
 				rso_config.target_field_by_atype = &target_field_by_atype;
@@ -936,7 +975,6 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
-				rso_config.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
 				rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 
@@ -1256,10 +1294,11 @@ int main(int argc, char *argv[]) {
 						if( samples.back()[n_packsamp].score > 0 ) break;
 					}
 					int const config = RESLS.size()-1;
-					npack = std::min( n_packsamp, (size_t)(total_search_effort * ( opt.hack_pack_frac / hackpackopts.pack_iter_mult) ) );
+					npack = std::min( n_packsamp, (size_t)(total_search_effort *
+						( opt.hack_pack_frac / (packopts.pack_n_iters*packopts.pack_iter_mult)) ) );
 					packed_results.resize( npack );
 					print_header( "hack-packing top " + KMGT(npack) );
-					std::cout << "packing options: " << hackpackopts << std::endl;
+					std::cout << "packing options: " << packopts << std::endl;
 					std::cout << "packing w/rif rofts ";
 					int64_t const out_interval = std::max<int64_t>(1,npack/100);
 					std::exception_ptr exception = nullptr;
@@ -1640,7 +1679,7 @@ int main(int argc, char *argv[]) {
 						}
 
 
-						if( minimizing && packed_results[imin].score < opt.rosetta_score_cut ){
+						if( (minimizing+1 == do_min)	 && packed_results[imin].score < opt.rosetta_score_cut ){
 							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
 							for(int ir : rifres){
 								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
@@ -1955,8 +1994,14 @@ int main(int argc, char *argv[]) {
 
 					out1 << expdb.str() << std::endl;
 					pose_to_dump.dump_pdb(out1);
-
 					out1.close();
+
+
+					// utility::io::ozstream outtmp( pdboutfile + ".orig.pdb" );
+					// pose_from_rif.dump_pdb(outtmp);
+					// outtmp.close();
+
+
 
 					if( opt.dump_resfile ){
 						utility::io::ozstream out1res( opt.outdir + "/" + scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile");

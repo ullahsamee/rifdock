@@ -622,7 +622,7 @@ struct HBJob {
 
 
 						int sat1=-1, sat2=-1;
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, bbactor.position_, sat1, sat2 );
+						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 10.0, 0 );
 						if( positioned_rotamer_score > opts.score_threshold ) continue;
 
 						if( n_sat_groups > 0 ){

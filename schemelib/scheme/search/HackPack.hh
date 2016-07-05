@@ -2,7 +2,7 @@
 
 	#include <random>
 	#include <boost/foreach.hpp>
-		
+
 
 namespace scheme { namespace search {
 
@@ -30,22 +30,35 @@ pass_metropolis(
 
 
 
-struct HackPackOpts {
-	float pack_iter_mult;
-	float hbond_weight;
-	float upweight_iface;
-	float upweight_multi_hbond;
-	HackPackOpts()
-	: pack_iter_mult(2.0)
-	, hbond_weight(2.0)
-	, upweight_iface(1.0)
-	, upweight_multi_hbond(0.0)
-	{}
+struct HackPackOpts
+{
+	int   pack_n_iters = 1;
+	float pack_iter_mult = 2.0;
+	float hbond_weight = 2.0;
+	float upweight_iface = 1.0;
+	float upweight_multi_hbond = 0.0;
+	bool  use_extra_rotamers = true;
+	int   always_available_rotamers_level = 0;
+	bool  packing_use_rif_rotamers = true;
+	bool  add_native_scaffold_rots_when_packing = false;
+	float rotamer_inclusion_threshold = -0.5;
+	float rotamer_onebody_inclusion_threshold = 5.0;
+	bool  init_with_best_1be_rots = true;
 };
 std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
-	out << "HackPackOpts("
-		<< " pack_iter_mult " << hpo.pack_iter_mult
-	    << " )";
+	out << "HackPackOpts:"
+		<< "\n  pack_iter_mult " << hpo.pack_iter_mult
+		<< "\n  hbond_weight " << hpo.hbond_weight
+		<< "\n  upweight_iface " << hpo.upweight_iface
+		<< "\n  upweight_multi_hbond " << hpo.upweight_multi_hbond
+		<< "\n  use_extra_rotamers " << hpo.use_extra_rotamers
+		<< "\n  always_available_rotamers_level " << hpo.always_available_rotamers_level
+		<< "\n  packing_use_rif_rotamers " << hpo.packing_use_rif_rotamers
+		<< "\n  add_native_scaffold_rots_when_packing " << hpo.add_native_scaffold_rots_when_packing
+		<< "\n  rotamer_inclusion_threshold " << hpo.rotamer_inclusion_threshold
+		<< "\n  rotamer_onebody_inclusion_threshold " << hpo.rotamer_onebody_inclusion_threshold
+		<< "\n  init_with_best_1be_rots " << hpo.init_with_best_1be_rots
+	    << std::endl;
 	return out;
 }
 
@@ -321,6 +334,26 @@ struct HackPack
 			assert( 0 <= current_rots_.at(ires) && current_rots_.at(ires) < res_rots_.at(ires).second.size() );
 		}
 	}
+	void assign_best_obe_rots(){
+		current_rots_.resize( nres_ );
+		for( int ilres = 0; ilres < nres_; ++ilres ){
+			float best = 9e9;
+			for( int ilrot = 0; ilrot < res_rots_.at(ilres).second.size(); ++ilrot ){
+				float obe = res_rots_.at(ilres).second.at(ilrot).second;
+				if( obe < best ){
+					best = obe;
+					current_rots_.at(ilres) = ilrot;
+				}
+			}
+		}
+	}
+	void assign_initial_rots(){
+		if( opts_.init_with_best_1be_rots ){
+			assign_best_obe_rots();
+		} else {
+			assign_random_rots();
+		}
+	}
 	void fill_result_rots( std::vector<std::pair<int32_t,int32_t> > & result_rots ){
 		result_rots.clear();
 		for( int i = 0; i < nres_; ++i ){
@@ -351,7 +384,7 @@ struct HackPack
 			assert( res_rots_.at(i).second.size() > 0 );
 		}
 
-		assign_random_rots();
+		assign_initial_rots();
 
 		uint64_t nchoices = 1;
 		for( int ires = 0; ires < nres_; ++ires ){
@@ -365,11 +398,11 @@ struct HackPack
 			return score_;
 		}
 
-		int const ntrials = opts_.pack_iter_mult;
-		int const pack_iters = 1.0 * rot_list_.size();
+		int const ntrials = opts_.pack_n_iters;
+		int const pack_iters = opts_.pack_iter_mult * rot_list_.size();
 		global_best_score_ = 9e9;
 		for( int k = 0; k < ntrials; ++k ){
-			if( k > 0 ) assign_random_rots();
+			if( k > 0 ) assign_initial_rots();
 			score_ = compute_energy_full( current_rots_ );
 			trial_best_score_ = score_;
 			trial_best_rots_ = current_rots_;
