@@ -598,7 +598,7 @@ int main(int argc, char *argv[]) {
 		{
 			generators[igen]->generate_rif( rif_accum, params );
 		}
-
+		std::cout << "RifGenerators done" << std::endl;
 
 
 		uint64_t N_motifs_found = rif_accum->n_motifs_found();

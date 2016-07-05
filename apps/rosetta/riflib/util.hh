@@ -259,7 +259,7 @@ float score_hbond_rays(
 ){
 	float diff = ( (don.horb_cen-acc.horb_cen).norm() - 1.05 );
 	diff = diff < 0 ? diff*1.5 : diff; // increase dis pen if too close
-	float const max_diff = 1.3;
+	float const max_diff = 0.8;
 	diff = diff >  max_diff ?  max_diff : diff;
 	diff = diff < -max_diff ? -max_diff : diff;
 	// if( diff > max_diff ) return 0.0;

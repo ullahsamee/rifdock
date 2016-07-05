@@ -9,6 +9,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_res_use_best_guess )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala_selonly )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
 
@@ -118,6 +119,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 		NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
+		NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
 		NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 		NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
 
@@ -216,7 +218,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 		NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
 		NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
-
 	}
 
 struct RifDockOpt
@@ -251,6 +252,7 @@ struct RifDockOpt
 	bool        scaffold_res_use_best_guess          ;
 	bool        scaff2ala                            ;
 	bool        scaff2alaselonly                     ;
+	bool        replace_orig_scaffold_res            ;
 	int         require_satisfaction                 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -345,6 +347,7 @@ struct RifDockOpt
 		scaffold_res_use_best_guess            = option[rif_dock::scaffold_res_use_best_guess           ]();
 		scaff2ala                              = option[rif_dock::scaffold_to_ala                       ]();
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
+		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
@@ -402,6 +405,7 @@ struct RifDockOpt
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  ]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score  ]();
 		rosetta_beta                           = option[corrections::beta]();
+
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
 		for( std::string s : option[rif_dock::scaffold_res  ]() ) scaffold_res_fnames.push_back(s);

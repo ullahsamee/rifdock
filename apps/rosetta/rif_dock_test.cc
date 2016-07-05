@@ -930,6 +930,17 @@ int main(int argc, char *argv[]) {
 					);
 				std::cout << "rifdock: twobody memuse: " << (float)scaffold_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
 
+				{
+					std::cout << "rifdock: onebody dimension: " << scaffold_onebody_glob0.size() << " " << scaffold_onebody_glob0.front().size() << std::endl;
+					int onebody_n_allowed = 0;
+					for( auto const & t : scaffold_onebody_glob0 ){
+						for( auto const & v : t ){
+							if( v < make2bopts.onebody_threshold ) onebody_n_allowed++;
+						}
+					}
+					std::cout << "rifdock: onebody Nallowed: " << onebody_n_allowed << std::endl;
+				}
+
 				// // remove rotamers not seen in the rif... removed to test out extra-rotamers
 				// for( int i = 0; i < scaffold_onebody_glob0.size(); ++i ){
 				// 	runtime_assert( scaffold_onebody_glob0[i].size() == rot_index.size() );
@@ -1393,7 +1404,11 @@ int main(int argc, char *argv[]) {
 					std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());
 					for( int i = 0; i < omp_max_threads(); ++i){
 						// both_full_per_thread[i] = both_full_pose;
-						both_per_thread[i] = both_full_pose;
+						if( opt.replace_orig_scaffold_res ){
+							both_per_thread[i] = both_full_pose;
+						} else {
+							both_per_thread[i] = both_pose;
+						}
 						scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(opt.rosetta_soft_score);
 						if( minimizing ){
 							if( opt.rosetta_hard_min ){
@@ -1418,13 +1433,13 @@ int main(int argc, char *argv[]) {
 						}
 						if( target.n_residue() == 1 ){
 							// assume this is a ligand, so hbonding is important
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::fa_elec)*1.5 );
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.5 );
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.5 );
+							scorefunc_pt[i]->set_weight( core::scoring::fa_elec    , scorefunc_pt[i]->get_weight(core::scoring::fa_elec    )*2.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*2.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_bb_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*2.0 );
 						} else {
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::fa_elec)*1.0 );
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_sc)*1.0 );
-							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::fa_elec    , scorefunc_pt[i]->get_weight(core::scoring::fa_elec    )*1.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*1.0 );
+							scorefunc_pt[i]->set_weight( core::scoring::hbond_bb_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
 						}
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
