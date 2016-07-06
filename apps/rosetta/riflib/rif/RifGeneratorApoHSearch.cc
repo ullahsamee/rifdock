@@ -554,7 +554,12 @@ namespace rif {
 							}
 
 							// will check mem use
-							accumulator->checkpoint( cout );
+							if( i % 1000 == 0 && accumulator->need_to_condense() ){
+								#pragma omp critical
+								if( accumulator->need_to_condense() ){
+									accumulator->checkpoint( cout );
+								}
+							}
 
 						}
 					} catch( ... ) {

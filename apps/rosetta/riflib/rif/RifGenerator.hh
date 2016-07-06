@@ -33,6 +33,7 @@ struct RifAccumulator {
 	virtual uint64_t n_motifs_found() const = 0;
 	virtual int64_t total_samples() const = 0;
 	virtual void condense() = 0;
+	virtual bool need_to_condense() const = 0;
 	virtual shared_ptr<RifBase> rif() const = 0;
 	virtual void clear() = 0;
 };

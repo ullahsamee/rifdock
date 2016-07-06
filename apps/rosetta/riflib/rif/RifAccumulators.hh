@@ -47,15 +47,15 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		xmap_ptr_ = make_shared<XMap>( cart_resl, ang_resl );
 	}
 
-	virtual uint64_t n_motifs_found() const { return N_motifs_found_; }
+	uint64_t n_motifs_found() const override { return N_motifs_found_; }
 
-	virtual shared_ptr<RifBase> rif() const {
+	shared_ptr<RifBase> rif() const override {
 		shared_ptr<RifBase> r = rif_factory_->create_rif();
 		r->set_xmap_ptr( xmap_ptr_ );
 		return r;
 	}
 
-	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2 ){
+	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2 ) override {
 		if( score > 0.0 ) return;
 		uint64_t const key = xmap_ptr_->hasher_.get_key( x );
 		typename XMap::Map & map_for_this_thread( to_insert_[ omp_get_thread_num() ] );
@@ -75,13 +75,17 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		++nsamp_[ omp_get_thread_num() ];
 	}
 
-	virtual int64_t total_samples() const {
+	int64_t total_samples() const override {
 		int64_t tot = 0;
 		for( int i = 0; i < nsamp_.size(); ++i ) tot += nsamp_[i];
 		return tot;
 	}
 
-	virtual void condense(){
+	bool need_to_condense() const override {
+		return mem_use() > uint64_t(scratch_size_M_)*uint64_t(1024*1024);
+	}
+
+	void condense() override {
 		using ObjexxFCL::format::I;
 		for( int i = 0; i < to_insert_.size(); ++i ){
 			std::cout << I(3,i+1) << " of " << to_insert_.size() << " progress: ";
@@ -105,7 +109,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		}
 	}
 
-	void report( std::ostream & out ) const {
+	void report( std::ostream & out ) const override {
 		out << "RIFAccum nrots: " << devel::scheme::KMGT(N_motifs_found_+total_samples())
 		    << " mem: " << devel::scheme::KMGT(mem_use())
 		    << " rif_mem: " << devel::scheme::KMGT(xmap_ptr_->mem_use()) << std::endl;
@@ -120,7 +124,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	}
 
 
-	virtual void clear(){
+	void clear() override {
 		for( int i = 0; i < to_insert_.size(); ++i ) to_insert_[i].clear();
 		to_insert_.clear();
 		nsamp_.clear();
@@ -134,7 +138,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		nsamp_.resize( devel::scheme::omp_max_threads_1(), 0 );
 	}
 
-	virtual void checkpoint( std::ostream & out ) {
+	void checkpoint( std::ostream & out ) override {
 		using devel::scheme::KMGT;
 		uint64_t m = mem_use();
 		if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
@@ -147,8 +151,8 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 			    << ", mem_use: " << KMGT(xmap_ptr_->mem_use())
 			    << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
 			    << std::endl;
-			report( out );
 		}
+		report( out );
 	}
 
 };
