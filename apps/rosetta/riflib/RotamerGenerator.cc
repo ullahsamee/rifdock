@@ -13,6 +13,7 @@
 #include <core/pack/rotamer_set/RotamerSet.hh>
 #include <core/pack/rotamer_set/RotamerSetFactory.hh>
 #include <core/chemical/ResidueTypeSet.hh>
+#include <core/chemical/AtomType.hh>
 #include <core/chemical/AtomTypeSet.hh>
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/orbitals/OrbitalType.hh>
@@ -1006,6 +1007,16 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 	if( opt.withbb )                    positions = &rsd.accpt_pos();
 	auto lkbinfo = core::scoring::lkball::LKB_ResidueInfo( rsd );
 	for( auto iacc : *positions ){
+
+		// if is involdev in N-N bond, skip
+		if(rsd.atom_type(iacc).element()=="N"){
+			bool isNN = false;
+			for( int ia : rsd.bonded_neighbor(iacc) ){
+				if( rsd.atom_type(ia).element()=="N" ) isNN = true;
+			}
+			if(isNN) continue;
+		}
+
 		if( opt.satisfied_atoms.count(std::make_pair(int(iacc),int(ir))) )
 		{
 			continue; // is satisfied internally
