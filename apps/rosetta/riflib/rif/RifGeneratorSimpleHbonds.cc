@@ -678,7 +678,7 @@ struct HBJob {
 									if( sat1 >= 0 && sat2 >= 0 ){
 										if( sat1 < sat2 ) std::swap(sat1,sat2);
 										if( rif_hbond_vis_out_double_satgroups[sat1][sat2] == nullptr ){
-											std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb";
+											std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb.gz";
 											// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 											rif_hbond_vis_out_double_satgroups[sat1][sat2] = new utility::io::ozstream( outfilename );
 										}
@@ -696,7 +696,7 @@ struct HBJob {
 											if( sat >= 0 ){
 												runtime_assert( sat < n_sat_groups );
 												if( rif_hbond_vis_out_satgroups[sat] == nullptr ){
-													std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_sat"+I(4,sat)+".pdb";
+													std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_sat"+I(4,sat)+".pdb.gz";
 													// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
 													rif_hbond_vis_out_satgroups[sat] = new utility::io::ozstream( outfilename );
 												}
