@@ -1174,6 +1174,7 @@ int main(int argc, char *argv[]) {
 			int64_t non0_space_size = 0;
 			int64_t npack = 0;
 			int64_t total_search_effort = 0;
+			bool search_failed = false;
 			{
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
 
@@ -1257,13 +1258,20 @@ int main(int argc, char *argv[]) {
 								samples[iresl+1].push_back( SearchPoint(isamp) );
 							}
 						}
-						if( 0 == samples[iresl+1].size() ) std::cout << "search fail, no valid samples!" << std::endl;
+						if( 0 == samples[iresl+1].size() ){
+							search_failed = true;
+							std::cout << "search fail, no valid samples!" << std::endl;
+							break;
+						}
 						samples[iresl].clear();
 
 					}
+					if( search_failed ) continue;
 					std::cout << "full sort of final samples" << std::endl;
 					__gnu_parallel::sort( samples.back().begin(), samples.back().end() );
 				}
+				if( search_failed ) continue;
+
 				std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
 				time_rif += elapsed_seconds_rif.count();
 
