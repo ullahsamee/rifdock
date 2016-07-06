@@ -153,7 +153,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 			    // << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
 			    // << std::endl;
 		}
-		report( out );
+		// report( out );
 	}
 
 };

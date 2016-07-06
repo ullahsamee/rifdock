@@ -761,10 +761,13 @@ struct HBJob {
 			#ifdef USE_OPENMP
 			#pragma omp critical
 			#endif
-			if( ihbjob%1 == 0 ){
+			{
 				std::cout << "RifGenSimpHB: " << I(4,ir) << " " << ObjexxFCL::format::LJ(20,hbgeomtag) << " done, ngeom: "
 				          << KMGT(hbond_geoms.size()) << " job " << I(4,ihbjob) << " of " << hb_jobs.size() << "  ";
 				accumulator->checkpoint( cout );
+				if( ihbjob%1 == 0 ){
+					accumulator->report( cout );
+				}
 			}
 			// omp_unset_lock(&cout_lock);
 
