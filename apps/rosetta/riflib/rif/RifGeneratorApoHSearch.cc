@@ -234,7 +234,7 @@ namespace rif {
 		abs_score_cut_by_res["ALA"] = -0.3;
 		abs_score_cut_by_res["PHE"] = -2.8;
 		abs_score_cut_by_res["ILE"] = -1.7;
-		abs_score_cut_by_res["LEU"] = -1.4;
+		abs_score_cut_by_res["LEU"] = -1.5;
 		abs_score_cut_by_res["MET"] = -1.7;
 		abs_score_cut_by_res["VAL"] = -1.0;
 		abs_score_cut_by_res["TRP"] = -3.4;
@@ -552,8 +552,9 @@ namespace rif {
 								}
 
 							}
-							// if(count) utility_exit_with_message("test if apo rif is messed up");
-							// }
+
+							// will check mem use
+							accumulator->checkpoint( cout );
 
 						}
 					} catch( ... ) {
@@ -579,6 +580,7 @@ namespace rif {
 
 
 			accumulator->checkpoint( cout );
+			accumulator->report( cout );
 
 			if( test_hits.size() ){
 				std::sort(test_hits.begin(), test_hits.end(),
