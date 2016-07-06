@@ -193,9 +193,10 @@ namespace rif {
 		int64_t const beam_size = int64_t( opts.beam_size_M * 1000000.0 / DIMPOW2 ) * DIMPOW2;
 
 
-		omp_lock_t cout_lock, io_lock;
+		omp_lock_t cout_lock, io_lock, accum_lock;
 		omp_init_lock( &cout_lock );
 		omp_init_lock( &io_lock );
+		omp_init_lock( &accum_lock );
 
 		std::vector<boost::random::mt19937> rngs;
 		for( int i = 0; i < omp_max_threads_1(); ++i ){
@@ -555,10 +556,11 @@ namespace rif {
 
 							// will check mem use
 							if( i % 1000 == 0 && accumulator->need_to_condense() ){
-								#pragma omp critical
+								omp_set_lock(&accum_lock);
 								if( accumulator->need_to_condense() ){
 									accumulator->checkpoint( cout );
 								}
+								omp_unset_lock(&accum_lock);
 							}
 
 						}
@@ -614,6 +616,7 @@ namespace rif {
 
 		omp_destroy_lock( & cout_lock ) ;
 		omp_destroy_lock( & io_lock );
+		omp_destroy_lock( & accum_lock );
 
 
 	}
