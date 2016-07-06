@@ -88,11 +88,11 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	void condense() override {
 		using ObjexxFCL::format::I;
 		for( int i = 0; i < to_insert_.size(); ++i ){
-			std::cout << I(3,i+1) << " of " << to_insert_.size() << " progress: ";
+			// std::cout << I(3,i+1) << " of " << to_insert_.size() << " progress: ";
 			int64_t const out_interval = std::max<int64_t>(1,to_insert_[i].size()/100);
 			int64_t count = 0;
 			BOOST_FOREACH( typename XMap::Map::value_type const & value, to_insert_[i] ){
-				if( ++count%out_interval == 0 ){ std::cout << '*'; std::cout.flush(); }
+				// if( ++count%out_interval == 0 ){ std::cout << '*'; std::cout.flush(); }
 				typename XMap::Key const key = value.first;
 				typename XMap::Value const & rotsc = value.second;
 				typename XMap::Map::iterator iter = xmap_ptr_->map_.find(key);
@@ -105,7 +105,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 				}
 
 			}
-			std::cout << std::endl;
+			// std::cout << std::endl;
 		}
 	}
 
@@ -142,15 +142,16 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		using devel::scheme::KMGT;
 		uint64_t m = mem_use();
 		if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
-			out << "mem use " << float(m)/1024.0/1024.0 << "M is above threshold " << scratch_size_M_ << "M, time to condense" << std::endl;
+			// out << "mem use " << float(m)/1024.0/1024.0 << "M is above threshold " << scratch_size_M_ << "M, time to condense" << std::endl;
+			out << "C"; out.flush();
 			condense();
 			N_motifs_found_ += total_samples();
 			clear();
-			out << "RIF so far: " << " non0 in RIF: " << KMGT(xmap_ptr_->size()) << " N_motifs_found_: "
-			    << KMGT(N_motifs_found_) << " coverage: " << (double)N_motifs_found_/xmap_ptr_->size()
-			    << ", mem_use: " << KMGT(xmap_ptr_->mem_use())
-			    << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
-			    << std::endl;
+			// out << "RIF so far: " << " non0 in RIF: " << KMGT(xmap_ptr_->size()) << " N_motifs_found_: "
+			    // << KMGT(N_motifs_found_) << " coverage: " << (double)N_motifs_found_/xmap_ptr_->size()
+			    // << ", mem_use: " << KMGT(xmap_ptr_->mem_use())
+			    // << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
+			    // << std::endl;
 		}
 		report( out );
 	}
