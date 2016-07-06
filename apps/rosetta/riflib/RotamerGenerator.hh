@@ -64,7 +64,7 @@ get_satisfied_atoms(core::pose::Pose pose, float ethresh=-0.1);
 struct HBRayOpts {
 	bool withbb = true;
 	bool lkball = true;
-	bool add_acceptor_mid = true;
+	bool add_acceptor_mid = false;
 	float orblen = 0.61;
 	std::set<std::pair<int,int>> satisfied_atoms;
 };

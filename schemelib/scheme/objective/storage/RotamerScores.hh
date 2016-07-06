@@ -150,7 +150,7 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 			}
 		}
 	}
-	void mark_sat_groups( bool * sat_groups_mask ) const {
+	void mark_sat_groups( std::vector<bool> & sat_groups_mask ) const {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if( sat_data_[isat].not_empty() ){
 				sat_groups_mask[ sat_data_[isat].target_sat_num() ] = true;
@@ -247,7 +247,7 @@ struct RotamerScores {
 	void rotamer_sat_groups( int irot, std::vector<int> & sat_groups_out ) const	{
 		rotamer_sat_groups_impl< RotScore::UseSat >( irot, sat_groups_out );
 	}
-	void mark_sat_groups( int irot, bool * sat_groups_mask ) const	{
+	void mark_sat_groups( int irot, std::vector<bool> & sat_groups_mask ) const	{
 		mark_sat_groups_impl< RotScore::UseSat >( irot, sat_groups_mask );
 	}
 	template<class Array>
@@ -336,9 +336,9 @@ struct RotamerScores {
 	template< bool UseSat >	typename boost::disable_if_c< UseSat, void >::type
 	rotamer_sat_groups_impl( int irot, std::vector<int> & sat_groups_out ) const { return; }
 	template< bool UseSat >	typename boost::enable_if_c< UseSat, void >::type
-	mark_sat_groups_impl( int irot, bool * sat_groups_mask ) const { rotscores_[irot].mark_sat_groups( sat_groups_mask ); }
+	mark_sat_groups_impl( int irot, std::vector<bool> & sat_groups_mask ) const { rotscores_[irot].mark_sat_groups( sat_groups_mask ); }
 	template< bool UseSat >	typename boost::disable_if_c< UseSat, void >::type
-	mark_sat_groups_impl( int irot, bool * sat_groups_mask ) const { return; }
+	mark_sat_groups_impl( int irot, std::vector<bool> & sat_groups_mask ) const { return; }
 	template< bool UseSat, class Array > typename boost::enable_if_c< UseSat, void >::type
 	get_sat_groups_raw_impl( int irot, Array & a ) const { rotscores_[irot].get_sat_groups_raw( a ); }
 	template< bool UseSat, class Array > typename boost::disable_if_c< UseSat, void >::type

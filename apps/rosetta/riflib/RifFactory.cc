@@ -222,7 +222,7 @@ std::string get_rif_type_from_file( std::string fname )
 	};
 	struct ScoreBBActorvsRIFScratch {
 		shared_ptr< ::scheme::search::HackPack> hackpack_;
-		bool * is_satisfied_;
+		std::vector<bool> is_satisfied_;
 		// sat group vector goes here
 	};
 
@@ -310,7 +310,7 @@ std::string get_rif_type_from_file( std::string fname )
 			runtime_assert( rif_ );
 			runtime_assert( rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 ){
-				scratch.is_satisfied_ = new bool[n_sat_groups_];
+				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
 				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
 			}
 			if( !packing_ ) return;
@@ -433,7 +433,8 @@ std::string get_rif_type_from_file( std::string fname )
 					result.val_ += -4.0f * (nsat - require_satisfaction_);
 				}
 
-				delete scratch.is_satisfied_;
+				// delete scratch.is_satisfied_;
+				// scratch.is_satisfied_.clear();
 			}
 
 				// #ifdef USE_OPENMP

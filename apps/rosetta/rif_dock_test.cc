@@ -555,9 +555,9 @@ int main(int argc, char *argv[]) {
 // rif score:   17 rank        17 dist0:      20.00 packscore: -26.914 steric:   1.221 cluster:       0 rifrank:  787232 0.14099 test_ful
 // rif score:   18 rank        18 dist0:      19.69 packscore: -26.807 steric:   1.547 cluster:       0 rifrank:  336496 0.06027 test_ful
 // rif score:   19 rank        19 dist0:      20.14 packscore: -26.777 steric:  -1.035 cluster:       0 rifrank:  295196 0.05287 test_ful
-		hbopt.withbb = true;
-		hbopt.lkball = true;
-		hbopt.add_acceptor_mid = false;
+		// hbopt.withbb = true;
+		// hbopt.lkball = true;
+		// hbopt.add_acceptor_mid = false;
 		hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
 
 		// utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
@@ -817,6 +817,7 @@ int main(int argc, char *argv[]) {
 				}
 				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
 				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
+				std::cout << "rifdock scaffold_res: " << scaffold_res << std::endl;
 
 				// scaffold.dump_pdb( utility::file_basename(scaff_fname)+"_pruned.pdb");
 
