@@ -168,6 +168,14 @@ get_rosetta_fields(
 
 	// std::cout << target_res.size() << " " << target_res_hash << std::endl;
 	// utility_exit_with_message("dbg tgt res hash");
+	if( ! utility::file::file_exists( opts.data_dir) ){
+		if( !opts.fail_if_no_cached_data ){
+			utility::file::create_directory_recursive(opts.data_dir);
+			if( ! utility::file::file_exists( opts.data_dir) ){
+				utility_exit_with_message("missing data dir: '" + opts.data_dir + "'" );
+			}
+		}
+	}
 
 	std::string cache_prefix = opts.data_dir+"/__RF_"+target_tag
 		             +"_trhash" + hashstr
@@ -309,13 +317,6 @@ get_rosetta_fields_specified_cache_prefix(
 		}
 		std::cout << "rosetta_field lb: " << lb << " ub: " << ub << " size(A): " << ub-lb << std::endl;
 
-		if( ! utility::file::file_exists( opts.data_dir) ){
-			utility::file::create_directory_recursive(opts.data_dir);
-			if( ! utility::file::file_exists( opts.data_dir) ){
-				utility_exit_with_message("missing data dir: '" + opts.data_dir + "'" );
-			}
-		}
-
 		std::exception_ptr exception = nullptr;
 		#ifdef USE_OPENMP
 		#pragma omp parallel for schedule(dynamic,1)
@@ -451,13 +452,6 @@ get_rosetta_bounding_fields_from_fba(
 	typedef ::scheme::objective::voxel::BoundingFieldCache3D<float> BoundingGrid;
 
 	using ObjexxFCL::format::I;
-
-	if( ! utility::file::file_exists( opts.data_dir) ){
-		utility::file::create_directory_recursive(opts.data_dir);
-		if( ! utility::file::file_exists( opts.data_dir) ){
-			utility_exit_with_message("missing data dir: '" + opts.data_dir + "'" );
-		}
-	}
 
 	std::vector<std::pair<float,int> > jobs;
 	for( int iresl = RESLS.size()-1; iresl >= 0; --iresl ){
