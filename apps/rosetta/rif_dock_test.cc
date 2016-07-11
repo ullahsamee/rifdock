@@ -376,7 +376,7 @@ int main(int argc, char *argv[]) {
 		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
 		packopts.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
-		packopts.rotamer_inclusion_threshold = -0.1;
+		packopts.rotamer_inclusion_threshold = -0.5;
 		packopts.rotamer_onebody_inclusion_threshold = 5.0;
 		packopts.init_with_best_1be_rots = true;
 

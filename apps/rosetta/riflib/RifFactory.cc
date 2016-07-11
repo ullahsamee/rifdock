@@ -340,7 +340,8 @@ std::string get_rif_type_from_file( std::string fname )
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold ){
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
 						score_rot_v_target = recalc_rot_v_tgt;
-						if( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold ){
+						if( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
+						    score_rot_v_target          < packopts_.rotamer_inclusion_threshold ){
 							scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be );
 						}
 					}
@@ -350,7 +351,8 @@ std::string get_rif_type_from_file( std::string fname )
 							float const crot1be = (*rotamer_energies_1b_).at(ires).at(crot);
 							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 							float const recalc_crot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), 10.0, 4 );
-							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold ){
+							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
+							    recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
 								scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
 							}
 						}
@@ -381,7 +383,8 @@ std::string get_rif_type_from_file( std::string fname )
 					if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 					int sat1=-1, sat2=-1;
 					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
-					if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold ){
+					if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
+					    recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
 						scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
 					}
 				}
