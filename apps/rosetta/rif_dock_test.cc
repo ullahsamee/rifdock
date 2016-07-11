@@ -1884,9 +1884,9 @@ int main(int argc, char *argv[]) {
 			for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
 				RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
-				std::string pdboutfile = opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb";
+				std::string pdboutfile = opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
 				if( opt.output_tag.size() ){
-					pdboutfile = opt.outdir + "/" + scafftag+"_" + opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb";
+					pdboutfile = opt.outdir + "/" + scafftag+"_" + opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
 				}
 
 				std::ostringstream oss;
@@ -2036,7 +2036,7 @@ int main(int argc, char *argv[]) {
 
 					if( opt.dump_all_rif_rots ){
 						// utility_exit_with_message("this is not currently implemented, ask Will");
-						utility::io::ozstream out2( opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb");
+						utility::io::ozstream out2( opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz");
 						out2 << allout.str();
 						out2.close();
 					}
