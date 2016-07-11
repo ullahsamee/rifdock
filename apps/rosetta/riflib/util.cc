@@ -27,6 +27,9 @@
 #include <utility/io/izstream.hh>
 #include <utility/io/ozstream.hh>
 
+#include <boost/functional/hash/hash.hpp>
+
+
 namespace devel {
 namespace scheme {
 
@@ -191,6 +194,15 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 
 	return res;
 }
+
+std::string
+get_res_list_hash( utility::vector1<core::Size> const & reslist ){
+	std::size_t reslist_hash = boost::hash_range( reslist.begin(), reslist.end() );
+	std::string hashstr = boost::lexical_cast<std::string>(reslist_hash);
+	return hashstr.substr(hashstr.size()-8,8);
+
+}
+
 
 
 std::string KMGT(double const & x, int const & w, int const & d){

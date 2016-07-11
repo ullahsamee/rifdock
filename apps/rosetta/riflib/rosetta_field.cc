@@ -33,8 +33,6 @@
 
 	#include <Eigen/Dense>
 
-	#include <boost/functional/hash/hash.hpp>
-
 	#include <exception>
 	#include <stdexcept>
 
@@ -166,13 +164,13 @@ get_rosetta_fields(
 ){
 
 	std::string target_tag = utility::file_basename( target_fname );
-	std::size_t target_res_hash = boost::hash_range( target_res.begin(), target_res.end() );
-	std::string hash = boost::lexical_cast<std::string>(target_res_hash);
+	std::string hashstr = ::devel::scheme::get_res_list_hash( target_res );
+
 	// std::cout << target_res.size() << " " << target_res_hash << std::endl;
 	// utility_exit_with_message("dbg tgt res hash");
 
 	std::string cache_prefix = opts.data_dir+"/__RF_"+target_tag
-		             +"_trhash" + hash.substr(hash.size()-8,8)
+		             +"_trhash" + hashstr
 	                 +"_resl"   + boost::lexical_cast<std::string>(opts.field_resl)
 		             +"_osamp"  + boost::lexical_cast<std::string>(opts.oversample);
 	if( opts.block_hbond_sites       ) cache_prefix += "_blockhb";

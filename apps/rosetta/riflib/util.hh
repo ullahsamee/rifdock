@@ -74,6 +74,10 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
  );
 
 
+std::string
+get_res_list_hash( utility::vector1<core::Size> const & reslist);
+
+
 template<class T>
 std::string str(T const & t, core::Size N=0){
 	// std::ostringstream oss;

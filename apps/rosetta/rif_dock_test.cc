@@ -866,8 +866,9 @@ int main(int argc, char *argv[]) {
 					// scaffold_res_all.push_back(ir);
 				}
 				std::string scaff_tag = utility::file_basename( scaff_fname );
-				std::string cachefile = "__1BE_" + scaff_tag + (opt.replace_all_with_ala_1bre?"_ALLALA":"") + ".bin.gz";
-				if( ! opt.cache_scaffold_data ) cachefile = "";
+				std::string scaff_res_hashstr = ::devel::scheme::get_res_list_hash( scaffold_res );
+				std::string cachefile_1be = "__1BE_"+scaff_tag+(opt.replace_all_with_ala_1bre?"_ALLALA":"")+"_reshash"+scaff_res_hashstr+".bin.gz";
+				if( ! opt.cache_scaffold_data ) cachefile_1be = "";
 				std::cout << "rifdock: get_onebody_rotamer_energies" << std::endl;
 				get_onebody_rotamer_energies(
 						scaffold,
@@ -875,7 +876,7 @@ int main(int argc, char *argv[]) {
 						rot_index,
 						scaffold_onebody_glob0,
 						opt.data_cache_path,
-						cachefile,
+						cachefile_1be,
 						opt.replace_all_with_ala_1bre
 					);
 
