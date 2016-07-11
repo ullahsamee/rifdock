@@ -1399,13 +1399,6 @@ int main(int argc, char *argv[]) {
 					else         print_header( "rosetta score" ); ////////////////////////////////////////////////////////////////////////////
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-					if( target_res.size() > 1 ){
-						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
-						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
-						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
-						std::cout << "WARNING!!!!!!!!! rosetta score/min is intended for use with small molecules!!!"  << std::endl;
-					}
-
 					std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
 					std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
 					// std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
