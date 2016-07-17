@@ -555,12 +555,13 @@ namespace rif {
 							}
 
 							// will check mem use
-							if( i % 1000 == 0 && accumulator->need_to_condense() ){
-								omp_set_lock(&accum_lock);
+							if( i % 10000 == 0 && accumulator->need_to_condense() ){
+								// omp_set_lock(&accum_lock);
+								#pragma omp critical
 								if( accumulator->need_to_condense() ){
 									accumulator->checkpoint( cout );
 								}
-								omp_unset_lock(&accum_lock);
+								// omp_unset_lock(&accum_lock);
 							}
 
 						}
