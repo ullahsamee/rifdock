@@ -143,10 +143,11 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		uint64_t m = mem_use();
 		if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
 			// out << "mem use " << float(m)/1024.0/1024.0 << "M is above threshold " << scratch_size_M_ << "M, time to condense" << std::endl;
-			out << "C"; out.flush();
+			out << '<'; out.flush();
 			condense();
 			N_motifs_found_ += total_samples();
 			clear();
+			out << '>'; out.flush();
 			// out << "RIF so far: " << " non0 in RIF: " << KMGT(xmap_ptr_->size()) << " N_motifs_found_: "
 			    // << KMGT(N_motifs_found_) << " coverage: " << (double)N_motifs_found_/xmap_ptr_->size()
 			    // << ", mem_use: " << KMGT(xmap_ptr_->mem_use())

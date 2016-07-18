@@ -475,105 +475,107 @@ namespace rif {
 				std::vector<double> avg_scores( omp_max_threads_1(), 0.0 );
 				std::vector<uint64_t> avg_scores_count( omp_max_threads_1(), 0 );
 				std::exception_ptr exception = nullptr;
-				#ifdef USE_OPENMP
-				#pragma omp parallel for schedule(dynamic,128)
-				#endif
-				for( int64_t i = 0; i < samples[r-1].size(); ++i ){
-					if(exception) continue;
-					try{
-						if( i%out_interval==0 ){
-							cout << '*'; cout.flush();// (float)i/samples[r].size()*100.0 << "% "; cout.flush();
-						}
-						if( samples[r-1][i].score > final_score_cut ) continue;
-						uint64_t isamp0 = samples[r-1][i].index;
-						for( uint64_t j = 0; j < DIMPOW2; ++j ){
-							uint64_t isamp = isamp0 * DIMPOW2 + j;
-							Scene & tscene( scene_per_thread[omp_get_thread_num()] );
-							d.set_scene( isamp, r, tscene );
-							float score0 = objective( tscene, r ).template get<VoxelScore>();// - numeric::random::uniform()/1000.0;
-							if(score0 < 0){
-								avg_scores[ omp_get_thread_num() ] += score0;
-								avg_scores_count[ omp_get_thread_num() ]++;
+
+				int64_t block_size = 1024;
+				for( int64_t iblock = 0; iblock < samples[r-1].size()/block_size; ++iblock )
+				{
+					int64_t block_begin = iblock * block_size;
+					int64_t block_end = std::min<int64_t>( samples[r-1].size(), block_begin+block_size );
+
+					#ifdef USE_OPENMP
+					#pragma omp parallel for schedule(dynamic,1)
+					#endif
+					for( int64_t i = block_begin; i < block_end; ++i ){
+						if(exception) continue;
+						try{
+							if( i%out_interval==0 ){
+								cout << '*'; cout.flush();// (float)i/samples[r].size()*100.0 << "% "; cout.flush();
 							}
+							if( samples[r-1][i].score > final_score_cut ) continue;
+							uint64_t isamp0 = samples[r-1][i].index;
+							for( uint64_t j = 0; j < DIMPOW2; ++j ){
+								uint64_t isamp = isamp0 * DIMPOW2 + j;
+								Scene & tscene( scene_per_thread[omp_get_thread_num()] );
+								d.set_scene( isamp, r, tscene );
+								float score0 = objective( tscene, r ).template get<VoxelScore>();// - numeric::random::uniform()/1000.0;
+								if(score0 < 0){
+									avg_scores[ omp_get_thread_num() ] += score0;
+									avg_scores_count[ omp_get_thread_num() ]++;
+								}
 
-							// BB atoms are repulsive-only, so this is ok
-							if( score0 > final_score_cut ) continue;
+								// BB atoms are repulsive-only, so this is ok
+								if( score0 > final_score_cut ) continue;
 
-							for( auto const & child : inv_rotamer_backbones )
-							{
-								int crot = child.rotid;
-								Vector3f Nchild  = tscene.position(1) * child.Ncen;
-								Vector3f CAchild = tscene.position(1) * child.CAcen;
-								Vector3f Cchild  = tscene.position(1) * child.Ccen;
-								::scheme::actor::BackboneActor<EigenXform> bbactor_child( Nchild, CAchild , Cchild );
+								for( auto const & child : inv_rotamer_backbones )
+								{
+									int crot = child.rotid;
+									Vector3f Nchild  = tscene.position(1) * child.Ncen;
+									Vector3f CAchild = tscene.position(1) * child.CAcen;
+									Vector3f Cchild  = tscene.position(1) * child.Ccen;
+									::scheme::actor::BackboneActor<EigenXform> bbactor_child( Nchild, CAchild , Cchild );
 
-								// if(runiftest < 0.0001) {
-								// 	utility::io::ozstream out("test"+str(++count)+".pdb");
+									// if(runiftest < 0.0001) {
+										// 	utility::io::ozstream out("test"+str(++count)+".pdb");
 
 
-								// 	EigenXform x = tscene.position(1);
-								// 	EigenXform y = EigenXform::Identity();
-								// 	y.translation() = -rotamer_center;
-								// 	EigenXform z = rot_index_p->to_structural_parent_frame_.at(crot);
-								// 	rot_index_p->dump_pdb( out, crot, x*y*z );
+										// 	EigenXform x = tscene.position(1);
+										// 	EigenXform y = EigenXform::Identity();
+										// 	y.translation() = -rotamer_center;
+										// 	EigenXform z = rot_index_p->to_structural_parent_frame_.at(crot);
+										// 	rot_index_p->dump_pdb( out, crot, x*y*z );
 
-								// 	dump_scene( d, tscene, *rot_index_p, isamp, RESLS.size()-1, out );
+										// 	dump_scene( d, tscene, *rot_index_p, isamp, RESLS.size()-1, out );
 
-								// 	out << "MODEL" << std::endl;
-								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  N ",  Nchild );
-								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", " CA ", CAchild );
-								// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  C ",  Cchild );
-								// 	out << "ENDMDL" << std::endl;
-								// 	out.close();
-								// }
+										// 	out << "MODEL" << std::endl;
+										// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  N ",  Nchild );
+										// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", " CA ", CAchild );
+										// 	::scheme::io::dump_pdb_atom_resname_atomname( out, "TST", "  C ",  Cchild );
+										// 	out << "ENDMDL" << std::endl;
+										// 	out.close();
+										// }
 
-								float score = score0;
-								// treat all bb atoms as 20 by convention, bb is repl-only
-								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Nchild ));
-								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( CAchild ));
-								score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Cchild ));
+									float score = score0;
+									// treat all bb atoms as 20 by convention, bb is repl-only
+									score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Nchild ));
+									score += std::max(0.0f,bounding_by_atype.back().at(20)->at( CAchild ));
+									score += std::max(0.0f,bounding_by_atype.back().at(20)->at( Cchild ));
 
-								if( score < min_score ){
-									#pragma omp critical
 									if( score < min_score ){
-										min_score = score;
+										#pragma omp critical
+										if( score < min_score ){
+											min_score = score;
+										}
 									}
-								}
-								if( score > final_score_cut ) continue;
+									if( score > final_score_cut ) continue;
 
-								accumulator->insert( bbactor_child.position_, score_weight*score, crot );
+									accumulator->insert( bbactor_child.position_, score_weight*score, crot );
 
-								if( opts.dump_fraction > 0 ){
-									double const runif = uniform(rngs[omp_thread_num_1()-1]);
-									if( runif < opts.dump_fraction ){
-										omp_set_lock(&io_lock);
-											test_hits.push_back( std::make_tuple(score,tscene.position(1),crot) );
-										omp_unset_lock(&io_lock);
+									if( opts.dump_fraction > 0 ){
+										double const runif = uniform(rngs[omp_thread_num_1()-1]);
+										if( runif < opts.dump_fraction ){
+											omp_set_lock(&io_lock);
+												test_hits.push_back( std::make_tuple(score,tscene.position(1),crot) );
+											omp_unset_lock(&io_lock);
+										}
 									}
+
 								}
-
 							}
-
-							// will check mem use
-							if( i % 10000 == 0 && accumulator->need_to_condense() ){
-								// omp_set_lock(&accum_lock);
-								#pragma omp critical
-								if( accumulator->need_to_condense() ){
-									accumulator->checkpoint( cout );
-								}
-								// omp_unset_lock(&accum_lock);
-							}
-
+						} catch( ... ) {
+							#ifdef USE_OPENMP
+							#pragma omp critical
+							#endif
+							exception = std::current_exception();
 						}
-					} catch( ... ) {
-						#ifdef USE_OPENMP
-						#pragma omp critical
-						#endif
-						exception = std::current_exception();
 					}
-				}
-				if( exception ) std::rethrow_exception(exception);
+					if( exception ) std::rethrow_exception(exception);
 
+					// this is why blocks... can't condense while other threads running
+					if( accumulator->need_to_condense() ){
+						accumulator->checkpoint( cout );
+					}
+
+				} // end blocks
 
 				float avg_score = 0.0;
 				uint64_t tot_samp = 0;

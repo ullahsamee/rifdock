@@ -607,7 +607,8 @@ struct RotamerIndex {
 		for( auto const & a : rotamers_.at(irot).atoms_ ){
 			auto a2 = a;
 			a2.set_position( x * a2.position() );
-			out << scheme::io::dump_pdb_atom(a2) << std::endl;
+			std::string s = scheme::io::dump_pdb_atom(a2);
+			if( s.size() > 0 && s.size() < 999 ) out << s << std::endl;
 		}
 		// out << "ENDMDL" << irot << std::endl;
 		// out << "MODEL " << resname(irot) << " " << ++rescount << " " << irot << " HBONDERS" << std::endl;
