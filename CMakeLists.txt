@@ -55,10 +55,11 @@ message( "install prefix ................ " ${CMAKE_INSTALL_PREFIX} )
 
 ######################### external dependencies ####################################
 
-find_path( EIGEN3_INCLUDE_DIR eigen3/Eigen )
-if( ${EIGEN3_INCLUDE_DIR} MATCHES EIGEN3_INCLUDE_DIR-NOTFOUND )
-	message( FATAL_ERROR "NO eigen3/Eigen found")
-endif()
+#find_path( EIGEN3_INCLUDE_DIR eigen3/Eigen )
+#if( ${EIGEN3_INCLUDE_DIR} MATCHES EIGEN3_INCLUDE_DIR-NOTFOUND )
+#	message( FATAL_ERROR "NO eigen3/Eigen found")
+#endif()
+set( EIGEN3_INCLUDE_DIR external )
 include_directories( ${EIGEN3_INCLUDE_DIR}/eigen3 )
 
 add_subdirectory(external/gmock)
