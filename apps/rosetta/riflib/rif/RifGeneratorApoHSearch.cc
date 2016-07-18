@@ -476,7 +476,7 @@ namespace rif {
 				std::vector<uint64_t> avg_scores_count( omp_max_threads_1(), 0 );
 				std::exception_ptr exception = nullptr;
 
-				int64_t block_size = 1024;
+				int64_t block_size = 8192;
 				for( int64_t iblock = 0; iblock < samples[r-1].size()/block_size; ++iblock )
 				{
 					int64_t block_begin = iblock * block_size;
