@@ -803,7 +803,7 @@ struct HBJob {
 		omp_destroy_lock( & pose_lock );
 		omp_destroy_lock( & hbond_geoms_cache_lock );
 
-		if( accumulator->total_samples() == 0 ){
+		if( accumulator->n_motifs_found() == 0 ){
 			utility_exit_with_message("no hbonds found, something is wrong");
 		}
 	}

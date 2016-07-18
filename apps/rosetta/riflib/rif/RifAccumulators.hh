@@ -47,7 +47,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		xmap_ptr_ = make_shared<XMap>( cart_resl, ang_resl );
 	}
 
-	uint64_t n_motifs_found() const override { return N_motifs_found_; }
+	uint64_t n_motifs_found() const override { return N_motifs_found_ + total_samples(); }
 
 	shared_ptr<RifBase> rif() const override {
 		shared_ptr<RifBase> r = rif_factory_->create_rif();
@@ -110,7 +110,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 	}
 
 	void report( std::ostream & out ) const override {
-		out << "RIFAccum nrots: " << devel::scheme::KMGT(N_motifs_found_+total_samples())
+		out << "RIFAccum nrots: " << devel::scheme::KMGT(n_motifs_found())
 		    << " mem: " << devel::scheme::KMGT(mem_use())
 		    << " rif_mem: " << devel::scheme::KMGT(xmap_ptr_->mem_use()) << std::endl;
 	}
