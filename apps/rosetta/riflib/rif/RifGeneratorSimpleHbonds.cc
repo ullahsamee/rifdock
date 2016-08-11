@@ -305,7 +305,6 @@ struct HBJob {
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
 			std::string hbgeomtag = don_or_acc + don + "-" + acc;
-			utility::io::ozstream *rif_hbond_vis_out = nullptr;
 
 			std::map< std::string, core::pose::Pose > hbgeom_exemplars_rtype_override;
 			bool override = target.n_residue()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
@@ -552,7 +551,7 @@ struct HBJob {
 					if( rel_rot_pos.n .distance_squared( rel_rot_pos.ca ) < 1.0 ||
 					    rel_rot_pos.ca.distance_squared( rel_rot_pos.c  ) < 1.0 ||
 					    rel_rot_pos.c .distance_squared( rel_rot_pos.n  ) < 1.0  )
-					{ 
+					{
 						std::cout << "bad data in rel_rot_pos, sourced from: " << hbgeomtag << std::endl;
 						continue;
 					}
@@ -630,7 +629,7 @@ struct HBJob {
 							// if( sat1 < 0 || sat2 >= 0 ){
 							// 	#pragma omp critical
 							// 	{
-							// 		std::cout << "bad_sat score: " << positioned_rotamer_score << " " 
+							// 		std::cout << "bad_sat score: " << positioned_rotamer_score << " "
 							//             << opts.score_threshold << " " << sat1 << " " << sat2 << std::endl;
 							// 		utility::io::ozstream out("bad_sat.pdb");
 							// 		for( auto a : res_atoms ){
@@ -661,57 +660,57 @@ struct HBJob {
 							if( runif < dump_chance ){
 								// std::cout << "do test output" << std::endl;
 								omp_set_lock(&io_lock);
-								if( rif_hbond_vis_out == nullptr ){
-									std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb.gz";
-									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
-									rif_hbond_vis_out = new utility::io::ozstream( outfilename );
-								}
-								*rif_hbond_vis_out << "MODEL " << irot << endl;
-								for( auto a : res_atoms ){
-									Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
-									tmp = xalign*tmp;
-									a.set_position( tmp );
-									::scheme::actor::write_pdb( *rif_hbond_vis_out, a, rot_index.chem_index_ );
-								}
-								*rif_hbond_vis_out << "ENDMDL" << endl;
-								if( n_sat_groups > 0 ){
-									if( sat1 >= 0 && sat2 >= 0 ){
-										if( sat1 < sat2 ) std::swap(sat1,sat2);
-										if( rif_hbond_vis_out_double_satgroups[sat1][sat2] == nullptr ){
-											std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb.gz";
-											// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
-											rif_hbond_vis_out_double_satgroups[sat1][sat2] = new utility::io::ozstream( outfilename );
-										}
-										*rif_hbond_vis_out_double_satgroups[sat1][sat2] << "MODEL " << irot << endl;
-										for( auto a: res_atoms ){
-											Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
-											tmp = xalign*tmp;
-											a.set_position( tmp );
-											::scheme::actor::write_pdb( *rif_hbond_vis_out_double_satgroups[sat1][sat2], a, rot_index.chem_index_ );
-										}
-										*rif_hbond_vis_out_double_satgroups[sat1][sat2] << "ENDMDL" << endl;
-									} else {
-										for( int i12 = 0; i12 < 2; ++i12 ){
-											int sat = i12 ? sat1 : sat2;
-											if( sat >= 0 ){
-												runtime_assert( sat < n_sat_groups );
-												if( rif_hbond_vis_out_satgroups[sat] == nullptr ){
-													std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_sat"+I(4,sat)+".pdb.gz";
-													// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
-													rif_hbond_vis_out_satgroups[sat] = new utility::io::ozstream( outfilename );
+									if( rif_hbond_vis_out == nullptr ){
+										std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_"+I(3,ir)+hbgeomtag+".pdb.gz";
+										// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+										rif_hbond_vis_out = new utility::io::ozstream( outfilename );
+									}
+									*rif_hbond_vis_out << "MODEL " << irot << endl;
+									for( auto a : res_atoms ){
+										Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
+										tmp = xalign*tmp;
+										a.set_position( tmp );
+										::scheme::actor::write_pdb( *rif_hbond_vis_out, a, rot_index.chem_index_ );
+									}
+									*rif_hbond_vis_out << "ENDMDL" << endl;
+									if( n_sat_groups > 0 ){
+										if( sat1 >= 0 && sat2 >= 0 ){
+											if( sat1 < sat2 ) std::swap(sat1,sat2);
+											if( rif_hbond_vis_out_double_satgroups[sat1][sat2] == nullptr ){
+												std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_doublesat"+I(4,sat1)+I(4,sat2)+".pdb.gz";
+												// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+												rif_hbond_vis_out_double_satgroups[sat1][sat2] = new utility::io::ozstream( outfilename );
+											}
+											*rif_hbond_vis_out_double_satgroups[sat1][sat2] << "MODEL " << irot << endl;
+											for( auto a: res_atoms ){
+												Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
+												tmp = xalign*tmp;
+												a.set_position( tmp );
+												::scheme::actor::write_pdb( *rif_hbond_vis_out_double_satgroups[sat1][sat2], a, rot_index.chem_index_ );
+											}
+											*rif_hbond_vis_out_double_satgroups[sat1][sat2] << "ENDMDL" << endl;
+										} else {
+											for( int i12 = 0; i12 < 2; ++i12 ){
+												int sat = i12 ? sat1 : sat2;
+												if( sat >= 0 ){
+													runtime_assert( sat < n_sat_groups );
+													if( rif_hbond_vis_out_satgroups[sat] == nullptr ){
+														std::string outfilename = params->output_prefix+"RifGen_Hbond_vis_sat"+I(4,sat)+".pdb.gz";
+														// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+														rif_hbond_vis_out_satgroups[sat] = new utility::io::ozstream( outfilename );
+													}
+													*rif_hbond_vis_out_satgroups[sat] << "MODEL " << irot << endl;
+													for( auto a: res_atoms ){
+														Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
+														tmp = xalign*tmp;
+														a.set_position( tmp );
+														::scheme::actor::write_pdb( *rif_hbond_vis_out_satgroups[sat], a, rot_index.chem_index_ );
+													}
+													*rif_hbond_vis_out_satgroups[sat] << "ENDMDL" << endl;
 												}
-												*rif_hbond_vis_out_satgroups[sat] << "MODEL " << irot << endl;
-												for( auto a: res_atoms ){
-													Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
-													tmp = xalign*tmp;
-													a.set_position( tmp );
-													::scheme::actor::write_pdb( *rif_hbond_vis_out_satgroups[sat], a, rot_index.chem_index_ );
-												}
-												*rif_hbond_vis_out_satgroups[sat] << "ENDMDL" << endl;
 											}
 										}
 									}
-								}
 								omp_unset_lock(&io_lock);
 							}
 						}
@@ -770,6 +769,12 @@ struct HBJob {
 				}
 			}
 			// omp_unset_lock(&cout_lock);
+
+			if( rif_hbond_vis_out ){
+				rif_hbond_vis_out->close();
+				delete rif_hbond_vis_out;
+			}
+
 
 		}
 
