@@ -78,7 +78,9 @@
 
 // #include "scheme/search/SpatialBandB.gtest.cc"
 
-#include "scheme/chemical/stub.gtest.cc"
+// #include "scheme/chemical/stub.gtest.cc"
+
+#include "scheme/numeric/cube_to_sphere.gtest.cc"
 
 int main(int argc, char **argv)
 {
