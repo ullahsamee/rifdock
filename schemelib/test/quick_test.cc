@@ -80,7 +80,9 @@
 
 // #include "scheme/chemical/stub.gtest.cc"
 
-#include "scheme/numeric/cube_to_sphere.gtest.cc"
+// #include "scheme/numeric/cube_to_sphere.gtest.cc"
+
+#include "scheme/numeric/rand_xform.gtest.cc"
 
 int main(int argc, char **argv)
 {
