@@ -43,10 +43,23 @@ namespace rif {
 
 
 		// some sanity checks
-		int const n_hspot_groups = opts.hotspot_files.size();
+		int const n_hspot_groups = this->opts.hotspot_files.size();
 		runtime_assert_msg( n_hspot_groups, "no hotspot group files specified!!" );
 		runtime_assert_msg( n_hspot_groups<16, "too many hotspot groups!!" );
 		runtime_assert_msg( accumulator->rif()->has_sat_data_slots(), "This RIF type doesn't support sat groups!!!" );
+
+		std::cout << "RifGeneratorUserHotspots opts:" << std::endl;
+		std::cout << "    hotspot_sample_cart_bound:  " << this->opts.hotspot_sample_cart_bound;
+		std::cout << "    hotspot_sample_angle_bound: " << this->opts.hotspot_sample_angle_bound;
+		std::cout << "    hbond_weight:               " << this->opts.hbond_weight;
+		std::cout << "    upweight_multi_hbond:       " << this->opts.upweight_multi_hbond;
+		std::cout << "    target_center:              "
+			<< this->opts.target_center[0] << " "
+			<< this->opts.target_center[1] << " "
+			<< this->opts.target_center[2] << std::endl;
+		for( auto s : this->opts.hotspot_files ){
+			std::cout << "    hotspot_group:              " << s << std::endl;
+		}
 
 
 		// setup the hacky but fast scorer
@@ -65,8 +78,8 @@ namespace rif {
 				rot_tgt_scorer.target_field_by_atype_ = params->field_by_atype;
 				rot_tgt_scorer.target_donors_ = target_donors;
 				rot_tgt_scorer.target_acceptors_ = target_acceptors;
-				rot_tgt_scorer.hbond_weight_ = opts.hbond_weight;
-				rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond;
+				rot_tgt_scorer.hbond_weight_ = this->opts.hbond_weight;
+				rot_tgt_scorer.upweight_multi_hbond_ = this->opts.upweight_multi_hbond;
 				rot_tgt_scorer.upweight_iface_ = 1.0;
 
 			}
@@ -76,9 +89,9 @@ namespace rif {
 		// fill this in somehow... maybe start with random purterbations... later I can help you do it "right" with a grid of some kind
 
 		// loop over files (one file is one hotspot group)
-		for( int i_hotspot_group = 0; i_hotspot_group < opts.hotspot_files.size(); ++i_hotspot_group ){
+		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
-			std::string const & hotspot_file = opts.hotspot_files[i_hotspot_group];
+			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
 			core::pose::Pose pose;
 			// read hotspot file into pose
 

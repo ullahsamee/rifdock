@@ -577,6 +577,7 @@ int main(int argc, char *argv[]) {
 			hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			generators.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );
 		}
 

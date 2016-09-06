@@ -24,6 +24,7 @@ struct RifGeneratorUserHotspotsOpts {
 	float hotspot_sample_angle_bound = 30.0;
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0.0;
+	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
 };
 
