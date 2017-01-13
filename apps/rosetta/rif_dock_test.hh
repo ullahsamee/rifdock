@@ -106,8 +106,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 	OPT_1GRP_KEY(  Integer     , rif_dock, always_available_rotamers_level )
-	OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
 
+    OPT_1GRP_KEY(  Integer     , rif_dock, nfold_symmetry )
+    OPT_1GRP_KEY(  RealVector  , rif_dock, symmetry_axis )
 
 	void register_options() {
 		using namespace basic::options;
@@ -217,7 +219,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::extra_rotamers, "", true );
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 		NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
-		NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+
+        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
+        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
+
 	}
 
 struct RifDockOpt
@@ -312,6 +318,9 @@ struct RifDockOpt
 	bool        rosetta_beta                         ;
 	std::string rosetta_soft_score                   ;
 	std::string rosetta_hard_score                   ;
+
+    int         nfold_symmetry                       ;
+    std::vector<float> symmetry_axis                 ;
 
 
 	void init_from_cli()
@@ -422,6 +431,21 @@ struct RifDockOpt
 			std::cout << "WARNING: rosetta_score_total overrives rosetta_score_ddg_only" << std::endl;
 			rosetta_score_ddg_only = false;
 		}
+
+        nfold_symmetry = option[rif_dock::nfold_symmetry]();
+        symmetry_axis.clear();
+        if( option[rif_dock::symmetry_axis]().size() == 3 ){
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[1] );
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[2] );
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[3] );
+        } else if( option[rif_dock::symmetry_axis]().size() == 0 ){
+            symmetry_axis.push_back(0);
+            symmetry_axis.push_back(0);
+            symmetry_axis.push_back(1);
+        } else {
+            std::cout << "bad rif_dock::symmetry_axis option" << std::endl;
+            std::exit(-1);
+        }
 
 	}
 };

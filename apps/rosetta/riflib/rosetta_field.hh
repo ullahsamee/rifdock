@@ -35,6 +35,7 @@ struct RosettaFieldOptions {
 	bool fail_if_no_cached_data = false;
 	bool cache_mismatch_tolerance = 0.01;
 	bool generate_only = false;
+    int one_atype_only = 0;
 	std::vector<core::id::AtomID> repulsive_atoms;
 };
 

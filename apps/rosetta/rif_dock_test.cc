@@ -623,9 +623,6 @@ int main(int argc, char *argv[]) {
 		);
 
 
-		// if( opt.use_scaffold_bounding_grids ){
-		// 	std::cout << "not using target steric grids" << std::endl;
-		// } else {
 		if( true ){
 			// std::cout << "using target bounding grids, generating (or loading) them" << std::endl;
 			devel::scheme::RosettaFieldOptions rfopts;
@@ -667,6 +664,7 @@ int main(int argc, char *argv[]) {
 									float & dat = vap->data()[k];
 									if( dat < 0 ){
 										dat = dat * correction;
+										// dat = 0; // for testing w/o attractive sterics
 									}
 								} catch( std::exception const & ex ) {
 									#pragma omp critical
@@ -741,6 +739,9 @@ int main(int argc, char *argv[]) {
 	}
 
 
+    if( 0 == opt.scaffold_fnames.size() ){
+        std::cout << "WARNING: NO SCAFFOLDS!!!!!!" << std::endl;
+    }
 
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
@@ -1086,6 +1087,46 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			std::vector<EigenXform> symmetries_clash_check;
+			if( opt.nfold_symmetry > 1 ){
+				// utility_exit_with_message("NOT IMPLEMENTED!");
+				// check only 1 and Nfold - 1, hense the strange += value
+				// symmetries_clash_check.push_back( EigenXform::Identity() );
+				for(int isym = 1; isym < opt.nfold_symmetry; isym += opt.nfold_symmetry-2){
+					float angle_rads = isym * 2.0 * M_PI / opt.nfold_symmetry;
+					Eigen::AngleAxis<typename EigenXform::Scalar> aa( angle_rads, Eigen::Vector3f(0,0,1) );
+					EigenXform x(aa.toRotationMatrix());
+					runtime_assert( x.translation().norm() < 0.0001 );
+					symmetries_clash_check.push_back( x );
+					std::cout << "USING SYMMETRY CLASH CHECK HACK!!!! " << isym << " " << angle_rads << std::endl;
+				}
+				if( !opt.use_scaffold_bounding_grids ){
+					std::cout << "making atype 5-only scaffold bounding grids" << std::endl;
+					// need to init scaffold*_by_atype for, say, atype 5, then use this for symmetrical clash checking
+					scaffold_bounding_by_atype.resize( RESLS.size() );
+					devel::scheme::RosettaFieldOptions rfopts;
+					rfopts.field_resl = 1.0;
+					rfopts.data_dir = "DUMMY_DATA_DIR_FIXME";
+					rfopts.oversample = 1;
+					rfopts.block_hbond_sites = false;
+					rfopts.max_bounding_ratio = opt.max_rf_bounding_ratio;
+					rfopts.repulsive_only_boundary = true; // default
+					rfopts.one_atype_only = 5; // atype 5 only good enough for the sym clash check
+					devel::scheme::get_rosetta_bounding_fields(
+						RESLS,
+						scaff_fname+"_CEN"+(opt.scaff2ala?"_ALLALA":""),
+						scaffold_centered,
+						scaffold_res,
+						rfopts,
+						scaffold_field_by_atype,
+						scaffold_bounding_by_atype,
+						false
+					);
+					std::cout << "done making atype 5-only scaffold bounding grids" << std::endl;
+				}
+			}
+
+
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup scene from scaffold and target" );
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1218,7 +1259,46 @@ int main(int argc, char *argv[]) {
 										// std::cout << "inbounds " << iresl << " " << xform_magnitude( tscene->position(1), redundancy_filter_rg ) << std::endl;
 									}
 								}
-								samples[iresl][i].score = objectives[iresl]->score( *tscene );
+
+   								float tot_sym_score = 0;
+                                if( opt.nfold_symmetry > 1 ){
+									bool dump = false;
+									if( iresl == 2 ) dump = true;
+									if(dump){
+									    scaffold_centered.dump_pdb("test_scaff.pdb");
+									    target.dump_pdb("test_target.pdb");
+									}
+									EigenXform x = tscene->position(1);
+									EigenXform xinv = x.inverse();
+                                    for(int isym = 0; isym < symmetries_clash_check.size(); ++isym){
+                                        EigenXform const & xsym = symmetries_clash_check[isym];
+									// for( EigenXform const & xsym : symmetries_clash_check ){
+                                        utility::io::ozstream * outp = nullptr;
+                                        if(dump){
+                                            outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
+                                        }
+										EigenXform x_to_internal = xinv * xsym * x;
+										for( SimpleAtom a : scaffold_simple_atoms ){
+											a.set_position( x_to_internal * a.position() );
+		                            		if(dump) ::scheme::actor::write_pdb( *outp, a, rot_index_p->chem_index_ );
+		                                    float atom_score = scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
+		                                 	if( atom_score > 0.0 ){ // clash only
+			                                    tot_sym_score += atom_score;
+		                                 	}
+										}
+                                        if(dump){
+                                            outp->close();
+                                            delete outp;
+    									}
+                                    }
+									if(dump){
+										std::cout << "tot_sym_score " << tot_sym_score << std::endl;
+										utility_exit_with_message("testing symmetric clash check");
+									}
+                                }
+
+                                samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+
 							} catch( std::exception const & ex ) {
 								#ifdef USE_OPENMP
 								#pragma omp critical
@@ -1444,6 +1524,11 @@ int main(int argc, char *argv[]) {
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*1.0 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_bb_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
 						}
+
+                        // score one pose single threaded maybe helps lkball issue
+                        scorefunc_pt[i]->score(scaffold);
+                        scorefunc_pt[i]->score(target);
+
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
 						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();

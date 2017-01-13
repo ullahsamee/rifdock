@@ -107,8 +107,11 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rif_rotamers )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
-	OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
-	OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_angle_bound )
+    OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
+    OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_angle_bound )
+    OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
+    OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
+    OPT_1GRP_KEY( Boolean       , rifgen, dump_hotspot_samples )
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -162,8 +165,12 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::extra_rif_rotamers               , "" , true );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
-		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 1.0 );
-		NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 30.0 );
+		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
+        NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 15.0 );
+        NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
+        NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
+        NEW_OPT(  rifgen::dump_hotspot_samples             , "" , false );
+
 
 		// make bounding grids stuff
 		NEW_OPT( rifgen::hash_cart_resls, "cartesian resolution(s) of hash table(s)"      , utility::vector1<double>() );
@@ -574,7 +581,10 @@ int main(int argc, char *argv[]) {
 			auto const & hspot_files = option[rifgen::hotspot_groups]();
 			hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
 			hspot_opts.hotspot_sample_cart_bound = option[ rifgen::hotspot_sample_cart_bound ]();
-			hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
+            hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
+            hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
+            hspot_opts.hotspot_score_thresh = option[ rifgen::hotspot_score_thresh]();
+            hspot_opts.dump_hotspot_samples = option[ rifgen::dump_hotspot_samples]();
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
@@ -603,7 +613,7 @@ int main(int argc, char *argv[]) {
 
 
 		uint64_t N_motifs_found = rif_accum->n_motifs_found();
-		N_motifs_found += rif_accum->total_samples();
+		// N_motifs_found += rif_accum->total_samples();
 		std::cout << "RIFAccumulator building rif...." << std::endl;
 		rif_accum->condense();
 		rif = rif_accum->rif();
