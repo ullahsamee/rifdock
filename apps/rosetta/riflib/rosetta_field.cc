@@ -66,7 +66,7 @@ parse_atomids(
 			 ia = atomreslist[iro];
 		} else {
 			int ir = atomreslist[iro];
-			runtime_assert_msg( 0 < ir && ir <= refpose.n_residue(), "residue index out of bounds: " + str(ir) + " nres: " + str( refpose.n_residue()) );
+			runtime_assert_msg( 0 < ir && ir <= refpose.size(), "residue index out of bounds: " + str(ir) + " nres: " + str( refpose.size()) );
 			runtime_assert_msg( 0 < ia && ia <= refpose.residue(ir).natoms(), "atom index out of bounds: " + str(ia) + " natom: " + str( refpose.residue(ir).natoms()) + " res: " + str(ir) );
 			atomids_out.push_back( core::id::AtomID(ia,ir) );
 			if( printme.size() ) std::cout << "parse_atomids selected atom " << printme << ": " << ir << " " << refpose.residue(ir).name3() << " " << ia << " " << refpose.residue(ir).atom_name(ia) << std::endl;
@@ -82,7 +82,7 @@ get_scheme_atoms(
 	std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > & out,
 	bool bbonly
 ){
-	// if(target_res.size()==0) for(core::Size i=1; i<=target.n_residue(); ++i) target_res.push_back(i);
+	// if(target_res.size()==0) for(core::Size i=1; i<=target.size(); ++i) target_res.push_back(i);
 
 		std::vector<int> atypemap = get_rif_atype_map();
 
@@ -142,7 +142,7 @@ get_scheme_atoms(
 ){
 	utility::vector1<core::Size> target_res;
 	if(target_res.size()==0){
-		for(core::Size i = 1; i <= target.n_residue(); ++i){
+		for(core::Size i = 1; i <= target.size(); ++i){
 			target_res.push_back(i);
 		}
 	}
@@ -253,7 +253,7 @@ get_rosetta_fields_specified_cache_prefix(
 			// 		selected_atoms.push_back(a);
 			// 	}
 			// }
-			for(int ir = 1; ir <= target.n_residue(); ++ir){
+			for(int ir = 1; ir <= target.size(); ++ir){
 				core::conformation::Residue const & r( target.residue(ir) );
 				for(int ia = 1; ia <= r.nheavyatoms(); ++ia){
 					if( r.is_virtual(ia) ) continue;

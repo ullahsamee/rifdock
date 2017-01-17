@@ -117,7 +117,7 @@ namespace rif {
             std::cout << "i_hotspot_group " << i_hotspot_group << " " << hotspot_file << std::endl;
 
 			// read in pdb files # i_hotspot_group
-			for( int i_hspot_res = 1; i_hspot_res <= pose.n_residue(); ++i_hspot_res ){
+			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
                 std::cout << "    i_hspot_res " << i_hspot_res << " " << hotspot_file << " res " << i_hspot_res << std::endl;
 
                 int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();

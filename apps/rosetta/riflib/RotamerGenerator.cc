@@ -32,7 +32,7 @@
 #include <core/pack/dunbrack/RotamerLibraryScratchSpace.hh>
 #include <core/pack/dunbrack/SingleResidueDunbrackLibrary.hh>
 #include <core/pack/task/TaskFactory.hh>
-#include <core/graph/Graph.hh>
+#include <utility/graph/Graph.hh>
 #include <core/pack/packer_neighbors.hh>
 #include <basic/options/keys/packing.OptionKeys.gen.hh>
 #include <basic/options/option.hh>
@@ -318,7 +318,7 @@ get_rosetta_rot_set(
 	dummy_task->nonconst_residue_task( ir ).restrict_to_repacking();
 	dummy_task->nonconst_residue_task( ir ).or_include_current( false ); //need to do this because the residue was built from internal coords and is probably crumpled up
 	dummy_task->nonconst_residue_task( ir ).or_fix_his_tautomer( true ); //since we only want rotamers for the specified restype
-	core::graph::GraphOP dummy_png = core::pack::create_packer_graph( pose, dummy_sfxn, dummy_task );
+	utility::graph::GraphOP dummy_png = core::pack::create_packer_graph( pose, dummy_sfxn, dummy_task );
 	core::pack::rotamer_set::RotamerSetFactory rsf;
 	core::pack::rotamer_set::RotamerSetOP rotset( rsf.create_rotamer_set( pose.residue( ir ) ) );
 	rotset->set_resid( ir );
@@ -1110,7 +1110,7 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
 					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
 				}
-				else if( aname==" O5'" || (aname==" O3'" && ir < pose.n_residue() && pose.residue(ir+1).is_DNA()) )
+				else if( aname==" O5'" || (aname==" O3'" && ir < pose.size() && pose.residue(ir+1).is_DNA()) )
 				{
 					auto cxyz = rsd.xyz("C5'");
 					auto oxyz = rsd.xyz("O5'");

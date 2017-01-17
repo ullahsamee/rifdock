@@ -55,7 +55,7 @@ get_res(
  	using core::Size;
 	utility::vector1<core::Size> res;
 	if(fname==""){
-		for(Size ir = 1; ir <= pose.n_residue(); ++ir){
+		for(Size ir = 1; ir <= pose.size(); ++ir){
 			if( nocgp )	add_res_if_not_CGP( pose, ir, res );
 			else res.push_back(ir);
 		}
@@ -71,7 +71,7 @@ get_res(
 			if(splt.size()==1){
 				// std::cout << "'" << splt.front() << "'" << std::endl;
 				Size ir = boost::lexical_cast<Size>(splt.front());
-				runtime_assert_msg( ir > 0 && ir <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
+				runtime_assert_msg( ir > 0 && ir <= pose.size(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
 				if( nocgp )	add_res_if_not_CGP( pose, ir, res );
 				else res.push_back(ir);
 			}
@@ -80,7 +80,7 @@ get_res(
 				Size ub = boost::lexical_cast<Size>(splt.back());
 				if( ub < lb ) std::swap(lb,ub);
 				for(Size ir = lb; ir <= ub; ++ir){
-					runtime_assert_msg( ir > 0 && ir <= pose.n_residue(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
+					runtime_assert_msg( ir > 0 && ir <= pose.size(), "residue number out of bounds "+boost::lexical_cast<std::string>(ir) );
 				if( nocgp )	add_res_if_not_CGP( pose, ir, res );
 				else res.push_back(ir);
 				}
@@ -133,7 +133,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	core::scoring::hbonds::HBondSet hbset;
 	core::scoring::hbonds::fill_hbond_set(pose,false,hbset);
 
-	std::vector<float> sc2bb_energy(pose.n_residue(),false);
+	std::vector<float> sc2bb_energy(pose.size(),false);
 	for(core::Size ihb = 1; ihb <= hbset.nhbonds(); ++ihb){
 		core::scoring::hbonds::HBond const & hb(hbset.hbond(ihb));
 		if(  hb.don_hatm_is_protein_backbone() && !hb.acc_atm_is_protein_backbone() ) sc2bb_energy[hb.acc_res()-1] += hb.energy();
@@ -146,7 +146,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	core::id::AtomID_Map< core::Real > atom_sasa;
 	utility::vector1< core::Real > rsd_sasa;
 	core::scoring::calc_per_atom_sasa( pose, atom_sasa, rsd_sasa, 2.1 );
-	for( int ir = 1; ir <= pose.n_residue(); ++ir ){
+	for( int ir = 1; ir <= pose.size(); ++ir ){
 		// std::cout << pose.secstruct(ir) << std::endl;
 		bool isloop = pose.secstruct(ir) == 'L';
 		int natoms = pose.residue(ir).nheavyatoms()-pose.residue(ir).last_backbone_atom();
@@ -185,7 +185,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 		}
 	}
 	runtime_assert_msg( res.size() > 0, "no residues selected!" );
-	std::cout << "get_designable_positions_best_guess keep " << res.size() << " of " << pose.n_residue() << std::endl;
+	std::cout << "get_designable_positions_best_guess keep " << res.size() << " of " << pose.size() << std::endl;
 	std::cout << "select designable_positions_best_guess=resi " << res[1];
 	for(int i = 2; i <= res.size(); ++i ) std::cout << "+"<<res[i];
 	std::cout << std::endl;
@@ -222,7 +222,7 @@ std::string KMGT(double const & x, int const & w, int const & d){
 void pose_to_ala( core::pose::Pose & pose ){
 	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 	core::conformation::ResidueOP ala = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA") );
-	for( int ir = 1; ir <= pose.n_residue(); ++ir ){
+	for( int ir = 1; ir <= pose.size(); ++ir ){
 		if( ! pose.residue(ir).is_protein()   ) continue;
 		if(   pose.residue(ir).name3()=="GLY" ) continue;
 		if(   pose.residue(ir).name3()=="PRO" ) continue;
@@ -233,7 +233,7 @@ void pose_to_ala( core::pose::Pose & pose ){
 void pose_to_gly( core::pose::Pose & pose ){
 	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 	core::conformation::ResidueOP gly = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("GLY") );
-	for( int ir = 1; ir <= pose.n_residue(); ++ir ){
+	for( int ir = 1; ir <= pose.size(); ++ir ){
 		if( ! pose.residue(ir).is_protein()   ) continue;
 		if(   pose.residue(ir).name3()=="GLY" ) continue;
 		if(   pose.residue(ir).name3()=="PRO" ) continue;
@@ -309,7 +309,7 @@ append_pose_to_pose(
 	core::pose::Pose const & pose2,
 	bool new_chain
 ){
-	append_subpose_to_pose(pose1, pose2, 1, pose2.total_residue(), new_chain);
+	append_subpose_to_pose(pose1, pose2, 1, pose2.size(), new_chain);
 }
 
 
@@ -322,17 +322,17 @@ append_subpose_to_pose(
 	core::Size end_res,
 	bool new_chain
 ){
-	if ( pose2.total_residue()<start_res ) {
+	if ( pose2.size()<start_res ) {
 		std::cerr << "Provided starting residue number " << start_res
 			<< " less than number residues in appended pose. Nothing to do." << std::endl;
 	}
-	pose1.append_residue_by_jump(pose2.residue(start_res), pose1.total_residue() , "", "", new_chain);
+	pose1.append_residue_by_jump(pose2.residue(start_res), pose1.size() , "", "", new_chain);
 	for ( core::Size i=start_res+1; i<=end_res; ++i ) {
 		if ( pose2.residue(i).is_lower_terminus() || !pose2.residue(i).is_protein() ) {
 			if ( i > 1 && pose2.chain(i) == pose2.chain(i-1) ) {
-				pose1.append_residue_by_jump(pose2.residue(i), pose1.total_residue(), "","", false);
+				pose1.append_residue_by_jump(pose2.residue(i), pose1.size(), "","", false);
 			} else {
-				pose1.append_residue_by_jump(pose2.residue(i), pose1.total_residue(), "","", true);
+				pose1.append_residue_by_jump(pose2.residue(i), pose1.size(), "","", true);
 			}
 		} else {
 			pose1.append_residue_by_bond(pose2.residue(i));

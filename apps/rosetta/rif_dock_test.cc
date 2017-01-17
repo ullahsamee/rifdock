@@ -77,7 +77,7 @@ pose_center(
 	typedef numeric::xyzVector<core::Real> Vec;
 	Vec cen(0,0,0);
 	int count = 0;
-	for( int ir = 1; ir <= pose.n_residue(); ++ir ) {
+	for( int ir = 1; ir <= pose.size(); ++ir ) {
 		if( useres.size()==0 || std::find(useres.begin(),useres.end(),ir)!=useres.end() ){
 			for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
 				cen += pose.xyz(core::id::AtomID(ia,ir));
@@ -172,7 +172,7 @@ struct SearchPointWithRots {
 
 
 void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::Size sres=1, core::Size eres=0 ) {
-  if(eres==0) eres = pose.n_residue();
+  if(eres==0) eres = pose.size();
   for(core::Size ir = sres; ir <= eres; ++ir) {
     for(core::Size ia = 1; ia <= pose.residue_type(ir).natoms(); ++ia) {
       core::id::AtomID const aid(core::id::AtomID(ia,ir));
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
 		if( opt.use_scaffold_bounding_grids ){
-			for( int ir = 1; ir <= target.n_residue(); ++ir ){
+			for( int ir = 1; ir <= target.size(); ++ir ){
 				utility::vector1<core::Size> resids(1,ir); // 1-index numbering
 				std::vector<SchemeAtom> atoms;
 				devel::scheme::get_scheme_atoms( target, resids, atoms );
@@ -771,7 +771,7 @@ int main(int argc, char *argv[]) {
 			std::vector<std::vector<float> > local_onebody;
 			std::vector< std::pair<int,int> > local_rotamers;
 			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
-			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.n_residue(), rot_index.size()  );
+			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );
 			shared_ptr<TBT> local_twobody;
 			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
@@ -785,7 +785,7 @@ int main(int argc, char *argv[]) {
 
 				scaffold_full_centered = scaffold;
 
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					scaffold_sequence_glob0.push_back( scaffold.residue(ir).name3() );
 				}
 
@@ -808,7 +808,7 @@ int main(int argc, char *argv[]) {
 					for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
 					std::cout << std::endl;
 				} else {
-					for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
+					for( int ir = 1; ir <= scaffold.size(); ++ir){
 						if( !scaffold.residue(ir).is_protein() ) continue;
 						if( scaffold.residue(ir).name3() == "PRO" ) continue;
 						if( scaffold.residue(ir).name3() == "GLY" ) continue;
@@ -829,18 +829,18 @@ int main(int argc, char *argv[]) {
 				std::cout << "using redundancy_filter_rg: " << redundancy_filter_rg << std::endl;
 
 				int count = 0;
-				scaffres_g2l.resize(scaffold.n_residue(),-1);
-				scaffuseres .resize(scaffold.n_residue(),false);
+				scaffres_g2l.resize(scaffold.size(),-1);
+				scaffuseres .resize(scaffold.size(),false);
 				for( auto ir : scaffold_res ){
 					scaffres_g2l[ir-1] = count++;
 					scaffres_l2g.push_back(ir-1);
 					scaffuseres[ir-1] = true;
 				}
 
-				std::cout << "scaffold: " << scaff_fname << " nres: " << scaffold.n_residue() << " using_res: " << scaffold_res.size() << std::endl;
+				std::cout << "scaffold: " << scaff_fname << " nres: " << scaffold.size() << " using_res: " << scaffold_res.size() << std::endl;
 				scaffold_center = pose_center(scaffold,scaffold_res);
 				scaffold_centered = scaffold;
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					Vec tmp( scaffold_center[0], scaffold_center[1], scaffold_center[2] );
 					for( int ia = 1; ia <= scaffold.residue_type(ir).natoms(); ++ia ){
 						core::id::AtomID aid(ia,ir);
@@ -857,12 +857,12 @@ int main(int argc, char *argv[]) {
 				scaffold_only_pose = scaffold_centered;
 				::devel::scheme::append_pose_to_pose( both_pose, target );
 				::devel::scheme::append_pose_to_pose( both_full_pose, target );
-				runtime_assert( both_pose.n_residue() == scaffold.n_residue() + target.n_residue() );
-				runtime_assert( both_pose.n_residue() == both_full_pose.n_residue() );
+				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
+				runtime_assert( both_pose.size() == both_full_pose.size() );
 
 
 
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					scaffca.push_back( scaffold.residue(ir).xyz("CA") );
 					// scaffold_res_all.push_back(ir);
 				}
@@ -1052,7 +1052,7 @@ int main(int argc, char *argv[]) {
 				}
 			} else {
 				std::cout << "not using scaffold bounding grids" << std::endl;
-				for( int ir = 1; ir <= scaffold_centered.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
 					utility::vector1<core::Size> resids(1,ir); // 1-index numbering
 					{
 						std::vector<SchemeAtom> scaff_res_atoms;
@@ -1133,7 +1133,7 @@ int main(int argc, char *argv[]) {
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
 			ScenePtr scene_full( scene_prototype->clone_deep() );
 			{
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					Vec N  = scaffold_centered.residue(ir).xyz("N" );
 					Vec CA = scaffold_centered.residue(ir).xyz("CA");
 					Vec C  = scaffold_centered.residue(ir).xyz("C" );
@@ -1465,7 +1465,7 @@ int main(int argc, char *argv[]) {
 				int do_min = 2;
 				if( opt.rosetta_min_fraction == 0.0 ) do_min = 1;
 
-				std::vector<bool> is_scaffold_fixed_res(scaffold.n_residue()+1,true);
+				std::vector<bool> is_scaffold_fixed_res(scaffold.size()+1,true);
 				for(int designable : scaffold_res){
 					is_scaffold_fixed_res[designable] = false;
 				}
@@ -1514,7 +1514,7 @@ int main(int argc, char *argv[]) {
 								scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*1.0 );
 							}
 						}
-						if( target.n_residue() == 1 ){
+						if( target.size() == 1 ){
 							// assume this is a ligand, so hbonding is important
 							scorefunc_pt[i]->set_weight( core::scoring::fa_elec    , scorefunc_pt[i]->get_weight(core::scoring::fa_elec    )*2.0 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*2.0 );
@@ -1539,8 +1539,8 @@ int main(int argc, char *argv[]) {
 						core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
 						movemap->set_chi(true);
 						movemap->set_jump(true);
-						for(int ir = 1; ir <= both_full_pose.n_residue(); ++ir){
-							bool is_scaffold = ir <= scaffold.n_residue();
+						for(int ir = 1; ir <= both_full_pose.size(); ++ir){
+							bool is_scaffold = ir <= scaffold.size();
 							if( is_scaffold ) movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_scaffoldbb );
 							else              movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_targetbb );
 							if( opt.rosetta_min_fix_target && !is_scaffold ){
@@ -1598,12 +1598,12 @@ int main(int argc, char *argv[]) {
     						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
     						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
     						pose_to_min = both_per_thread[ithread];
-    						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.n_residue()+1 , pose_to_min.n_residue() );
-    						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.n_residue() );
+    						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.size()+1 , pose_to_min.size() );
+    						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.size() );
 
     						// place the rotamers
     						core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-    						std::vector<bool> is_rif_res(pose_to_min.n_residue(),false);
+    						std::vector<bool> is_rif_res(pose_to_min.size(),false);
     						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
     							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
     							int irot =                  packed_results[imin].rotamers().at(ipr).second;
@@ -1631,7 +1631,7 @@ int main(int argc, char *argv[]) {
     						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
 
     						std::vector<int> rifatypemap = get_rif_atype_map();
-    						for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
+    						for( int ir = 1; ir <= scaffold.size(); ++ir){
     							auto const & ires = pose_to_min.residue(ir);
     							if( !ires.is_protein() ) continue;
     							if( ires.aa()==core::chemical::aa_gly ||
@@ -1712,14 +1712,14 @@ int main(int argc, char *argv[]) {
     							time_score += elapsed_seconds_score;
     						}
 
-    						// if( target.n_residue() == 1 ){
+    						// if( target.size() == 1 ){
     						// 	// ligand!
     						// 	float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
     						// 	      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
     						// 	      total_lj_neg = std::max(0.0f,total_lj_neg);
     						// 	packed_results[imin].score  = 1.00*total_lj_neg;
     						// 	packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
-    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
+    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.size());
     						// 	for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
     						// 		int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
     						// 		packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
@@ -1732,19 +1732,19 @@ int main(int argc, char *argv[]) {
     							double rosetta_score = 0.0;
     							auto const & weights = pose_to_min.energies().weights();
     							if( !opt.rosetta_score_ddg_only ){
-    								for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+    								for( int ir = 1; ir <= scaffold.size(); ++ir ){
     									if( is_rif_res[ir-1] ){
     										rosetta_score += pose_to_min.energies().onebody_energies(ir).dot(weights);
     									}
     								}
     							}
-    							if( !opt.rosetta_score_ddg_only && target.n_residue()==1 ){
+    							if( !opt.rosetta_score_ddg_only && target.size()==1 ){
     								// is ligand, add it's internal energy
-    								rosetta_score += pose_to_min.energies().onebody_energies(pose_to_min.n_residue()).dot(weights);
+    								rosetta_score += pose_to_min.energies().onebody_energies(pose_to_min.size()).dot(weights);
     							}
     							auto const & egraph = pose_to_min.energies().energy_graph();
     							for(int ir = 1; ir <= egraph.num_nodes(); ++ir){
-    								for ( core::graph::Graph::EdgeListConstIter
+    								for ( utility::graph::Graph::EdgeListConstIter
     										iru  = egraph.get_node(ir)->const_upper_edge_list_begin(),
     										irue = egraph.get_node(ir)->const_upper_edge_list_end();
     										iru != irue; ++iru
@@ -1753,11 +1753,11 @@ int main(int argc, char *argv[]) {
     									int jr = edge.get_second_node_ind();
 
     									// this is DDG
-    									if( ir <= scaffold.n_residue() && jr > scaffold.n_residue() ){
+    									if( ir <= scaffold.size() && jr > scaffold.size() ){
     										// ir in scaff, jr in target
     										rosetta_score += edge.dot(weights);
     									}
-    									if( !opt.rosetta_score_ddg_only && jr <= scaffold.n_residue() ){
+    									if( !opt.rosetta_score_ddg_only && jr <= scaffold.size() ){
     										// ir & jr in scaffold
     										if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
     											double const edgescore = edge.dot(weights);
@@ -1796,7 +1796,7 @@ int main(int argc, char *argv[]) {
     						}
 
     						// #pragma omp critical
-    						// pose_to_min.energies().show(cout,pose_to_min.n_residue());
+    						// pose_to_min.energies().show(cout,pose_to_min.size());
     						// pose_to_min.dump_pdb("test_post.pdb");
     						// #pragma omp critical
     						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
@@ -2058,8 +2058,8 @@ int main(int argc, char *argv[]) {
 					if     ( opt.full_scaffold_output ) pose_from_rif = both_full_pose;
 					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;
 					else                                pose_from_rif = both_pose;
-					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_from_rif.n_residue() );
-					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );
+					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.size()+1, pose_from_rif.size() );
+					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.size() );
 
 					// place the rotamers
 					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");

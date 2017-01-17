@@ -284,7 +284,7 @@ struct HBJob {
 			std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
 			int ir =  hb_jobs[ihbjob].ires;
 			std::string hbgeomtag = don_or_acc + don + "-" + acc;
-			bool override = target.n_residue()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
+			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
 			override |= !target.residue(ir).is_protein();
 			if( override ) hbgeomtag += "__" + target_tag;
 			hbond_geoms_cache[ hbgeomtag ] = nullptr;
@@ -310,7 +310,7 @@ struct HBJob {
             // continue;
 
 			std::map< std::string, core::pose::Pose > hbgeom_exemplars_rtype_override;
-			bool override = target.n_residue()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
+			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
 			override |= !target.residue(ir).is_protein();
 			if( override ){
 				std::cout << "add " << target.residue(ir).name() << " to hbgeom_exemplars_rtype_override" << std::endl;
@@ -319,7 +319,7 @@ struct HBJob {
 				tmp0.append_residue_by_jump(target.residue(ir),1);
 				hbgeom_exemplars_rtype_override[ target.residue(ir).name() ] = tmp0;
 				auto & tmp = hbgeom_exemplars_rtype_override[ target.residue(ir).name() ];
-				runtime_assert( tmp.n_residue() == 1 );
+				runtime_assert( tmp.size() == 1 );
 				if( tmp.residue(1).is_lower_terminus() ) core::pose::remove_lower_terminus_type_from_pose_residue( tmp, 1 );
 				if( tmp.residue(1).is_upper_terminus() ) core::pose::remove_upper_terminus_type_from_pose_residue( tmp, 1 );
 				using core::chemical::VIRTUAL_DNA_PHOSPHATE;
@@ -459,7 +459,7 @@ struct HBJob {
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
 			std::string hbgeomtag = don_or_acc + don + "-" + acc;
-			bool override = target.n_residue()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
+			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
 			override |= !target.residue(ir).is_protein();
 			if( override ) hbgeomtag += "__" + target_tag;
 
