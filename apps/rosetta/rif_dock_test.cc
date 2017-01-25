@@ -713,6 +713,29 @@ int main(int argc, char *argv[]) {
 				std::cout << "loaded RIF score for resl " << F(7,3,RESLS[i_readmap])
 				          << " raw cart_resl: " << F(7,3,rif_ptr->cart_resl() )
 				          << " raw ang_resl: " << F(7,3,rif_ptr->ang_resl() ) << std::endl;
+
+
+
+
+
+
+                            // std::cout << "testing rifbase key iteration" << std::endl;
+                            // int count = 0;
+                            // for( auto key : rif_ptr->key_range() ){
+                            //     EigenXform bin_center = rif_ptr->get_bin_center(key);
+                                   // right... the edges of the bins.... this is only *mostly* true
+                            //     runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
+                            //     if(++count > 10) utility_exit_with_message("aireost");
+                            //     std::cout << key << " " << bin_center.translation().transpose() << std::endl;
+                            // }
+
+
+
+
+
+
+
+
 			} catch( std::exception const & ex ) {
 				#ifdef USE_OPENMP
 				#pragma omp critical
@@ -1526,8 +1549,7 @@ int main(int argc, char *argv[]) {
 						}
 
                         // score one pose single threaded maybe helps lkball issue
-                        scorefunc_pt[i]->score(scaffold);
-                        scorefunc_pt[i]->score(target);
+                        scorefunc_pt[i]->score(both_per_thread[i]);
 
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
@@ -1574,13 +1596,17 @@ int main(int argc, char *argv[]) {
 					packed_results.resize(n_scormin);
 					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
 					if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
-					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
+					else            std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
                     std::exception_ptr exception = nullptr;
+
+
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,1)
 					#endif
 					for( int imin = 0; imin < n_scormin; ++imin )
                     {
+
+
                         try
     					{
     						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}

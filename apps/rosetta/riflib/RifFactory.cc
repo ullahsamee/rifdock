@@ -36,6 +36,18 @@ namespace scheme {
 template<class C> void call_sort_rotamers( C & v ){ v.second.sort_rotamers(); }
 template<class C> void assert_is_sorted  ( C & v ){ runtime_assert( v.second.is_sorted() ); }
 
+template<class XmapIter>
+struct XmapKeyIterHelper : public KeyIterHelperBase<typename RifBase::Key> {
+    typedef typename RifBase::Key Key;
+    XmapKeyIterHelper(XmapIter iter) : iter_(iter) {}
+    Key get_key() const override { return iter_->first; }
+    void next() override { ++iter_; }
+    bool equal(KeyIterHelperBase const & that) const override {
+        XmapKeyIterHelper const & concrete = static_cast<XmapKeyIterHelper const &>(that);
+        return iter_ == concrete.iter_;
+    }
+    XmapIter iter_;
+};
 
 template< class XMap >
 class RifWrapper : public RifBase {
@@ -108,17 +120,30 @@ public:
 
 	}
 
+    Key get_bin_key( EigenXform const & x) const override {
+        return xmap_ptr_->get_key(x);
+    }
+
+    EigenXform get_bin_center( Key const & k) const override {
+        return xmap_ptr_->get_center(k);
+    }
+
+    void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const override{
+        typename XMap::Value const & rs = (*xmap_ptr_)[k];
+        int const Nrots = XMap::Value::N;
+        for( int i = 0; i < Nrots; ++i ){
+            if( rs.empty(i) ) break;
+            rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
+        }
+    }
+
 	void
 	get_rotamers_for_xform(
 		EigenXform const & x,
 		std::vector< std::pair< float, int > > & rotscores
 	) const override {
-		typename XMap::Value const & rs = (*xmap_ptr_)[ x ];
-		int const Nrots = XMap::Value::N;
-		for( int i = 0; i < Nrots; ++i ){
-			if( rs.empty(i) ) break;
-			rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
-		}
+        Key const & k = xmap_ptr_->get_key(x);
+        get_rotamers_for_key(k, rotscores);
 	}
 
 	void finalize_rif() override {
@@ -169,6 +194,14 @@ public:
 		out << "======================================================================" << std::endl;
 
 	}
+
+    RifBaseKeyRange key_range() const override {
+        auto b = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+            ((typename XMap::Map const &)xmap_ptr_->map_).begin()  );
+        auto e = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+            ((typename XMap::Map const &)xmap_ptr_->map_).end()  );
+        return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
+    }
 
 };
 
