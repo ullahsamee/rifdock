@@ -713,29 +713,6 @@ int main(int argc, char *argv[]) {
 				std::cout << "loaded RIF score for resl " << F(7,3,RESLS[i_readmap])
 				          << " raw cart_resl: " << F(7,3,rif_ptr->cart_resl() )
 				          << " raw ang_resl: " << F(7,3,rif_ptr->ang_resl() ) << std::endl;
-
-
-
-
-
-
-                            // std::cout << "testing rifbase key iteration" << std::endl;
-                            // int count = 0;
-                            // for( auto key : rif_ptr->key_range() ){
-                            //     EigenXform bin_center = rif_ptr->get_bin_center(key);
-                                   // right... the edges of the bins.... this is only *mostly* true
-                            //     runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
-                            //     if(++count > 10) utility_exit_with_message("aireost");
-                            //     std::cout << key << " " << bin_center.translation().transpose() << std::endl;
-                            // }
-
-
-
-
-
-
-
-
 			} catch( std::exception const & ex ) {
 				#ifdef USE_OPENMP
 				#pragma omp critical

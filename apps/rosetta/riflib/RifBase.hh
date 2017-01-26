@@ -92,6 +92,19 @@ struct RifBase
 
     virtual RifBaseKeyRange key_range() const = 0;
 
+    // for convenience
+    std::vector< std::pair< float, int > >
+    get_rotamers_for_key(Key k) const {
+        std::vector< std::pair< float, int > > rotscores;
+        get_rotamers_for_key(k, rotscores);
+        return rotscores;
+    }
+    std::vector< std::pair< float, int > >
+    get_rotamers_for_xform(EigenXform const & x) const {
+        std::vector< std::pair< float, int > > rotscores;
+        get_rotamers_for_xform(x, rotscores);
+        return rotscores;
+    }
 
 };
 

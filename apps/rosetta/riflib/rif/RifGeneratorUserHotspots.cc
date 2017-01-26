@@ -186,7 +186,7 @@ namespace rif {
 							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
 
 
-                                    accumulator->checkpoint( std::cout );
+                            accumulator->checkpoint( std::cout );
 
 
 
@@ -202,6 +202,29 @@ namespace rif {
 
 		// let the rif builder thing know you're done
         accumulator->checkpoint( std::cout );
+
+
+        auto rif_ptr = accumulator->rif();
+        std::cout << "testing rifbase key iteration" << std::endl;
+        int count = 0;
+        for( auto key : rif_ptr->key_range() ){
+            EigenXform bin_center = rif_ptr->get_bin_center(key);
+            // right... the edges of the bins.... this is only *mostly* true
+            // runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
+            std::cout << "BIN: key " << key << " xform.trans: " << bin_center.translation().transpose() << std::endl;
+            auto rotscores = rif_ptr->get_rotamers_for_key(key);
+            runtime_assert( rotscores.size() > 0 );
+            for( auto rot_score : rotscores ){
+                // can't wait for cxx17 structured bindings!!!
+                float rotamer_score = rot_score.first;
+                int rotamer_number = rot_score.second;
+                std::string resn = params->rot_index_p->resname(rotamer_number);
+                std::cout << " rotamer " << rotamer_number << " " << resn << ", score " << rotamer_score << std::endl;
+            }
+
+            if(++count > 10) utility_exit_with_message("aireost");
+        }
+
 
         // std::exit(-1);
 	}
