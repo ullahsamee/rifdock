@@ -20,14 +20,18 @@
 	#include <core/id/AtomID.hh>
 	#include <core/pose/Pose.hh>
 	#include <core/scoring/motif/util.hh>
+	#include <core/import_pose/import_pose.hh>
+  #include <numeric/xyzMatrix.hh>
 
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
+	#include <scheme/numeric/rand_xform.hh>
 
 	#include <scheme/actor/Atom.hh>
-
-
+	#include <Eigen/SVD>
+	#include <Eigen/Core>
+	#include <Eigen/Geometry>	
 namespace devel {
 namespace scheme {
 namespace rif {
@@ -39,15 +43,15 @@ namespace rif {
 		RifAccumulatorP accumulator,
 		RifGenParamsP params
 	){
-		typedef numeric::xyzVector<core::Real> Vec;
-
-
+		
+		typedef ::Eigen::Matrix<float,3,1> Pos;
+	
 		// some sanity checks
 		int const n_hspot_groups = this->opts.hotspot_files.size();
 		runtime_assert_msg( n_hspot_groups, "no hotspot group files specified!!" );
 		runtime_assert_msg( n_hspot_groups<16, "too many hotspot groups!!" );
-		runtime_assert_msg( accumulator->rif()->has_sat_data_slots(), "This RIF type doesn't support sat groups!!!" );
-
+		//runtime_assert_msg( accumulator->rif()->has_sat_data_slots(), "This RIF type doesn't support sat groups!!!" );
+		std::cout << "this RIF type doesn't support sat groups!!!" << std::endl;
 		std::cout << "RifGeneratorUserHotspots opts:" << std::endl;
 		std::cout << "    hotspot_sample_cart_bound:  " << this->opts.hotspot_sample_cart_bound;
 		std::cout << "    hotspot_sample_angle_bound: " << this->opts.hotspot_sample_angle_bound;
@@ -57,6 +61,11 @@ namespace rif {
 			<< this->opts.target_center[0] << " "
 			<< this->opts.target_center[1] << " "
 			<< this->opts.target_center[2] << std::endl;
+		
+		//translation to apply to input hotspot files
+		Pos target_vec;
+		target_vec << opts.target_center[0], opts.target_center[1],opts.target_center[2];
+		
 		for( auto s : this->opts.hotspot_files ){
 			std::cout << "    hotspot_group:              " << s << std::endl;
 		}
@@ -85,56 +94,145 @@ namespace rif {
 			}
 		}
 
-		std::vector<EigenXform> sample_position_deltas{ EigenXform::Identity() };
-		// fill this in somehow... maybe start with random purterbations... later I can help you do it "right" with a grid of some kind
+    int const NSAMP = 1000;
+    std::mt19937 rng((unsigned int)time(0) + 934875);
+    float const radius_bound = this->opts.hotspot_sample_cart_bound;
+    float const degrees_bound = this->opts.hotspot_sample_angle_bound;
+    float const radians_bound = degrees_bound * M_PI/180.0;
 
 		// loop over files (one file is one hotspot group)
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
-
+			
 			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
-			core::pose::Pose pose;
+			std::cout << hotspot_file << std::endl;
 			// read hotspot file into pose
-
+			core::pose::Pose pose;
+			core::import_pose::pose_from_file(pose,hotspot_file);
+      
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.n_residue(); ++i_hspot_res ){
-
+				
+				//get last atom in hotspot residue and iterate over last 3 
+      	core::conformation::Atoms::const_iterator iter = pose.residue(i_hspot_res).heavyAtoms_end()-1;
+				//core::conformation::Atoms::const_iterator iter = pose.residue(i_hspot_res).atom_end();
+				core::conformation::Atoms::const_iterator end = iter-3;
+      	
+				//these are the hotspot atoms				
+				Pos atom1; Pos atom2; Pos atom3;
+				
+				//iterate and save xyz into hotspot 
+				while(iter >= end){
+        	if (iter == end +3){atom1(0,0) = iter->xyz()[0];atom1(1,0) = iter->xyz()[1];atom1(2,0) = iter->xyz()[2];}
+        	if (iter == end +2){atom2(0,0) = iter->xyz()[0];atom2(1,0) = iter->xyz()[1];atom2(2,0) = iter->xyz()[2];}
+        	if (iter == end +1){atom3(0,0) = iter->xyz()[0];atom3(1,0) = iter->xyz()[1];atom3(2,0) = iter->xyz()[2];}
+        	iter --;
+      	}
+				//std::cout << atom1 << std::endl;
+				//std::cout << atom2 << std::endl;
+				//std::cout << atom3 << std::endl;
+				//translate with the target first
+				atom1 = atom1 - target_vec; 
+				atom2 = atom2 - target_vec; 
+				atom3 = atom3 - target_vec;				
+				//std::cout << "hspot 1 " <<atom1 << std::endl;
+				//std::cout << "hspot 2 " <<atom2 << std::endl;
+				//std::cout << "hspot 3 " <<atom3 << std::endl;
+				
+				//calculate centroid of hot_spot res 
+				Pos cen_hot = (atom1 + atom2 + atom3)/3;
+				
 				// for each irot that is the right restype (can be had from rot_intex_p)
-				int irot_begin = 0, irot_end=0;
+				int irot_begin = 0, irot_end = params -> rot_index_p -> size();
+				
 				for( int irot = irot_begin; irot < irot_end; ++irot ){
-
+					//std::cout << params -> rot_index_p -> resname(irot) << std::endl;
+					//std::cout << pose.residue(i_hspot_res).name3() << std::endl;	
 					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
+					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3()){
+				  	std::cout << irot << std::endl;
+						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
+						
+						// assign rif_res position by column
+						int hatoms = params -> rot_index_p -> nheavyatoms(irot);
+						int latoms = params -> rot_index_p -> natoms(irot);
+						//std::cout << rotamer_atoms[hatoms-1].data() << std::endl;
+						//std::cout << rotamer_atoms[hatoms-2].data() << std::endl;
+						//std::cout << rotamer_atoms[hatoms-3].data() << std::endl;
+								
+						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
+						//rif_res << rotamer_atoms[latoms-1].position()[0],rotamer_atoms[latoms-2].position()[0],rotamer_atoms[latoms-3].position()[0],rotamer_atoms[latoms-1].position()[1],rotamer_atoms[latoms-2].position()[1],rotamer_atoms[latoms-3].position()[1],rotamer_atoms[latoms-1].position()[2],rotamer_atoms[latoms-2].position()[2],rotamer_atoms[latoms-3].position()[2];
+						//std::cout << "rif 1" << rif_res.col(0) << std::endl;
+						//std::cout << "rif 2" <<rif_res.col(1) << std::endl;
+						//std::cout << "rif 3" <<rif_res.col(2) << std::endl;
+						
+						//calculate centroid for rif residue
+         		Pos cen_rot = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
+						
+						//svd superimpose
+          	::Eigen::Matrix<float,3,3> cov_mtx;
+										
+          	cov_mtx = (rif_res.col(0) - cen_rot)*(atom1 - cen_hot).transpose() + (rif_res.col(1) - cen_rot)*(atom2 - cen_hot).transpose() + (rif_res.col(2) - cen_rot)*(atom3 - cen_hot).transpose();
 
-
-					// figure out the transform that aligns the rotamer's standard position onto your input hotspot
-					// res to align to will be pose.residue(i_hspot_res)
-					// this is a dummy
+            ::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
+						::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
+						int R_det = R_mtx.determinant();
+						if ( R_det == -1){
+							::Eigen::Matrix<float,3,3> new_V = svd.matrixV();
+							new_V.col(2) = -1*new_V.col(2);
+							R_mtx = new_V * svd.matrixU().transpose();
+							std::cout << "reflection"<<std::endl;}
+						::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*cen_rot + cen_hot;
+            ::Eigen::Matrix<float,3,4> Tran_mtx;
+						
+					  Tran_mtx.block<3,3>(0,0) = R_mtx;
+            Tran_mtx.block<3,1>(0,3) = T_mtx;
+						EigenXform impose;
+						impose.matrix() = Tran_mtx;
+						
+						//std::cout << "Xform:" <<Tran_mtx << std::endl;
+					  		
+						
 					EigenXform x_orig_position = EigenXform::Identity();
 
-					for( auto const & x_perturb : sample_position_deltas ){
-
-						EigenXform x_position = x_perturb * x_orig_position;
-
+					//for( auto const & x_perturb : sample_position_deltas ){
+					for(int a = 0; a < NSAMP; ++a){							
+						EigenXform x_perturb;
+						::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
+						
+						EigenXform x_position = x_perturb * impose * x_orig_position;
+							
 						// you can check their "energies" against the target like this, obviously substituting the real rot# and position
 						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
-
+						//std::cout << positioned_rotamer_score << std::endl;
 						// add the rotamer to the rif if it's any good
-						if( positioned_rotamer_score < 0 ){ // probably want this threshold to be an option or something
+						std::ofstream myfile;
+						
+						if( positioned_rotamer_score <= 0){ // probably want this threshold to be an option or something
+							std::cout << positioned_rotamer_score << std::endl;
+						//if( R_mtx.determinant() == -1){	
 							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
-
-							// probably you want to inspect what you're generating...
-							// replace cout with a file stream, and you'll get a pdb file
+							std::ostringstream os;
+							os << "file_" << irot << "_" << a << ".pdb";
+							std::string s = os.str();		
+							myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+							
 							std::cout << "MODEL" << std::endl;
+							std::cout << positioned_rotamer_score << std::endl;
 							for( auto a : rotamer_atoms ){
 								a.set_position( x_position * a.position() );
-								::scheme::actor::write_pdb( std::cout, a, params->rot_index_p->chem_index_ );
+								::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
 							}
+							myfile << positioned_rotamer_score << std::endl;
+							myfile.close();
 							std::cout << "ENDMDL" << std::endl;
-
+							
 						}
-
+						//myfile.close();
 					} // end position perturbations
-
+					
+				} // check residue type
 				} // end loop over rotamers which match hotspot res
+				
 
 			} //  end loop over residues in hotspot group
 
@@ -142,7 +240,10 @@ namespace rif {
 
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
-	}
+		
+		//utility_exit_with_message("done");
+
+		}
 
 
 }
