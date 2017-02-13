@@ -94,7 +94,7 @@ namespace rif {
 			}
 		}
 
-    int const NSAMP = 1000;
+    int const NSAMP = 10000;
     std::mt19937 rng((unsigned int)time(0) + 934875);
     float const radius_bound = this->opts.hotspot_sample_cart_bound;
     float const degrees_bound = this->opts.hotspot_sample_angle_bound;
@@ -158,12 +158,12 @@ namespace rif {
 						//std::cout << rotamer_atoms[hatoms-1].data() << std::endl;
 						//std::cout << rotamer_atoms[hatoms-2].data() << std::endl;
 						//std::cout << rotamer_atoms[hatoms-3].data() << std::endl;
-								
+						// putting atoms xyz into rif_res 3x3 matrix		
 						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
 						//rif_res << rotamer_atoms[latoms-1].position()[0],rotamer_atoms[latoms-2].position()[0],rotamer_atoms[latoms-3].position()[0],rotamer_atoms[latoms-1].position()[1],rotamer_atoms[latoms-2].position()[1],rotamer_atoms[latoms-3].position()[1],rotamer_atoms[latoms-1].position()[2],rotamer_atoms[latoms-2].position()[2],rotamer_atoms[latoms-3].position()[2];
-						//std::cout << "rif 1" << rif_res.col(0) << std::endl;
-						//std::cout << "rif 2" <<rif_res.col(1) << std::endl;
-						//std::cout << "rif 3" <<rif_res.col(2) << std::endl;
+						std::cout << "rif 1" << rif_res.col(0) << std::endl;
+						std::cout << "rif 2" << rif_res.col(1) << std::endl;
+						std::cout << "rif 3" << rif_res.col(2) << std::endl;
 						
 						//calculate centroid for rif residue
          		Pos cen_rot = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
@@ -176,11 +176,12 @@ namespace rif {
             ::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
 						::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
 						int R_det = R_mtx.determinant();
-						if ( R_det == -1){
-							::Eigen::Matrix<float,3,3> new_V = svd.matrixV();
-							new_V.col(2) = -1*new_V.col(2);
-							R_mtx = new_V * svd.matrixU().transpose();
-							std::cout << "reflection"<<std::endl;}
+						if ( R_det < 0){
+							//::Eigen::Matrix<float,3,3> new_V = svd.matrixV();
+							//new_V.col(2) = -1*new_V.col(2);
+							R_mtx.col(2) = -1*R_mtx.col(2);
+							//R_mtx = new_V * svd.matrixU().transpose();
+							std::cout << "reflection" << R_det << std::endl;}
 						::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*cen_rot + cen_hot;
             ::Eigen::Matrix<float,3,4> Tran_mtx;
 						
@@ -189,11 +190,15 @@ namespace rif {
 						EigenXform impose;
 						impose.matrix() = Tran_mtx;
 						
-						//std::cout << "Xform:" <<Tran_mtx << std::endl;
-					  		
+						std::cout << "Xform:" << std::endl;
+						std::cout << Tran_mtx << std::endl;
+					 	::Eigen::Matrix<float,3,3> temp;
+						temp.col(0)=Tran_mtx.block<3,1>(0,3);
+						temp.col(1)=Tran_mtx.block<3,1>(0,3);
+						temp.col(2)=Tran_mtx.block<3,1>(0,3);  		
 						
 					EigenXform x_orig_position = EigenXform::Identity();
-
+					std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
 					//for( auto const & x_perturb : sample_position_deltas ){
 					for(int a = 0; a < NSAMP; ++a){							
 						EigenXform x_perturb;
@@ -207,17 +212,16 @@ namespace rif {
 						// add the rotamer to the rif if it's any good
 						std::ofstream myfile;
 						
-						if( positioned_rotamer_score <= 0){ // probably want this threshold to be an option or something
-							std::cout << positioned_rotamer_score << std::endl;
-						//if( R_mtx.determinant() == -1){	
+						if( positioned_rotamer_score <= -1){ // probably want this threshold to be an option or something
+							//std::cout << positioned_rotamer_score << std::endl;
 							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
 							std::ostringstream os;
 							os << "file_" << irot << "_" << a << ".pdb";
 							std::string s = os.str();		
 							myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 							
-							std::cout << "MODEL" << std::endl;
-							std::cout << positioned_rotamer_score << std::endl;
+							std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
+							//std::cout << positioned_rotamer_score << std::endl;
 							for( auto a : rotamer_atoms ){
 								a.set_position( x_position * a.position() );
 								::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
