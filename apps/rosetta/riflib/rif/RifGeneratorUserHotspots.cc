@@ -215,20 +215,20 @@ namespace rif {
 						if( positioned_rotamer_score <= -1){ // probably want this threshold to be an option or something
 							//std::cout << positioned_rotamer_score << std::endl;
 							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
-							std::ostringstream os;
-							os << "file_" << irot << "_" << a << ".pdb";
-							std::string s = os.str();		
-							myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+						  //std::ostringstream os;
+							//os << "file_" << irot << "_" << a << ".pdb";
+							//std::string s = os.str();		
+							//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 							
-							std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
+							//std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
 							//std::cout << positioned_rotamer_score << std::endl;
-							for( auto a : rotamer_atoms ){
-								a.set_position( x_position * a.position() );
-								::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
-							}
-							myfile << positioned_rotamer_score << std::endl;
-							myfile.close();
-							std::cout << "ENDMDL" << std::endl;
+							//for( auto a : rotamer_atoms ){
+								//a.set_position( x_position * a.position() );
+								//::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+							//}
+							//myfile << positioned_rotamer_score << std::endl;
+							//myfile.close();
+							//std::cout << "ENDMDL" << std::endl;
 							
 						}
 						//myfile.close();
