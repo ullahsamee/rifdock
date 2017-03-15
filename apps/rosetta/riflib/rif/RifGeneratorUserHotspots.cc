@@ -200,6 +200,12 @@ namespace rif {
 					EigenXform x_orig_position = EigenXform::Identity();
 					std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
 					//for( auto const & x_perturb : sample_position_deltas ){
+					// outfile for all input hotspots
+					std::ostringstream os;
+					os << "file_" << irot << "_" << a << ".pdb";
+					std::string s = os.str();		
+					myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+
 					for(int a = 0; a < NSAMP; ++a){							
 						EigenXform x_perturb;
 						::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
@@ -215,24 +221,25 @@ namespace rif {
 						if( positioned_rotamer_score <= -1){ // probably want this threshold to be an option or something
 							//std::cout << positioned_rotamer_score << std::endl;
 							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
-						  //std::ostringstream os;
-							//os << "file_" << irot << "_" << a << ".pdb";
-							//std::string s = os.str();		
-							//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+						 // 	std::ostringstream os;
+							// os << "file_" << irot << "_" << a << ".pdb";
+							// std::string s = os.str();		
+							// myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 							
-							//std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
-							//std::cout << positioned_rotamer_score << std::endl;
-							//for( auto a : rotamer_atoms ){
-								//a.set_position( x_position * a.position() );
-								//::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
-							//}
-							//myfile << positioned_rotamer_score << std::endl;
+							// std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
+							// std::cout << positioned_rotamer_score << std::endl;
+							for( auto a : rotamer_atoms ){
+								a.set_position( x_position * a.position() );
+								::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+							}
+							// myfile << positioned_rotamer_score << std::endl;
 							//myfile.close();
-							//std::cout << "ENDMDL" << std::endl;
+							// std::cout << "ENDMDL" << std::endl;
 							
 						}
 						//myfile.close();
 					} // end position perturbations
+					myfile.close();
 					
 				} // check residue type
 				} // end loop over rotamers which match hotspot res
@@ -244,6 +251,26 @@ namespace rif {
 
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
+		auto rif_ptr = accumulator->rif();
+        std::cout << "testing rifbase key iteration" << std::endl;
+        int count = 0;
+        for( auto key : rif_ptr->key_range() ){
+            EigenXform bin_center = rif_ptr->get_bin_center(key);
+            // right... the edges of the bins.... this is only *mostly* true
+            // runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
+            std::cout << "BIN: key " << key << " xform.trans: " << bin_center.translation().transpose() << std::endl;
+            auto rotscores = rif_ptr->get_rotamers_for_key(key);
+            runtime_assert( rotscores.size() > 0 );
+            for( auto rot_score : rotscores ){
+                // can't wait for cxx17 structured bindings!!!
+                float rotamer_score = rot_score.first;
+                int rotamer_number = rot_score.second;
+                std::string resn = params->rot_index_p->resname(rotamer_number);
+                std::cout << " rotamer " << rotamer_number << " " << resn << ", score " << rotamer_score << std::endl;
+            }
+
+            if(++count > 10) utility_exit_with_message("aireost");
+        }
 		
 		//utility_exit_with_message("done");
 
