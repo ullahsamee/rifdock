@@ -157,8 +157,8 @@ void make_hbond_geometries(
 		// runtime_assert( frame_atomno_1 > 4 );
 	}
 	if( fix_donor && fix_acceptor ) utility_exit_with_message("can't fix donor and acceptor");
-	Size ifixed = fix_donor ? 1 : 2;
-	Size imove  = fix_donor ? 2 : 1;
+	core::Size ifixed = fix_donor ? 1 : 2;
+	core::Size imove  = fix_donor ? 2 : 1;
 
 
 

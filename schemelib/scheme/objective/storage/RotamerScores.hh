@@ -48,6 +48,10 @@ struct RotamerScore {
 	static float data2float( Data data ){ return float(data)/_Divisor; }
 	static Data  float2data( float f ){ return Data( f*_Divisor ); }
 
+	bool do_i_satisfy_anything() const {
+		return false;
+	}
+
 	bool operator < ( THIS const & other ) const { return data_ > other.data_; } // reverse so low score is low
 	bool operator== ( THIS const & other ) const { return data_ == other.data_; }
 	bool operator!= ( THIS const & other ) const { return data_ != other.data_; }
@@ -135,6 +139,14 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 			 + "div=" + boost::lexical_cast<std::string>(BASE::Divisor)	 + ", "
 			 + std::string("nsat=") + boost::lexical_cast<std::string>(sizeof(SatDatum)*NSat)	  +" >";
 		return name;
+	}
+	bool do_i_satisfy_anything() const {
+		for( int isat = 0; isat < NSat; ++isat ){
+			if (sat_data_[isat].not_empty()){
+				return true;
+			}
+		}
+		return false;
 	}
 	template< class Array >
 	void get_sat_groups_raw( Array & sat_groups_out ) const {
@@ -299,6 +311,7 @@ struct RotamerScores {
 
 	float score( int i ) const { assert(i<N); return rotscores_[i].score(); }
 	Data rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }
+	bool do_i_satisfy_anything(int i) const { assert(i<N); return rotscores_[i].do_i_satisfy_anything(); }
 
 	bool empty( int i ) const { return rotscores_[i].empty(); }
 

@@ -32,7 +32,7 @@
 #include <core/pack/dunbrack/RotamerLibraryScratchSpace.hh>
 #include <core/pack/dunbrack/SingleResidueDunbrackLibrary.hh>
 #include <core/pack/task/TaskFactory.hh>
-#include <core/graph/Graph.hh>
+#include <utility/graph/Graph.hh>
 #include <core/pack/packer_neighbors.hh>
 #include <basic/options/keys/packing.OptionKeys.gen.hh>
 #include <basic/options/option.hh>
@@ -318,7 +318,7 @@ get_rosetta_rot_set(
 	dummy_task->nonconst_residue_task( ir ).restrict_to_repacking();
 	dummy_task->nonconst_residue_task( ir ).or_include_current( false ); //need to do this because the residue was built from internal coords and is probably crumpled up
 	dummy_task->nonconst_residue_task( ir ).or_fix_his_tautomer( true ); //since we only want rotamers for the specified restype
-	core::graph::GraphOP dummy_png = core::pack::create_packer_graph( pose, dummy_sfxn, dummy_task );
+	utility::graph::GraphOP dummy_png = core::pack::create_packer_graph( pose, dummy_sfxn, dummy_task );
 	core::pack::rotamer_set::RotamerSetFactory rsf;
 	core::pack::rotamer_set::RotamerSetOP rotset( rsf.create_rotamer_set( pose.residue( ir ) ) );
 	rotset->set_resid( ir );
@@ -632,7 +632,9 @@ get_richardson_rot_data(
 	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -90,             12, 10 ) );//   -130 to -60
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -80,             12, 10 ) );//   -130 to -60
 
-	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      34 ,     62,   90,             12,  8 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,   70,             12,  8 ) );//   60 to 130
+	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,   90,             12,  8 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,  110,             12,  8 ) );//   60 to 130
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -119,             16, 14 ) );//   -130 to -60
 	       rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -105,             16, 14 ) );//   -130 to -60
@@ -642,7 +644,9 @@ get_richardson_rot_data(
 	       rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,   90,             10, 11 ) );//   0 to 100
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,  101,             10, 11 ) );//   0 to 100
 
-	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,  -40,              9, 20 ) );//   -40 to 20
+	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   20,              9, 20 ) );//   -40 to 20
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   76,             11, 19 ) );//   60 to 130
 	       rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   95,             11, 19 ) );//   60 to 130
@@ -1110,7 +1114,7 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
 					anames.push_back( std::make_pair(ir,rsd.atom_name(iacc)));
 				}
-				else if( aname==" O5'" || (aname==" O3'" && ir < pose.n_residue() && pose.residue(ir+1).is_DNA()) )
+				else if( aname==" O5'" || (aname==" O3'" && ir < pose.size() && pose.residue(ir+1).is_DNA()) )
 				{
 					auto cxyz = rsd.xyz("C5'");
 					auto oxyz = rsd.xyz("O5'");

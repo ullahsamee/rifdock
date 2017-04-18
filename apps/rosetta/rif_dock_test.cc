@@ -77,7 +77,7 @@ pose_center(
 	typedef numeric::xyzVector<core::Real> Vec;
 	Vec cen(0,0,0);
 	int count = 0;
-	for( int ir = 1; ir <= pose.n_residue(); ++ir ) {
+	for( int ir = 1; ir <= pose.size(); ++ir ) {
 		if( useres.size()==0 || std::find(useres.begin(),useres.end(),ir)!=useres.end() ){
 			for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
 				cen += pose.xyz(core::id::AtomID(ia,ir));
@@ -172,7 +172,7 @@ struct SearchPointWithRots {
 
 
 void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::Size sres=1, core::Size eres=0 ) {
-  if(eres==0) eres = pose.n_residue();
+  if(eres==0) eres = pose.size();
   for(core::Size ir = sres; ir <= eres; ++ir) {
     for(core::Size ia = 1; ia <= pose.residue_type(ir).natoms(); ++ia) {
       core::id::AtomID const aid(core::id::AtomID(ia,ir));
@@ -379,6 +379,8 @@ int main(int argc, char *argv[]) {
 		packopts.rotamer_inclusion_threshold = -0.5;
 		packopts.rotamer_onebody_inclusion_threshold = 5.0;
 		packopts.init_with_best_1be_rots = true;
+		packopts.user_rotamer_bonus_constant=opt.user_rotamer_bonus_constant;
+		packopts.user_rotamer_bonus_per_chi=opt.user_rotamer_bonus_per_chi;
 
 		std::string const rif_type = get_rif_type_from_file( opt.rif_files.back() );
 		BOOST_FOREACH( std::string fn, opt.rif_files ){
@@ -512,7 +514,7 @@ int main(int argc, char *argv[]) {
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
 		if( opt.use_scaffold_bounding_grids ){
-			for( int ir = 1; ir <= target.n_residue(); ++ir ){
+			for( int ir = 1; ir <= target.size(); ++ir ){
 				utility::vector1<core::Size> resids(1,ir); // 1-index numbering
 				std::vector<SchemeAtom> atoms;
 				devel::scheme::get_scheme_atoms( target, resids, atoms );
@@ -623,9 +625,6 @@ int main(int argc, char *argv[]) {
 		);
 
 
-		// if( opt.use_scaffold_bounding_grids ){
-		// 	std::cout << "not using target steric grids" << std::endl;
-		// } else {
 		if( true ){
 			// std::cout << "using target bounding grids, generating (or loading) them" << std::endl;
 			devel::scheme::RosettaFieldOptions rfopts;
@@ -667,6 +666,7 @@ int main(int argc, char *argv[]) {
 									float & dat = vap->data()[k];
 									if( dat < 0 ){
 										dat = dat * correction;
+										// dat = 0; // for testing w/o attractive sterics
 									}
 								} catch( std::exception const & ex ) {
 									#pragma omp critical
@@ -741,6 +741,9 @@ int main(int argc, char *argv[]) {
 	}
 
 
+    if( 0 == opt.scaffold_fnames.size() ){
+        std::cout << "WARNING: NO SCAFFOLDS!!!!!!" << std::endl;
+    }
 
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
@@ -770,7 +773,7 @@ int main(int argc, char *argv[]) {
 			std::vector<std::vector<float> > local_onebody;
 			std::vector< std::pair<int,int> > local_rotamers;
 			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
-			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.n_residue(), rot_index.size()  );
+			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );
 			shared_ptr<TBT> local_twobody;
 			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
@@ -784,7 +787,7 @@ int main(int argc, char *argv[]) {
 
 				scaffold_full_centered = scaffold;
 
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					scaffold_sequence_glob0.push_back( scaffold.residue(ir).name3() );
 				}
 
@@ -807,11 +810,11 @@ int main(int argc, char *argv[]) {
 					for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
 					std::cout << std::endl;
 				} else {
-					for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
+					for( int ir = 1; ir <= scaffold.size(); ++ir){
 						if( !scaffold.residue(ir).is_protein() ) continue;
-						if( scaffold.residue(ir).name3() == "PRO" ) continue;
-						if( scaffold.residue(ir).name3() == "GLY" ) continue;
-						if( scaffold.residue(ir).name3() == "CYS" ) continue;
+						//if( scaffold.residue(ir).name3() == "PRO" ) continue;
+						//if( scaffold.residue(ir).name3() == "GLY" ) continue;
+						//if( scaffold.residue(ir).name3() == "CYS" ) continue;
 						scaffold_res.push_back(ir);
 					}
 				}
@@ -828,18 +831,18 @@ int main(int argc, char *argv[]) {
 				std::cout << "using redundancy_filter_rg: " << redundancy_filter_rg << std::endl;
 
 				int count = 0;
-				scaffres_g2l.resize(scaffold.n_residue(),-1);
-				scaffuseres .resize(scaffold.n_residue(),false);
+				scaffres_g2l.resize(scaffold.size(),-1);
+				scaffuseres .resize(scaffold.size(),false);
 				for( auto ir : scaffold_res ){
 					scaffres_g2l[ir-1] = count++;
 					scaffres_l2g.push_back(ir-1);
 					scaffuseres[ir-1] = true;
 				}
 
-				std::cout << "scaffold: " << scaff_fname << " nres: " << scaffold.n_residue() << " using_res: " << scaffold_res.size() << std::endl;
+				std::cout << "scaffold: " << scaff_fname << " nres: " << scaffold.size() << " using_res: " << scaffold_res.size() << std::endl;
 				scaffold_center = pose_center(scaffold,scaffold_res);
 				scaffold_centered = scaffold;
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					Vec tmp( scaffold_center[0], scaffold_center[1], scaffold_center[2] );
 					for( int ia = 1; ia <= scaffold.residue_type(ir).natoms(); ++ia ){
 						core::id::AtomID aid(ia,ir);
@@ -856,12 +859,12 @@ int main(int argc, char *argv[]) {
 				scaffold_only_pose = scaffold_centered;
 				::devel::scheme::append_pose_to_pose( both_pose, target );
 				::devel::scheme::append_pose_to_pose( both_full_pose, target );
-				runtime_assert( both_pose.n_residue() == scaffold.n_residue() + target.n_residue() );
-				runtime_assert( both_pose.n_residue() == both_full_pose.n_residue() );
+				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
+				runtime_assert( both_pose.size() == both_full_pose.size() );
 
 
 
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					scaffca.push_back( scaffold.residue(ir).xyz("CA") );
 					// scaffold_res_all.push_back(ir);
 				}
@@ -1051,7 +1054,7 @@ int main(int argc, char *argv[]) {
 				}
 			} else {
 				std::cout << "not using scaffold bounding grids" << std::endl;
-				for( int ir = 1; ir <= scaffold_centered.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
 					utility::vector1<core::Size> resids(1,ir); // 1-index numbering
 					{
 						std::vector<SchemeAtom> scaff_res_atoms;
@@ -1086,13 +1089,53 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			std::vector<EigenXform> symmetries_clash_check;
+			if( opt.nfold_symmetry > 1 ){
+				// utility_exit_with_message("NOT IMPLEMENTED!");
+				// check only 1 and Nfold - 1, hense the strange += value
+				// symmetries_clash_check.push_back( EigenXform::Identity() );
+				for(int isym = 1; isym < opt.nfold_symmetry; isym += opt.nfold_symmetry-2){
+					float angle_rads = isym * 2.0 * M_PI / opt.nfold_symmetry;
+					Eigen::AngleAxis<typename EigenXform::Scalar> aa( angle_rads, Eigen::Vector3f(0,0,1) );
+					EigenXform x(aa.toRotationMatrix());
+					runtime_assert( x.translation().norm() < 0.0001 );
+					symmetries_clash_check.push_back( x );
+					std::cout << "USING SYMMETRY CLASH CHECK HACK!!!! " << isym << " " << angle_rads << std::endl;
+				}
+				if( !opt.use_scaffold_bounding_grids ){
+					std::cout << "making atype 5-only scaffold bounding grids" << std::endl;
+					// need to init scaffold*_by_atype for, say, atype 5, then use this for symmetrical clash checking
+					scaffold_bounding_by_atype.resize( RESLS.size() );
+					devel::scheme::RosettaFieldOptions rfopts;
+					rfopts.field_resl = 1.0;
+					rfopts.data_dir = "DUMMY_DATA_DIR_FIXME";
+					rfopts.oversample = 1;
+					rfopts.block_hbond_sites = false;
+					rfopts.max_bounding_ratio = opt.max_rf_bounding_ratio;
+					rfopts.repulsive_only_boundary = true; // default
+					rfopts.one_atype_only = 5; // atype 5 only good enough for the sym clash check
+					devel::scheme::get_rosetta_bounding_fields(
+						RESLS,
+						scaff_fname+"_CEN"+(opt.scaff2ala?"_ALLALA":""),
+						scaffold_centered,
+						scaffold_res,
+						rfopts,
+						scaffold_field_by_atype,
+						scaffold_bounding_by_atype,
+						false
+					);
+					std::cout << "done making atype 5-only scaffold bounding grids" << std::endl;
+				}
+			}
+
+
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup scene from scaffold and target" );
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
 			ScenePtr scene_full( scene_prototype->clone_deep() );
 			{
-				for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
+				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					Vec N  = scaffold_centered.residue(ir).xyz("N" );
 					Vec CA = scaffold_centered.residue(ir).xyz("CA");
 					Vec C  = scaffold_centered.residue(ir).xyz("C" );
@@ -1218,7 +1261,46 @@ int main(int argc, char *argv[]) {
 										// std::cout << "inbounds " << iresl << " " << xform_magnitude( tscene->position(1), redundancy_filter_rg ) << std::endl;
 									}
 								}
-								samples[iresl][i].score = objectives[iresl]->score( *tscene );
+
+   								float tot_sym_score = 0;
+                                if( opt.nfold_symmetry > 1 ){
+									bool dump = false;
+									if( iresl == 2 ) dump = true;
+									if(dump){
+									    scaffold_centered.dump_pdb("test_scaff.pdb");
+									    target.dump_pdb("test_target.pdb");
+									}
+									EigenXform x = tscene->position(1);
+									EigenXform xinv = x.inverse();
+                                    for(int isym = 0; isym < symmetries_clash_check.size(); ++isym){
+                                        EigenXform const & xsym = symmetries_clash_check[isym];
+									// for( EigenXform const & xsym : symmetries_clash_check ){
+                                        utility::io::ozstream * outp = nullptr;
+                                        if(dump){
+                                            outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
+                                        }
+										EigenXform x_to_internal = xinv * xsym * x;
+										for( SimpleAtom a : scaffold_simple_atoms ){
+											a.set_position( x_to_internal * a.position() );
+		                            		if(dump) ::scheme::actor::write_pdb( *outp, a, rot_index_p->chem_index_ );
+		                                    float atom_score = scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
+		                                 	if( atom_score > 0.0 ){ // clash only
+			                                    tot_sym_score += atom_score;
+		                                 	}
+										}
+                                        if(dump){
+                                            outp->close();
+                                            delete outp;
+    									}
+                                    }
+									if(dump){
+										std::cout << "tot_sym_score " << tot_sym_score << std::endl;
+										utility_exit_with_message("testing symmetric clash check");
+									}
+                                }
+
+                                samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+
 							} catch( std::exception const & ex ) {
 								#ifdef USE_OPENMP
 								#pragma omp critical
@@ -1361,7 +1443,7 @@ int main(int argc, char *argv[]) {
 					#pragma omp parallel for schedule(dynamic,1024)
 					#endif
 					for( int ipack = 0; ipack < packed_results.size(); ++ipack ){
-						packed_results[ipack].score = 0;//samples.back()[ipack].score;
+						packed_results[ipack].score = samples.back()[ipack].score;
 						packed_results[ipack].index = samples.back()[ipack].index;
 					}
 				}
@@ -1385,7 +1467,7 @@ int main(int argc, char *argv[]) {
 				int do_min = 2;
 				if( opt.rosetta_min_fraction == 0.0 ) do_min = 1;
 
-				std::vector<bool> is_scaffold_fixed_res(scaffold.n_residue()+1,true);
+				std::vector<bool> is_scaffold_fixed_res(scaffold.size()+1,true);
 				for(int designable : scaffold_res){
 					is_scaffold_fixed_res[designable] = false;
 				}
@@ -1434,7 +1516,7 @@ int main(int argc, char *argv[]) {
 								scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*1.0 );
 							}
 						}
-						if( target.n_residue() == 1 ){
+						if( target.size() == 1 ){
 							// assume this is a ligand, so hbonding is important
 							scorefunc_pt[i]->set_weight( core::scoring::fa_elec    , scorefunc_pt[i]->get_weight(core::scoring::fa_elec    )*2.0 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*2.0 );
@@ -1444,6 +1526,10 @@ int main(int argc, char *argv[]) {
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*1.0 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_bb_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
 						}
+
+                        // score one pose single threaded maybe helps lkball issue
+                        scorefunc_pt[i]->score(both_per_thread[i]);
+
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
 						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
@@ -1454,8 +1540,8 @@ int main(int argc, char *argv[]) {
 						core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
 						movemap->set_chi(true);
 						movemap->set_jump(true);
-						for(int ir = 1; ir <= both_full_pose.n_residue(); ++ir){
-							bool is_scaffold = ir <= scaffold.n_residue();
+						for(int ir = 1; ir <= both_full_pose.size(); ++ir){
+							bool is_scaffold = ir <= scaffold.size();
 							if( is_scaffold ) movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_scaffoldbb );
 							else              movemap->set_bb(ir, opt.rosetta_min_allbb || opt.rosetta_min_targetbb );
 							if( opt.rosetta_min_fix_target && !is_scaffold ){
@@ -1489,231 +1575,245 @@ int main(int argc, char *argv[]) {
 					packed_results.resize(n_scormin);
 					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
 					if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
-					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
+					else            std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
+                    std::exception_ptr exception = nullptr;
+
+
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,1)
 					#endif
 					for( int imin = 0; imin < n_scormin; ++imin )
-					{
-						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
-
-						int const ithread = omp_get_thread_num();
-
-						director->set_scene( packed_results[imin].index, RESLS.size()-1, *scene_pt[ithread] );
-						EigenXform xposition1 = scene_pt[ithread]->position(1);
-						EigenXform xalignout = EigenXform::Identity();
-						if( opt.align_to_scaffold ) xalignout = xposition1.inverse();
-
-					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-				        start = std::chrono::high_resolution_clock::now();
-
-						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
-						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
-						pose_to_min = both_per_thread[ithread];
-						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.n_residue()+1 , pose_to_min.n_residue() );
-						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.n_residue() );
-
-						// place the rotamers
-						core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-						std::vector<bool> is_rif_res(pose_to_min.n_residue(),false);
-						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
-							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
-							int irot =                  packed_results[imin].rotamers().at(ipr).second;
-							core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
-							pose_to_min.replace_residue( ires+1, *newrsd, true );
-							is_rif_res[ires] = true;
-							for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
-								pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
-							}
-						}
-
-						EigenXform Xtorifframe = xalignout.inverse();
-						// clash check existing scaffold rotamers
-						// #pragma omp critical
-						// {
-						// 	pose_to_min.dump_pdb("test0.pdb");
-						// 	xform_pose(pose_to_min, eigen2xyz(Xtorifframe));
-						// 	pose_to_min.dump_pdb("test1.pdb");
-						// 	utility_exit_with_message("foo");
-						// }
-
-						std::vector<int> replaced_scaffold_res, rifres;
-						auto alaop = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA" ) );
-
-						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
-
-						std::vector<int> rifatypemap = get_rif_atype_map();
-						for( int ir = 1; ir <= scaffold.n_residue(); ++ir){
-							auto const & ires = pose_to_min.residue(ir);
-							if( !ires.is_protein() ) continue;
-							if( ires.aa()==core::chemical::aa_gly ||
-								ires.aa()==core::chemical::aa_ala ||
-								ires.aa()==core::chemical::aa_pro ) continue;
-							if(is_rif_res[ir-1]){
-								rifres.push_back(ir);
-								continue;
-							}
-							if(is_scaffold_fixed_res[ir]) continue;
-							bool ir_clash = false;
-
-							// check against target_field_by_atype
-							float evtarget = 0.0;
-							for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
-								auto const & ixyz = ires.xyz(ia);
-
-								Eigen::Vector3f satm;
-								for(int k = 0; k < 3; ++k) satm[k] = ixyz[k];
-								satm = Xtorifframe * satm;
-								int const irifatype = rifatypemap[ires.atom_type_index(ia)];
-								evtarget += target_field_by_atype.at(irifatype)->at(satm);
-							}
-							if( evtarget > 3.0f ) ir_clash = true;
-
-							// check against other rif res
-							for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
-								int jr = 1+scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
-								auto const & jres = pose_to_min.residue(jr);
-								// should do rsd nbr check... but speed not critical here ATM...
-								for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
-									auto const & ixyz = ires.xyz(ia);
-									for( int ja = 6; ja <= jres.nheavyatoms(); ++ja){
-										auto const & jxyz = jres.xyz(ja);
-										if( ixyz.distance_squared(jxyz) < 9.0 ){
-											ir_clash = true;
-										}
-									}
-								}
-							}
-							if(ir_clash){
-								pose_to_min.replace_residue(ir, *alaop, true);
-								replaced_scaffold_res.push_back(ir);
-							}
-						}
-
-						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_after.pdb");
-						// if(imin >= 9) utility_exit_with_message("testing...aorsenoi");
+                    {
 
 
-						end = std::chrono::high_resolution_clock::now();
-						std::chrono::duration<double> elapsed_seconds_copypose = end-start;
-						#pragma omp critical
-						time_copy += elapsed_seconds_copypose;
-						// pose_to_min.dump_pdb("test_pre.pdb");
+                        try
+    					{
+    						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
 
-						if( minimizing ){
-							// std::cout << "MIN!" << std::endl;
-					        // start = std::chrono::high_resolution_clock::now();
-					        // #pragma omp critical
-					        // {
-						       //  pose_to_min.dump_pdb("min_"+str(imin)+"_before.pdb");
-								minmover_pt[ithread]->apply( pose_to_min );
-						    //     pose_to_min.dump_pdb("min_"+str(imin)+"_after.pdb");
-						    //     utility_exit_with_message("test_min");
-						    // }
-					        end = std::chrono::high_resolution_clock::now();
-							std::chrono::duration<double> elapsed_seconds_min = end-start;
-							#pragma omp critical
-							time_min += elapsed_seconds_min;
-						} else {
-							// std::cout << "SCORE!" << std::endl;
-					        start = std::chrono::high_resolution_clock::now();
-							scorefunc_pt[ithread]->score( pose_to_min );
-					        end = std::chrono::high_resolution_clock::now();
-							std::chrono::duration<double> elapsed_seconds_score = end-start;
-							#pragma omp critical
-							time_score += elapsed_seconds_score;
-						}
+    						int const ithread = omp_get_thread_num();
 
-						// if( target.n_residue() == 1 ){
-						// 	// ligand!
-						// 	float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
-						// 	      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
-						// 	      total_lj_neg = std::max(0.0f,total_lj_neg);
-						// 	packed_results[imin].score  = 1.00*total_lj_neg;
-						// 	packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
-						// 	packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.n_residue());
-						// 	for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
-						// 		int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
-						// 		packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
-						// 	}
-						// } else {
-							// not ligand! compute the fixed-everything ddg
-						if( opt.rosetta_score_total ){
-							packed_results[imin].score = pose_to_min.energies().total_energy();
-						} else {
-							double rosetta_score = 0.0;
-							auto const & weights = pose_to_min.energies().weights();
-							if( !opt.rosetta_score_ddg_only ){
-								for( int ir = 1; ir <= scaffold.n_residue(); ++ir ){
-									if( is_rif_res[ir-1] ){
-										rosetta_score += pose_to_min.energies().onebody_energies(ir).dot(weights);
-									}
-								}
-							}
-							if( !opt.rosetta_score_ddg_only && target.n_residue()==1 ){
-								// is ligand, add it's internal energy
-								rosetta_score += pose_to_min.energies().onebody_energies(pose_to_min.n_residue()).dot(weights);
-							}
-							auto const & egraph = pose_to_min.energies().energy_graph();
-							for(int ir = 1; ir <= egraph.num_nodes(); ++ir){
-								for ( core::graph::Graph::EdgeListConstIter
-										iru  = egraph.get_node(ir)->const_upper_edge_list_begin(),
-										irue = egraph.get_node(ir)->const_upper_edge_list_end();
-										iru != irue; ++iru
-								){
-									EnergyEdge const & edge( static_cast< EnergyEdge const & > (**iru) );
-									int jr = edge.get_second_node_ind();
+    						director->set_scene( packed_results[imin].index, RESLS.size()-1, *scene_pt[ithread] );
+    						EigenXform xposition1 = scene_pt[ithread]->position(1);
+    						EigenXform xalignout = EigenXform::Identity();
+    						if( opt.align_to_scaffold ) xalignout = xposition1.inverse();
 
-									// this is DDG
-									if( ir <= scaffold.n_residue() && jr > scaffold.n_residue() ){
-										// ir in scaff, jr in target
-										rosetta_score += edge.dot(weights);
-									}
-									if( !opt.rosetta_score_ddg_only && jr <= scaffold.n_residue() ){
-										// ir & jr in scaffold
-										if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
-											double const edgescore = edge.dot(weights);
-											if( edgescore > 0.0 ){
-												// always assess full score for bad interactions
-												rosetta_score += edgescore;
-											} else if( is_rif_res[ir-1] && is_rif_res[jr-1] ){
-												// both rif residues
-												rosetta_score += opt.rosetta_score_rifres_rifres_weight * edgescore;
-												// bonus for hbonds between rif residues
-												rosetta_score += edge[core::scoring::hbond_sc];
-											} else {
-												// rest: one rif res, one other scaff res
-												rosetta_score += opt.rosetta_score_rifres_scaffold_weight * edgescore;
-											}
-										} else {
-											// scaffold / scaffold ignored
-										}
-									}
-								}
-							}
-							packed_results[imin].score = rosetta_score;
-							// #pragma omp critical
-							// std::cout << rosetta_score << std::endl;
-						}
+    					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+    				        start = std::chrono::high_resolution_clock::now();
+
+    						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
+    						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
+    						pose_to_min = both_per_thread[ithread];
+    						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.size()+1 , pose_to_min.size() );
+    						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.size() );
+
+    						// place the rotamers
+    						core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+    						std::vector<bool> is_rif_res(pose_to_min.size(),false);
+    						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    							int irot =                  packed_results[imin].rotamers().at(ipr).second;
+    							core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
+    							pose_to_min.replace_residue( ires+1, *newrsd, true );
+    							is_rif_res[ires] = true;
+    							for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
+    								pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+    							}
+    						}
+
+    						EigenXform Xtorifframe = xalignout.inverse();
+    						// clash check existing scaffold rotamers
+    						// #pragma omp critical
+    						// {
+    						// 	pose_to_min.dump_pdb("test0.pdb");
+    						// 	xform_pose(pose_to_min, eigen2xyz(Xtorifframe));
+    						// 	pose_to_min.dump_pdb("test1.pdb");
+    						// 	utility_exit_with_message("foo");
+    						// }
+
+    						std::vector<int> replaced_scaffold_res, rifres;
+    						auto alaop = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA" ) );
+
+    						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
+
+    						std::vector<int> rifatypemap = get_rif_atype_map();
+    						for( int ir = 1; ir <= scaffold.size(); ++ir){
+    							auto const & ires = pose_to_min.residue(ir);
+    							if( !ires.is_protein() ) continue;
+    							if( ires.aa()==core::chemical::aa_gly ||
+    								ires.aa()==core::chemical::aa_ala ||
+    								ires.aa()==core::chemical::aa_pro ) continue;
+    							if(is_rif_res[ir-1]){
+    								rifres.push_back(ir);
+    								continue;
+    							}
+    							if(is_scaffold_fixed_res[ir]) continue;
+    							bool ir_clash = false;
+
+    							// check against target_field_by_atype
+    							float evtarget = 0.0;
+    							for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+    								auto const & ixyz = ires.xyz(ia);
+
+    								Eigen::Vector3f satm;
+    								for(int k = 0; k < 3; ++k) satm[k] = ixyz[k];
+    								satm = Xtorifframe * satm;
+    								int const irifatype = rifatypemap[ires.atom_type_index(ia)];
+    								evtarget += target_field_by_atype.at(irifatype)->at(satm);
+    							}
+    							if( evtarget > 3.0f ) ir_clash = true;
+
+    							// check against other rif res
+    							for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    								int jr = 1+scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    								auto const & jres = pose_to_min.residue(jr);
+    								// should do rsd nbr check... but speed not critical here ATM...
+    								for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+    									auto const & ixyz = ires.xyz(ia);
+    									for( int ja = 6; ja <= jres.nheavyatoms(); ++ja){
+    										auto const & jxyz = jres.xyz(ja);
+    										if( ixyz.distance_squared(jxyz) < 9.0 ){
+    											ir_clash = true;
+    										}
+    									}
+    								}
+    							}
+    							if(ir_clash){
+    								pose_to_min.replace_residue(ir, *alaop, true);
+    								replaced_scaffold_res.push_back(ir);
+    							}
+    						}
+
+    						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_after.pdb");
+    						// if(imin >= 9) utility_exit_with_message("testing...aorsenoi");
 
 
-						if( (minimizing+1 == do_min)	 && packed_results[imin].score < opt.rosetta_score_cut ){
-							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
-							for(int ir : rifres){
-								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
-							}
-							for(int ir : replaced_scaffold_res){
-								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "PRUNED" );
-							}
-						}
+    						end = std::chrono::high_resolution_clock::now();
+    						std::chrono::duration<double> elapsed_seconds_copypose = end-start;
+    						#pragma omp critical
+    						time_copy += elapsed_seconds_copypose;
+    						// pose_to_min.dump_pdb("test_pre.pdb");
 
-						// #pragma omp critical
-						// pose_to_min.energies().show(cout,pose_to_min.n_residue());
-						// pose_to_min.dump_pdb("test_post.pdb");
-						// #pragma omp critical
-						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
-						// utility_exit_with_message("testing");
-					}
+    						if( minimizing ){
+    							// std::cout << "MIN!" << std::endl;
+    					        // start = std::chrono::high_resolution_clock::now();
+    					        // #pragma omp critical
+    					        // {
+    						       //  pose_to_min.dump_pdb("min_"+str(imin)+"_before.pdb");
+    								minmover_pt[ithread]->apply( pose_to_min );
+    						    //     pose_to_min.dump_pdb("min_"+str(imin)+"_after.pdb");
+    						    //     utility_exit_with_message("test_min");
+    						    // }
+    					        end = std::chrono::high_resolution_clock::now();
+    							std::chrono::duration<double> elapsed_seconds_min = end-start;
+    							#pragma omp critical
+    							time_min += elapsed_seconds_min;
+    						} else {
+    							// std::cout << "SCORE!" << std::endl;
+    					        start = std::chrono::high_resolution_clock::now();
+    							scorefunc_pt[ithread]->score( pose_to_min );
+    					        end = std::chrono::high_resolution_clock::now();
+    							std::chrono::duration<double> elapsed_seconds_score = end-start;
+    							#pragma omp critical
+    							time_score += elapsed_seconds_score;
+    						}
+
+    						// if( target.size() == 1 ){
+    						// 	// ligand!
+    						// 	float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
+    						// 	      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
+    						// 	      total_lj_neg = std::max(0.0f,total_lj_neg);
+    						// 	packed_results[imin].score  = 1.00*total_lj_neg;
+    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
+    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.size());
+    						// 	for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    						// 		int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    						// 		packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
+    						// 	}
+    						// } else {
+    							// not ligand! compute the fixed-everything ddg
+    						if( opt.rosetta_score_total ){
+    							packed_results[imin].score = pose_to_min.energies().total_energy();
+    						} else {
+    							double rosetta_score = 0.0;
+    							auto const & weights = pose_to_min.energies().weights();
+    							if( !opt.rosetta_score_ddg_only ){
+    								for( int ir = 1; ir <= scaffold.size(); ++ir ){
+    									if( is_rif_res[ir-1] ){
+    										rosetta_score += pose_to_min.energies().onebody_energies(ir).dot(weights);
+    									}
+    								}
+    							}
+    							if( !opt.rosetta_score_ddg_only && target.size()==1 ){
+    								// is ligand, add it's internal energy
+    								rosetta_score += pose_to_min.energies().onebody_energies(pose_to_min.size()).dot(weights);
+    							}
+    							auto const & egraph = pose_to_min.energies().energy_graph();
+    							for(int ir = 1; ir <= egraph.num_nodes(); ++ir){
+    								for ( utility::graph::Graph::EdgeListConstIter
+    										iru  = egraph.get_node(ir)->const_upper_edge_list_begin(),
+    										irue = egraph.get_node(ir)->const_upper_edge_list_end();
+    										iru != irue; ++iru
+    								){
+    									EnergyEdge const & edge( static_cast< EnergyEdge const & > (**iru) );
+    									int jr = edge.get_second_node_ind();
+
+    									// this is DDG
+    									if( ir <= scaffold.size() && jr > scaffold.size() ){
+    										// ir in scaff, jr in target
+    										rosetta_score += edge.dot(weights);
+    									}
+    									if( !opt.rosetta_score_ddg_only && jr <= scaffold.size() ){
+    										// ir & jr in scaffold
+    										if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
+    											double const edgescore = edge.dot(weights);
+    											if( edgescore > 0.0 ){
+    												// always assess full score for bad interactions
+    												rosetta_score += edgescore;
+    											} else if( is_rif_res[ir-1] && is_rif_res[jr-1] ){
+    												// both rif residues
+    												rosetta_score += opt.rosetta_score_rifres_rifres_weight * edgescore;
+    												// bonus for hbonds between rif residues
+    												rosetta_score += edge[core::scoring::hbond_sc];
+    											} else {
+    												// rest: one rif res, one other scaff res
+    												rosetta_score += opt.rosetta_score_rifres_scaffold_weight * edgescore;
+    											}
+    										} else {
+    											// scaffold / scaffold ignored
+    										}
+    									}
+    								}
+    							}
+    							packed_results[imin].score = rosetta_score;
+    							// #pragma omp critical
+    							// std::cout << rosetta_score << std::endl;
+    						}
+
+
+    						if( (minimizing+1 == do_min)	 && packed_results[imin].score < opt.rosetta_score_cut ){
+    							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+    							for(int ir : rifres){
+    								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
+    							}
+    							for(int ir : replaced_scaffold_res){
+    								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "PRUNED" );
+    							}
+    						}
+
+    						// #pragma omp critical
+    						// pose_to_min.energies().show(cout,pose_to_min.size());
+    						// pose_to_min.dump_pdb("test_post.pdb");
+    						// #pragma omp critical
+    						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
+    						// utility_exit_with_message("testing");
+    					} catch(...) {
+                            #pragma omp critical
+                            exception = std::current_exception();
+                        }
+
+                    } // end of OMP loop
+                    if( exception ) std::rethrow_exception(exception);
+
 					cout << endl;
 					__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 					{
@@ -1963,8 +2063,8 @@ int main(int argc, char *argv[]) {
 					if     ( opt.full_scaffold_output ) pose_from_rif = both_full_pose;
 					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;
 					else                                pose_from_rif = both_pose;
-					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.n_residue()+1, pose_from_rif.n_residue() );
-					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.n_residue() );
+					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.size()+1, pose_from_rif.size() );
+					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.size() );
 
 					// place the rotamers
 					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");

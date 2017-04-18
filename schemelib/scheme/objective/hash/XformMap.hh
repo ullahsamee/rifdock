@@ -134,6 +134,14 @@ struct XformMap {
 		return this->operator[]( hasher_.get_key( x ) );
 	}
 
+    Key get_key( Xform const & x ) const {
+        return hasher_.get_key(x);
+    }
+
+    Xform get_center( Key k ) const {
+        return hasher_.get_center(k);
+    }
+
 	int insert_sphere(
 		Xform const & x,
 		Float lever_bound,

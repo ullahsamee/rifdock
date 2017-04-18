@@ -66,7 +66,7 @@ parse_atomids(
 			 ia = atomreslist[iro];
 		} else {
 			int ir = atomreslist[iro];
-			runtime_assert_msg( 0 < ir && ir <= refpose.n_residue(), "residue index out of bounds: " + str(ir) + " nres: " + str( refpose.n_residue()) );
+			runtime_assert_msg( 0 < ir && ir <= refpose.size(), "residue index out of bounds: " + str(ir) + " nres: " + str( refpose.size()) );
 			runtime_assert_msg( 0 < ia && ia <= refpose.residue(ir).natoms(), "atom index out of bounds: " + str(ia) + " natom: " + str( refpose.residue(ir).natoms()) + " res: " + str(ir) );
 			atomids_out.push_back( core::id::AtomID(ia,ir) );
 			if( printme.size() ) std::cout << "parse_atomids selected atom " << printme << ": " << ir << " " << refpose.residue(ir).name3() << " " << ia << " " << refpose.residue(ir).atom_name(ia) << std::endl;
@@ -82,7 +82,7 @@ get_scheme_atoms(
 	std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > & out,
 	bool bbonly
 ){
-	// if(target_res.size()==0) for(core::Size i=1; i<=target.n_residue(); ++i) target_res.push_back(i);
+	// if(target_res.size()==0) for(core::Size i=1; i<=target.size(); ++i) target_res.push_back(i);
 
 		std::vector<int> atypemap = get_rif_atype_map();
 
@@ -103,9 +103,9 @@ get_scheme_atoms(
 					continue;
 				}
 				int at = atypemap[ r.atom_type_index(ia) ];
-				if( at > 21 ){
-					// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-					std::cout << "WARNING: heavy atom type "<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+				if( at > N_ATYPE ){
+					// utility_exit_with_message("heavy atom type > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
+					std::cout << "WARNING: heavy atom type "<<r.atom_type_index(ia)<<" > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
 					          << " will treat as carbon for sterics!" << std::endl;
 					at = 5;
 				}
@@ -142,7 +142,7 @@ get_scheme_atoms(
 ){
 	utility::vector1<core::Size> target_res;
 	if(target_res.size()==0){
-		for(core::Size i = 1; i <= target.n_residue(); ++i){
+		for(core::Size i = 1; i <= target.size(); ++i){
 			target_res.push_back(i);
 		}
 	}
@@ -253,14 +253,14 @@ get_rosetta_fields_specified_cache_prefix(
 			// 		selected_atoms.push_back(a);
 			// 	}
 			// }
-			for(int ir = 1; ir <= target.n_residue(); ++ir){
+			for(int ir = 1; ir <= target.size(); ++ir){
 				core::conformation::Residue const & r( target.residue(ir) );
 				for(int ia = 1; ia <= r.nheavyatoms(); ++ia){
 					if( r.is_virtual(ia) ) continue;
 					int at = atypemap[ r.atom_type_index(ia) ];
-					if( at > 21 ){
-						// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-						std::cout << "WARNING: heavy atom type"<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+					if( at > N_ATYPE ){
+						// utility_exit_with_message("heavy atom type > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
+						std::cout << "WARNING: heavy atom type"<<r.atom_type_index(ia)<<" > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
 						          << " will treat as carbon for sterics!" << std::endl;
 						at = 5;
 					}
@@ -322,7 +322,8 @@ get_rosetta_fields_specified_cache_prefix(
 		#pragma omp parallel for schedule(dynamic,1)
 		#endif
 		for( int itype = 1; itype <= N_ATYPE; ++itype ){
-			if( exception ) continue;
+            if( exception ) continue;
+            if( opts.one_atype_only && itype != opts.one_atype_only ) continue;
 			try {
 				std::string cachefile = cache_prefix +"__atype"+boost::lexical_cast<std::string>(itype)+".rosetta_field.gz";
 
@@ -455,7 +456,8 @@ get_rosetta_bounding_fields_from_fba(
 
 	std::vector<std::pair<float,int> > jobs;
 	for( int iresl = RESLS.size()-1; iresl >= 0; --iresl ){
-		for( int itype = 1; itype <= 21; ++itype ){
+		for( int itype = 1; itype <= N_ATYPE; ++itype ){
+            if( opts.one_atype_only && itype != opts.one_atype_only ) continue;
 			jobs.push_back( std::make_pair( iresl, itype ) );
 		}
 	}

@@ -94,7 +94,8 @@ struct RosettaField {
 			// anything occulding the hydrophobic fake-biotin tail
 			rep0 = std::max( rep0, ::scheme::numeric::sigmoidish( dis2, 3.0f, 4.6f ) * 1.0f );
 		}
-		return 0.8*atr0 + 0.44*rep0 + 0.75*sol0;
+		float e = 0.8*atr0 + 0.44*rep0 + 0.75*sol0;
+		return std::min<float>(e,100.0f);
 	}
 
 	float compute_rosetta_energy_safe(float x, float y, float z, int atype) const

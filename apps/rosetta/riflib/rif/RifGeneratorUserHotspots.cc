@@ -99,7 +99,7 @@ namespace rif {
 
 
 
-    	int const NSAMP = 3;
+    	int const NSAMP = 1000*1000;
 
     	std::mt19937 rng((unsigned int)time(0) + 934875);
     	float const radius_bound = this->opts.hotspot_sample_cart_bound;
@@ -126,7 +126,7 @@ namespace rif {
 		        );
 				
 				//get last atom in hotspot residue and iterate over last 3 
-      			core::conformation::Atoms::const_iterator iter = pose.residue(i_hspot_res).heavyAtoms_end()-1;
+      			core::conformation::Atoms::const_iterator iter = pose.residue(i_hspot_res).heavyAtoms_end();
 				core::conformation::Atoms::const_iterator end = iter-3;
       	
 				//these are the hotspot atoms				
@@ -134,24 +134,16 @@ namespace rif {
 				
 				//iterate and save xyz into hotspot 
 				while(iter >= end){
-        			if (iter == end +3){atom1(0,0) = iter->xyz()[0];atom1(1,0) = iter->xyz()[1];atom1(2,0) = iter->xyz()[2];}
-        			if (iter == end +2){atom2(0,0) = iter->xyz()[0];atom2(1,0) = iter->xyz()[1];atom2(2,0) = iter->xyz()[2];}
-        			if (iter == end +1){atom3(0,0) = iter->xyz()[0];atom3(1,0) = iter->xyz()[1];atom3(2,0) = iter->xyz()[2];}
+        			if (iter == end +2){atom1(0,0) = iter->xyz()[0];atom1(1,0) = iter->xyz()[1];atom1(2,0) = iter->xyz()[2];}
+        			if (iter == end +1){atom2(0,0) = iter->xyz()[0];atom2(1,0) = iter->xyz()[1];atom2(2,0) = iter->xyz()[2];}
+        			if (iter == end +0){atom3(0,0) = iter->xyz()[0];atom3(1,0) = iter->xyz()[1];atom3(2,0) = iter->xyz()[2];}
         			iter --;
       			}
-
-
-				//std::cout << atom1 << std::endl;
-				//std::cout << atom2 << std::endl;
-				//std::cout << atom3 << std::endl;
 				//translate with the target first
 				atom1 = atom1 - target_vec; 
 				atom2 = atom2 - target_vec; 
 				atom3 = atom3 - target_vec;				
-				//std::cout << "hspot 1 " <<atom1 << std::endl;
-				//std::cout << "hspot 2 " <<atom2 << std::endl;
-				//std::cout << "hspot 3 " <<atom3 << std::endl;
-				
+
 				//calculate centroid of hot_spot res 
 				Pos cen_hot = (atom1 + atom2 + atom3)/3;
 				
@@ -162,10 +154,10 @@ namespace rif {
 
 					//std::cout << params -> rot_index_p -> resname(irot) << std::endl;
 					//std::cout << pose.residue(i_hspot_res).name3() << std::endl;	
-					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
-					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3()){
-				  	std::cout << irot << std::endl;
-						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
+
+					//if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3()){
+				  	//std::cout << irot << std::endl;
+					::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
 						
 						// assign rif_res position by column
 						int hatoms = params -> rot_index_p -> nheavyatoms(irot);
@@ -184,72 +176,45 @@ namespace rif {
 				  		//std::cout << irot << std::endl;
 						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
 						
-						// assign rif_res position by column
-						Eigen::Matrix<float, 3, 1> center_mass;
-						int hatoms = params -> rot_index_p -> nheavyatoms(irot);
 						
-						for (int hatom = 0; hatom < hatoms; ++hatom){
-								center_mass += rotamer_atoms[hatom].position();
-						}
-						center_mass /= hatoms;
+						//Eigen::Matrix<float, 3, 1> center_mass;
+						// for (int hatom = 0; hatom < hatoms; ++hatom){
+						// 		center_mass += rotamer_atoms[hatom].position();
+						// }
+						// center_mass /= hatoms;
 						
 
 						int latoms = params -> rot_index_p -> natoms(irot);
-						//std::cout << rotamer_atoms[hatoms-1].data() << std::endl;
-						//std::cout << rotamer_atoms[hatoms-2].data() << std::endl;
-						//std::cout << rotamer_atoms[hatoms-3].data() << std::endl;
-						// putting atoms xyz into rif_res 3x3 matrix		
 						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
-						//rif_res << rotamer_atoms[latoms-1].position()[0],rotamer_atoms[latoms-2].position()[0],rotamer_atoms[latoms-3].position()[0],rotamer_atoms[latoms-1].position()[1],rotamer_atoms[latoms-2].position()[1],rotamer_atoms[latoms-3].position()[1],rotamer_atoms[latoms-1].position()[2],rotamer_atoms[latoms-2].position()[2],rotamer_atoms[latoms-3].position()[2];
 
-						std::cout << "rif 1" << rif_res.col(0) << std::endl;
-						std::cout << "rif 2" << rif_res.col(1) << std::endl;
-						std::cout << "rif 3" << rif_res.col(2) << std::endl;
-						
-						//calculate centroid for rif residue
-         				Pos cen_rot = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
-						
-						//svd superimpose
-          				::Eigen::Matrix<float,3,3> cov_mtx;
-										
-          				cov_mtx = (rif_res.col(0) - cen_rot)*(atom1 - cen_hot).transpose() + (rif_res.col(1) - cen_rot)*(atom2 - cen_hot).transpose() + (rif_res.col(2) - cen_rot)*(atom3 - cen_hot).transpose();
-
-            			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-						// std::cout << "rif 1" << rif_res.col(0) << std::endl;
-						// std::cout << "rif 2" << rif_res.col(1) << std::endl;
-						// std::cout << "rif 3" << rif_res.col(2) << std::endl;
-						
-						//calculate centroid for rif residue
-         				Pos cen_rot = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
+	     	 			Pos cen_rot = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
+         				
          				EigenXform x_2_orig = EigenXform::Identity();
          				x_2_orig.translation() = -cen_hot;
+         				EigenXform x_2_orig_inverse = x_2_orig.inverse();
+
 						
 						//svd superimpose
-          				::Eigen::Matrix<float,3,3> cov_mtx;
-										
+          				::Eigen::Matrix<float,3,3> cov_mtx;										
           				cov_mtx = (rif_res.col(0) - cen_rot)*(atom1 - cen_hot).transpose() + (rif_res.col(1) - cen_rot)*(atom2 - cen_hot).transpose() + (rif_res.col(2) - cen_rot)*(atom3 - cen_hot).transpose();
-
             			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
 						::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
-						int R_det = R_mtx.determinant();
-						if ( R_det < 0){
-							//::Eigen::Matrix<float,3,3> new_V = svd.matrixV();
-							//new_V.col(2) = -1*new_V.col(2);
-							R_mtx.col(2) = -1*R_mtx.col(2);
-							//R_mtx = new_V * svd.matrixU().transpose();
-
-							//std::cout << "reflection" << R_det << std::endl;}
-						}
+						//int R_det = R_mtx.determinant();
+						// if ( R_det < 0){
+						// 	R_mtx.col(2) = -1*R_mtx.col(2);
+						// }
 						::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*cen_rot + cen_hot;
-        				::Eigen::Matrix<float,3,4> Tran_mtx;
-					
+        				::Eigen::Matrix<float,3,4> Tran_mtx;					
 				  		Tran_mtx.block<3,3>(0,0) = R_mtx;
         				Tran_mtx.block<3,1>(0,3) = T_mtx;
 
 						EigenXform impose;
 						impose.matrix() = Tran_mtx;
 						EigenXform x_orig_position = EigenXform::Identity();
+						
+						impose = Xref * Xrotamer.inverse();
+
+
 						// std::cout << "Xform:" << std::endl;
 						// std::cout << Tran_mtx << std::endl;
 						// ::Eigen::Matrix<float,3,3> temp;
@@ -257,6 +222,7 @@ namespace rif {
 						// temp.col(1)=Tran_mtx.block<3,1>(0,3);
 						// temp.col(2)=Tran_mtx.block<3,1>(0,3);  		
 			
+
 					//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
 					//for( auto const & x_perturb : sample_position_deltas ){
 
@@ -268,45 +234,46 @@ namespace rif {
 					for(int a = 0; a < NSAMP; ++a){							
 						EigenXform x_perturb;
 						::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
-						
-						EigenXform x_position = x_perturb * impose * x_orig_position;
+
+						EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position;
+						//EigenXform x_position = x_perturb * impose * x_orig_position;
+						//EigenXform x_position = x_perturb * impose * x_orig_position;
 							
 						// you can check their "energies" against the target like this, obviously substituting the real rot# and position
 						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
 						//std::cout << positioned_rotamer_score << std::endl;
 						// add the rotamer to the rif if it's any good
+						std::ofstream myfile;
 
-
-						if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
-						if( positioned_rotamer_score <= 0){ // probably want this threshold to be an option or something
+						//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
+						if( positioned_rotamer_score < 0){ // probably want this threshold to be an option or something
 							//std::cout << positioned_rotamer_score << std::endl;
-							accumulator->insert( x_position, positioned_rotamer_score, irot, i_hotspot_group, -1 );
-							std::ofstream myfile;
-						 	std::ostringstream os;
-							os << "hotspot_" << params -> rot_index_p -> resname(irot) << "_" << a << ".pdb";
-							std::string s = os.str();		
-							myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+							accumulator->insert( x_position, positioned_rotamer_score-4, irot, i_hotspot_group, -1 );
+						 // 	std::ostringstream os;
+							// os << "hotspot_" << irot << "_" << a << ".pdb";
+							// std::string s = os.str();		
+							// myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 							
-							//std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
-							//std::cout << positioned_rotamer_score << std::endl;
+							// std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
+							// std::cout << positioned_rotamer_score << std::endl;
 
-							for( auto a : rotamer_atoms ){
-								a.set_position( x_position * a.position() );
-								::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
-							}
+							// for( auto a : rotamer_atoms ){
+							// 	a.set_position( x_position * a.position() );
+							// 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+							// }
 
 							// myfile << positioned_rotamer_score << std::endl;
 							//myfile.close();
 							// std::cout << "ENDMDL" << std::endl;
 
-							myfile << "TER" << std::endl;
+							//myfile << "TER" << std::endl;
 							// myfile << positioned_rotamer_score << std::endl;
-							myfile.close();
+							//myfile.close();
 							//std::cout << "ENDMDL" << std::endl;
 
 							
 						}
-						//myfile.close();
+						myfile.close();
 					} // end position perturbations
 
 					//myfile.close();
@@ -318,7 +285,7 @@ namespace rif {
 			} //  end loop over residues in hotspot group
 
 		} // end loop over hotspot groups
-
+		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
 		auto rif_ptr = accumulator->rif();
@@ -344,7 +311,7 @@ namespace rif {
 		
 		//utility_exit_with_message("done");
 
-		}
+	}
 
 
 }

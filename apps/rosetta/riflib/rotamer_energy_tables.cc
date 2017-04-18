@@ -135,8 +135,11 @@ compute_onebody_rotamer_energies(
 		// score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
 		// score_func->set_etable( "FA_STANDARD_SOFT" );
 		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
-		// score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
+		
 		score_func = core::scoring::get_score_function();
+		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
 		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
 		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
 		hopts.use_hb_env_dep( false );
@@ -151,14 +154,14 @@ compute_onebody_rotamer_energies(
 	// bbone.dump_pdb("bbone_test.pdb");
 
 
-	onebody_rotamer_energies.resize( bbone.n_residue() );
+	onebody_rotamer_energies.resize( bbone.size() );
 	std::vector<core::pose::Pose> pose_per_thread( omp_max_threads_1(), bbone );
-	std::cout << "compute_onebody_rotamer_energies " << bbone.n_residue() << "/" << rot_index.size();
+	std::cout << "compute_onebody_rotamer_energies " << bbone.size() << "/" << rot_index.size();
 	std::exception_ptr exception = nullptr;
 	#ifdef USE_OPENMP
 	#pragma omp parallel for schedule(dynamic,1)
 	#endif
-	for( int ir = 1; ir <= bbone.n_residue(); ++ir ){
+	for( int ir = 1; ir <= bbone.size(); ++ir ){
 		if( exception ) continue;
 		if( std::find(scaffold_res.begin(), scaffold_res.end(), ir) == scaffold_res.end() ){
 			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
@@ -174,7 +177,7 @@ compute_onebody_rotamer_energies(
 			#ifdef USE_OPENMP
 			#pragma omp critical
 			#endif
-			std::cout << (100.0*ir)/work_pose.n_residue() << "% "; std::cout.flush();
+			std::cout << (100.0*ir)/work_pose.size() << "% "; std::cout.flush();
 			for( int jr = 0; jr < rot_index.size(); ++jr ){
 				core::conformation::ResidueOP rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
 				work_pose.replace_residue( ir, *rot, true );
@@ -416,13 +419,13 @@ make_twobody_tables(
 	typedef ::scheme::actor::BackboneActor<EigenXform> BackboneActor;
 	typedef ::scheme::actor::Atom< Eigen::Vector3f > SchemeAtom;
 
-	runtime_assert( onebody_energies.size() == scaffold.n_residue() );
- 	// boost::multi_array<float,2> obe( boost::extents[scaffold.n_residue()][rot_index.size()] );
-	runtime_assert( twob.onebody_.shape()[0] == scaffold.n_residue() );
+	runtime_assert( onebody_energies.size() == scaffold.size() );
+ 	// boost::multi_array<float,2> obe( boost::extents[scaffold.size()][rot_index.size()] );
+	runtime_assert( twob.onebody_.shape()[0] == scaffold.size() );
 	runtime_assert( twob.onebody_.shape()[1] == rot_index.size() );
 	{
-		runtime_assert( onebody_energies.size() == scaffold.n_residue() );
-		for( int i = 0; i < scaffold.n_residue(); ++i ){
+		runtime_assert( onebody_energies.size() == scaffold.size() );
+		for( int i = 0; i < scaffold.size(); ++i ){
 			runtime_assert( onebody_energies[i].size() == rot_index.size() );
 			for( int j = 0; j < rot_index.size(); ++j ){
 				twob.onebody_[i][j] = onebody_energies[i][j];
@@ -430,7 +433,7 @@ make_twobody_tables(
 		}
 	}
 	int avg = 0;
-	for( int i = 0; i < scaffold.n_residue(); ++i ){
+	for( int i = 0; i < scaffold.size(); ++i ){
 		int count = 0;
 		for( int j = 0; j < rot_index.size(); ++j ){
 			count += ( twob.onebody_[i][j] < 0.0 );
@@ -438,7 +441,7 @@ make_twobody_tables(
 		// cout << i+1 << " " << count << endl;
 		avg += count;
 	}
-	// cout << "avg count = " << (float)avg/scaffold.n_residue() << endl;
+	// cout << "avg count = " << (float)avg/scaffold.size() << endl;
 
 	twob.init_onebody_filter( opts.onebody_threshold );
 
@@ -448,7 +451,7 @@ make_twobody_tables(
 	#ifdef USE_OPENMP
 	#pragma omp parallel for schedule(dynamic,1)
 	#endif
-	for( int ir = 0; ir < scaffold.n_residue(); ++ir ){
+	for( int ir = 0; ir < scaffold.size(); ++ir ){
 		if( exception ) continue;
 		try {
 			if( !scaffold.residue(ir+1).is_protein() ) continue;
@@ -619,7 +622,7 @@ get_twobody_tables(
 		twob.load( in, description );
 		in.close();
 	} else {
-		twob.init( scaffold.n_residue(), rot_index.size() );
+		twob.init( scaffold.size(), rot_index.size() );
 		make_twobody_tables( scaffold, rot_index, onebody_energies, rotrfmanager, opts, twob );
 		if( cachefile.size() ) std::cout << "created twobody energies and saving to: " << cachefile << std::endl;
 		if( description=="" ) description = "No description, Will sucks. Complain to willsheffler@gmail.com\n";
