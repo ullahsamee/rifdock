@@ -306,7 +306,7 @@ namespace rif {
                 std::cout << " rotamer " << rotamer_number << " " << resn << ", score " << rotamer_score << std::endl;
             }
 
-            if(++count > 10) utility_exit_with_message("aireost");
+        //    if(++count > 10) utility_exit_with_message("aireost");
         }
 		
 		//utility_exit_with_message("done");
