@@ -99,7 +99,7 @@ namespace rif {
 
 
 
-    	int const NSAMP = 1000*1000;
+    	int const NSAMP = this->opts.hotspot_nsamples;
 
     	std::mt19937 rng((unsigned int)time(0) + 934875);
     	float const radius_bound = this->opts.hotspot_sample_cart_bound;
