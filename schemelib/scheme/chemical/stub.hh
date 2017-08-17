@@ -35,7 +35,6 @@ namespace chemical {
         return make_stub<Xform>( ca, n, ca, c );
     }
 
-
 }
 }
 

@@ -114,6 +114,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, user_rotamer_bonus_constant )
     OPT_1GRP_KEY(  Real        , rif_dock, user_rotamer_bonus_per_chi )
 
+
+    OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
+
 	void register_options() {
 		using namespace basic::options;
 		using namespace basic::options::OptionKeys;
@@ -230,6 +233,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
         NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
 		NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
 
+		NEW_OPT(  rif_dock::resl0, "", 16 );
+
 
 	}
 
@@ -341,7 +346,7 @@ struct RifDockOpt
 		runtime_assert( option[rif_dock::target_rif].user() );
 
 		VERBOSE                                = false;
-		resl0                                  = 16.0;
+		resl0                                  = option[rif_dock::resl0                              ]();
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;

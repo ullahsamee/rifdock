@@ -33,6 +33,13 @@
 	#include <Eigen/Core>
 	#include <Eigen/Geometry>	
 
+//Brian
+
+#include <scheme/objective/hash/XformMap.hh>
+#include <scheme/objective/storage/RotamerScores.hh>
+#include <scheme/actor/BackboneActor.hh>
+
+
 namespace devel {
 namespace scheme {
 namespace rif {
@@ -44,7 +51,9 @@ namespace rif {
 		RifAccumulatorP accumulator,
 		RifGenParamsP params
 	){
-		
+
+		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
+
 		typedef ::Eigen::Matrix<float,3,1> Pos;
 	
 		// some sanity checks
@@ -106,6 +115,10 @@ namespace rif {
     	float const degrees_bound = this->opts.hotspot_sample_angle_bound;
     	float const radians_bound = degrees_bound * M_PI/180.0;
 
+    	// std::ostream & out( std::cout );
+    	// std::ofstream out;
+    	// out.open("rifgen.txt");
+
 		// loop over files (one file is one hotspot group)
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
@@ -118,6 +131,7 @@ namespace rif {
       
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
+				std::cout << "Hotspot: " << i_hspot_res << std::endl;
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
 				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
 		            pose.residue(i_hspot_res).xyz( input_nheavy - 2 ) - xyz_tgt_cen,
@@ -195,24 +209,59 @@ namespace rif {
 
 						
 						//svd superimpose
-          				::Eigen::Matrix<float,3,3> cov_mtx;										
-          				cov_mtx = (rif_res.col(0) - cen_rot)*(atom1 - cen_hot).transpose() + (rif_res.col(1) - cen_rot)*(atom2 - cen_hot).transpose() + (rif_res.col(2) - cen_rot)*(atom3 - cen_hot).transpose();
-            			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
-						::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
-						//int R_det = R_mtx.determinant();
-						// if ( R_det < 0){
-						// 	R_mtx.col(2) = -1*R_mtx.col(2);
-						// }
-						::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*cen_rot + cen_hot;
-        				::Eigen::Matrix<float,3,4> Tran_mtx;					
-				  		Tran_mtx.block<3,3>(0,0) = R_mtx;
-        				Tran_mtx.block<3,1>(0,3) = T_mtx;
+      //     				::Eigen::Matrix<float,3,3> cov_mtx;										
+      //     				cov_mtx = (rif_res.col(0) - cen_rot)*(atom1 - cen_hot).transpose() + (rif_res.col(1) - cen_rot)*(atom2 - cen_hot).transpose() + (rif_res.col(2) - cen_rot)*(atom3 - cen_hot).transpose();
+      //       			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
+						// ::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
+						// //int R_det = R_mtx.determinant();
+						// // if ( R_det < 0){
+						// // 	R_mtx.col(2) = -1*R_mtx.col(2);
+						// // }
+						// ::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*cen_rot + cen_hot;
+      //   				::Eigen::Matrix<float,3,4> Tran_mtx;					
+				  // 		Tran_mtx.block<3,3>(0,0) = R_mtx;
+      //   				Tran_mtx.block<3,1>(0,3) = T_mtx;
 
 						EigenXform impose;
-						impose.matrix() = Tran_mtx;
+						// impose.matrix() = Tran_mtx;
 						EigenXform x_orig_position = EigenXform::Identity();
 						
 						impose = Xref * Xrotamer.inverse();
+
+
+						EigenXform O_2_orig = EigenXform::Identity();
+
+						int passes = 1;
+
+         				EigenXform tyr_thing = EigenXform::Identity();	
+						if (pose.residue(i_hspot_res).name3() == "TYR") {
+
+							Pos the_axis = (atom1 - atom2).normalized();
+							O_2_orig.translation() = -atom1;	
+							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
+
+							passes = 2;
+
+						} else if (pose.residue(i_hspot_res).name3() == "PHE") {
+							
+							Pos atom6;
+							atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
+							atom6(1,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[1];
+							atom6(2,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[2];
+							atom6 = atom6 - target_vec;
+
+							Pos the_axis = (atom1 - atom6).normalized();
+							O_2_orig.translation() = -atom1;	
+							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
+
+							passes = 2;
+						}
+						
+
+						EigenXform O_2_orig_inverse = O_2_orig.inverse();
+
+
+//-7.23139 -2.76265  6.16824   0.732332 0.523054  0.43601
 
 
 						// std::cout << "Xform:" << std::endl;
@@ -222,60 +271,138 @@ namespace rif {
 						// temp.col(1)=Tran_mtx.block<3,1>(0,3);
 						// temp.col(2)=Tran_mtx.block<3,1>(0,3);  		
 			
+					Eigen::Matrix<float,3,1> pdb_axis = Eigen::Matrix<float,3,1>(1.338,  0.702,   0.138);
+					Eigen::Matrix<float,3,1> goal_axis = Eigen::Matrix<float,3,1>(0.732332, 0.523054,  0.43601);
+					Eigen::Matrix<float,3,1> goal_trans = Eigen::Matrix<float,3,1>(-7.23139, -2.76265,  6.16824);
+					float norm_pdb_axis = pdb_axis.norm();
+					float norm_goal_axis = goal_axis.norm();
 
-					//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
-					//for( auto const & x_perturb : sample_position_deltas ){
 
-					//std::cout << "being parallel block" << std::endl;
-					#ifdef USE_OPENMP
-					#pragma omp parallel for schedule(dynamic,16)
-					#endif
+					for ( int pass = 0; pass < passes; pass++) {
+						//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
+						//for( auto const & x_perturb : sample_position_deltas ){
 
-					for(int a = 0; a < NSAMP; ++a){							
-						EigenXform x_perturb;
-						::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
+						//std::cout << "being parallel block" << std::endl;
+						#ifdef USE_OPENMP
+						#pragma omp parallel for schedule(dynamic,16)
+						#endif
 
-						EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position;
-						//EigenXform x_position = x_perturb * impose * x_orig_position;
-						//EigenXform x_position = x_perturb * impose * x_orig_position;
-							
-						// you can check their "energies" against the target like this, obviously substituting the real rot# and position
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
-						//std::cout << positioned_rotamer_score << std::endl;
-						// add the rotamer to the rif if it's any good
-						std::ofstream myfile;
+						for(int a = 0; a < NSAMP; ++a){							
+							EigenXform x_perturb;
+							::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
 
-						//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
-						if( positioned_rotamer_score < 0){ // probably want this threshold to be an option or something
+							EigenXform building_x_position = impose * x_orig_position;
+							if ( pass == 1 ) {
+								building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
+							}
+
+							EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
+
+
+							// EigenXform x_position = 
+							// 	  x_2_orig_inverse * x_perturb * x_2_orig 
+							// 	* O_2_orig_inverse * tyr_thing * O_2_orig
+							// 	* impose * x_orig_position;
+							//EigenXform x_position = x_perturb * impose * x_orig_position;
+							//EigenXform x_position = x_perturb * impose * x_orig_position;
+								
+							// you can check their "energies" against the target like this, obviously substituting the real rot# and position
+							float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
 							//std::cout << positioned_rotamer_score << std::endl;
-							accumulator->insert( x_position, positioned_rotamer_score-4, irot, i_hotspot_group, -1 );
-						 // 	std::ostringstream os;
-							// os << "hotspot_" << irot << "_" << a << ".pdb";
-							// std::string s = os.str();		
-							// myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
-							
-							// std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
-							// std::cout << positioned_rotamer_score << std::endl;
+							// add the rotamer to the rif if it's any good
+							std::ofstream myfile;
 
-							// for( auto a : rotamer_atoms ){
-							// 	a.set_position( x_position * a.position() );
-							// 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
-							// }
+							// std::cout << "irot: " << irot << " score: " << positioned_rotamer_score << std::endl;
+							//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
+							if( positioned_rotamer_score < 0){ // probably want this threshold to be an option or something
 
-							// myfile << positioned_rotamer_score << std::endl;
-							//myfile.close();
-							// std::cout << "ENDMDL" << std::endl;
+								//std::cout << positioned_rotamer_score << std::endl;
+								// accumulator->insert( x_position, positioned_rotamer_score-4, irot, i_hotspot_group, -1 );
 
-							//myfile << "TER" << std::endl;
-							// myfile << positioned_rotamer_score << std::endl;
-							//myfile.close();
-							//std::cout << "ENDMDL" << std::endl;
 
-							
-						}
-						myfile.close();
-					} // end position perturbations
 
+
+
+
+
+								// old
+								// accumulator->insert( x_position, positioned_rotamer_score-4, irot, i_hspot_res, -1 );
+
+
+
+								// new
+								auto atom_N = x_position * rotamer_atoms[0].position();
+								auto atom_CA = x_position * rotamer_atoms[1].position();
+								auto atom_C = x_position * rotamer_atoms[2].position(); 
+
+								BBActor bbact( atom_N, atom_CA, atom_C);
+								EigenXform new_x_position = bbact.position();
+
+								accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, i_hspot_res, -1 );
+
+
+
+
+								// Eigen::Matrix<float,3,1> to_CB = (  new_x_position.rotation() * 
+								// 	Eigen::Matrix<float,3,1>( -1.95279912355806, -0.2200069625712990, 1.524857 )).normalized();
+
+								// Eigen::Matrix<float,3,1> axis = to_CB;
+								// float norm_axis = axis.norm();
+
+								// float goal_angle = 0;
+								// {
+								// 	float dot = goal_axis.dot(axis);
+
+								// 	float cos = std::max( (float)-1.0, std::min( (float)1.0, dot / norm_axis / norm_goal_axis ) );
+
+								// 	goal_angle = std::acos( cos ) * 180.0 / M_PI;
+
+								// }
+
+								// float dist = (new_x_position.translation() - goal_trans).norm();
+
+								// #pragma omp critical
+								// {
+								// 	std::cout << irot << " Angle: " << goal_angle << " Dist: " << dist << " Score: " << positioned_rotamer_score << std::endl;
+								// 	// std::cout << axis.transpose() << std::endl;
+								// 	// std::cout << "N:" << atom_N << "CA:" << atom_CA << "C:" << atom_C << std::endl;
+
+								// }
+
+
+
+
+
+
+
+
+
+							 // 	std::ostringstream os;
+								// os << "hotspot_" << irot << "_" << a << "_" << pass << "_" << i_hspot_res << ".pdb";
+								// std::string s = os.str();		
+								// myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+								// std::cout << "MODEL:" << irot << "_" << a << " " << positioned_rotamer_score << std::endl;
+								// std::cout << positioned_rotamer_score << std::endl;
+
+								// for( auto a : rotamer_atoms ){
+								// 	a.set_position( x_position * a.position() );
+								// 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+								// }
+
+								// myfile << positioned_rotamer_score << std::endl;
+								// myfile.close();
+								// std::cout << "ENDMDL" << std::endl;
+
+								// myfile << "TER" << std::endl;
+								// myfile << positioned_rotamer_score << std::endl;
+								// myfile.close();
+								// std::cout << "ENDMDL" << std::endl;
+
+								
+							}
+							myfile.close();
+						} // end position perturbations
+					}
 					//myfile.close();
 					
 				} // check residue type
@@ -289,25 +416,51 @@ namespace rif {
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
 		auto rif_ptr = accumulator->rif();
-        std::cout << "testing rifbase key iteration" << std::endl;
-        int count = 0;
-        for( auto key : rif_ptr->key_range() ){
-            EigenXform bin_center = rif_ptr->get_bin_center(key);
-            // right... the edges of the bins.... this is only *mostly* true
-            // runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
-            std::cout << "BIN: key " << key << " xform.trans: " << bin_center.translation().transpose() << std::endl;
-            auto rotscores = rif_ptr->get_rotamers_for_key(key);
-            runtime_assert( rotscores.size() > 0 );
-            for( auto rot_score : rotscores ){
-                // can't wait for cxx17 structured bindings!!!
-                float rotamer_score = rot_score.first;
-                int rotamer_number = rot_score.second;
-                std::string resn = params->rot_index_p->resname(rotamer_number);
-                std::cout << " rotamer " << rotamer_number << " " << resn << ", score " << rotamer_score << std::endl;
-            }
+		std::cout << "Brian" << std::endl;
 
-        //    if(++count > 10) utility_exit_with_message("aireost");
-        }
+
+		// out.close();
+
+
+		// typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
+		// typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+		// BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+		// typedef ::scheme::objective::hash::XformMap<
+		// 		EigenXform,
+		// 		crfXMapValue,
+		// 		::scheme::objective::hash::XformHash_bt24_BCC6
+		// 	> crfXMap;
+
+
+		// shared_ptr<crfXMap> to;
+		// rif_ptr->get_xmap_ptr( to );
+
+		// std::cout << "Size: " << to->size() << std::endl;
+
+
+    //     std::cout << "testing rifbase key iteration" << std::endl;
+    //     int count = 0;
+
+    //     for( auto key : rif_ptr->key_range() ){
+    //         EigenXform bin_center = rif_ptr->get_bin_center(key);
+    //         // right... the edges of the bins.... this is only *mostly* true
+    //         // runtime_assert( rif_ptr->get_bin_key(bin_center) == key );
+    //         std::cout << "BIN: key " << key << " xform.trans: " << bin_center.translation().transpose() << std::endl;
+    //         auto rotscores = rif_ptr->get_rotamers_for_key(key);
+    //         runtime_assert( rotscores.size() > 0 );
+    //         for( auto rot_score : rotscores ){
+    //             // can't wait for cxx17 structured bindings!!!
+    //             float rotamer_score = rot_score.first;
+    //             int rotamer_number = rot_score.second;
+
+				// std::pair< int, int > sat1_sat2 = rif_ptr->get_sat1_sat2(bin_center, rotamer_number);
+    //             std::string resn = params->rot_index_p->resname(rotamer_number);
+    //             std::cout << " rotamer " << rotamer_number << " " << resn << ", score " << rotamer_score;
+    //             std::cout << " sat1: " << sat1_sat2.first << " sat2: " << sat1_sat2.second << std::endl;
+    //         }
+
+    //     //    if(++count > 10) utility_exit_with_message("aireost");
+    //     }
 		
 		//utility_exit_with_message("done");
 
