@@ -143,6 +143,7 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 	bool do_i_satisfy_anything() const {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if (sat_data_[isat].not_empty()){
+				//return sat_data_[isat].target_sat_num();
 				return true;
 			}
 		}

@@ -257,6 +257,7 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr< ::scheme::search::HackPack> hackpack_;
 		std::vector<bool> is_satisfied_;
 		// sat group vector goes here
+		//std::vector<float> is_satisfied_score_;
 	};
 
 	template< class BBActor, class RIF, class VoxelArrayPtr >
@@ -345,6 +346,8 @@ std::string get_rif_type_from_file( std::string fname )
 			if( n_sat_groups_ > 0 ){
 				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
 				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
+				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
 			}
 			if( !packing_ ) return;
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
@@ -369,17 +372,18 @@ std::string get_rif_type_from_file( std::string fname )
 				int irot = rotscores.rotamer(i_rs);
 				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
+				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
-					bool special_rotamers = rotscores.do_i_satisfy_anything(i_rs);
-					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || special_rotamers){
+					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
 						
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
 						score_rot_v_target = recalc_rot_v_tgt;
 				
 						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
-						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || special_rotamers){
+						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
 							float sat_bonus = 0;
-							if (rotscores.do_i_satisfy_anything(i_rs)) {
+							if (rotamer_satisfies) {
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 								            packopts_.user_rotamer_bonus_constant;
 							}
@@ -403,7 +407,12 @@ std::string get_rif_type_from_file( std::string fname )
 				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}
+				// if( n_sat_groups_ > 0 && rotamer_satisfies >=0 && !packing_){
+				// 	//if (rotamer_satisfies >= scratch.is_satisfied_score_.size()){std::cout << "haha " << rotamer_satisfies << std::endl;}
+				// 	scratch.is_satisfied_score_.at(rotamer_satisfies) = std::min(scratch.is_satisfied_score_[rotamer_satisfies],score_rot_tot);
+				// } else {
 				bestsc = std::min( score_rot_tot , bestsc );
+				// }
 			}
 			// // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
@@ -466,6 +475,7 @@ std::string get_rif_type_from_file( std::string fname )
 				int nsat = 0;
 				for( int i = 0; i < n_sat_groups_; ++i ){
 					nsat += scratch.is_satisfied_[i];
+					//result.val_ += scratch.is_satisfied_score_[i];
 				}
 				runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 

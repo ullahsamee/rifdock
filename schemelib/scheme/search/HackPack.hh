@@ -44,8 +44,8 @@ struct HackPackOpts
 	float rotamer_inclusion_threshold = -0.5;
 	float rotamer_onebody_inclusion_threshold = 5.0;
 	bool  init_with_best_1be_rots = true;
-	float user_rotamer_bonus_constant = -2;
-	float user_rotamer_bonus_per_chi = -2;
+	float user_rotamer_bonus_constant = -2; //-2
+	float user_rotamer_bonus_per_chi = -2; // 2
 };
 std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 	out << "HackPackOpts:"

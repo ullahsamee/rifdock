@@ -994,6 +994,7 @@ int main(int argc, char *argv[]) {
 				rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 
+			
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
 			ObjectivePtr packing_objective;

@@ -646,6 +646,8 @@ get_richardson_rot_data(
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,  -40,              9, 20 ) );//   -40 to 20
 	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -56,  -51,              9, 20 ) );//TODO: remove extra rotamer for 1a22 TRP
+	
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   20,              9, 20 ) );//   -40 to 20
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   76,             11, 19 ) );//   60 to 130
