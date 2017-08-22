@@ -233,15 +233,15 @@ namespace rif {
 
 						EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
 						
-						Pos N  = x_position * Pos(rotamer_atoms[0].position()[0],rotamer_atoms[0].position()[1],rotamer_atoms[0].position()[2]);
-						Pos CA = x_position * Pos(rotamer_atoms[1].position()[0],rotamer_atoms[1].position()[1],rotamer_atoms[1].position()[2]);
-						Pos C  = x_position * Pos(rotamer_atoms[2].position()[0],rotamer_atoms[2].position()[1],rotamer_atoms[2].position()[2]);
-						::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA, C );
+						//Pos N  = x_position * Pos(rotamer_atoms[0].position()[0],rotamer_atoms[0].position()[1],rotamer_atoms[0].position()[2]);
+						//Pos CA = x_position * Pos(rotamer_atoms[1].position()[0],rotamer_atoms[1].position()[1],rotamer_atoms[1].position()[2]);
+						//Pos C  = x_position * Pos(rotamer_atoms[2].position()[0],rotamer_atoms[2].position()[1],rotamer_atoms[2].position()[2]);
+						//::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA, C );
 
 							
 						// you can check their "energies" against the target like this, obviously substituting the real rot# and position
-						//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, bbactor.position_ ); // test
+						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+						//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, bbactor.position_ ); // test
 
 						std::ofstream myfile;
 						std::ostringstream os;
@@ -254,7 +254,7 @@ namespace rif {
 
 						if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
 							//std::cout << positioned_rotamer_score << std::endl;
-							accumulator->insert( bbactor.position_, positioned_rotamer_score-10, irot, i_hotspot_group, -1 );
+							accumulator->insert( x_position, positioned_rotamer_score-10, irot, i_hotspot_group, -1 );
 
 						 	if (opts.dump_hotspot_samples>=NSAMP){
 						 		myfile <<"MODEL        "<<irot<<a<<"                                                                  \n";
