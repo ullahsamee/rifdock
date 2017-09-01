@@ -8,6 +8,10 @@
 #include "scheme/numeric/bcc_lattice.hh"
 #include "scheme/objective/hash/XformHash.hh"
 #include "scheme/objective/hash/XformHashNeighbors.hh"
+#include <riflib/RotamerGenerator.hh>
+#include <riflib/util.hh>
+
+using devel::scheme::RotamerIndex;
 
 #include <sparsehash/dense_hash_map>
 
@@ -318,6 +322,20 @@ struct XformMap {
 	bool load( std::istream & in ) {
 		std::string dummy;
 		return load(in,dummy);
+	}
+
+	void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const {
+		for(typename Map::const_iterator i = map_.begin(); i != map_.end(); ++i){
+			// out << get_center(i->first).translation().transpose() << std::endl;
+			auto xform = get_center(i->first);
+
+			Eigen::Matrix<float,3,1> to_CB = (xform * 
+				Eigen::Matrix<float,3,1>( -1.952799123558066, -0.2200069625712990, 1.524857 )).normalized();
+			out << xform.rotation() << "    " << xform.translation().transpose() 
+			<< "   " << to_CB.transpose()  << std::endl;
+			// devel::scheme::print_eigenxform( get_center(i->first), out );
+			i->second.super_print( out, rot_index_p ); 
+		}
 	}
 
 

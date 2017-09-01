@@ -39,6 +39,13 @@
 	#include <Eigen/Core>
 	#include <Eigen/Geometry>	
 
+//Brian
+
+#include <scheme/objective/hash/XformMap.hh>
+#include <scheme/objective/storage/RotamerScores.hh>
+#include <scheme/actor/BackboneActor.hh>
+
+
 namespace devel {
 namespace scheme {
 namespace rif {
@@ -50,7 +57,9 @@ namespace rif {
 		RifAccumulatorP accumulator,
 		RifGenParamsP params
 	){
-		
+
+		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
+
 		typedef ::Eigen::Matrix<float,3,1> Pos;
 	
 		// some sanity checks
@@ -105,13 +114,19 @@ namespace rif {
 
 		
 
+
     	int const NSAMP = this->opts.hotspot_nsamples;
     	if (NSAMP > opts.dump_hotspot_samples && opts.dump_hotspot_samples > 0) utility_exit_with_message("too many NSAMP");
+
 
     	std::mt19937 rng((unsigned int)time(0) + 934875);
     	float const radius_bound = this->opts.hotspot_sample_cart_bound;
     	float const degrees_bound = this->opts.hotspot_sample_angle_bound;
     	float const radians_bound = degrees_bound * M_PI/180.0;
+
+    	// std::ostream & out( std::cout );
+    	// std::ofstream out;
+    	// out.open("rifgen.txt");
 
 		// loop over files (one file is one hotspot group)
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
@@ -125,6 +140,7 @@ namespace rif {
       
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
+				std::cout << "Hotspot: " << i_hspot_res << std::endl;
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
 
 				//EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
@@ -167,17 +183,17 @@ namespace rif {
                     //    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
                     //);
 
-					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3()){
+					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3())
+					{
 
 						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
-
-
 						int latoms = params -> rot_index_p -> natoms(irot);
 						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
 	     	 			Pos rot_cen = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
          				
 					
 						//svd superimpose
+
           				//matrix to be SVD decomposed
           				::Eigen::Matrix<float,3,3> cov_mtx;										
           				cov_mtx = (rif_res.col(0) - rot_cen)*(hot_atom1 - hot_cen).transpose() + (rif_res.col(1) - rot_cen)*(hot_atom2 - hot_cen).transpose() + (rif_res.col(2) - rot_cen)*(hot_atom3 - hot_cen).transpose();
@@ -194,6 +210,7 @@ namespace rif {
         				//Final superimpose EigenXform matrix
 						EigenXform impose;
 						impose.matrix() = Tran_mtx;
+
 						
 						//Additional matrix definition for manipulation
 						//Default Rot starting Xform
@@ -208,6 +225,41 @@ namespace rif {
 
 
 
+						EigenXform O_2_orig = EigenXform::Identity();
+
+						int passes = 1;
+
+         				EigenXform tyr_thing = EigenXform::Identity();	
+						if (pose.residue(i_hspot_res).name3() == "TYR") {
+
+							Pos the_axis = (hot_atom1 - hot_atom2).normalized();
+							O_2_orig.translation() = -hot_atom1;	
+							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
+
+							passes = 2;
+
+						} else if (pose.residue(i_hspot_res).name3() == "PHE") {
+							
+							Pos atom6;
+							atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
+							atom6(1,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[1];
+							atom6(2,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[2];
+							atom6 = atom6 - target_vec;
+
+							Pos the_axis = (hot_atom1 - atom6).normalized();
+							O_2_orig.translation() = -hot_atom1;	
+							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
+
+							passes = 2;
+						}
+						
+
+						EigenXform O_2_orig_inverse = O_2_orig.inverse();
+
+
+//-7.23139 -2.76265  6.16824   0.732332 0.523054  0.43601
+
+
 						// std::cout << "Xform:" << std::endl;
 						// std::cout << Tran_mtx << std::endl;
 						// ::Eigen::Matrix<float,3,3> temp;
@@ -215,78 +267,108 @@ namespace rif {
 						// temp.col(1)=Tran_mtx.block<3,1>(0,3);
 						// temp.col(2)=Tran_mtx.block<3,1>(0,3);  		
 			
+					//Eigen::Matrix<float,3,1> pdb_axis = Eigen::Matrix<float,3,1>(1.338,  0.702,   0.138);
+					//Eigen::Matrix<float,3,1> goal_axis = Eigen::Matrix<float,3,1>(0.732332, 0.523054,  0.43601);
+					//Eigen::Matrix<float,3,1> goal_trans = Eigen::Matrix<float,3,1>(-7.23139, -2.76265,  6.16824);
+					//float norm_pdb_axis = pdb_axis.norm();
+					//float norm_goal_axis = goal_axis.norm();
 
-					//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
-					//for( auto const & x_perturb : sample_position_deltas ){
 
-					//std::cout << "being parallel block" << std::endl;
-         			//core::pose::Pose target_pose(*params->target);
-         			//target_pose.dump_pdb("hotspots.pdb");
-					
-					#ifdef USE_OPENMP
-					#pragma omp parallel for schedule(dynamic,16)
-					#endif
+						for ( int pass = 0; pass < passes; pass++) {
+							//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
+							//for( auto const & x_perturb : sample_position_deltas ){
 
-					for(int a = 0; a < NSAMP; ++a){							
-						EigenXform x_perturb;
-						::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
+							//std::cout << "being parallel block" << std::endl;
+							#ifdef USE_OPENMP
+							#pragma omp parallel for schedule(dynamic,16)
+							#endif
 
-						EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
-						
-						//Pos N  = x_position * Pos(rotamer_atoms[0].position()[0],rotamer_atoms[0].position()[1],rotamer_atoms[0].position()[2]);
-						//Pos CA = x_position * Pos(rotamer_atoms[1].position()[0],rotamer_atoms[1].position()[1],rotamer_atoms[1].position()[2]);
-						//Pos C  = x_position * Pos(rotamer_atoms[2].position()[0],rotamer_atoms[2].position()[1],rotamer_atoms[2].position()[2]);
-						//::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA, C );
+							for(int a = 0; a < NSAMP; ++a){							
+								EigenXform x_perturb;
+								::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
 
-							
-						// you can check their "energies" against the target like this, obviously substituting the real rot# and position
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
-						//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, bbactor.position_ ); // test
-
-						std::ofstream myfile;
-						std::ostringstream os;
-						os << "hotspots.pdb";
-						std::string s = os.str();
-						myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
-						//target_pose.dump_pdb(s);
-						//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
-						//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
-
-						if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
-							//std::cout << positioned_rotamer_score << std::endl;
-							accumulator->insert( x_position, positioned_rotamer_score-10, irot, i_hotspot_group, -1 );
-
-						 	if (opts.dump_hotspot_samples>=NSAMP){
-						 		myfile <<"MODEL        "<<irot<<a<<"                                                                  \n";
-								for( auto a : rotamer_atoms ){
-								 	a.set_position( x_position * a.position() );
-								 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+								EigenXform building_x_position = impose * x_orig_position;
+								if ( pass == 1 ) {
+									building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
 								}
-								myfile <<"ENDMDL                                                                          \n";							
-							}
 
-						}
+								EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
+									
+								// you can check their "energies" against the target like this, obviously substituting the real rot# and position
+								float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+								
+								if( positioned_rotamer_score < 0){ // probably want this threshold to be an option or something
+
+
+									EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
+								    // you can check their "energies" against the target like this, obviously substituting the real rot# and position
+									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+
+
+									std::ofstream myfile;
+									std::ostringstream os;
+									os << "hotspots.pdb";
+									std::string s = os.str();
+									myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+									//target_pose.dump_pdb(s);
+									//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+									//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
+
+									if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
+										//std::cout << positioned_rotamer_score << std::endl;
+										accumulator->insert( x_position, positioned_rotamer_score-10, irot, i_hotspot_group, -1 );
+										
+										//OMG fix me !!!!
+										//Need an option for brain's insertion type
+										if (false){
+																			// new
+											auto atom_N = x_position * rotamer_atoms[0].position();
+											auto atom_CA = x_position * rotamer_atoms[1].position();
+											auto atom_C = x_position * rotamer_atoms[2].position(); 
+
+											BBActor bbact( atom_N, atom_CA, atom_C);
+											EigenXform new_x_position = bbact.position();
+
+											accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, i_hspot_res, -1 );
+
+										}
+									 	if (opts.dump_hotspot_samples>=NSAMP){
+									 		myfile <<"MODEL        "<<irot<<a<<"                                                                  \n";
+											for( auto a : rotamer_atoms ){
+											 	a.set_position( x_position * a.position() );
+											 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+											}
+											myfile <<"ENDMDL                                                                          \n";							
+										} //end dumping hotspot atoms
+
+									} //end position rotamer energy check
+									
+									if (dump_target){
+										core::pose::Pose target_pose(*params->target);
+										target_pose.dump_pdb(myfile);
+										dump_target = false;
+									} //end stupid dump target structure							
+
+									myfile.close();
+								} // end rotamer insertion score cutoff					
+							
+							} // end NSAMP
 						
-						if (dump_target){
-							core::pose::Pose target_pose(*params->target);
-							target_pose.dump_pdb(myfile);
-							dump_target = false;
-						}							
-
-						myfile.close();
-					} // end position perturbations
-
+						} // end brian ring flip
 					
-				} // check residue type
-				} // end loop over rotamers which match hotspot res
+					} // end loop over rotamers which match hotspot res name
 				
+				} //  end loop over rotamers library
 
-			} //  end loop over residues in hotspot group
-
-		} // end loop over hotspot groups
+			} // end loop over hotspot group residue (with in one input pdb)
+		
+		}// end loop over all hotspot input files
 		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
+	
+	} //end RifGeneratorUserHotspots
+
 		//auto rif_ptr = accumulator->rif();
         // std::cout << "testing rifbase key iteration" << std::endl;
         // int count = 0;
@@ -307,12 +389,10 @@ namespace rif {
 
         //     //if(++count > 10) utility_exit_with_message("aireost");
         // }
-		
-		//utility_exit_with_message("done");
 
-	}
-
-
+		//Brian Addition???
+		//auto rif_ptr = accumulator->rif();
+		//std::cout << "Brian" << std::endl;
 }
 }
 }

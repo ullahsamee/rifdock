@@ -96,6 +96,35 @@ public:
 		return true;
 	}
 
+
+    //Brian
+    virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
+    	std::pair< int, int > sat1_sat2( -1, -1);
+
+    	Key k = get_bin_key(x);
+
+
+        auto const & rs = (*xmap_ptr_)[k];
+        int const Nrots = XMap::Value::N;
+        for( int i = 0; i < Nrots; ++i ){
+            if( rs.empty(i) ) break;
+            if (rs.rotamer(i) != roti) continue; 
+            std::vector<int> sats;
+        	rs.rotamer_sat_groups( i, sats );
+        	if ( sats.size() == 0) {
+        		return sat1_sat2;
+        	}
+        	sat1_sat2.first = sats[0];
+        	if ( sats.size() == 1 ) {
+        		return sat1_sat2;
+        	}
+        	sat1_sat2.second = sats[1];
+        	return sat1_sat2;
+        }
+
+        return sat1_sat2;
+    }
+
 	size_t size() const override { return xmap_ptr_->size(); }
 	float load_factor() const override { return xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count(); }
 	size_t mem_use()    const override { return xmap_ptr_->mem_use(); }
@@ -151,6 +180,7 @@ public:
 		__gnu_parallel::for_each( xmap_ptr_->map_.begin(), xmap_ptr_->map_.end(), call_sort_rotamers<typename XMap::Map::value_type> );
 	}
 
+	void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const override { xmap_ptr_->super_print( out, rot_index_p  ); }
 	void print( std::ostream & out ) const override { out << (*xmap_ptr_) << std::endl; }
 	std::string value_name() const override { return XMap::Value::name(); }
 
@@ -368,11 +398,25 @@ std::string get_rif_type_from_file( std::string fname )
 			int const ires = bb.index_;
 			float bestsc = 0.0;
 			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-				if( rotscores.empty(i_rs) ) break;
+				if( rotscores.empty(i_rs) ) {
+////////////////////////////////////////////////////////////////////
+					// Eigen::Matrix<float,3,1> to_CB = (bb.position().rotation() * 
+					// 	Eigen::Matrix<float,3,1>( -1.952799123558066, -0.2200069625712990, 1.524857 )).normalized();
+					// std::cout << "Found " << i_rs << " rif rots at pos " << ires << "   " << bb.position().translation().transpose() 
+					// << "   " << to_CB.transpose()  << std::endl;
+////////////////////////////////////////////////////////////////////
+					break;
+				}
 				int irot = rotscores.rotamer(i_rs);
 				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
+				//DO I SATISFY ANYTHING
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+
+
+///////////////////////////////////////////////////////////////////
+				// std::cout << score_rot_v_target << std::endl;
+////////////////////////////////////////////////////////////////////
 
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
@@ -586,18 +630,39 @@ struct RifFactoryImpl :
 
 		// std::cout << "create rif progress "; std::cout.flush();
 
+
+		// old
+		// int progress0 = 0;
+		// for( auto const & v : from->map_ ){
+		// 	// if( ++progress0 % std::max((size_t)1,(from->size()/100)) == 0 ){
+		// 		// std::cout << '*'; std::cout.flush();
+		// 	// }
+		// 	EigenXform x = from->hasher_.get_center( v.first );
+		// 	uint64_t k = to->hasher_.get_key(x);
+		// 	typename XMap::Map::iterator iter = to->map_.find(k);
+		// 	if( iter == to->map_.end() ){
+		// 		to->map_.insert( std::make_pair(k,v.second) );
+		// 	} else {
+		// 		iter->second.merge( v.second );
+		// 	}
+		// }
+		// // std::cout << std::endl;
+
+		// new
 		int progress0 = 0;
 		for( auto const & v : from->map_ ){
 			// if( ++progress0 % std::max((size_t)1,(from->size()/100)) == 0 ){
 				// std::cout << '*'; std::cout.flush();
 			// }
 			EigenXform x = from->hasher_.get_center( v.first );
-			uint64_t k = to->hasher_.get_key(x);
-			typename XMap::Map::iterator iter = to->map_.find(k);
-			if( iter == to->map_.end() ){
-				to->map_.insert( std::make_pair(k,v.second) );
-			} else {
-				iter->second.merge( v.second );
+			std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
+			for ( uint64_t const & k : keys ) {
+				typename XMap::Map::iterator iter = to->map_.find(k);
+				if( iter == to->map_.end() ){
+					to->map_.insert( std::make_pair(k,v.second) );
+				} else {
+					iter->second.merge( v.second );
+				}
 			}
 		}
 		// std::cout << std::endl;
@@ -755,6 +820,22 @@ create_rif_factory( RifFactoryConfig const & config )
 	else if( config.rif_type == "RotScoreSat" )
 	{
 		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+		typedef ::scheme::objective::hash::XformMap<
+				EigenXform,
+				crfXMapValue,
+				::scheme::objective::hash::XformHash_bt24_BCC6
+			> crfXMap;
+		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
+	}
+	else if( config.rif_type == "RotScoreSat_1x16" )
+	{
+		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
+		typedef ::scheme::objective::storage::RotamerScoreSat<
+					uint16_t, 9, -13, SatDatum, 1> crfRotScore;
 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
 		typedef ::scheme::objective::hash::XformMap<

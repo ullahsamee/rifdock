@@ -64,6 +64,17 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		if( iter == map_for_this_thread.end() ){
 			typename XMap::Value value;
 			value.add_rotamer( rot, score, sat1, sat2 );
+
+
+         //    std::vector<int> sats;
+        	// value.rotamer_sat_groups( rot, sats );
+        	// std::stringstream ss;
+        	// ss << "sats: "
+        	// for (auto val : sats) {
+        	// 	ss << " : " << val;
+        	// }
+        	// ss << std::endl;
+        	// std::cout << ss.str();
 			// runtime_assert( value.score(0) > -9.0 );
 			map_for_this_thread.insert( std::make_pair( key, value ) );
 		} else {
@@ -140,8 +151,8 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 
 	void checkpoint( std::ostream & out ) override {
 		using devel::scheme::KMGT;
-		uint64_t m = mem_use();
-		if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
+		// uint64_t m = mem_use();
+		// if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
 			// out << "mem use " << float(m)/1024.0/1024.0 << "M is above threshold " << scratch_size_M_ << "M, time to condense" << std::endl;
 			out << '<'; out.flush();
 			condense();
@@ -153,7 +164,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 			    // << ", mem_use: " << KMGT(xmap_ptr_->mem_use())
 			    // << ", load: " << KMGT(xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count())
 			    // << std::endl;
-		}
+		// }
 		// report( out );
 	}
 

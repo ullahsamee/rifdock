@@ -63,6 +63,11 @@
 	#include <random>
 
 
+/// Brian
+	#include <scheme/objective/hash/XformHash.hh>
+
+
+
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
@@ -715,6 +720,16 @@ int main(int argc, char *argv[]) {
 				std::cout << "loaded RIF score for resl " << F(7,3,RESLS[i_readmap])
 				          << " raw cart_resl: " << F(7,3,rif_ptr->cart_resl() )
 				          << " raw ang_resl: " << F(7,3,rif_ptr->ang_resl() ) << std::endl;
+
+				if (i_readmap == opt.rif_files.size() -1 ) {
+					// #pragma omp criticial
+					// rif_ptr->super_print( std::cout, rot_index_p );
+					// std::ofstream out_file;
+					// out_file.open("rif.txt");
+					// rif_ptr->super_print( out_file, rot_index_p );
+					// out_file.close();
+
+				}
 			} catch( std::exception const & ex ) {
 				#ifdef USE_OPENMP
 				#pragma omp critical
@@ -748,8 +763,8 @@ int main(int argc, char *argv[]) {
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
 		std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
-		std::vector<std::string> scaffold_sequence_glob0;
-		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all;
+		std::vector<std::string> scaffold_sequence_glob0;				// Scaffold sequence in name3 space
+		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all; // Seqposs of residues to design, default whole scaffold
 		try {
 
 			runtime_assert( rot_index_p );
@@ -761,20 +776,27 @@ int main(int argc, char *argv[]) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-			core::pose::Pose scaffold, scaffold_centered, scaffold_full_centered, both_pose, both_full_pose, scaffold_only_pose;
-			float scaff_radius = 0.0;
-			float redundancy_filter_rg = 0.0;
+			core::pose::Pose scaffold;								// the input scaffold, gets converted to alanine with flags
+			core::pose::Pose scaffold_centered;                     // input (maybe alanine) scaffold centered using scaffold_center
+			core::pose::Pose scaffold_full_centered;				// input full aa scaffold centered using scaffold_center
+			core::pose::Pose both_pose;								// scaffold (maybe alanine) centered + target (from rifgen)
+			core::pose::Pose both_full_pose; 						// scaffold centered + target (from rifgen)
+			core::pose::Pose scaffold_only_pose;
 
-			std::vector<int> scaffres_g2l, scaffres_l2g;
-			std::vector<bool> scaffuseres;
-			Eigen::Vector3f scaffold_center;
-			std::vector<Vec> scaffca;
-			std::vector<std::vector<float> > scaffold_onebody_glob0;
-			std::vector<std::vector<float> > local_onebody;
-			std::vector< std::pair<int,int> > local_rotamers;
+			float scaff_radius = 0.0;
+			float redundancy_filter_rg = 0.0;						// rg of scaffold to decide minimum angular resolution?
+
+			std::vector<int> scaffres_g2l;							// maps global_seqpos -> local_seqpos  (local_seqpos.size() == scaffold_res.size())
+			std::vector<int> scaffres_l2g;							// maps local_seqpos  -> global_seqpos
+			std::vector<bool> scaffuseres;							// maps global_seqpos -> being_used
+			Eigen::Vector3f scaffold_center;						// center of scaffold heavy atoms after conversion to alanine
+			std::vector<Vec> scaffca;								// xyz coordinates of scaffold CA
+			std::vector<std::vector<float> > scaffold_onebody_glob0;// onebody_rotamer_energies using global_seqpos
+			std::vector<std::vector<float> > local_onebody;			// onebody_rotamer_energies using local_seqpos
+			std::vector< std::pair<int,int> > local_rotamers;		// lower and upper bounds into rotamer_index for each local_seqpos
 			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
-			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );
-			shared_ptr<TBT> local_twobody;
+			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );  // twobody_rotamer_energies using global_seqpos
+			shared_ptr<TBT> local_twobody;							// twobody_rotamer_energies using local_seqpos
 			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
@@ -875,7 +897,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "rifdock: get_onebody_rotamer_energies" << std::endl;
 				get_onebody_rotamer_energies(
 						scaffold,
-						scaffold_res,
+						scaffold_res,			// uses 12345 as score for anything missing here
 						rot_index,
 						scaffold_onebody_glob0,
 						opt.data_cache_path,
@@ -1009,7 +1031,7 @@ int main(int argc, char *argv[]) {
 			print_header( "setup 3D rosetta_field grids for scaffold" );
 			std::vector< VoxelArrayPtr > scaffold_field_by_atype;
 			std::vector< std::vector< VoxelArrayPtr > > scaffold_bounding_by_atype;
-			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;
+			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
 			if( opt.use_scaffold_bounding_grids ){
 				scaffold_bounding_by_atype.resize( RESLS.size() );
 				float const rf_resl = opt.rf_resl==0.0 ? RESLS.back()/2.0 : opt.rf_resl;
@@ -1214,6 +1236,19 @@ int main(int argc, char *argv[]) {
 				std::cout << "size of search space: ~" << float(director->size(0))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 			}
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+			Eigen::Vector3f cb1_pos { -2.473,  -2.789,   0.175 };
+			Eigen::Vector3f cb2_pos { -3.807,  -4.959,   4.507 };
+			Eigen::Vector3f cb3_pos { -7.819,  -2.423,   5.187 };
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+
 			std::vector< SearchPointWithRots > packed_results;
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			int64_t non0_space_size = 0;
@@ -1240,6 +1275,10 @@ int main(int argc, char *argv[]) {
 				        start = std::chrono::high_resolution_clock::now();
 				        total_search_effort += samples[iresl].size();
 
+				        std::vector< double > rmsds( samples[iresl].size(), 1000 );
+
+				        bool answer_exists = false;
+
 						#ifdef USE_OPENMP
 						#pragma omp parallel for schedule(dynamic,64)
 						#endif
@@ -1248,6 +1287,21 @@ int main(int argc, char *argv[]) {
 							try {
 								if( i%out_interval==0 ){ cout << '*'; cout.flush();	}
 								uint64_t const isamp = samples[iresl][i].index;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+								// if ( isamp < 47700000000000 && isamp != 746571400249 && 
+								// 	 isamp != 11665178128 && isamp != 182268408 &&
+								// 	 isamp != 2847943 && isamp != 44499 ) {
+								// 	continue;
+								// }
+
+
+
+								// money 47780569615988
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
 								ScenePtr tscene( scene_pt[omp_get_thread_num()] );
 								director->set_scene( isamp, iresl, *tscene );
 
@@ -1302,6 +1356,67 @@ int main(int argc, char *argv[]) {
 
                                 samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
 
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+								if ( isamp == 47780569615988 || isamp == 746571400249 ||
+									 isamp == 11665178128 || isamp == 182268408 ||
+									 isamp == 2847943 || isamp == 44499 ) {
+
+
+                                	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+                                
+									answer_exists = true;
+									#pragma omp critical
+									std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
+								}
+
+
+
+                                // const SimpleAtom scene_cb1 = tscene->template get_actor<SimpleAtom>(1, 7-1);
+                                // const SimpleAtom scene_cb2 = tscene->template get_actor<SimpleAtom>(1, 8-1);
+                                // const SimpleAtom scene_cb3 = tscene->template get_actor<SimpleAtom>(1,11-1);
+
+                                // const float cb1_dist = ( scene_cb1.position() - cb1_pos ).norm();
+                                // const float cb2_dist = ( scene_cb2.position() - cb2_pos ).norm();
+                                // const float cb3_dist = ( scene_cb3.position() - cb3_pos ).norm();
+
+                                // const float rmsd = std::sqrt( (cb1_dist * cb1_dist + cb2_dist * cb2_dist + cb3_dist * cb3_dist) / 3.00 );
+
+                                // rmsds[i] = rmsd;
+
+                                // samples[iresl][i].score = rmsd - 10.0;
+
+
+                                // if ( isamp == 47780569615988) {
+                                // 	double score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+                                // 	std::cout << "Score for the one: " << score << std::endl;
+                                // }
+
+                               	// #pragma omp critical
+                                // std::cout << I(20, isamp) << F(7, 1, cb1_dist) << F(7, 1, cb2_dist) << F(7, 1, cb3_dist) << std::endl;
+
+                               	// SimpleAtom sa = tscene->template get_actor<SimpleAtom>(1,0);
+                               	// SimpleAtom sa2 = tscene->template get_actor<SimpleAtom>(1,13);
+                               	// bool success = true;
+                               	// // // bool success = tscene->get_actor( 1, 0, sa ); 
+                               	// if ( success ) {
+                               	// 	#pragma omp critical
+                               	// 	std::cout << "Succss: " << I(8, isamp) << " SA: " << sa << sa2 << std::endl;
+                               	// } else {
+                               	// 	#pragma omp critical
+                               	// 	std::cout << "Failure" << std::endl;
+                               	// }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 							} catch( std::exception const & ex ) {
 								#ifdef USE_OPENMP
 								#pragma omp critical
@@ -1314,6 +1429,50 @@ int main(int argc, char *argv[]) {
 						std::chrono::duration<double> elapsed_seconds_rif = end-start;
 						float rate = (double)samples[iresl].size()/ elapsed_seconds_rif.count()/omp_max_threads();
 						cout << endl;// << "done threaded sampling, partitioning data..." << endl;
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+						// shared_ptr<DirectorOriTrans6D> nest_director = std::dynamic_pointer_cast<DirectorOriTrans6D>(director);
+						// NestOriTrans6D const & nest( nest_director->nest() );
+
+						// std::cout << "Sorting rmsds... " << std::endl;
+						// std::vector< uint64_t > sorted( rmsds.size() );
+						// uint64_t n = 0;
+						// std::generate( std::begin(sorted), std::end(sorted), [&]{ return n++; });
+						// std::sort( std::begin( sorted), std::end(sorted),
+						// 	[&](int i1, int i2) { return rmsds[i1] < rmsds[i2]; } );
+
+						// for ( uint64_t i = 0; i < 30; i++ ) {
+						// 	uint64_t index = sorted[i];
+						// 	SearchPoint sp = samples[iresl][index];
+						// 	uint64_t isamp = sp.index;
+
+
+						// 	EigenXform trans;
+						// 	bool success = nest.get_state( isamp, iresl, trans );
+
+						// 	Eigen::Matrix<float,3,3> rot;
+						// 	scheme::objective::hash::get_transform_rotation<float>( trans, rot );
+
+						// 	// Eigen::Matrix<double,3,3> rot2 = rot.cast<double>();
+
+						// 	Eigen::Vector3f axis;
+						// 	axis.setRandom();
+						// 	axis.normalize();
+						// 	Eigen::AngleAxisf angle_axis( rot );
+
+
+						// 	std::cout << I(20, isamp) << F(7, 1, rmsds[index]) << "  Trans: " 
+						// 	<< F(7, 1, trans.translation()[0]) 
+						// 	<< F(7, 1, trans.translation()[1]) 
+						// 	<< F(7, 1, trans.translation()[2]) 
+						// 	<< "  Angle: " << F(7, 1, angle_axis.angle()*180.0/M_PI) 
+						// 	<< "  Score: " << F(7, 2, sp.score)
+
+						// 	<< std::endl;
+						// }
+////////////////////////////////////////////////////////////////////////////////////////
+
 
 						SearchPoint max_pt, min_pt;
 						int64_t len = samples[iresl].size();
@@ -1330,6 +1489,8 @@ int main(int argc, char *argv[]) {
 						cout << "HSearsh stage " << iresl+1 << " complete, resl. " << F(7,3,RESLS[iresl]) << ", "
 							  << " " << KMGT(samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
 							  << F(9,6, std::min(opt.global_score_cut,max_pt.score)) << " rate " << KMGT(rate) << "/s/t " << std::endl;
+
+						cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
 						if( iresl+1 == samples.size() ) break;
 
@@ -1998,6 +2159,7 @@ int main(int argc, char *argv[]) {
 		        std::cout << oss.str();
 		        dokout << oss.str(); dokout.flush();
 
+		        std::vector< std::pair< int, std::string > > brians_infolabels;
 				 // crappy pdb io
 		        {
 
@@ -2036,6 +2198,19 @@ int main(int argc, char *argv[]) {
 									if( std::find( pikaa[ires+1].begin(), pikaa[ires+1].end(), oneletter ) == pikaa[ires+1].end() ){
 										pikaa[ires+1] += oneletter;
 									}
+
+
+									// Brian
+									std::pair< int, int > sat1_sat2 = rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
+
+									std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
+									std::cout << " ires: " << ires << " irot: " << irot << std::endl;
+
+									std::pair< int, std::string > brian_pair;
+									brian_pair.first = ires + 1;
+									brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);
+									brians_infolabels.push_back(brian_pair);
+
 								}
 
 							}
@@ -2104,6 +2279,11 @@ int main(int argc, char *argv[]) {
 							}
 						}
 					}
+
+					for ( auto p : brians_infolabels ) {
+						pose_to_dump.pdb_info()->add_reslabel(p.first, p.second);
+					}
+
 					// if( selected_result.pose_ ){
 					// 	for( auto p : pikaa ){
 					// 		std::cout << "residue " << p.first << " " << selected_result.pose_->residue(p.first).name() << " fa_rep: "
