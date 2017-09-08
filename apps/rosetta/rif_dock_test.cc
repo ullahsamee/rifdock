@@ -2203,15 +2203,15 @@ int main(int argc, char *argv[]) {
 
 
 									// Brian
-									std::pair< int, int > sat1_sat2 = rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
+									//std::pair< int, int > sat1_sat2 = rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
 
-									std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
-									std::cout << " ires: " << ires << " irot: " << irot << std::endl;
+									//std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
+									//std::cout << " ires: " << ires << " irot: " << irot << std::endl;
 
-									std::pair< int, std::string > brian_pair;
-									brian_pair.first = ires + 1;
-									brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);
-									brians_infolabels.push_back(brian_pair);
+									//std::pair< int, std::string > brian_pair;
+									//brian_pair.first = ires + 1;
+									//brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);
+									//brians_infolabels.push_back(brian_pair);
 
 								}
 

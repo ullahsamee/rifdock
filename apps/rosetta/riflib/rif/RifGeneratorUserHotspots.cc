@@ -187,15 +187,17 @@ namespace rif {
 
 					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3())
 					{
-
+						
+						EigenXform impose; //transform for mapping the Rot to Rif
 						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
 						int latoms = params -> rot_index_p -> natoms(irot);
 						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
 	     	 			Pos rot_cen = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
          				
 					
-						//svd superimpose
-
+						
+	     	 			if (!this->opts.single_file_hotspots_insertion){
+          				//svd superimpose
           				//matrix to be SVD decomposed
           				::Eigen::Matrix<float,3,3> cov_mtx;										
           				cov_mtx = (rif_res.col(0) - rot_cen)*(hot_atom1 - hot_cen).transpose() + (rif_res.col(1) - rot_cen)*(hot_atom2 - hot_cen).transpose() + (rif_res.col(2) - rot_cen)*(hot_atom3 - hot_cen).transpose();
@@ -210,11 +212,11 @@ namespace rif {
 				  		Tran_mtx.block<3,3>(0,0) = R_mtx;
         				Tran_mtx.block<3,1>(0,3) = T_mtx;
         				//Final superimpose EigenXform matrix
-						EigenXform impose;
-						//impose.matrix() = Tran_mtx;
-						impose = Xref * Xrotamer.inverse();
-
+						//EigenXform impose;
+						impose.matrix() = Tran_mtx;
+						}
 						
+						impose = Xref * Xrotamer.inverse();						
 						//Additional matrix definition for manipulation
 						//Default Rot starting Xform
 						EigenXform x_orig_position = EigenXform::Identity();
@@ -222,16 +224,18 @@ namespace rif {
 						EigenXform x_2_orig = EigenXform::Identity();
          				x_2_orig.translation() = -hot_cen;
          				EigenXform x_2_orig_inverse = x_2_orig.inverse();
+         				
+         				
 
 						//impose = Xref * Xrotamer.inverse();//working
 						//impose.matrix() = Tran_mtx;//not working
 
 
 
-						EigenXform O_2_orig = EigenXform::Identity();
+						//EigenXform O_2_orig = EigenXform::Identity();
 
 						int passes = 1;
-
+						EigenXform O_2_orig = EigenXform::Identity();
          				EigenXform tyr_thing = EigenXform::Identity();	
 						if (pose.residue(i_hspot_res).name3() == "TYR") {
 
@@ -258,6 +262,7 @@ namespace rif {
 						
 
 						EigenXform O_2_orig_inverse = O_2_orig.inverse();
+
 
 
 //-7.23139 -2.76265  6.16824   0.732332 0.523054  0.43601

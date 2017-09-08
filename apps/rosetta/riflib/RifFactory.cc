@@ -670,9 +670,9 @@ struct RifFactoryImpl :
 				// std::cout << '*'; std::cout.flush();
 			// }
 			EigenXform x = from->hasher_.get_center( v.first );
-			std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
-			for ( uint64_t const & k : keys ) 
-			//uint64_t k = to -> hasher_.get_key(x);
+			//std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
+			//for ( uint64_t const & k : keys ) 
+			uint64_t k = to -> hasher_.get_key(x);
 			{
 				typename XMap::Map::iterator iter = to->map_.find(k);
 				if( iter == to->map_.end() ){
