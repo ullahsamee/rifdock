@@ -42,7 +42,7 @@ struct HackPackOpts
 	bool  packing_use_rif_rotamers = true;
 	bool  add_native_scaffold_rots_when_packing = false;
 	float rotamer_inclusion_threshold = -0.5;
-	float rotamer_onebody_inclusion_threshold = 5.0;
+	float rotamer_onebody_inclusion_threshold = 30.0;//5
 	bool  init_with_best_1be_rots = true;
 	float user_rotamer_bonus_constant = -2; //-2
 	float user_rotamer_bonus_per_chi = -2; // 2
@@ -386,7 +386,7 @@ struct HackPack
 	{
 		assert( res_rots_.size() >= nres_ );
 		for( int i = 0; i < nres_; ++i ){
-			// std::cout << i << " " << res_rots_[i].second.size() << std::endl;
+			//std::cout << i << " " << res_rots_[i].second.size() << std::endl;
 			assert( res_rots_.at(i).second.size() > 0 );
 		}
 

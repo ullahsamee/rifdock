@@ -496,7 +496,7 @@ std::string get_rif_type_from_file( std::string fname )
 				::scheme::search::HackPack & packer( *scratch.hackpack_ );
 				result.val_ = packer.pack( result.rotamers_ );
 				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-				// std::vector< std::pair<intRot,intRot> > selected_rotamers;
+				//std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
 					int sat1=-1, sat2=-1;
@@ -517,10 +517,25 @@ std::string get_rif_type_from_file( std::string fname )
 
 			if( n_sat_groups_ > 0 && !packing_ ){
 				int nsat = 0;
+				
 				for( int i = 0; i < n_sat_groups_; ++i ){
+					
 					nsat += scratch.is_satisfied_[i];
 					//result.val_ += scratch.is_satisfied_score_[i];
 				}
+			// 	if (nsat >= 4 ){
+			// 		#pragma omp critical
+			// 		{
+			// 		std::cout << config << "     ";
+					
+			// 		for (int i = 0; i < 10; ++i){
+			// 			std::cout << " "<< scratch.is_satisfied_[i];
+
+			// 		}
+			// 		std::cout << " " << std::endl;
+			// 		}
+			// 	}
+				//std::cout << "here: " << nsat << std::endl;
 				runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 
 				if( nsat - require_satisfaction_ < 0 ){
@@ -656,7 +671,9 @@ struct RifFactoryImpl :
 			// }
 			EigenXform x = from->hasher_.get_center( v.first );
 			std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
-			for ( uint64_t const & k : keys ) {
+			for ( uint64_t const & k : keys ) 
+			//uint64_t k = to -> hasher_.get_key(x);
+			{
 				typename XMap::Map::iterator iter = to->map_.find(k);
 				if( iter == to->map_.end() ){
 					to->map_.insert( std::make_pair(k,v.second) );
@@ -819,7 +836,7 @@ create_rif_factory( RifFactoryConfig const & config )
 	}
 	else if( config.rif_type == "RotScoreSat" )
 	{
-		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4> crfRotScore;
 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
 		typedef ::scheme::objective::hash::XformMap<

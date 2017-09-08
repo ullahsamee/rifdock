@@ -112,6 +112,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
+    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion) // added options
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -170,6 +171,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
+        NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+
 
 
 		// make bounding grids stuff
@@ -588,6 +591,7 @@ int main(int argc, char *argv[]) {
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			generators.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );
 		}

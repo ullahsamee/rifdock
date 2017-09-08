@@ -381,8 +381,8 @@ int main(int argc, char *argv[]) {
 		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
 		packopts.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
-		packopts.rotamer_inclusion_threshold = -0.5;
-		packopts.rotamer_onebody_inclusion_threshold = 5.0;
+		packopts.rotamer_inclusion_threshold = -0.5;//-0.5
+		packopts.rotamer_onebody_inclusion_threshold = 5;//5
 		packopts.init_with_best_1be_rots = true;
 		packopts.user_rotamer_bonus_constant=opt.user_rotamer_bonus_constant;
 		packopts.user_rotamer_bonus_per_chi=opt.user_rotamer_bonus_per_chi;
@@ -410,6 +410,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "opt.rosetta_min_targetbb: " << opt.rosetta_min_targetbb << std::endl;
 		std::cout << "opt.rosetta_min_allbb: " << opt.rosetta_min_allbb << std::endl;
 		std::cout << "opt.rosetta_score_cut: " << opt.rosetta_score_cut << std::endl;
+		std::cout << "opt.require_satisfaction: " << opt.require_satisfaction << std::endl;
 
 		std::cout << "//////////////////////////// end options /////////////////////////////////" << std::endl;
 
@@ -940,7 +941,7 @@ int main(int argc, char *argv[]) {
 				std::string cachefile2b = "__2BE_" + scaff_tag + "_reshash" + scaff_res_hashstr + ".bin.gz";
 				if( ! opt.cache_scaffold_data || opt.extra_rotamers ) cachefile2b = "";
 				MakeTwobodyOpts make2bopts;
-				make2bopts.onebody_threshold = 2.0;
+				make2bopts.onebody_threshold = 30.0;
 				make2bopts.distance_cut = 15.0;
 				make2bopts.hbond_weight = packopts.hbond_weight;
 				std::string dscrtmp;
@@ -991,7 +992,7 @@ int main(int argc, char *argv[]) {
 					local_rotamers.push_back( ib );
 				}
 
-				local_twobody = scaffold_twobody->create_subtable( scaffuseres, scaffold_onebody_glob0, 2.0 );
+				local_twobody = scaffold_twobody->create_subtable( scaffuseres, scaffold_onebody_glob0, (float)make2bopts.onebody_threshold );
 				std::cout << "filt_2b memuse: " << (float)local_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! must fix issue with non-global 2B table calculation, seems to use scaffold_res when it shouldn't" << endl;
@@ -1277,7 +1278,7 @@ int main(int argc, char *argv[]) {
 
 				        std::vector< double > rmsds( samples[iresl].size(), 1000 );
 
-				        bool answer_exists = false;
+				        //bool answer_exists = false;
 
 						#ifdef USE_OPENMP
 						#pragma omp parallel for schedule(dynamic,64)
@@ -1363,17 +1364,17 @@ int main(int argc, char *argv[]) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-								if ( isamp == 47780569615988 || isamp == 746571400249 ||
-									 isamp == 11665178128 || isamp == 182268408 ||
-									 isamp == 2847943 || isamp == 44499 ) {
+								//if ( isamp == 47780569615988 || isamp == 746571400249 ||
+								//	 isamp == 11665178128 || isamp == 182268408 ||
+								//	 isamp == 2847943 || isamp == 44499 ) {
 
 
                                 	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
                                 
-									answer_exists = true;
-									#pragma omp critical
-									std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
-								}
+								//	answer_exists = true;
+								//	#pragma omp critical
+								//	std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
+								//}
 
 
 
@@ -1490,7 +1491,7 @@ int main(int argc, char *argv[]) {
 							  << " " << KMGT(samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
 							  << F(9,6, std::min(opt.global_score_cut,max_pt.score)) << " rate " << KMGT(rate) << "/s/t " << std::endl;
 
-						cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
+						//cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
 						if( iresl+1 == samples.size() ) break;
 
@@ -1570,6 +1571,7 @@ int main(int argc, char *argv[]) {
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,64)
 					#endif
+					//int npack =1;
 					for( int ipack = 0; ipack < npack; ++ipack ){
 						if( exception ) continue;
 						try {

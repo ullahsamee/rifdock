@@ -26,7 +26,8 @@ struct RifGeneratorUserHotspotsOpts {
     int   hotspot_nsamples = 10000;
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0.0;
-    int  dump_hotspot_samples = 1000;
+    int  dump_hotspot_samples = 0;
+    bool single_file_hotspots_insertion = false;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
 };
@@ -43,9 +44,7 @@ struct RifGeneratorUserHotspots : public RifGenerator {
 	) override;
 
 };
-// void RifGeneratorUserHotspots::Perturb(){
-	
-// }
+
 
 }
 }
