@@ -31,7 +31,7 @@ struct RifGeneratorApoHSearch : public RifGenerator {
 
 	RifGeneratorApoHSearchOpts opts;
 	utility::vector1<std::string> apores;
-	std::vector< std::vector< VoxelArray* > > bounding_by_atype;
+	std::vector< std::vector< VoxelArray* > > const & bounding_by_atype;
 	std::vector<float> RESLS;
 
 	RifGeneratorApoHSearch(

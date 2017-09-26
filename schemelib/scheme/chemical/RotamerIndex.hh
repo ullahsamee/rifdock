@@ -87,8 +87,6 @@ struct ChemicalIndex {
 
 };
 
-
-
 namespace impl {
 
 template< class _Atom >
@@ -143,6 +141,130 @@ struct Rotamer {
 
 }
 
+//Adding Specific Rotamers
+struct
+RotamerSpec{
+	std::string resname_;
+	std::vector<float> chi_;
+	int parent_key_, n_proton_chi_;
+
+};
+
+//template<class _Atom, class RotamerGenerator, class Xform>
+struct
+RotamerIndexSpec
+{
+	//typedef _Atom Atom;
+	//typedef impl::Rotamer<Atom> Rotamer;
+	// typedef RotamerIndexSpec THIS
+	// RotamerIndexSpec(){
+	// 	this -> std::vector<RotamerSpec> rot_specs;
+	// }
+	std::vector<RotamerSpec> rot_specs;
+	
+	size_t size() const { return rot_specs.size(); }
+	void clear() {rot_specs.clear();}
+	std::string resname(size_t i) const { return rot_specs.at(i).resname_; }
+	scheme::chemical::RotamerSpec get_rotspec(int i) const {return rot_specs.at(i);}
+
+	int add_rotamer(std::string resname, std::vector<float> const & chi, int n_proton_chi, int parent_key = -1){
+		RotamerSpec S;
+		S.resname_ = resname;
+		S.chi_ = chi;
+		S.n_proton_chi_ = n_proton_chi;
+		S.parent_key_ = parent_key;
+		rot_specs.push_back(S);
+		return rot_specs.size()-1;
+	};
+	template<class T>
+	void fill_rotamer_index(T& rot_index) const {
+		//std::cout << rot_index.size() << std::endl;
+		//std::cout << rot_specs.size() << std::endl;
+		for(auto rot_spec : rot_specs){
+			//std::cout << rot_spec.resname_ << std::endl;
+			rot_index.add_rotamer(rot_spec.resname_,rot_spec.chi_,rot_spec.n_proton_chi_,rot_spec.parent_key_);
+		}
+		std::cout << "start building rotamer index from fill rotamers" << std::endl;
+		rot_index.build_index();
+		std::cout << "finish build_index..." << std::endl;
+	}
+	void save(std::ostream &out){
+		//out << "test save method";
+		for (int i = 0; i < rot_specs.size();i++){
+			out << rot_specs.at(i).resname_ << "\t";
+			for (int k = 0; k < rot_specs.at(i).chi_.size(); k++){
+				out << rot_specs.at(i).chi_.at(k) << "\t";	
+			}
+			out << rot_specs.at(i).n_proton_chi_ << "\t";
+			out << rot_specs.at(i).parent_key_ << "\t";
+			out << "\n";
+		}
+
+	}
+	void load(std::istream &in){
+		std::string rot_line;
+		while (std::getline(in,rot_line)){
+			std::istringstream iss(rot_line);
+			std::vector<std::string> rot_info((std::istream_iterator<std::string>(iss)),std::istream_iterator<std::string>());
+			
+			//store the rot_info
+			std::string my_resn = rot_info.at(0);
+			int my_parent_key = std::stoi(rot_info.at(rot_info.size()-1),nullptr);
+			int my_n_proton_chi = std::stoi(rot_info.at(rot_info.size()-2),nullptr);
+			std::vector<float> my_chi;
+
+			for (std::vector<std::string>::iterator it = rot_info.begin()+1;it != rot_info.end()-2;++it){
+				my_chi.push_back(strtof((*it).c_str(),nullptr));
+
+			}
+			add_rotamer(my_resn,my_chi,my_n_proton_chi,my_parent_key);
+			//quick test;
+			// for (int i = 0; i < rot_info.size(); i++){
+			//  	std::cout << rot_info[i] << "\t";
+			// }
+			// std::cout << "\n";
+			// std::cout << "my_prot_chi: " << my_n_proton_chi << std::endl;
+			// std::cout << "my_parent_key: " << my_parent_key << std::endl;
+			// for (int i = 0; i < my_chi.size(); i++){
+			// 	std::cout << my_chi[i] << "\t" << std::endl;
+			// }
+		}
+
+		//rot_specs
+		//clear();
+		// size_t n;
+		// in.read((char*)&n,sizeof(size_t));
+		// // std::cout << "read: " << n << std::endl;
+		// for( size_t i = 0; i < n; ++i){
+		// 	uint8_t nresn;
+		// 	in.read((char*)&nresn,sizeof(uint8_t));
+		// 	std::string resn(nresn,0);
+		// 	for( int k = 0; k < nresn; ++k ){
+		// 		in.read((char*)&resn[k],sizeof(char));
+		// 	}
+		// 	// std::cout << "read " << i << " " << resn << std::endl;
+		// 	uint8_t n_chi;
+		// 	in.read((char*)&n_chi,sizeof(uint8_t));
+		// 	std::vector<float> mychi(n_chi);
+		// 	for( int k = 0; k < n_chi; ++k ){
+		// 		in.read((char*)&mychi[k],sizeof(float));
+		// 	}
+		// 	// std::cout << "read " << i << " " << mychi.size() << " " << n_chi << std::endl;
+		// 	int npchi;
+		// 	in.read((char*)&npchi,sizeof(int));
+		// 	// std::cout << "read " << i << " " << npchi << std::endl;
+		// 	int parent;
+		// 	in.read((char*)&parent,sizeof(int));
+		// 	// std::cout << "read " << i << " " << parent << std::endl;
+		// 	add_rotamer(resn, mychi, npchi, parent);
+		// }
+		// std::string endtag;
+		// in >> endtag;
+		// ALWAYS_ASSERT(endtag=="load_rot_index_end");
+		//rot_specs.build_index();
+	}
+
+};
 
 template<class _Atom, class RotamerGenerator, class Xform>
 struct RotamerIndex {

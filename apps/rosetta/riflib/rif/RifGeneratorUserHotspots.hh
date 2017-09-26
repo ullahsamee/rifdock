@@ -14,6 +14,8 @@
 
 
 #include <riflib/rif/RifGenerator.hh>
+#include <scheme/chemical/RotamerIndex.hh>	
+
 
 namespace devel {
 namespace scheme {
@@ -41,6 +43,11 @@ struct RifGeneratorUserHotspots : public RifGenerator {
 	void generate_rif(
 		RifAccumulatorP accumulator,
 		RifGenParamsP params
+	) override;
+
+	void 
+	modify_rotamer_spec(
+		::scheme::chemical::RotamerIndexSpec& rot_spec
 	) override;
 
 };

@@ -734,12 +734,57 @@ get_richardson_rot_data(
 
 }
 
+//foward decleration
 void
-get_rotamer_index(
-	RotamerIndex & rot_index,
+get_rotamer_spec_default(
+	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
-	bool extra_primary_rotamers,
+	bool extra_primary_rotamers
+);
+std::shared_ptr<RotamerIndex>
+get_rotamer_index(
+	
+	::scheme::chemical::RotamerIndexSpec const& rot_index_spec
+
+){
+	std::shared_ptr<RotamerIndex> rot_index = std::make_shared<RotamerIndex>();
+
+	
+	//rot_index_spec.fill_rotamer_index(rot_index);
+	//std::cout << "finish fill rotamer index now try loading specific rotamers ...  " << std::endl;
+	
+	//utility::io::ozstream outfile("test_out.text");
+	//rot_index_spec.save(outfile);
+	//outfile.close();
+
+	//utility::io::izstream infile("test_in.text");
+	//rot_index_spec.load(infile);
+	//infile.close();
+	
+	std::cout << "finish builidng rotamer_index now try fill rotamer index ... " << std::endl;
+	rot_index_spec.fill_rotamer_index(*rot_index);
+	return rot_index;
+}
+std::shared_ptr<RotamerIndex>
+get_rotamer_index(
 	std::string cachefile
+
+){
+	std::shared_ptr<RotamerIndex> rot_index = std::make_shared<RotamerIndex>();
+	::scheme::chemical::RotamerIndexSpec rot_index_spec;
+	//load rotamer spec from cache file
+	utility::io::izstream infile(cachefile);
+	rot_index_spec.load(infile);
+	rot_index_spec.fill_rotamer_index(*rot_index);
+	return rot_index;
+}
+
+
+void
+get_rotamer_spec_default(
+	::scheme::chemical::RotamerIndexSpec & rot_index,
+	bool extra_rotamers,
+	bool extra_primary_rotamers	
 ){
 	std::cout << "get_rotamer_index" << std::endl;
 
@@ -900,8 +945,8 @@ get_rotamer_index(
 		}
 	}
 
-	rot_index.build_index();
-	std::cout << "done building rotamer index, size: " << rot_index.size() << ", nprimary: " << rot_index.n_primary_rotamers() << std::endl;
+	//rot_index.build_index();
+	//std::cout << "done building rotamer index, size: " << rot_index.size() << ", nprimary: " << rot_index.n_primary_rotamers() << std::endl;
 
 	// for( std::string resname : resnames ){
 	// 	std::cerr << resname << " " <<  rot_index.index_bounds( resname ).second - rot_index.index_bounds( resname ).first << std::endl;
@@ -927,8 +972,8 @@ get_rotamer_index(
 	// }
 
 	// utility_exit_with_message("testing out extra rotamers");
-
 }
+
 
 
 

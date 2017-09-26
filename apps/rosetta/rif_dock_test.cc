@@ -463,9 +463,12 @@ int main(int argc, char *argv[]) {
 
 
 	print_header( "create rotamer index" );
-		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();
+		
+		std::cout << "start testing ..........." << std::endl;
+		std::string rot_index_spec_file = opt.rot_spec_fname;
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file );
 		RotamerIndex & rot_index( *rot_index_p );
-		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rotamers, opt.extra_rif_rotamers );
+
 
 		// {
 		// 	utility::io::ozstream out("test.rotidx.gz",std::ios_base::binary);

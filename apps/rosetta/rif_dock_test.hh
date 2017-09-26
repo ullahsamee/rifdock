@@ -116,6 +116,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
+    OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
 
 	void register_options() {
 		using namespace basic::options;
@@ -234,6 +235,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
 
 		NEW_OPT(  rif_dock::resl0, "", 16 );
+		NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","-rif_dock::rot_spec_fname must be SPECIFIED");
 
 
 	}
@@ -336,6 +338,7 @@ struct RifDockOpt
 
     float user_rotamer_bonus_constant;
     float user_rotamer_bonus_per_chi;
+    std::string rot_spec_fname;
 
 
 	void init_from_cli()
@@ -431,6 +434,7 @@ struct RifDockOpt
 		rosetta_beta                           = option[corrections::beta]();
 		user_rotamer_bonus_constant = option[rif_dock::user_rotamer_bonus_constant]();
 		user_rotamer_bonus_per_chi = option[rif_dock::user_rotamer_bonus_per_chi]();
+		rot_spec_fname						   = option[rif_dock::rot_spec_fname]();
 
 
 

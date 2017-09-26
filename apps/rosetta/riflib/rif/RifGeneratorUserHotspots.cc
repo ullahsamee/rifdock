@@ -37,19 +37,80 @@
 
 	#include <Eigen/SVD>
 	#include <Eigen/Core>
-	#include <Eigen/Geometry>	
+	#include <Eigen/Geometry>
 
-//Brian
+	#include <utility/io/ozstream.hh>
 
-#include <scheme/objective/hash/XformMap.hh>
-#include <scheme/objective/storage/RotamerScores.hh>
-#include <scheme/actor/BackboneActor.hh>
+
+
+	#include <scheme/objective/hash/XformMap.hh>
+	#include <scheme/objective/storage/RotamerScores.hh>
+	#include <scheme/actor/BackboneActor.hh>
 
 
 namespace devel {
 namespace scheme {
 namespace rif {
 
+	void
+	RifGeneratorUserHotspots::modify_rotamer_spec(
+		::scheme::chemical::RotamerIndexSpec& rot_spec
+		
+	){
+		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
+			
+			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
+			core::pose::Pose pose;
+			core::import_pose::pose_from_file(pose,hotspot_file);
+
+			
+			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
+				std::string resn = pose.residue(i_hspot_res).name3();
+				int parent_key = -1;
+				
+				int n_proton_chi = 0;
+				if (resn == "CYS" || resn == "SER" || resn == "THR" || resn == "TYR"){
+					n_proton_chi = 1;
+				}
+
+				std::vector<float> mychi(pose.residue(i_hspot_res).nchi());
+				for (int n_chi = 0; n_chi < mychi.size(); n_chi++){
+					mychi.at(n_chi) = pose.chi(n_chi+1,i_hspot_res);
+				}
+				
+				//check if the rotamer exist in rot_spec
+				bool add_this_rotamer = false;
+				for( int irot = 0; irot < rot_spec.size(); ++irot ){
+
+					if( rot_spec.resname(irot) != resn ) continue;
+					bool duplicate_rotamer = true;
+					for (int n_chi = 0; n_chi < rot_spec.get_rotspec(irot).chi_.size(); ++n_chi){
+						//std::cout << "checking " << rot_spec.get_rotspec(irot).resname_ << " " << rot_spec.get_rotspec(irot).chi_.at(n_chi) << " " << resn <<" "<< mychi.at(n_chi) << std::endl;
+						duplicate_rotamer &= ::scheme::chemical::impl::angle_is_close( rot_spec.get_rotspec(irot).chi_.at(n_chi), mychi.at(n_chi), 5.0f );
+					}
+
+					if (duplicate_rotamer){
+						std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
+						add_this_rotamer = false;
+						break;
+					} 
+					else if (!duplicate_rotamer){
+						add_this_rotamer = true;
+					}					
+				}// end loop over all existing rot_spec rotamers
+
+				if (add_this_rotamer){
+					std::cout << "Adding input rotamers: " << i_hspot_res << " " << resn << std::endl;
+					rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+				}
+			}//end loop over all hotspot res within one hotspot file
+		}// end loop over all hotspot files
+		//rot_spec.load();
+		// utility::io::ozstream outfile("test_out.text");
+		// rot_index_spec.save(outfile);
+		// rot_index_spec.fill_rotamer_index(*(params->rot_index_p));
+		std::cout << "modify_rotamer_sepc DONE " << std::endl;
+	}// end modify_rotamer_spec
 
 
 	void
@@ -137,11 +198,12 @@ namespace rif {
 			// read hotspot file into pose
 			core::pose::Pose pose;
 			core::import_pose::pose_from_file(pose,hotspot_file);
-      
+      		
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
-				std::cout << "Hotspot: " << i_hspot_res << std::endl;
+				//std::cout << "Hotspot: " << i_hspot_res << std::endl;
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
+				
 
 				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
 		            pose.residue(i_hspot_res).xyz( input_nheavy - 2 ) - xyz_tgt_cen,
@@ -263,23 +325,6 @@ namespace rif {
 
 						EigenXform O_2_orig_inverse = O_2_orig.inverse();
 
-
-
-//-7.23139 -2.76265  6.16824   0.732332 0.523054  0.43601
-
-
-						// std::cout << "Xform:" << std::endl;
-						// std::cout << Tran_mtx << std::endl;
-						// ::Eigen::Matrix<float,3,3> temp;
-						// temp.col(0)=Tran_mtx.block<3,1>(0,3);
-						// temp.col(1)=Tran_mtx.block<3,1>(0,3);
-						// temp.col(2)=Tran_mtx.block<3,1>(0,3);  		
-			
-					//Eigen::Matrix<float,3,1> pdb_axis = Eigen::Matrix<float,3,1>(1.338,  0.702,   0.138);
-					//Eigen::Matrix<float,3,1> goal_axis = Eigen::Matrix<float,3,1>(0.732332, 0.523054,  0.43601);
-					//Eigen::Matrix<float,3,1> goal_trans = Eigen::Matrix<float,3,1>(-7.23139, -2.76265,  6.16824);
-					//float norm_pdb_axis = pdb_axis.norm();
-					//float norm_goal_axis = goal_axis.norm();
 
 
 						for ( int pass = 0; pass < passes; pass++) {

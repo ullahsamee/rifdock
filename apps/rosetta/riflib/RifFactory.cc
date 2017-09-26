@@ -448,15 +448,16 @@ std::string get_rif_type_from_file( std::string fname )
 					}
 				}
 				float const score_rot_tot = score_rot_v_target + rot1be;
-				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
+				//TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
+				if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}
-				// if( n_sat_groups_ > 0 && rotamer_satisfies >=0 && !packing_){
-				// 	//if (rotamer_satisfies >= scratch.is_satisfied_score_.size()){std::cout << "haha " << rotamer_satisfies << std::endl;}
-				// 	scratch.is_satisfied_score_.at(rotamer_satisfies) = std::min(scratch.is_satisfied_score_[rotamer_satisfies],score_rot_tot);
-				// } else {
+				//if( n_sat_groups_ > 0 && rotamer_satisfies >=0 && !packing_){
+					//if (rotamer_satisfies >= scratch.is_satisfied_score_.size()){std::cout << "haha " << rotamer_satisfies << std::endl;}
+					//scratch.is_satisfied_score_.at(rotamer_satisfies) = std::min(scratch.is_satisfied_score_[rotamer_satisfies],score_rot_tot);
+				//} else {
 				bestsc = std::min( score_rot_tot , bestsc );
-				// }
+				//}
 			}
 			// // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
@@ -523,20 +524,20 @@ std::string get_rif_type_from_file( std::string fname )
 					nsat += scratch.is_satisfied_[i];
 					//result.val_ += scratch.is_satisfied_score_[i];
 				}
-			// 	if (nsat >= 4 ){
-			// 		#pragma omp critical
-			// 		{
-			// 		std::cout << config << "     ";
+				// if (nsat >= 4 ){
+				// 	#pragma omp critical
+				// 	{
+				// 	std::cout << config << "     ";
 					
-			// 		for (int i = 0; i < 10; ++i){
-			// 			std::cout << " "<< scratch.is_satisfied_[i];
+				// 	for (int i = 0; i < 10; ++i){
+				// 		std::cout << " "<< scratch.is_satisfied_[i];
 
-			// 		}
-			// 		std::cout << " " << std::endl;
-			// 		}
-			// 	}
-				//std::cout << "here: " << nsat << std::endl;
-				runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
+				// 	}
+				// 	std::cout << " " << std::endl;
+				// 	}
+				// }
+				// std::cout << "here: " << nsat << std::endl;
+				// runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 
 				if( nsat - require_satisfaction_ < 0 ){
 					result.val_ = 9e9;
