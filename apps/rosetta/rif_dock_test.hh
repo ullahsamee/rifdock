@@ -31,6 +31,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, make_bounding_plot_data )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, align_output_to_scaffold )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
@@ -147,6 +148,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 		NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
 		NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
+		NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 		NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
 
 		NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
@@ -275,6 +277,7 @@ struct RifDockOpt
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
+	bool        output_full_scaffold_only            ;
 	bool        pdb_info_pikaa                       ;
 	bool        full_scaffold_output                 ;
 	bool        dump_resfile                         ;
@@ -376,6 +379,7 @@ struct RifDockOpt
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
+		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
 		full_scaffold_output                   = option[rif_dock::full_scaffold_output                  ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
