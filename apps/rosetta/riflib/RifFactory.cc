@@ -286,6 +286,7 @@ std::string get_rif_type_from_file( std::string fname )
 	struct ScoreBBActorvsRIFScratch {
 		shared_ptr< ::scheme::search::HackPack> hackpack_;
 		std::vector<bool> is_satisfied_;
+		std::vector<bool> has_rifrot_;
 		// sat group vector goes here
 	};
 
@@ -299,7 +300,7 @@ std::string get_rif_type_from_file( std::string fname )
 		typedef std::pair<RIFAnchor,BBActor> Interaction;
 		bool packing_ = false;
 		::scheme::search::HackPackOpts packopts_;
-		int n_sat_groups_ = 0, require_satisfaction_ = 0;
+		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
 		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
 	private:
 		shared_ptr<RIF const> rif_ = nullptr;
@@ -376,6 +377,8 @@ std::string get_rif_type_from_file( std::string fname )
 				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
 				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
 			}
+			scratch.has_rifrot_.resize(rotamer_energies_1b_->size(), false);
+			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
 			if( !packing_ ) return;
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
@@ -445,6 +448,10 @@ std::string get_rif_type_from_file( std::string fname )
 				float const score_rot_tot = score_rot_v_target + rot1be;
 				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
+				}
+				if ( score_rot_tot < 0.0 ) {
+					// std::cout << "Adding " << ires << std::endl;
+					scratch.has_rifrot_[ires] = true;
 				}
 				bestsc = std::min( score_rot_tot , bestsc );
 			}
@@ -520,6 +527,34 @@ std::string get_rif_type_from_file( std::string fname )
 
 				// delete scratch.is_satisfied_;
 				// scratch.is_satisfied_.clear();
+			}
+
+			// this is yolo code by Brian. I have no idea if th is will always work
+			if ( require_n_rifres_ > 0 ) {
+				if ( packing_ ) {
+					std::map<int, bool> used_positions;
+					for( int i = 0; i < result.rotamers_.size(); ++i ){
+						int position = result.rotamers_[i].first;
+						if ( used_positions.count(position) == 0 ) {
+							used_positions[position] = true;
+						}
+					}
+					// std::cout << result.rotamers_.size() << " ";
+					if (used_positions.size() < require_n_rifres_ ) {
+						result.val_ = 9e9;
+					}
+				} else {
+					int count = 0;
+					for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) {
+						if ( scratch.has_rifrot_[i] ) {
+							count ++;
+						}
+					}
+					// std::cout << "Found " << count << std::endl;
+					if (count < require_n_rifres_ ) {
+						result.val_ = 9e9;
+					}
+				}
 			}
 
 				// #ifdef USE_OPENMP
@@ -736,6 +771,9 @@ struct RifFactoryImpl :
 			if( config.require_satisfaction > 0 ){
 				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
 				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
+			}
+			if (config.require_n_rifres > 0 ) {
+				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_n_rifres_ = config.require_n_rifres;
 			}
 		}
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;

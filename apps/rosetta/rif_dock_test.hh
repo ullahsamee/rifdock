@@ -85,6 +85,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, lowres_sterics_cbonly )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
+	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
@@ -205,6 +206,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
 
 		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
+		NEW_OPT(  rif_dock::require_n_rifres, "", 0 );
 
 		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
@@ -274,6 +276,7 @@ struct RifDockOpt
 	bool        scaff2alaselonly                     ;
 	bool        replace_orig_scaffold_res            ;
 	int         require_satisfaction                 ;
+	int         require_n_rifres                     ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
@@ -376,6 +379,7 @@ struct RifDockOpt
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
 		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
+		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();

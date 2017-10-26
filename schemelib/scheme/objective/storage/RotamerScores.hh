@@ -171,6 +171,10 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 	void mark_sat_groups( std::vector<bool> & sat_groups_mask ) const {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if( sat_data_[isat].not_empty() ){
+				int val = sat_data_[isat].target_sat_num();
+				if (val < 0 || val >= sat_groups_mask.size()) {
+					std::cout << "Sat" << val << std::endl;
+				}
 				sat_groups_mask[ sat_data_[isat].target_sat_num() ] = true;
 			}
 		}

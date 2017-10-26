@@ -783,6 +783,7 @@ int main(int argc, char *argv[]) {
 			core::pose::Pose both_full_pose; 						// scaffold centered + target (from rifgen)
 			core::pose::Pose scaffold_only_pose;				
 			core::pose::Pose scaffold_only_full_pose;
+			core::pose::Pose scaffold_unmodified_from_file;
 
 			float scaff_radius = 0.0;
 			float redundancy_filter_rg = 0.0;						// rg of scaffold to decide minimum angular resolution?
@@ -801,6 +802,7 @@ int main(int argc, char *argv[]) {
 			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
+				scaffold_unmodified_from_file = scaffold;
 				if( opt.random_perturb_scaffold ){
 					runtime_assert_msg( !opt.use_scaffold_bounding_grids,
 						"opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
@@ -1016,8 +1018,9 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
-				rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
+				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
+				rso_config.require_n_rifres = opt.require_n_rifres;
 
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
@@ -1189,19 +1192,19 @@ int main(int argc, char *argv[]) {
 
 			}
 			cout << "scores for scaffold in original position: " << std::endl;
-			{
-				EigenXform x(EigenXform::Identity());
-				x.translation() = scaffold_center;
-				scene_minimal->set_position(1,x);
-				for(int i = 0; i < RESLS.size(); ++i){
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
-					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
-				}
+			// {
+			// 	EigenXform x(EigenXform::Identity());
+			// 	x.translation() = scaffold_center;
+			// 	scene_minimal->set_position(1,x);
+			// 	for(int i = 0; i < RESLS.size(); ++i){
+			// 		std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+			// 		cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+			// 		     << F( 7, 3, sc[0]+sc[1] ) << " "
+			// 		     << F( 7, 3, sc[0]       ) << " "
+			// 		     << F( 7, 3, sc[1]       ) << endl;
+			// 	}
 
-			}
+			// }
 
 			// utility_exit_with_message("FOO");
 
@@ -1242,9 +1245,24 @@ int main(int argc, char *argv[]) {
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-			Eigen::Vector3f cb1_pos { -2.473,  -2.789,   0.175 };
-			Eigen::Vector3f cb2_pos { -3.807,  -4.959,   4.507 };
-			Eigen::Vector3f cb3_pos { -7.819,  -2.423,   5.187 };
+			// these are in rosetta numbers
+			// int rmsd_resid1 = 107;
+			// int rmsd_resid2 = 54;
+			// int rmsd_resid3 = 13;
+
+
+			// utility::vector1<core::Size> rmsd_resids { rmsd_resid1, rmsd_resid2, rmsd_resid3 };
+			// std::vector<SchemeAtom> rmsd_atoms;
+			// devel::scheme::get_scheme_atoms_cbonly( scaffold_unmodified_from_file, rmsd_resids, rmsd_atoms);
+			
+			// SchemeAtom rmsd_cb1 = rmsd_atoms[0];
+			// SchemeAtom rmsd_cb2 = rmsd_atoms[1];
+			// SchemeAtom rmsd_cb3 = rmsd_atoms[2];
+
+			// std::cout << "Checking that we have the right CBetas for rmsd" << std::endl;
+			// std::cout << I(5, rmsd_resid1) << " " << rmsd_cb1.position().transpose() << std::endl;
+			// std::cout << I(5, rmsd_resid2) << " " << rmsd_cb2.position().transpose() << std::endl;
+			// std::cout << I(5, rmsd_resid3) << " " << rmsd_cb3.position().transpose() << std::endl;
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -1292,15 +1310,17 @@ int main(int argc, char *argv[]) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-								// if ( isamp < 47700000000000 && isamp != 746571400249 && 
-								// 	 isamp != 11665178128 && isamp != 182268408 &&
-								// 	 isamp != 2847943 && isamp != 44499 ) {
+								// if ( isamp < 3000000000000000 && isamp != 47729600827993 && 
+								// 	 isamp != 745775012937 && isamp != 11652734577 &&
+								// 	 isamp != 182073977 && isamp != 2844905 ) {
+								// 	continue;
+								// }
+								// if ( isamp > 3000000000000000 && isamp != 3054694452991568 ) {
 								// 	continue;
 								// }
 
 
-
-								// money 47780569615988
+								// money 3054694452991568
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1356,42 +1376,49 @@ int main(int argc, char *argv[]) {
 									}
                                 }
 
+
+                                // the real rif score!!!!!!
                                 samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-
-
 
 
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-								// if ( isamp == 47780569615988 || isamp == 746571400249 ||
-								// 	 isamp == 11665178128 || isamp == 182268408 ||
-								// 	 isamp == 2847943 || isamp == 44499 ) {
+								// if ( isamp == 3054694452991568 || isamp == 47729600827993 ||
+								// 	 isamp == 745775012937 || isamp == 11652734577 ||
+								// 	 isamp == 182073977 || isamp == 2844905 ) {
 
 
         //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
                                 
-								// 	answer_exists = true;
+        //                         	// float score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+								// 	// answer_exists = true;
+
 								// 	#pragma omp critical
 								// 	std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
 								// }
 
 
 
-                                // const SimpleAtom scene_cb1 = tscene->template get_actor<SimpleAtom>(1, 7-1);
-                                // const SimpleAtom scene_cb2 = tscene->template get_actor<SimpleAtom>(1, 8-1);
-                                // const SimpleAtom scene_cb3 = tscene->template get_actor<SimpleAtom>(1,11-1);
+        //                         const SimpleAtom scene_cb1 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid1-1);
+        //                         const SimpleAtom scene_cb2 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid2-1);
+        //                         const SimpleAtom scene_cb3 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid3-1);
 
-                                // const float cb1_dist = ( scene_cb1.position() - cb1_pos ).norm();
-                                // const float cb2_dist = ( scene_cb2.position() - cb2_pos ).norm();
-                                // const float cb3_dist = ( scene_cb3.position() - cb3_pos ).norm();
+        //                         const float cb1_dist2 = ( scene_cb1.position() - rmsd_cb1.position() ).squaredNorm();
+        //                         const float cb2_dist2 = ( scene_cb2.position() - rmsd_cb2.position() ).squaredNorm();
+        //                         const float cb3_dist2 = ( scene_cb3.position() - rmsd_cb3.position() ).squaredNorm();
 
-                                // const float rmsd = std::sqrt( (cb1_dist * cb1_dist + cb2_dist * cb2_dist + cb3_dist * cb3_dist) / 3.00 );
+        //                         const float rmsd_squared = cb1_dist2 + cb2_dist2 + cb3_dist2;
+        //                         // const float rmsd = std::sqrt( (cb1_dist * cb1_dist + cb2_dist * cb2_dist + cb3_dist * cb3_dist) / 3.00 );
 
-                                // rmsds[i] = rmsd;
+        //                         rmsds[i] = rmsd_squared;
 
-                                // samples[iresl][i].score = rmsd - 10.0;
+        //                         samples[iresl][i].score = rmsd_squared - 200.0;
+
+        //                         if (isamp > 3000000000000000) {
+        //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+        //                         }
 
 
                                 // if ( isamp == 47780569615988) {
@@ -1444,7 +1471,7 @@ int main(int argc, char *argv[]) {
 						// std::sort( std::begin( sorted), std::end(sorted),
 						// 	[&](int i1, int i2) { return rmsds[i1] < rmsds[i2]; } );
 
-						// for ( uint64_t i = 0; i < 30; i++ ) {
+						// for ( uint64_t i = 0; i < 64; i++ ) {
 						// 	uint64_t index = sorted[i];
 						// 	SearchPoint sp = samples[iresl][index];
 						// 	uint64_t isamp = sp.index;
