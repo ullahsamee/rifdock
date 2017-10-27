@@ -135,8 +135,11 @@ compute_onebody_rotamer_energies(
 		// score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
 		// score_func->set_etable( "FA_STANDARD_SOFT" );
 		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
-		// score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
+		
 		score_func = core::scoring::get_score_function();
+		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
 		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
 		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
 		hopts.use_hb_env_dep( false );

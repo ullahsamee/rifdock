@@ -260,7 +260,7 @@ struct HBJob {
 				j.don_or_acc = "ACC_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
 				j.nrots = b.second-b.first;
-				if( target.residue(ir).is_protein() && target.residue(ir).has("O") && target.residue(ir).name3()!="PRO" ) hb_jobs.push_back( j );
+				if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
 				if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
 					j.acc = resn;
 					hb_jobs.push_back( j );
@@ -305,6 +305,9 @@ struct HBJob {
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
 			std::string hbgeomtag = don_or_acc + don + "-" + acc;
+
+            // std::cout << hbgeomtag << std::endl;
+            // continue;
 
 			std::map< std::string, core::pose::Pose > hbgeom_exemplars_rtype_override;
 			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );

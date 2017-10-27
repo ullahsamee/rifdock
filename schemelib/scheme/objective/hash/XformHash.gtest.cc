@@ -17,6 +17,44 @@ typedef Eigen::Transform<double,3,Eigen::AffineCompact> Xform;
 // typedef Eigen::Affine3d Xform;
 
 
+
+
+
+double get_frac_bin_centers_within_bin(float cart_resl, float ang_resl, int niters){
+    XformHash_bt24_BCC6<Xform> xh( cart_resl, ang_resl, 512.0 );
+
+    std::mt19937 rng((unsigned int)time(0) + 5429293887);
+
+    double frac_correct = 0;
+    for( int i = 0; i < niters; ++i ){
+        Xform x;
+        numeric::rand_xform(rng, x, 512.0);
+        uint64_t key = xh.get_key(x);
+        // std::cout << key << std::endl;
+        Xform bin_cen = xh.get_center(key);
+        if( xh.get_key(bin_cen) == key ) frac_correct += 1.0;
+    }
+    frac_correct /= niters;
+    return frac_correct;
+}
+
+TEST( XformHash_bt24_BCC6, bin_centers ){
+    ASSERT_LT( 0.8*0.614346, get_frac_bin_centers_within_bin(1.0, 60.0, 10000) );
+    ASSERT_LT( 0.8*0.756668, get_frac_bin_centers_within_bin(1.0, 30.0, 10000) );
+    ASSERT_LT( 0.8*0.849657, get_frac_bin_centers_within_bin(1.0, 15.0, 10000) );
+    ASSERT_LT( 0.8*0.939371, get_frac_bin_centers_within_bin(1.0,  7.0, 10000) );
+    ASSERT_LT( 0.8*0.954062, get_frac_bin_centers_within_bin(1.0,  4.0, 10000) );
+    ASSERT_LT( 0.8*0.976793, get_frac_bin_centers_within_bin(1.0,  2.0, 10000) );
+    ASSERT_LT( 0.8*0.984943, get_frac_bin_centers_within_bin(1.0,  1.0, 10000) );
+}
+
+
+
+
+
+
+
+
 template< template<class X> class XformHash >
 int get_num_ori_cells( int ori_nside, double & xcov ){
 	std::mt19937 rng((unsigned int)time(0) + 7693487);
@@ -29,8 +67,8 @@ int get_num_ori_cells( int ori_nside, double & xcov ){
 		int NSAMP = std::max( 1000000, 500*ori_nside*ori_nside*ori_nside );
 		Xform x;
 		for(int i = 0; i < NSAMP; ++i){
-			numeric::rand_xform(rng,x);
-			x.translation()[0] = x.translation()[1] = x.translation()[2] = 0;						
+            numeric::rand_xform(rng,x);
+			x.translation()[0] = x.translation()[1] = x.translation()[2] = 0;
 			idx_seen.insert( xh.get_key(x) );
 		}
 		n_ori_bins = (int)idx_seen.size();

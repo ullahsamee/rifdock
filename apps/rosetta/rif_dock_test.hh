@@ -31,6 +31,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, make_bounding_plot_data )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, align_output_to_scaffold )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
@@ -84,6 +85,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, lowres_sterics_cbonly )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
+	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
@@ -106,8 +108,16 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 	OPT_1GRP_KEY(  Integer     , rif_dock, always_available_rotamers_level )
-	OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
 
+    OPT_1GRP_KEY(  Integer     , rif_dock, nfold_symmetry )
+    OPT_1GRP_KEY(  RealVector  , rif_dock, symmetry_axis )
+
+    OPT_1GRP_KEY(  Real        , rif_dock, user_rotamer_bonus_constant )
+    OPT_1GRP_KEY(  Real        , rif_dock, user_rotamer_bonus_per_chi )
+
+
+    OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
 
 	void register_options() {
 		using namespace basic::options;
@@ -139,6 +149,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 		NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
 		NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
+		NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 		NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
 
 		NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
@@ -195,6 +206,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
 
 		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
+		NEW_OPT(  rif_dock::require_n_rifres, "", 0 );
 
 		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
@@ -217,7 +229,17 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 		NEW_OPT(  rif_dock::extra_rotamers, "", true );
 		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 		NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
-		NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+
+        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
+        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
+
+        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
+		NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
+
+		NEW_OPT(  rif_dock::resl0, "", 16 );
+
+
 	}
 
 struct RifDockOpt
@@ -254,9 +276,11 @@ struct RifDockOpt
 	bool        scaff2alaselonly                     ;
 	bool        replace_orig_scaffold_res            ;
 	int         require_satisfaction                 ;
+	int         require_n_rifres                     ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
+	bool        output_full_scaffold_only            ;
 	bool        pdb_info_pikaa                       ;
 	bool        full_scaffold_output                 ;
 	bool        dump_resfile                         ;
@@ -313,6 +337,12 @@ struct RifDockOpt
 	std::string rosetta_soft_score                   ;
 	std::string rosetta_hard_score                   ;
 
+    int         nfold_symmetry                       ;
+    std::vector<float> symmetry_axis                 ;
+
+    float user_rotamer_bonus_constant;
+    float user_rotamer_bonus_per_chi;
+
 
 	void init_from_cli()
 	{
@@ -322,7 +352,7 @@ struct RifDockOpt
 		runtime_assert( option[rif_dock::target_rif].user() );
 
 		VERBOSE                                = false;
-		resl0                                  = 16.0;
+		resl0                                  = option[rif_dock::resl0                              ]();
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;
@@ -349,9 +379,11 @@ struct RifDockOpt
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
 		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
+		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
+		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
 		full_scaffold_output                   = option[rif_dock::full_scaffold_output                  ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
@@ -405,6 +437,9 @@ struct RifDockOpt
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  ]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score  ]();
 		rosetta_beta                           = option[corrections::beta]();
+		user_rotamer_bonus_constant = option[rif_dock::user_rotamer_bonus_constant]();
+		user_rotamer_bonus_per_chi = option[rif_dock::user_rotamer_bonus_per_chi]();
+
 
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
@@ -422,6 +457,21 @@ struct RifDockOpt
 			std::cout << "WARNING: rosetta_score_total overrives rosetta_score_ddg_only" << std::endl;
 			rosetta_score_ddg_only = false;
 		}
+
+        nfold_symmetry = option[rif_dock::nfold_symmetry]();
+        symmetry_axis.clear();
+        if( option[rif_dock::symmetry_axis]().size() == 3 ){
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[1] );
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[2] );
+            symmetry_axis.push_back( option[rif_dock::symmetry_axis]()[3] );
+        } else if( option[rif_dock::symmetry_axis]().size() == 0 ){
+            symmetry_axis.push_back(0);
+            symmetry_axis.push_back(0);
+            symmetry_axis.push_back(1);
+        } else {
+            std::cout << "bad rif_dock::symmetry_axis option" << std::endl;
+            std::exit(-1);
+        }
 
 	}
 };

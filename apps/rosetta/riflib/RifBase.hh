@@ -15,6 +15,9 @@
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
+#include <boost/iterator/iterator_facade.hpp>
+#include <riflib/RotamerGenerator.hh>
+
 
 
 namespace scheme { namespace search { struct HackPackOpts; }}
@@ -22,18 +25,57 @@ namespace scheme { namespace search { struct HackPackOpts; }}
 namespace devel {
 namespace scheme {
 
+template<class Index>
+struct KeyIterHelperBase {
+    virtual Index get_key() const = 0;
+    virtual void next() = 0;
+    virtual bool equal(KeyIterHelperBase const & that) const = 0;
+};
+
+struct RifBaseKeyIter : public boost::iterator_facade<
+    RifBaseKeyIter, uint64_t, boost::forward_traversal_tag, uint64_t
+>{
+    RifBaseKeyIter() : irange_(nullptr) {}
+    RifBaseKeyIter(std::shared_ptr<KeyIterHelperBase<uint64_t>> irange) : irange_(irange) {}
+ private:
+    friend class boost::iterator_core_access;
+    std::shared_ptr<KeyIterHelperBase<uint64_t>> irange_;
+    void increment() { irange_->next(); }
+    bool equal(RifBaseKeyIter const& that) const { return this->irange_->equal(*that.irange_); }
+    uint64_t dereference() const { return irange_->get_key(); }
+};
+
+struct RifBaseKeyRange {
+    typedef RifBaseKeyIter const_iterator;
+    const_iterator begin_, end_;
+    RifBaseKeyRange(const_iterator begin, const_iterator end) : begin_(begin), end_(end) {}
+    const_iterator begin() const { return begin_; }
+    const_iterator end() const { return end_; }
+};
+
+// template<class _Index=uint64_t>
 struct RifBase
 {
+    typedef uint64_t Key;
 	RifBase() : type_("") {}
 	RifBase( std::string type ) : type_(type){}
 	std::string type() const { return type_; }
 	std::string type_;
 
-	virtual void get_rotamers_for_xform( EigenXform const & x, std::vector< std::pair< float, int > > & rotscores ) const = 0;
+    virtual Key get_bin_key(EigenXform const & x) const = 0;
+    virtual EigenXform get_bin_center( Key const & k) const = 0;
+    virtual void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const = 0;
+    virtual void get_rotamers_for_xform( EigenXform const & x, std::vector< std::pair< float, int > > & rotscores ) const = 0;
 	virtual void get_rotamer_ids_in_use( std::vector<bool> & using_rot ) const = 0;
 	virtual void print( std::ostream & out ) const = 0;
+    virtual void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const = 0;
 	virtual void collision_analysis( std::ostream & out ) const = 0;
 	virtual std::string value_name() const = 0;
+
+    //Brian
+    virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const {
+        return std::pair< int, int >( -1, -1);
+    }
 
 	virtual size_t size() const = 0;
 	virtual float  load_factor() const = 0;
@@ -54,6 +96,22 @@ struct RifBase
 	virtual bool save( std::ostream & out, std::string & description ) = 0;
 
 	virtual void finalize_rif() = 0;
+
+    virtual RifBaseKeyRange key_range() const = 0;
+
+    // for convenience
+    std::vector< std::pair< float, int > >
+    get_rotamers_for_key(Key k) const {
+        std::vector< std::pair< float, int > > rotscores;
+        get_rotamers_for_key(k, rotscores);
+        return rotscores;
+    }
+    std::vector< std::pair< float, int > >
+    get_rotamers_for_xform(EigenXform const & x) const {
+        std::vector< std::pair< float, int > > rotscores;
+        get_rotamers_for_xform(x, rotscores);
+        return rotscores;
+    }
 
 };
 

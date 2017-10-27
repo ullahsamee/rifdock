@@ -706,6 +706,57 @@ struct XformHash_bt24_BCC6 {
 		return cell_index<<59 | grid_[params6];
 	}
 
+	std::vector<Key> get_key_and_nbrs( Xform const & x ) const {
+		Eigen::Matrix<Float,3,3> rotation;
+		get_transform_rotation( x, rotation );
+
+		uint64_t cell_index;
+		F3 params;
+		// ori_map_.value_to_params( rotation, 0, params, cell_index );
+		{ // from TetracontoctachoronMap.hh
+			Eigen::Quaternion<Float> q(rotation);
+
+			numeric::get_cell_48cell_half( q.coeffs(), cell_index );
+
+			q = nest::pmap::hbt24_cellcen<Float>( cell_index ).inverse() * q;
+			q = numeric::to_half_cell(q);
+
+			params[0] = q.x()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+			params[2] = q.z()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+
+			// assert( -0.0001 <= params[0] && params[0] <= 1.0001 );
+			// assert( -0.0001 <= params[1] && params[1] <= 1.0001 );
+			// assert( -0.0001 <= params[2] && params[2] <= 1.0001 );
+
+		}
+		assert( cell_index < 24 );
+		params[0] = fmax(0.0,params[0]);
+		params[1] = fmax(0.0,params[1]);
+		params[2] = fmax(0.0,params[2]);
+		params[0] = fmin(1.0,params[0]);
+		params[1] = fmin(1.0,params[1]);
+		params[2] = fmin(1.0,params[2]);
+
+		F6 params6;
+		params6[0] = x.translation()[0];
+		params6[1] = x.translation()[1];
+		params6[2] = x.translation()[2];
+		params6[3] = params[0];
+		params6[4] = params[1];
+		params6[5] = params[2];
+
+		uint64_t index = grid_[params6];
+		std::vector<Key> to_ret { index };
+		grid_.neighbors( index, std::back_inserter(to_ret), true );
+
+		for ( int i = 0; i < to_ret.size(); i++ ) {
+			to_ret[i] = cell_index<<59 | to_ret[i];
+		}
+
+		return to_ret;
+	}
+
 	Xform get_center(Key key) const {
 		Key cell_index = key >> 59;
 		F6 params6 = grid_[ key & (((Key)1<<59)-(Key)1) ];

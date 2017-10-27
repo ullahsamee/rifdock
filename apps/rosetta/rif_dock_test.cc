@@ -63,6 +63,11 @@
 	#include <random>
 
 
+/// Brian
+	#include <scheme/objective/hash/XformHash.hh>
+
+
+
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
@@ -379,6 +384,8 @@ int main(int argc, char *argv[]) {
 		packopts.rotamer_inclusion_threshold = -0.5;
 		packopts.rotamer_onebody_inclusion_threshold = 5.0;
 		packopts.init_with_best_1be_rots = true;
+		packopts.user_rotamer_bonus_constant=opt.user_rotamer_bonus_constant;
+		packopts.user_rotamer_bonus_per_chi=opt.user_rotamer_bonus_per_chi;
 
 		std::string const rif_type = get_rif_type_from_file( opt.rif_files.back() );
 		BOOST_FOREACH( std::string fn, opt.rif_files ){
@@ -623,9 +630,6 @@ int main(int argc, char *argv[]) {
 		);
 
 
-		// if( opt.use_scaffold_bounding_grids ){
-		// 	std::cout << "not using target steric grids" << std::endl;
-		// } else {
 		if( true ){
 			// std::cout << "using target bounding grids, generating (or loading) them" << std::endl;
 			devel::scheme::RosettaFieldOptions rfopts;
@@ -667,6 +671,7 @@ int main(int argc, char *argv[]) {
 									float & dat = vap->data()[k];
 									if( dat < 0 ){
 										dat = dat * correction;
+										// dat = 0; // for testing w/o attractive sterics
 									}
 								} catch( std::exception const & ex ) {
 									#pragma omp critical
@@ -715,6 +720,16 @@ int main(int argc, char *argv[]) {
 				std::cout << "loaded RIF score for resl " << F(7,3,RESLS[i_readmap])
 				          << " raw cart_resl: " << F(7,3,rif_ptr->cart_resl() )
 				          << " raw ang_resl: " << F(7,3,rif_ptr->ang_resl() ) << std::endl;
+
+				if (i_readmap == opt.rif_files.size() -1 ) {
+					// #pragma omp criticial
+					// rif_ptr->super_print( std::cout, rot_index_p );
+					// std::ofstream out_file;
+					// out_file.open("rif.txt");
+					// rif_ptr->super_print( out_file, rot_index_p );
+					// out_file.close();
+
+				}
 			} catch( std::exception const & ex ) {
 				#ifdef USE_OPENMP
 				#pragma omp critical
@@ -741,12 +756,15 @@ int main(int argc, char *argv[]) {
 	}
 
 
+    if( 0 == opt.scaffold_fnames.size() ){
+        std::cout << "WARNING: NO SCAFFOLDS!!!!!!" << std::endl;
+    }
 
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
 		std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
-		std::vector<std::string> scaffold_sequence_glob0;
-		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all;
+		std::vector<std::string> scaffold_sequence_glob0;				// Scaffold sequence in name3 space
+		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all; // Seqposs of residues to design, default whole scaffold
 		try {
 
 			runtime_assert( rot_index_p );
@@ -758,23 +776,35 @@ int main(int argc, char *argv[]) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-			core::pose::Pose scaffold, scaffold_centered, scaffold_full_centered, both_pose, both_full_pose, scaffold_only_pose;
-			float scaff_radius = 0.0;
-			float redundancy_filter_rg = 0.0;
+			core::pose::Pose scaffold;								// the input scaffold, gets converted to alanine with flags
+			core::pose::Pose scaffold_centered;                     // input (maybe alanine) scaffold centered using scaffold_center
+			core::pose::Pose scaffold_full_centered;				// input full aa scaffold centered using scaffold_center
+			core::pose::Pose both_pose;								// scaffold (maybe alanine) centered + target (from rifgen)
+			core::pose::Pose both_full_pose; 						// scaffold centered + target (from rifgen)
+			core::pose::Pose scaffold_only_pose;				
+			core::pose::Pose scaffold_only_full_pose;
+			core::pose::Pose scaffold_unmodified_from_file;
 
-			std::vector<int> scaffres_g2l, scaffres_l2g;
-			std::vector<bool> scaffuseres;
-			Eigen::Vector3f scaffold_center;
-			std::vector<Vec> scaffca;
-			std::vector<std::vector<float> > scaffold_onebody_glob0;
-			std::vector<std::vector<float> > local_onebody;
-			std::vector< std::pair<int,int> > local_rotamers;
+			float scaff_radius = 0.0;
+			float redundancy_filter_rg = 0.0;						// rg of scaffold to decide minimum angular resolution?
+
+			std::vector<int> scaffres_g2l;							// maps global_seqpos -> local_seqpos  (local_seqpos.size() == scaffold_res.size())
+			std::vector<int> scaffres_l2g;							// maps local_seqpos  -> global_seqpos
+			std::vector<bool> scaffuseres;							// maps global_seqpos -> being_used
+			Eigen::Vector3f scaffold_center;						// center of scaffold heavy atoms after conversion to alanine
+			std::vector<Vec> scaffca;								// xyz coordinates of scaffold CA
+			std::vector<std::vector<float> > scaffold_onebody_glob0;// onebody_rotamer_energies using global_seqpos
+			std::vector<std::vector<float> > local_onebody;			// onebody_rotamer_energies using local_seqpos
+			std::vector< std::pair<int,int> > local_rotamers;		// lower and upper bounds into rotamer_index for each local_seqpos
 			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
-			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );
-			shared_ptr<TBT> local_twobody;
+
+			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );  // twobody_rotamer_energies using global_seqpos
+			shared_ptr<TBT> local_twobody;							// twobody_rotamer_energies using local_seqpos
+
 			EigenXform scaffold_perturb = EigenXform::Identity();
 			{
 				core::import_pose::pose_from_file( scaffold, scaff_fname );
+				scaffold_unmodified_from_file = scaffold;
 				if( opt.random_perturb_scaffold ){
 					runtime_assert_msg( !opt.use_scaffold_bounding_grids,
 						"opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
@@ -809,9 +839,9 @@ int main(int argc, char *argv[]) {
 				} else {
 					for( int ir = 1; ir <= scaffold.size(); ++ir){
 						if( !scaffold.residue(ir).is_protein() ) continue;
-						if( scaffold.residue(ir).name3() == "PRO" ) continue;
-						if( scaffold.residue(ir).name3() == "GLY" ) continue;
-						if( scaffold.residue(ir).name3() == "CYS" ) continue;
+						//if( scaffold.residue(ir).name3() == "PRO" ) continue;
+						//if( scaffold.residue(ir).name3() == "GLY" ) continue;
+						//if( scaffold.residue(ir).name3() == "CYS" ) continue;
 						scaffold_res.push_back(ir);
 					}
 				}
@@ -854,6 +884,7 @@ int main(int argc, char *argv[]) {
 				both_pose      = scaffold_centered;
 				both_full_pose = scaffold_full_centered;
 				scaffold_only_pose = scaffold_centered;
+				scaffold_only_full_pose = scaffold_full_centered;
 				::devel::scheme::append_pose_to_pose( both_pose, target );
 				::devel::scheme::append_pose_to_pose( both_full_pose, target );
 				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
@@ -872,7 +903,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "rifdock: get_onebody_rotamer_energies" << std::endl;
 				get_onebody_rotamer_energies(
 						scaffold,
-						scaffold_res,
+						scaffold_res,			// uses 12345 as score for anything missing here
 						rot_index,
 						scaffold_onebody_glob0,
 						opt.data_cache_path,
@@ -915,7 +946,8 @@ int main(int argc, char *argv[]) {
 				std::string cachefile2b = "__2BE_" + scaff_tag + "_reshash" + scaff_res_hashstr + ".bin.gz";
 				if( ! opt.cache_scaffold_data || opt.extra_rotamers ) cachefile2b = "";
 				MakeTwobodyOpts make2bopts;
-				make2bopts.onebody_threshold = 2.0;
+				// hacked by brian             VVVV
+				make2bopts.onebody_threshold = 30.0;
 				make2bopts.distance_cut = 15.0;
 				make2bopts.hbond_weight = packopts.hbond_weight;
 				std::string dscrtmp;
@@ -965,8 +997,8 @@ int main(int argc, char *argv[]) {
 					// std::cout << "local_rotamers " << i << " " << iresglobal << " " << name3 << " " << ib.first << " " << ib.second << std::endl;
 					local_rotamers.push_back( ib );
 				}
-
-				local_twobody = scaffold_twobody->create_subtable( scaffuseres, scaffold_onebody_glob0, 2.0 );
+																					  //this was hacked  VV  by brian
+				local_twobody = scaffold_twobody->create_subtable( scaffuseres, scaffold_onebody_glob0, 30 );
 				std::cout << "filt_2b memuse: " << (float)local_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! must fix issue with non-global 2B table calculation, seems to use scaffold_res when it shouldn't" << endl;
@@ -988,8 +1020,9 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
-				rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
+				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
+				rso_config.require_n_rifres = opt.require_n_rifres;
 
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
@@ -1005,7 +1038,7 @@ int main(int argc, char *argv[]) {
 			print_header( "setup 3D rosetta_field grids for scaffold" );
 			std::vector< VoxelArrayPtr > scaffold_field_by_atype;
 			std::vector< std::vector< VoxelArrayPtr > > scaffold_bounding_by_atype;
-			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;
+			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
 			if( opt.use_scaffold_bounding_grids ){
 				scaffold_bounding_by_atype.resize( RESLS.size() );
 				float const rf_resl = opt.rf_resl==0.0 ? RESLS.back()/2.0 : opt.rf_resl;
@@ -1086,6 +1119,46 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			std::vector<EigenXform> symmetries_clash_check;
+			if( opt.nfold_symmetry > 1 ){
+				// utility_exit_with_message("NOT IMPLEMENTED!");
+				// check only 1 and Nfold - 1, hense the strange += value
+				// symmetries_clash_check.push_back( EigenXform::Identity() );
+				for(int isym = 1; isym < opt.nfold_symmetry; isym += opt.nfold_symmetry-2){
+					float angle_rads = isym * 2.0 * M_PI / opt.nfold_symmetry;
+					Eigen::AngleAxis<typename EigenXform::Scalar> aa( angle_rads, Eigen::Vector3f(0,0,1) );
+					EigenXform x(aa.toRotationMatrix());
+					runtime_assert( x.translation().norm() < 0.0001 );
+					symmetries_clash_check.push_back( x );
+					std::cout << "USING SYMMETRY CLASH CHECK HACK!!!! " << isym << " " << angle_rads << std::endl;
+				}
+				if( !opt.use_scaffold_bounding_grids ){
+					std::cout << "making atype 5-only scaffold bounding grids" << std::endl;
+					// need to init scaffold*_by_atype for, say, atype 5, then use this for symmetrical clash checking
+					scaffold_bounding_by_atype.resize( RESLS.size() );
+					devel::scheme::RosettaFieldOptions rfopts;
+					rfopts.field_resl = 1.0;
+					rfopts.data_dir = "DUMMY_DATA_DIR_FIXME";
+					rfopts.oversample = 1;
+					rfopts.block_hbond_sites = false;
+					rfopts.max_bounding_ratio = opt.max_rf_bounding_ratio;
+					rfopts.repulsive_only_boundary = true; // default
+					rfopts.one_atype_only = 5; // atype 5 only good enough for the sym clash check
+					devel::scheme::get_rosetta_bounding_fields(
+						RESLS,
+						scaff_fname+"_CEN"+(opt.scaff2ala?"_ALLALA":""),
+						scaffold_centered,
+						scaffold_res,
+						rfopts,
+						scaffold_field_by_atype,
+						scaffold_bounding_by_atype,
+						false
+					);
+					std::cout << "done making atype 5-only scaffold bounding grids" << std::endl;
+				}
+			}
+
+
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup scene from scaffold and target" );
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1121,19 +1194,19 @@ int main(int argc, char *argv[]) {
 
 			}
 			cout << "scores for scaffold in original position: " << std::endl;
-			{
-				EigenXform x(EigenXform::Identity());
-				x.translation() = scaffold_center;
-				scene_minimal->set_position(1,x);
-				for(int i = 0; i < RESLS.size(); ++i){
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
-					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
-				}
+			// {
+			// 	EigenXform x(EigenXform::Identity());
+			// 	x.translation() = scaffold_center;
+			// 	scene_minimal->set_position(1,x);
+			// 	for(int i = 0; i < RESLS.size(); ++i){
+			// 		std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+			// 		cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+			// 		     << F( 7, 3, sc[0]+sc[1] ) << " "
+			// 		     << F( 7, 3, sc[0]       ) << " "
+			// 		     << F( 7, 3, sc[1]       ) << endl;
+			// 	}
 
-			}
+			// }
 
 			// utility_exit_with_message("FOO");
 
@@ -1170,6 +1243,34 @@ int main(int argc, char *argv[]) {
 				std::cout << "size of search space: ~" << float(director->size(0))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 			}
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+			// these are in rosetta numbers
+			// int rmsd_resid1 = 107;
+			// int rmsd_resid2 = 54;
+			// int rmsd_resid3 = 13;
+
+
+			// utility::vector1<core::Size> rmsd_resids { rmsd_resid1, rmsd_resid2, rmsd_resid3 };
+			// std::vector<SchemeAtom> rmsd_atoms;
+			// devel::scheme::get_scheme_atoms_cbonly( scaffold_unmodified_from_file, rmsd_resids, rmsd_atoms);
+			
+			// SchemeAtom rmsd_cb1 = rmsd_atoms[0];
+			// SchemeAtom rmsd_cb2 = rmsd_atoms[1];
+			// SchemeAtom rmsd_cb3 = rmsd_atoms[2];
+
+			// std::cout << "Checking that we have the right CBetas for rmsd" << std::endl;
+			// std::cout << I(5, rmsd_resid1) << " " << rmsd_cb1.position().transpose() << std::endl;
+			// std::cout << I(5, rmsd_resid2) << " " << rmsd_cb2.position().transpose() << std::endl;
+			// std::cout << I(5, rmsd_resid3) << " " << rmsd_cb3.position().transpose() << std::endl;
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+
 			std::vector< SearchPointWithRots > packed_results;
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			int64_t non0_space_size = 0;
@@ -1196,6 +1297,10 @@ int main(int argc, char *argv[]) {
 				        start = std::chrono::high_resolution_clock::now();
 				        total_search_effort += samples[iresl].size();
 
+				        std::vector< double > rmsds( samples[iresl].size(), 1000 );
+
+				        bool answer_exists = false;
+
 						#ifdef USE_OPENMP
 						#pragma omp parallel for schedule(dynamic,64)
 						#endif
@@ -1204,6 +1309,23 @@ int main(int argc, char *argv[]) {
 							try {
 								if( i%out_interval==0 ){ cout << '*'; cout.flush();	}
 								uint64_t const isamp = samples[iresl][i].index;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+								// if ( isamp < 3000000000000000 && isamp != 47729600827993 && 
+								// 	 isamp != 745775012937 && isamp != 11652734577 &&
+								// 	 isamp != 182073977 && isamp != 2844905 ) {
+								// 	continue;
+								// }
+								// if ( isamp > 3000000000000000 && isamp != 3054694452991568 ) {
+								// 	continue;
+								// }
+
+
+								// money 3054694452991568
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+
 								ScenePtr tscene( scene_pt[omp_get_thread_num()] );
 								director->set_scene( isamp, iresl, *tscene );
 
@@ -1218,7 +1340,114 @@ int main(int argc, char *argv[]) {
 										// std::cout << "inbounds " << iresl << " " << xform_magnitude( tscene->position(1), redundancy_filter_rg ) << std::endl;
 									}
 								}
-								samples[iresl][i].score = objectives[iresl]->score( *tscene );
+
+   								float tot_sym_score = 0;
+                                if( opt.nfold_symmetry > 1 ){
+									bool dump = false;
+									if( iresl == 2 ) dump = true;
+									if(dump){
+									    scaffold_centered.dump_pdb("test_scaff.pdb");
+									    target.dump_pdb("test_target.pdb");
+									}
+									EigenXform x = tscene->position(1);
+									EigenXform xinv = x.inverse();
+                                    for(int isym = 0; isym < symmetries_clash_check.size(); ++isym){
+                                        EigenXform const & xsym = symmetries_clash_check[isym];
+									// for( EigenXform const & xsym : symmetries_clash_check ){
+                                        utility::io::ozstream * outp = nullptr;
+                                        if(dump){
+                                            outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
+                                        }
+										EigenXform x_to_internal = xinv * xsym * x;
+										for( SimpleAtom a : scaffold_simple_atoms ){
+											a.set_position( x_to_internal * a.position() );
+		                            		if(dump) ::scheme::actor::write_pdb( *outp, a, rot_index_p->chem_index_ );
+		                                    float atom_score = scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
+		                                 	if( atom_score > 0.0 ){ // clash only
+			                                    tot_sym_score += atom_score;
+		                                 	}
+										}
+                                        if(dump){
+                                            outp->close();
+                                            delete outp;
+    									}
+                                    }
+									if(dump){
+										std::cout << "tot_sym_score " << tot_sym_score << std::endl;
+										utility_exit_with_message("testing symmetric clash check");
+									}
+                                }
+
+
+                                // the real rif score!!!!!!
+                                samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+								// if ( isamp == 3054694452991568 || isamp == 47729600827993 ||
+								// 	 isamp == 745775012937 || isamp == 11652734577 ||
+								// 	 isamp == 182073977 || isamp == 2844905 ) {
+
+
+        //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+                                
+        //                         	// float score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+								// 	// answer_exists = true;
+
+								// 	#pragma omp critical
+								// 	std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
+								// }
+
+
+
+        //                         const SimpleAtom scene_cb1 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid1-1);
+        //                         const SimpleAtom scene_cb2 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid2-1);
+        //                         const SimpleAtom scene_cb3 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid3-1);
+
+        //                         const float cb1_dist2 = ( scene_cb1.position() - rmsd_cb1.position() ).squaredNorm();
+        //                         const float cb2_dist2 = ( scene_cb2.position() - rmsd_cb2.position() ).squaredNorm();
+        //                         const float cb3_dist2 = ( scene_cb3.position() - rmsd_cb3.position() ).squaredNorm();
+
+        //                         const float rmsd_squared = cb1_dist2 + cb2_dist2 + cb3_dist2;
+        //                         // const float rmsd = std::sqrt( (cb1_dist * cb1_dist + cb2_dist * cb2_dist + cb3_dist * cb3_dist) / 3.00 );
+
+        //                         rmsds[i] = rmsd_squared;
+
+        //                         samples[iresl][i].score = rmsd_squared - 200.0;
+
+        //                         if (isamp > 3000000000000000) {
+        //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+        //                         }
+
+
+                                // if ( isamp == 47780569615988) {
+                                // 	double score = objectives[iresl]->score( *tscene ) + tot_sym_score;
+                                // 	std::cout << "Score for the one: " << score << std::endl;
+                                // }
+
+                               	// #pragma omp critical
+                                // std::cout << I(20, isamp) << F(7, 1, cb1_dist) << F(7, 1, cb2_dist) << F(7, 1, cb3_dist) << std::endl;
+
+                               	// SimpleAtom sa = tscene->template get_actor<SimpleAtom>(1,0);
+                               	// SimpleAtom sa2 = tscene->template get_actor<SimpleAtom>(1,13);
+                               	// bool success = true;
+                               	// // // bool success = tscene->get_actor( 1, 0, sa ); 
+                               	// if ( success ) {
+                               	// 	#pragma omp critical
+                               	// 	std::cout << "Succss: " << I(8, isamp) << " SA: " << sa << sa2 << std::endl;
+                               	// } else {
+                               	// 	#pragma omp critical
+                               	// 	std::cout << "Failure" << std::endl;
+                               	// }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 							} catch( std::exception const & ex ) {
 								#ifdef USE_OPENMP
 								#pragma omp critical
@@ -1231,6 +1460,50 @@ int main(int argc, char *argv[]) {
 						std::chrono::duration<double> elapsed_seconds_rif = end-start;
 						float rate = (double)samples[iresl].size()/ elapsed_seconds_rif.count()/omp_max_threads();
 						cout << endl;// << "done threaded sampling, partitioning data..." << endl;
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+						// shared_ptr<DirectorOriTrans6D> nest_director = std::dynamic_pointer_cast<DirectorOriTrans6D>(director);
+						// NestOriTrans6D const & nest( nest_director->nest() );
+
+						// std::cout << "Sorting rmsds... " << std::endl;
+						// std::vector< uint64_t > sorted( rmsds.size() );
+						// uint64_t n = 0;
+						// std::generate( std::begin(sorted), std::end(sorted), [&]{ return n++; });
+						// std::sort( std::begin( sorted), std::end(sorted),
+						// 	[&](int i1, int i2) { return rmsds[i1] < rmsds[i2]; } );
+
+						// for ( uint64_t i = 0; i < 64; i++ ) {
+						// 	uint64_t index = sorted[i];
+						// 	SearchPoint sp = samples[iresl][index];
+						// 	uint64_t isamp = sp.index;
+
+
+						// 	EigenXform trans;
+						// 	bool success = nest.get_state( isamp, iresl, trans );
+
+						// 	Eigen::Matrix<float,3,3> rot;
+						// 	scheme::objective::hash::get_transform_rotation<float>( trans, rot );
+
+						// 	// Eigen::Matrix<double,3,3> rot2 = rot.cast<double>();
+
+						// 	Eigen::Vector3f axis;
+						// 	axis.setRandom();
+						// 	axis.normalize();
+						// 	Eigen::AngleAxisf angle_axis( rot );
+
+
+						// 	std::cout << I(20, isamp) << F(7, 1, rmsds[index]) << "  Trans: " 
+						// 	<< F(7, 1, trans.translation()[0]) 
+						// 	<< F(7, 1, trans.translation()[1]) 
+						// 	<< F(7, 1, trans.translation()[2]) 
+						// 	<< "  Angle: " << F(7, 1, angle_axis.angle()*180.0/M_PI) 
+						// 	<< "  Score: " << F(7, 2, sp.score)
+
+						// 	<< std::endl;
+						// }
+////////////////////////////////////////////////////////////////////////////////////////
+
 
 						SearchPoint max_pt, min_pt;
 						int64_t len = samples[iresl].size();
@@ -1247,6 +1520,8 @@ int main(int argc, char *argv[]) {
 						cout << "HSearsh stage " << iresl+1 << " complete, resl. " << F(7,3,RESLS[iresl]) << ", "
 							  << " " << KMGT(samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
 							  << F(9,6, std::min(opt.global_score_cut,max_pt.score)) << " rate " << KMGT(rate) << "/s/t " << std::endl;
+
+						// cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
 						if( iresl+1 == samples.size() ) break;
 
@@ -1317,6 +1592,9 @@ int main(int argc, char *argv[]) {
 					int const config = RESLS.size()-1;
 					npack = std::min( n_packsamp, (size_t)(total_search_effort *
 						( opt.hack_pack_frac / (packopts.pack_n_iters*packopts.pack_iter_mult)) ) );
+					//////////////
+					// npack = 1;
+					/////////////
 					packed_results.resize( npack );
 					print_header( "hack-packing top " + KMGT(npack) );
 					std::cout << "packing options: " << packopts << std::endl;
@@ -1361,7 +1639,7 @@ int main(int argc, char *argv[]) {
 					#pragma omp parallel for schedule(dynamic,1024)
 					#endif
 					for( int ipack = 0; ipack < packed_results.size(); ++ipack ){
-						packed_results[ipack].score = 0;//samples.back()[ipack].score;
+						packed_results[ipack].score = samples.back()[ipack].score;
 						packed_results[ipack].index = samples.back()[ipack].index;
 					}
 				}
@@ -1444,6 +1722,10 @@ int main(int argc, char *argv[]) {
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_sc   , scorefunc_pt[i]->get_weight(core::scoring::hbond_sc   )*1.0 );
 							scorefunc_pt[i]->set_weight( core::scoring::hbond_bb_sc, scorefunc_pt[i]->get_weight(core::scoring::hbond_bb_sc)*1.0 );
 						}
+
+                        // score one pose single threaded maybe helps lkball issue
+                        scorefunc_pt[i]->score(both_per_thread[i]);
+
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
 						// scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
 						// core::scoring::methods::EnergyMethodOptions opts = scorefunc_pt[i]->energy_method_options();
@@ -1489,11 +1771,15 @@ int main(int argc, char *argv[]) {
 					packed_results.resize(n_scormin);
 					int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
 					if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
-					else        std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
+					else            std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
+                    std::exception_ptr exception = nullptr;
+
+
 					#ifdef USE_OPENMP
 					#pragma omp parallel for schedule(dynamic,1)
 					#endif
 					for( int imin = 0; imin < n_scormin; ++imin )
+<<<<<<< HEAD
 					{
 						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
 
@@ -1714,6 +2000,239 @@ int main(int argc, char *argv[]) {
 						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
 						// utility_exit_with_message("testing");
 					}
+=======
+                    {
+
+
+                        try
+    					{
+    						if( imin%out_interval==0 ){ cout << '*'; cout.flush();	}
+
+    						int const ithread = omp_get_thread_num();
+
+    						director->set_scene( packed_results[imin].index, RESLS.size()-1, *scene_pt[ithread] );
+    						EigenXform xposition1 = scene_pt[ithread]->position(1);
+    						EigenXform xalignout = EigenXform::Identity();
+    						if( opt.align_to_scaffold ) xalignout = xposition1.inverse();
+
+    					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+    				        start = std::chrono::high_resolution_clock::now();
+
+    						// core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
+    						core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
+    						pose_to_min = both_per_thread[ithread];
+    						xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold.size()+1 , pose_to_min.size() );
+    						xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold.size() );
+
+    						// place the rotamers
+    						core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+    						std::vector<bool> is_rif_res(pose_to_min.size(),false);
+    						for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    							int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    							int irot =                  packed_results[imin].rotamers().at(ipr).second;
+    							core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
+    							pose_to_min.replace_residue( ires+1, *newrsd, true );
+    							is_rif_res[ires] = true;
+    							for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
+    								pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+    							}
+    						}
+
+    						EigenXform Xtorifframe = xalignout.inverse();
+    						// clash check existing scaffold rotamers
+    						// #pragma omp critical
+    						// {
+    						// 	pose_to_min.dump_pdb("test0.pdb");
+    						// 	xform_pose(pose_to_min, eigen2xyz(Xtorifframe));
+    						// 	pose_to_min.dump_pdb("test1.pdb");
+    						// 	utility_exit_with_message("foo");
+    						// }
+
+    						std::vector<int> replaced_scaffold_res, rifres;
+    						auto alaop = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA" ) );
+
+    						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
+
+    						std::vector<int> rifatypemap = get_rif_atype_map();
+    						for( int ir = 1; ir <= scaffold.size(); ++ir){
+    							auto const & ires = pose_to_min.residue(ir);
+    							if( !ires.is_protein() ) continue;
+    							if( ires.aa()==core::chemical::aa_gly ||
+    								ires.aa()==core::chemical::aa_ala ||
+    								ires.aa()==core::chemical::aa_pro ) continue;
+    							if(is_rif_res[ir-1]){
+    								rifres.push_back(ir);
+    								continue;
+    							}
+    							if(is_scaffold_fixed_res[ir]) continue;
+    							bool ir_clash = false;
+
+    							// check against target_field_by_atype
+    							float evtarget = 0.0;
+    							for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+    								auto const & ixyz = ires.xyz(ia);
+
+    								Eigen::Vector3f satm;
+    								for(int k = 0; k < 3; ++k) satm[k] = ixyz[k];
+    								satm = Xtorifframe * satm;
+    								int const irifatype = rifatypemap[ires.atom_type_index(ia)];
+    								evtarget += target_field_by_atype.at(irifatype)->at(satm);
+    							}
+    							if( evtarget > 3.0f ) ir_clash = true;
+
+    							// check against other rif res
+    							for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    								int jr = 1+scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    								auto const & jres = pose_to_min.residue(jr);
+    								// should do rsd nbr check... but speed not critical here ATM...
+    								for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
+    									auto const & ixyz = ires.xyz(ia);
+    									for( int ja = 6; ja <= jres.nheavyatoms(); ++ja){
+    										auto const & jxyz = jres.xyz(ja);
+    										if( ixyz.distance_squared(jxyz) < 9.0 ){
+    											ir_clash = true;
+    										}
+    									}
+    								}
+    							}
+    							if(ir_clash){
+    								pose_to_min.replace_residue(ir, *alaop, true);
+    								replaced_scaffold_res.push_back(ir);
+    							}
+    						}
+
+    						// pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_after.pdb");
+    						// if(imin >= 9) utility_exit_with_message("testing...aorsenoi");
+
+
+    						end = std::chrono::high_resolution_clock::now();
+    						std::chrono::duration<double> elapsed_seconds_copypose = end-start;
+    						#pragma omp critical
+    						time_copy += elapsed_seconds_copypose;
+    						// pose_to_min.dump_pdb("test_pre.pdb");
+
+    						if( minimizing ){
+    							// std::cout << "MIN!" << std::endl;
+    					        // start = std::chrono::high_resolution_clock::now();
+    					        // #pragma omp critical
+    					        // {
+    						       //  pose_to_min.dump_pdb("min_"+str(imin)+"_before.pdb");
+    								minmover_pt[ithread]->apply( pose_to_min );
+    						    //     pose_to_min.dump_pdb("min_"+str(imin)+"_after.pdb");
+    						    //     utility_exit_with_message("test_min");
+    						    // }
+    					        end = std::chrono::high_resolution_clock::now();
+    							std::chrono::duration<double> elapsed_seconds_min = end-start;
+    							#pragma omp critical
+    							time_min += elapsed_seconds_min;
+    						} else {
+    							// std::cout << "SCORE!" << std::endl;
+    					        start = std::chrono::high_resolution_clock::now();
+    							scorefunc_pt[ithread]->score( pose_to_min );
+    					        end = std::chrono::high_resolution_clock::now();
+    							std::chrono::duration<double> elapsed_seconds_score = end-start;
+    							#pragma omp critical
+    							time_score += elapsed_seconds_score;
+    						}
+
+    						// if( target.size() == 1 ){
+    						// 	// ligand!
+    						// 	float total_lj_neg  = scorefunc_pt[ithread]->get_weight(core::scoring::fa_atr) * pose_to_min.energies().total_energies()[core::scoring::fa_atr];
+    						// 	      total_lj_neg += scorefunc_pt[ithread]->get_weight(core::scoring::fa_rep) * pose_to_min.energies().total_energies()[core::scoring::fa_rep];
+    						// 	      total_lj_neg = std::max(0.0f,total_lj_neg);
+    						// 	packed_results[imin].score  = 1.00*total_lj_neg;
+    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
+    						// 	packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.size());
+    						// 	for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
+    						// 		int ires = scaffres_l2g.at( packed_results[imin].rotamers().at(ipr).first );
+    						// 		packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
+    						// 	}
+    						// } else {
+    							// not ligand! compute the fixed-everything ddg
+    						if( opt.rosetta_score_total ){
+    							packed_results[imin].score = pose_to_min.energies().total_energy();
+    						} else {
+    							double rosetta_score = 0.0;
+    							auto const & weights = pose_to_min.energies().weights();
+    							if( !opt.rosetta_score_ddg_only ){
+    								for( int ir = 1; ir <= scaffold.size(); ++ir ){
+    									if( is_rif_res[ir-1] ){
+    										rosetta_score += pose_to_min.energies().onebody_energies(ir).dot(weights);
+    									}
+    								}
+    							}
+    							if( !opt.rosetta_score_ddg_only && target.size()==1 ){
+    								// is ligand, add it's internal energy
+    								rosetta_score += pose_to_min.energies().onebody_energies(pose_to_min.size()).dot(weights);
+    							}
+    							auto const & egraph = pose_to_min.energies().energy_graph();
+    							for(int ir = 1; ir <= egraph.num_nodes(); ++ir){
+    								for ( utility::graph::Graph::EdgeListConstIter
+    										iru  = egraph.get_node(ir)->const_upper_edge_list_begin(),
+    										irue = egraph.get_node(ir)->const_upper_edge_list_end();
+    										iru != irue; ++iru
+    								){
+    									EnergyEdge const & edge( static_cast< EnergyEdge const & > (**iru) );
+    									int jr = edge.get_second_node_ind();
+
+    									// this is DDG
+    									if( ir <= scaffold.size() && jr > scaffold.size() ){
+    										// ir in scaff, jr in target
+    										rosetta_score += edge.dot(weights);
+    									}
+    									if( !opt.rosetta_score_ddg_only && jr <= scaffold.size() ){
+    										// ir & jr in scaffold
+    										if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
+    											double const edgescore = edge.dot(weights);
+    											if( edgescore > 0.0 ){
+    												// always assess full score for bad interactions
+    												rosetta_score += edgescore;
+    											} else if( is_rif_res[ir-1] && is_rif_res[jr-1] ){
+    												// both rif residues
+    												rosetta_score += opt.rosetta_score_rifres_rifres_weight * edgescore;
+    												// bonus for hbonds between rif residues
+    												rosetta_score += edge[core::scoring::hbond_sc];
+    											} else {
+    												// rest: one rif res, one other scaff res
+    												rosetta_score += opt.rosetta_score_rifres_scaffold_weight * edgescore;
+    											}
+    										} else {
+    											// scaffold / scaffold ignored
+    										}
+    									}
+    								}
+    							}
+    							packed_results[imin].score = rosetta_score;
+    							// #pragma omp critical
+    							// std::cout << rosetta_score << std::endl;
+    						}
+
+
+    						if( (minimizing+1 == do_min)	 && packed_results[imin].score < opt.rosetta_score_cut ){
+    							packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
+    							for(int ir : rifres){
+    								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
+    							}
+    							for(int ir : replaced_scaffold_res){
+    								packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "PRUNED" );
+    							}
+    						}
+
+    						// #pragma omp critical
+    						// pose_to_min.energies().show(cout,pose_to_min.size());
+    						// pose_to_min.dump_pdb("test_post.pdb");
+    						// #pragma omp critical
+    						// std::cout << imin << " prescore: " << e_pre_min << " minscore: " << pose_to_min.energies().total_energy() << std::endl;
+    						// utility_exit_with_message("testing");
+    					} catch(...) {
+                            #pragma omp critical
+                            exception = std::current_exception();
+                        }
+
+                    } // end of OMP loop
+                    if( exception ) std::rethrow_exception(exception);
+
+>>>>>>> origin/brian
 					cout << endl;
 					__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 					{
@@ -1897,6 +2416,7 @@ int main(int argc, char *argv[]) {
 		        std::cout << oss.str();
 		        dokout << oss.str(); dokout.flush();
 
+		        std::vector< std::pair< int, std::string > > brians_infolabels;
 				 // crappy pdb io
 		        {
 
@@ -1935,6 +2455,19 @@ int main(int argc, char *argv[]) {
 									if( std::find( pikaa[ires+1].begin(), pikaa[ires+1].end(), oneletter ) == pikaa[ires+1].end() ){
 										pikaa[ires+1] += oneletter;
 									}
+
+
+									// Brian
+									std::pair< int, int > sat1_sat2 = rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
+
+									std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
+									std::cout << " ires: " << ires << " irot: " << irot << std::endl;
+
+									std::pair< int, std::string > brian_pair;
+									brian_pair.first = ires + 1;
+									brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);
+									brians_infolabels.push_back(brian_pair);
+
 								}
 
 							}
@@ -1962,6 +2495,7 @@ int main(int argc, char *argv[]) {
 					core::pose::Pose pose_from_rif;
 					if     ( opt.full_scaffold_output ) pose_from_rif = both_full_pose;
 					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;
+					else if( opt.output_full_scaffold_only ) pose_from_rif = scaffold_only_full_pose;
 					else                                pose_from_rif = both_pose;
 					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.size()+1, pose_from_rif.size() );
 					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.size() );
@@ -2003,6 +2537,11 @@ int main(int argc, char *argv[]) {
 							}
 						}
 					}
+
+					for ( auto p : brians_infolabels ) {
+						pose_to_dump.pdb_info()->add_reslabel(p.first, p.second);
+					}
+
 					// if( selected_result.pose_ ){
 					// 	for( auto p : pikaa ){
 					// 		std::cout << "residue " << p.first << " " << selected_result.pose_->residue(p.first).name() << " fa_rep: "

@@ -104,6 +104,7 @@ struct RifSceneObjectiveConfig
 	std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
 	int n_sat_groups;
 	int require_satisfaction;
+	int require_n_rifres;
 };
 
 

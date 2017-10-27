@@ -632,7 +632,9 @@ get_richardson_rot_data(
 	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -90,             12, 10 ) );//   -130 to -60
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -67 ,     62,  -80,             12, 10 ) );//   -130 to -60
 
-	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",      34 ,     62,   90,             12,  8 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,   70,             12,  8 ) );//   60 to 130
+	       rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,   90,             12,  8 ) );//   60 to 130
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "p90 ",     -34 ,     62,  110,             12,  8 ) );//   60 to 130
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -119,             16, 14 ) );//   -130 to -60
 	       rrdata["TRP"].push_back( RichardsonRotData( "t105",    -100 ,   -177, -105,             16, 14 ) );//   -130 to -60
@@ -642,7 +644,9 @@ get_richardson_rot_data(
 	       rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,   90,             10, 11 ) );//   0 to 100
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "t90 ",    -109 ,   -177,  101,             10, 11 ) );//   0 to 100
 
-	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",      48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,  -40,              9, 20 ) );//   -40 to 20
+	       rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   -5,              9, 20 ) );//   -40 to 20
+	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m0  ",     -48 ,    -65,   20,              9, 20 ) );//   -40 to 20
 
 	if(ER) rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   76,             11, 19 ) );//   60 to 130
 	       rrdata["TRP"].push_back( RichardsonRotData( "m95 ",    -195 ,    -65,   95,             11, 19 ) );//   60 to 130

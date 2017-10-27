@@ -48,6 +48,10 @@ struct RotamerScore {
 	static float data2float( Data data ){ return float(data)/_Divisor; }
 	static Data  float2data( float f ){ return Data( f*_Divisor ); }
 
+	bool do_i_satisfy_anything() const {
+		return false;
+	}
+
 	bool operator < ( THIS const & other ) const { return data_ > other.data_; } // reverse so low score is low
 	bool operator== ( THIS const & other ) const { return data_ == other.data_; }
 	bool operator!= ( THIS const & other ) const { return data_ != other.data_; }
@@ -80,19 +84,21 @@ std::ostream & operator << ( std::ostream & out, RotamerScore<Data,RBits,Div> co
 	return out;
 }
 
-template< int RotBits=0 >
+template<class _Dat=uint8_t >
 struct SatisfactionDatum {
-	uint8_t data_;
-	SatisfactionDatum() : data_(255) {}
-	SatisfactionDatum( uint8_t d ) : data_(d) {}
-	bool empty() const { return data_ == 255; }
-	bool not_empty() const { return data_ != 255; }
+	using Dat = _Dat;
+	Dat data_;
+	static int const MAXVAL = std::numeric_limits<Dat>::max();
+	SatisfactionDatum() : data_(MAXVAL) {}
+	SatisfactionDatum( Dat d ) : data_(d) {}
+	bool empty() const { return data_ == MAXVAL; }
+	bool not_empty() const { return data_ != MAXVAL; }
 	int target_sat_num() const { return (int)data_; }
 	int rotamer_sat_num() const { return 0; }
 	bool operator==(SatisfactionDatum const & o) const { return data_==o.data_; }
 } __attribute__((packed));
-template< int RotBits >
-std::ostream & operator << ( std::ostream & out, SatisfactionDatum<RotBits> const & val ){
+template<class D >
+std::ostream & operator << ( std::ostream & out, SatisfactionDatum<D> const & val ){
 	out << (int)val.data_;
 	return out;
 }
@@ -102,7 +108,7 @@ template<
 	class _Data = uint16_t,
 	int _RotamerBits = 9,
 	int _Divisor = -13,
-	class _SatDatum=SatisfactionDatum<>,
+	class _SatDatum=SatisfactionDatum<uint8_t>,
 	int _NSat=2
 >
 struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
@@ -120,11 +126,12 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 	RotamerScoreSat( Data rot, float score, int sat1=-1, int sat2=-1 ) : BASE(rot,score)
 	{
 		if( sat1 < 0 || NSat < 1 ) return;
-		ALWAYS_ASSERT( sat1 < 256 );
-		sat_data_[0].data_ = (uint8_t)sat1;
-		if( sat2 < 0 || NSat < 2 ) return;
-		ALWAYS_ASSERT( sat2 < 256 );
-		sat_data_[1].data_ = (uint8_t)sat2;
+		ALWAYS_ASSERT( sat1 < SatDatum::MAXVAL );
+		sat_data_[0].data_ = (typename SatDatum::Dat)sat1;
+		if( sat2 >= 0 && NSat >= 2 ){;
+			ALWAYS_ASSERT( sat2 < SatDatum::MAXVAL );
+			sat_data_[1].data_ = (typename SatDatum::Dat)sat2;
+		}
 		// std::cout << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << " " << sat1 << "/" << sat_data_[0] << " " << sat2 << "/" << sat_data_[1] << std::endl;
 	}
 	static std::string name()
@@ -135,6 +142,14 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 			 + "div=" + boost::lexical_cast<std::string>(BASE::Divisor)	 + ", "
 			 + std::string("nsat=") + boost::lexical_cast<std::string>(sizeof(SatDatum)*NSat)	  +" >";
 		return name;
+	}
+	bool do_i_satisfy_anything() const {
+		for( int isat = 0; isat < NSat; ++isat ){
+			if (sat_data_[isat].not_empty()){
+				return true;
+			}
+		}
+		return false;
 	}
 	template< class Array >
 	void get_sat_groups_raw( Array & sat_groups_out ) const {
@@ -147,12 +162,19 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if( sat_data_[isat].not_empty() ){
 				sat_groups_out.push_back( sat_data_[isat].target_sat_num() );
+				// std::cout << "Sat " << isat << " " << sat_data_[isat].target_sat_num() << std::endl;
+			} else {
+				// std::cout << "Sat " << isat << " Empty!!" << std::endl;
 			}
 		}
 	}
 	void mark_sat_groups( std::vector<bool> & sat_groups_mask ) const {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if( sat_data_[isat].not_empty() ){
+				int val = sat_data_[isat].target_sat_num();
+				if (val < 0 || val >= sat_groups_mask.size()) {
+					std::cout << "Sat" << val << std::endl;
+				}
 				sat_groups_mask[ sat_data_[isat].target_sat_num() ] = true;
 			}
 		}
@@ -219,6 +241,8 @@ std::ostream & operator << ( std::ostream & out, RotamerScoreSat<Data,RBits,Div,
 
 
 
+
+
 template<
 	int _N,
 	class _RotamerScore = RotamerScore<>
@@ -238,6 +262,18 @@ struct RotamerScores {
 		rotscores_.fill( RotScore::RotamerMask );
 	}
 
+
+	void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const {
+		for( int i = 0; i < N; ++i ){
+			if ( rotscores_[i].empty()) break;
+
+			uint64_t irot = rotscores_[i].rotamer();
+
+
+			out << rot_index_p->resname( irot ) << " " << rotscores_[i].score() << std::endl;
+			// rotscores_[i].super_print( out, rot_index_p );
+		}
+	}
 	// void add_rotamer( Data rot, float score ){
 		// add_rotamer( RotScore(rot,score) );
 	// }
@@ -299,6 +335,7 @@ struct RotamerScores {
 
 	float score( int i ) const { assert(i<N); return rotscores_[i].score(); }
 	Data rotamer( int i ) const { assert(i<N); return rotscores_[i].rotamer(); }
+	bool do_i_satisfy_anything(int i) const { assert(i<N); return rotscores_[i].do_i_satisfy_anything(); }
 
 	bool empty( int i ) const { return rotscores_[i].empty(); }
 

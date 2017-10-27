@@ -44,6 +44,8 @@ struct HackPackOpts
 	float rotamer_inclusion_threshold = -0.5;
 	float rotamer_onebody_inclusion_threshold = 5.0;
 	bool  init_with_best_1be_rots = true;
+	float user_rotamer_bonus_constant = -2;
+	float user_rotamer_bonus_per_chi = -2;
 };
 std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 	out << "HackPackOpts:"
@@ -58,6 +60,10 @@ std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 		<< "\n  rotamer_inclusion_threshold " << hpo.rotamer_inclusion_threshold
 		<< "\n  rotamer_onebody_inclusion_threshold " << hpo.rotamer_onebody_inclusion_threshold
 		<< "\n  init_with_best_1be_rots " << hpo.init_with_best_1be_rots
+		<< "\n  user_rotamer_bonus_constant " << hpo.user_rotamer_bonus_constant 
+		<< "\n  user_rotamer_bonus_per_chi" << hpo.user_rotamer_bonus_per_chi
+
+
 	    << std::endl;
 	return out;
 }
@@ -124,6 +130,7 @@ struct HackPack
 		ALWAYS_ASSERT( 0 <= ires && ires < twob_.all2sel_.shape()[0] );
 		ALWAYS_ASSERT( 0 <= irotglobal && irotglobal < twob_.all2sel_.shape()[1] );
 		int32_t irotlocal = twob_.all2sel_[ires][irotglobal];
+		// std::cout << "irotlocal" << irotlocal << std::endl;
 		if( irotlocal >= 0 ){
 			if( nres_==0 || res_rots_.at(nres_-1).first != ires ){
 				++nres_;
@@ -139,6 +146,7 @@ struct HackPack
 			rot_list_.push_back( std::make_pair( nres_-1, res_rots_.at(nres_-1).second.size() ) );
 			res_rots_.at(nres_-1).second.push_back( RotInfo( irotlocal, onebody_e ) );
 		} else {
+			std::cout << "Error!!!: Rotamer not in twobody energies" << std::endl;
 			// static bool missingrotwarn = true;
 			// if( missingrotwarn ){
 			// 	#ifdef USE_OPENMP
@@ -399,7 +407,7 @@ struct HackPack
 		}
 
 		int const ntrials = opts_.pack_n_iters;
-		int const pack_iters = opts_.pack_iter_mult * rot_list_.size();
+		int const pack_iters = opts_.pack_iter_mult * rot_list_.size()+10;
 		global_best_score_ = 9e9;
 		for( int k = 0; k < ntrials; ++k ){
 			if( k > 0 ) assign_initial_rots();

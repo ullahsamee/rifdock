@@ -22,8 +22,12 @@ namespace rif {
 struct RifGeneratorUserHotspotsOpts {
 	float hotspot_sample_cart_bound = 1.0;
 	float hotspot_sample_angle_bound = 30.0;
+    float hotspot_score_thresh = -0.5;
+    int   hotspot_nsamples = 10000;
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0.0;
+    bool  dump_hotspot_samples = false;
+	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
 };
 

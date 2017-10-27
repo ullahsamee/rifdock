@@ -51,7 +51,7 @@ rand_xform(
 
 
 template<class X>
-X rand_xform( 
+X rand_xform(
 	std::mt19937 & rng,
 	scalar<X> cart_bound = 512.0
 ){

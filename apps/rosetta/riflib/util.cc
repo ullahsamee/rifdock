@@ -309,7 +309,7 @@ append_pose_to_pose(
 	core::pose::Pose const & pose2,
 	bool new_chain
 ){
-	append_subpose_to_pose(pose1, pose2, 1, pose2.total_residue(), new_chain);
+	append_subpose_to_pose(pose1, pose2, 1, pose2.size(), new_chain);
 }
 
 
@@ -322,17 +322,17 @@ append_subpose_to_pose(
 	core::Size end_res,
 	bool new_chain
 ){
-	if ( pose2.total_residue()<start_res ) {
+	if ( pose2.size()<start_res ) {
 		std::cerr << "Provided starting residue number " << start_res
 			<< " less than number residues in appended pose. Nothing to do." << std::endl;
 	}
-	pose1.append_residue_by_jump(pose2.residue(start_res), pose1.total_residue() , "", "", new_chain);
+	pose1.append_residue_by_jump(pose2.residue(start_res), pose1.size() , "", "", new_chain);
 	for ( core::Size i=start_res+1; i<=end_res; ++i ) {
-		if ( pose2.residue(i).is_lower_terminus() ) {
+		if ( pose2.residue(i).is_lower_terminus() || !pose2.residue(i).is_protein() ) {
 			if ( i > 1 && pose2.chain(i) == pose2.chain(i-1) ) {
-				pose1.append_residue_by_jump(pose2.residue(i), pose1.total_residue(), "","", false);
+				pose1.append_residue_by_jump(pose2.residue(i), pose1.size(), "","", false);
 			} else {
-				pose1.append_residue_by_jump(pose2.residue(i), pose1.total_residue(), "","", true);
+				pose1.append_residue_by_jump(pose2.residue(i), pose1.size(), "","", true);
 			}
 		} else {
 			pose1.append_residue_by_bond(pose2.residue(i));

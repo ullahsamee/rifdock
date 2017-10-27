@@ -103,9 +103,9 @@ get_scheme_atoms(
 					continue;
 				}
 				int at = atypemap[ r.atom_type_index(ia) ];
-				if( at > 21 ){
-					// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-					std::cout << "WARNING: heavy atom type "<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+				if( at > N_ATYPE ){
+					// utility_exit_with_message("heavy atom type > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
+					std::cout << "WARNING: heavy atom type "<<r.atom_type_index(ia)<<" > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
 					          << " will treat as carbon for sterics!" << std::endl;
 					at = 5;
 				}
@@ -258,9 +258,9 @@ get_rosetta_fields_specified_cache_prefix(
 				for(int ia = 1; ia <= r.nheavyatoms(); ++ia){
 					if( r.is_virtual(ia) ) continue;
 					int at = atypemap[ r.atom_type_index(ia) ];
-					if( at > 21 ){
-						// utility_exit_with_message("heavy atom type > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
-						std::cout << "WARNING: heavy atom type"<<r.atom_type_index(ia)<<" > 21: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
+					if( at > N_ATYPE ){
+						// utility_exit_with_message("heavy atom type > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) );
+						std::cout << "WARNING: heavy atom type"<<r.atom_type_index(ia)<<" > N_ATYPE: "+str(at)+" "+r.name()+" "+r.atom_name(ia) 
 						          << " will treat as carbon for sterics!" << std::endl;
 						at = 5;
 					}
@@ -322,7 +322,8 @@ get_rosetta_fields_specified_cache_prefix(
 		#pragma omp parallel for schedule(dynamic,1)
 		#endif
 		for( int itype = 1; itype <= N_ATYPE; ++itype ){
-			if( exception ) continue;
+            if( exception ) continue;
+            if( opts.one_atype_only && itype != opts.one_atype_only ) continue;
 			try {
 				std::string cachefile = cache_prefix +"__atype"+boost::lexical_cast<std::string>(itype)+".rosetta_field.gz";
 
@@ -455,7 +456,8 @@ get_rosetta_bounding_fields_from_fba(
 
 	std::vector<std::pair<float,int> > jobs;
 	for( int iresl = RESLS.size()-1; iresl >= 0; --iresl ){
-		for( int itype = 1; itype <= 21; ++itype ){
+		for( int itype = 1; itype <= N_ATYPE; ++itype ){
+            if( opts.one_atype_only && itype != opts.one_atype_only ) continue;
 			jobs.push_back( std::make_pair( iresl, itype ) );
 		}
 	}
