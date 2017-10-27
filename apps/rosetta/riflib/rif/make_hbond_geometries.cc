@@ -67,6 +67,7 @@
 	#include <utility/io/ozstream.hh>
 	#include <utility/tools/make_vector1.hh>
 
+using namespace core;
 
 namespace devel {
 namespace scheme {

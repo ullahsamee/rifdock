@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
 	print_header( "preparing target" );
 	core::pose::PoseOP target = make_shared<core::pose::Pose>();
 	core::import_pose::pose_from_file( *target, target_fname );
-	std::cout << "target nres: " << target->n_residue() << std::endl;
+	std::cout << "target nres: " << target->size() << std::endl;
 	std::string target_tag = utility::file::file_basename( utility::file_basename( target_fname ) );
 
 	Vec target_center(0,0,0);
@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
 		target_center /= (double)count;
 		cout << "centering target from " << target_center << " to ( 0, 0, 0 )" << endl;
 		*target = target0;
-		for( int ir = 1; ir <= target0.n_residue(); ++ir ){
+		for( int ir = 1; ir <= target0.size(); ++ir ){
 			for( int ia = 1; ia <= target0.residue_type(ir).natoms(); ++ia ){
 				target->set_xyz( core::id::AtomID(ia,ir), target0.residue(ir).xyz(ia) - target_center );
 			}
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
 					using namespace boost::assign;
 					core::pose::Pose test;
 					core::import_pose::pose_from_file( test, option[rifgen::test_structures]()[1] );
-					for( int ir = 1; ir <= test.n_residue(); ++ir ){
+					for( int ir = 1; ir <= test.size(); ++ir ){
 						for( int ia = 1; ia <= test.residue_type(ir).natoms(); ++ia ){
 							core::id::AtomID aid(ia,ir);
 							test.set_xyz( aid, test.xyz( aid ) - target_center );
@@ -712,7 +712,7 @@ int main(int argc, char *argv[]) {
 			core::pose::Pose test;
 			core::import_pose::pose_from_file( test, testfile );
 			{
-				for( int ir = 1; ir <= test.n_residue(); ++ir ){
+				for( int ir = 1; ir <= test.size(); ++ir ){
 					for( int ia = 1; ia <= test.residue_type(ir).natoms(); ++ia ){
 						core::id::AtomID aid(ia,ir);
 						test.set_xyz( aid, test.xyz( aid ) - target_center );
@@ -725,14 +725,14 @@ int main(int argc, char *argv[]) {
 
 			std::vector<std::vector<float> > onebody_rotamer_energies; {
 				utility::vector1<core::Size> test_res;
-				for( int i = 1; i <= test.n_residue(); ++i) test_res.push_back(i);
+				for( int i = 1; i <= test.size(); ++i) test_res.push_back(i);
 				std::string cachefile = "__1BE_" + utility::file_basename( testfile ) + (replace_all_with_ala_1bre?"_ALLALA":"") + ".bin.gz";
 				get_onebody_rotamer_energies( test, test_res, rot_index, onebody_rotamer_energies, cache_data_path, cachefile, replace_all_with_ala_1bre );
 			}
 
 			typedef std::pair<int,Vec> ClashCrd;
 			std::vector< ClashCrd > clash_coords;
-			for( int ir = 1; ir <= test.n_residue(); ++ir ){ // very hacky clash_dis check
+			for( int ir = 1; ir <= test.size(); ++ir ){ // very hacky clash_dis check
 				if( ! test.residue(ir).is_protein() ) continue;
 				if( test.residue(ir).has("CA") ) clash_coords.push_back( std::make_pair( ir, test.residue(ir).xyz("CA") ) );
 				if( test.residue(ir).has("C" ) ) clash_coords.push_back( std::make_pair( ir, test.residue(ir).xyz("C" ) ) );
@@ -740,7 +740,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			// std::cout << "dump test results to " << resultfile << std::endl;
-			for( int ir = 1; ir <= test.n_residue(); ++ir){
+			for( int ir = 1; ir <= test.size(); ++ir){
 
 				// score native residue
 				// {

@@ -264,7 +264,7 @@ make_bounding_grids_failed(){
 				protocols::sic_dock::trans_pose( pose, trans );
 			}
 			std::vector<int> picked_res;
-			for( int ir = 1; ir <= pose.n_residue(); ++ir ) picked_res.push_back(ir);
+			for( int ir = 1; ir <= pose.size(); ++ir ) picked_res.push_back(ir);
 			numeric::random::random_permutation( picked_res, numeric::random::rg() );
 			std::vector<EigenXform> target_frames;
 			float score = 2.0 - (double)itest / ((double)option[sopt::num_test_points]()-1);

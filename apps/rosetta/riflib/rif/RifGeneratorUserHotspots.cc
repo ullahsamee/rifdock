@@ -83,7 +83,7 @@ namespace rif {
 			// read hotspot file into pose
 
 			// read in pdb files # i_hotspot_group
-			for( int i_hspot_res = 1; i_hspot_res <= pose.n_residue(); ++i_hspot_res ){
+			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
 
 				// for each irot that is the right restype (can be had from rot_intex_p)
 				int irot_begin = 0, irot_end=0;
