@@ -49,6 +49,8 @@ namespace impl {
 		shared_ptr<CacheData> cache_data_;
 	};
 
+	// Brian - Even though this thing is templated on Index, when I showed up it didn't use Index
+	//   This class shall remain templated on Index, but let it be known that Index is not used or respected
 	///@brief holds a Conformation pointer and an Xform
 	template<
 		class _Conformation,
@@ -294,6 +296,43 @@ namespace impl {
 }
 
 
+// ScaffoldProviderScene makes these assumptions
+// - Only one body is going to be using a ScaffoldProvider
+
+	template<
+		class _ScaffoldProvider,
+		class _ScaffoldIndex,
+		class _Conformation,
+		class _Position,
+		class _Index = uint64_t
+	>
+	struct ScaffoldProviderScene : public SceneBase<_Position,_Index> {
+
+		typedef _ScaffoldProvider ScaffoldProvider;
+		typedef _ScaffoldIndex ScaffoldIndex;
+		typedef _Conformation Conformation;
+		typedef _Position Position;
+		typedef _Index Index;
+
+		typedef shared_ptr<_ScaffoldProvider> ScaffoldProviderOP;
+
+		ScaffoldProviderScene( ScaffoldProviderOP scaffold_provider, Index body_index ) :
+			scaffold_provider_(scaffold_provider),
+			body_index_(body_index) {}
+
+
+		void set_position(ScaffoldIndex si, Index i, Position const & newp) {
+			assert( scaffold_provider_ );
+			replace_body(body_index_, scaffold_provider_->get_scaffold(si));
+			set_position(i, newp);
+		}
+
+
+		ScaffoldProviderOP scaffold_provider_;
+		Index body_index_;
+	};
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////// Scene / //////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -395,6 +434,18 @@ namespace impl {
 			this->positions_.push_back(Position::Identity());
 			this->update_symmetry( (Index)bodies_.size() );
 			assert( bodies_.size() == this->positions_.size() );
+		}
+		// Replaces a body with an empty one without modifying it
+		void reset_body(Index i) {
+			bodies_.at(i) = make_shared<ConformationConst>();
+			this->positions_.at(i) = Position::Identity();
+			this->update_symmetry( (Index)bodies_.size() );
+		}
+		// Replaces a body with another one
+		// Does not reset position
+		void replace_body(Index i, ConformationConst conformation) {
+			bodies_.at(i) = conformation;
+			this->update_symmetry( (Index)bodies_.size() );
 		}
 		// void add_body(Body const & b){
 		// 	bodies_.push_back(b);

@@ -1,3 +1,8 @@
+
+#ifndef INCLUDED_types_hh
+#define INCLUDED_types_hh
+
+
 #include <stdint.h>
 
 #ifndef CXX11
@@ -19,4 +24,12 @@ namespace scheme {
 	using std::make_shared;
 	using std::enable_shared_from_this;
 
+    template< typename T >
+    struct Bounds {
+        T lo;
+        T hi;
+    };
+
 }
+
+#endif

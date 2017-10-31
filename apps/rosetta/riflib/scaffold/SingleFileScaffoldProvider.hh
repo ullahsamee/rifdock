@@ -7,8 +7,8 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#ifndef INCLUDED_riflib_scaffold_MorphingScaffoldProvider_hh
-#define INCLUDED_riflib_scaffold_MorphingScaffoldProvider_hh
+#ifndef INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
+#define INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
@@ -32,37 +32,26 @@ namespace scheme {
 
 
 
-struct MorphInfo {
-    ::scheme::Bounds<uint64_t> morph_range;
-};
+struct SingleFileScaffoldProvider :
+    public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, uint64_t, uint64_t> {
 
-typedef shared_ptr<MorphInfo> MorphInfoOP;
-typedef shared_ptr<MorphInfo const> MorphInfoCOP;
+    SingleFileScaffoldProvider();
 
 
-struct MorphMember {
-    core::pose::PoseCOP pose;
-    ParametricSceneConformation conformation;
-    MorphInfoCOP morph_info;
-};
+    ParametricSceneConformationCOP get_scaffold(uint64_t i) override;
+
+    uint64_t get_scaffold_index_limits() override;
+
+    ScaffoldDataCacheOP temp_function__get_writable_data_cache() {
+        temp_data__data_cache_ = make_shared<ScaffoldDataCache>();
+        return temp_data__data_cache_;
+    }
 
 
+    ParametricSceneConformationOP conformation_;
+    core::pose::PoseCOP pose_;
 
-
-struct MorphingScaffoldProvider :
-    public ::scheme::scaffold::TreeScaffoldProvider<ParametricSceneConformation> {
-
-    MorphingScaffoldProvider(); 
-
-
-    ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
-
-    ::scheme::scaffold::TreeLimits get_scaffold_index_limits() override;
-
-
-    // By definition, all members at depth 0 are provided by
-    // the user
-    std::vector< std::vector< MorphMember > > map_;
+    ScaffoldDataCacheOP temp_data__data_cache_;
 
 };
 

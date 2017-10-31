@@ -9,26 +9,29 @@
 
 
 
-#ifndef INCLUDED_riflib_types_hh
-#define INCLUDED_riflib_types_hh
+#ifndef INCLUDED_riflib_scaffold_util_hh
+#define INCLUDED_riflib_scaffold_util_hh
+
 
 #include <scheme/types.hh>
-#include <stdint.h>
-#include <Eigen/Geometry>
-#include <scheme/objective/voxel/VoxelArray.hh>
+
+
 
 namespace devel {
 namespace scheme {
 
-	typedef ::Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
-	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
-	typedef VoxelArray* VoxelArrayPtr;
-	using ::scheme::shared_ptr;
-	using ::scheme::make_shared;
-	using ::scheme::enable_shared_from_this;
+
+struct ScaffoldDataCache {
+    std::vector<std::vector<float> > const * rotamer_energies_1b_;
+
+};
 
 
-}
-}
+typedef shared_ptr<ScaffoldDataCache> ScaffoldDataCacheOP;
+typedef shared_ptr<ScaffoldDataCache const > ScaffoldDataCacheCOP;
+
+}}
+
+
 
 #endif
