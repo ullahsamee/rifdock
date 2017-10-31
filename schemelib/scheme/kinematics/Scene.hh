@@ -46,6 +46,7 @@ namespace impl {
 			this->template get<Actor>().insert(this->template get<Actor>().end(),a);
 		}
 
+		// access this directly, no getters or setters
 		shared_ptr<CacheData> cache_data_;
 	};
 
@@ -296,41 +297,6 @@ namespace impl {
 }
 
 
-// ScaffoldProviderScene makes these assumptions
-// - Only one body is going to be using a ScaffoldProvider
-
-	template<
-		class _ScaffoldProvider,
-		class _ScaffoldIndex,
-		class _Conformation,
-		class _Position,
-		class _Index = uint64_t
-	>
-	struct ScaffoldProviderScene : public SceneBase<_Position,_Index> {
-
-		typedef _ScaffoldProvider ScaffoldProvider;
-		typedef _ScaffoldIndex ScaffoldIndex;
-		typedef _Conformation Conformation;
-		typedef _Position Position;
-		typedef _Index Index;
-
-		typedef shared_ptr<_ScaffoldProvider> ScaffoldProviderOP;
-
-		ScaffoldProviderScene( ScaffoldProviderOP scaffold_provider, Index body_index ) :
-			scaffold_provider_(scaffold_provider),
-			body_index_(body_index) {}
-
-
-		void set_position(ScaffoldIndex si, Index i, Position const & newp) {
-			assert( scaffold_provider_ );
-			replace_body(body_index_, scaffold_provider_->get_scaffold(si));
-			set_position(i, newp);
-		}
-
-
-		ScaffoldProviderOP scaffold_provider_;
-		Index body_index_;
-	};
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -923,6 +889,53 @@ namespace impl {
 		ActorDumpPDB<Scene,MetaData> dumper( scene, out, meta );
 		boost::mpl::for_each< typename Scene::Actors >( dumper );
 	}
+
+
+// ScaffoldProviderScene makes these assumptions
+// - Only one body is going to be using a ScaffoldProvider
+
+	template<
+		class _ScaffoldProvider,
+		class _Conformation,
+		class _Position,
+		class _Index = uint64_t
+	>
+	struct ScaffoldProviderScene : public Scene<_Conformation,_Position,_Index> {
+		typedef Scene<_Conformation,_Position,_Index> Parent;
+
+
+		typedef _ScaffoldProvider ScaffoldProvider;
+		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
+		typedef _Conformation Conformation;
+		typedef _Position Position;
+		typedef _Index Index;
+
+		typedef shared_ptr<_ScaffoldProvider> ScaffoldProviderOP;
+
+		// this must be the same as ScaffoldProviderNEST::DirectorValue
+		typedef std::pair<ScaffoldIndex,Position> DirectorPosition;
+
+		ScaffoldProviderScene( ScaffoldProviderOP scaffold_provider, Index body_index ) :
+			scaffold_provider_(scaffold_provider),
+			body_index_(body_index) {}
+
+
+		void set_position( Index i, DirectorPosition const & newp) {
+			assert( scaffold_provider_ );
+			Position const & p = newp.second;
+			if ( i == body_index_ ) {
+				replace_body( body_index_, scaffold_provider_->get_scaffold( newp.first ) );
+			}
+			Parent::set_position( i, p );
+		}
+
+
+	private:
+		ScaffoldProviderOP scaffold_provider_;
+		Index body_index_;
+
+	};
+
 
 
 }

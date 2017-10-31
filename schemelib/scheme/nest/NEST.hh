@@ -8,6 +8,7 @@
 #include "scheme/nest/pmap/UnitMap.hh"
 #include "scheme/util/meta/util.hh"
 #include "scheme/util/meta/print_type.hh"
+#include "scheme/scaffold/ScaffoldProviderBase.hh"
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -207,6 +208,7 @@ namespace nest {
 
 	}
 
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	/// Main NEST template
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,7 +248,9 @@ namespace nest {
 
 		typedef _Float Float;
 		typedef _Value Value;
+		typedef _Value DirectorValue;
 		typedef _Index Index;
+		typedef _Index DirectorIndex;
 		typedef typename boost::make_signed<Index>::type SignedIndex;
 		typedef NEST<DIM,Value,ParamMap,StoragePolicy,Index,Float,is_virtual> ThisType;
 		typedef util::SimpleArray<DIM,Index> Indices;
@@ -438,7 +442,7 @@ namespace nest {
 		}
 
 		bool
-		get_state( Index index, Index resl, Value & v ) const {
+		get_state( DirectorIndex index, Index resl, DirectorValue & v ) const {
 			return set_value( index, resl, v );
 		}
 
@@ -620,6 +624,52 @@ namespace nest {
 		 ) const {
     		return impl::wrap_virtual_get_indices( *this, val, resl, cell_index_out, indices_out );
 		}
+
+	};
+
+	template< int _DIM,
+		class _Value = util::SimpleArray<_DIM,double>,
+		template<int,class,class,class> class ParamMap = pmap::UnitMap,
+		template<class> class StoragePolicy = StoreValue,
+		class _Index = uint64_t,
+		class _Float = typename impl::get_Scalar_double< _Value>::type,
+		bool _is_virtual = true,
+		class _ScaffoldProvider = scaffold::ScaffoldProviderBase<uint64_t, uint64_t, uint64_t>
+	>
+	struct ScaffoldProviderNEST : NEST<_DIM,_Value,ParamMap,StoragePolicy,_Index,_Float,_is_virtual> {
+		typedef NEST<_DIM,_Value,ParamMap,StoragePolicy,_Index,_Float,_is_virtual> Parent;
+
+		typedef _ScaffoldProvider ScaffoldProvider;
+		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
+		typedef typename Parent::Index Index;
+		typedef typename Parent::Value Value;
+
+
+		typedef std::pair<ScaffoldIndex,Index> DirectorIndex;
+		// this must be the same as ScaffoldProviderScene::DirectorPosition
+		typedef std::pair<ScaffoldIndex,Value> DirectorValue;
+
+		bool
+		get_state( DirectorIndex index, Index resl, DirectorValue & v ) const override {
+			Value val;
+			bool ret_value = Parent::get_state( index.second, resl, val );
+			v = wrap_value( index.first, val );
+			return ret_value;
+		}
+
+		DirectorIndex size(int resl) const override {
+			return wrap_indexes( ScaffoldIndex(), Parent::size( resl ) );
+		}
+
+		DirectorIndex
+		wrap_indexes( ScaffoldIndex scaffold_index, Index index ) {
+			return DirectorIndex( scaffold_index, index );
+		}
+		DirectorValue
+		wrap_value( ScaffoldIndex scaffold_index, Value value ) {
+			return DirectorValue( scaffold_index, value );
+		}
+
 
 	};
 

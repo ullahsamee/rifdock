@@ -60,6 +60,8 @@ struct MorphingScaffoldProvider :
     ::scheme::scaffold::TreeLimits get_scaffold_index_limits() override;
 
 
+private:
+
     // By definition, all members at depth 0 are provided by
     // the user
     std::vector< std::vector< MorphMember > > map_;

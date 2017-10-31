@@ -54,14 +54,14 @@ struct Director
 template< class _Nest >
 struct NestDirector
  :  public Director<
-		typename _Nest::Value,
-		typename _Nest::Index,
-		typename _Nest::Index
+		typename _Nest::DirectorValue,
+		typename _Nest::DirectorIndex,
+		typename _Nest::DirectorIndex
 	> {
 	typedef _Nest Nest;
-	typedef typename Nest::Value Position;
-	typedef typename Nest::Index BigIndex;
-	typedef typename Nest::Index Index;
+	typedef typename Nest::DirectorValue Position;
+	typedef typename Nest::DirectorIndex BigIndex;
+	typedef typename Nest::DirectorIndex Index;
 	typedef SceneBase<Position,Index> Scene;
 
 	Index ibody_;
