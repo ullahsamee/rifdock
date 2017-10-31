@@ -20,12 +20,12 @@
 namespace devel {
 namespace scheme {
 
-MorphingScaffoldProvider::MorphingScaffoldProvider() {}
+// MorphingScaffoldProvider::MorphingScaffoldProvider() {}
 
 
-void MorphingScaffoldProvider::get_scaffold(MorphIndex i) {
+// void MorphingScaffoldProvider::get_scaffold(TreeIndex i) {
 
-}
+// }
 
 
 

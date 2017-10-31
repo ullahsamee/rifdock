@@ -184,7 +184,8 @@ namespace rif {
 			SceneAtom,
 			VoxelActor
 		> Actors;
-		typedef ::scheme::kinematics::Scene<Actors,EigenXform> Scene;
+		typedef ::scheme::kinematics::impl::Conformation<Actors> Conformation;
+		typedef ::scheme::kinematics::Scene<Conformation,EigenXform> Scene;
 		// typedef scheme::shared_ptr<scheme::kinematics::SceneBase<EigenXform> > SceneP;
 
 

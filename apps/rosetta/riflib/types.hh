@@ -27,6 +27,10 @@ namespace scheme {
 	using ::scheme::make_shared;
 	using ::scheme::enable_shared_from_this;
 
+    struct Range {
+        uint64_t lo;
+        uint64_t hi;
+    };
 
 }
 }

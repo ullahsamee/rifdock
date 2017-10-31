@@ -11,11 +11,16 @@
 #define INCLUDED_riflib_scaffold_MorphingScaffoldProvider_hh
 
 #include <riflib/types.hh>
+#include <riflib/rifdock_typedefs.hh>
 #include <riflib/scaffold/ScaffoldProviderBase.hh>
 
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
+
+#include <scheme/kinematics/Scene.hh>
+
+#include <core/pose/Pose.hh>
 
 // Key Assumptions of this class:
 // - Only one segment is morphable
@@ -28,8 +33,7 @@ namespace scheme {
 
 
 struct MorphInfo {
-    uint64_t low_mod_point;
-    uint64_t high_mod_point;
+    Range morph_range;
 };
 
 typedef shared_ptr<MorphInfo> MorphInfoOP;
@@ -38,19 +42,23 @@ typedef shared_ptr<MorphInfo const> MorphInfoCOP;
 
 struct MorphMember {
     core::pose::PoseCOP pose;
+    ParametricSceneConformation conformation;
     MorphInfoCOP morph_info;
 };
 
 
 
+
 struct MorphingScaffoldProvider :
-    public ScaffoldProviderBase<MorphIndex> {
+    public TreeScaffoldProvider<ParametricSceneConformation, ScaffoldDataCache> {
 
     MorphingScaffoldProvider(); 
 
 
-    void get_scaffold(MorphIndex i) override;
+    ParametricSceneConformation get_scaffold(TreeIndex i) override;
+    ScaffoldDataCache get_scaffold_cache() override;
 
+    TreeLimits get_index_limits() override;
 
 
     // By definition, all members at depth 0 are provided by

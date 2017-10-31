@@ -10,6 +10,7 @@
 #include <riflib/RifFactory.hh>
 
 #include <riflib/util.hh>
+#include <riflib/rifdock_typedefs.hh>
 
 #include <utility/io/izstream.hh>
 #include <utility/file/file_sys_util.hh>
@@ -585,27 +586,6 @@ struct RifFactoryImpl :
 	enable_shared_from_this< RifFactoryImpl<XMap> >
  {
 
-	typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
-
-	typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
-
-	typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
-
-	typedef ::scheme::actor::Score_Voxel_vs_Atom<
-			VoxelActor,
-			SimpleAtom,
-			false
-		> MyClashScore;
-
-	typedef ::scheme::kinematics::Scene<
-			boost::mpl::vector<
-				BBActor,
-				SimpleAtom,
-				VoxelActor,
-				RIFAnchor
-			>,
-			EigenXform
-		> ParametricScene;
 
 	typedef ScoreBBActorVsRIF<
 			BBActor,

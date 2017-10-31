@@ -37,7 +37,7 @@ namespace f = boost::fusion;
 
 namespace impl {
 
-	template< class ActorContainer >
+	template< class ActorContainer, class CacheData=uint64_t >
 	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
 		typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
 		Conformation(){}
@@ -45,6 +45,8 @@ namespace impl {
 		void add_actor(Actor const & a){
 			this->template get<Actor>().insert(this->template get<Actor>().end(),a);
 		}
+
+		shared_ptr<CacheData> cache_data_;
 	};
 
 	///@brief holds a Conformation pointer and an Xform
@@ -300,18 +302,23 @@ namespace impl {
 	template<typename T> T inverse(T const & t){ return t.inverse(); }
 
 	template<
-		class _ActorContainers,
+		class _Conformation,
 		class _Position,
 		class _Index = uint64_t
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
 
 		typedef SceneBase<_Position,_Index> Base;
-		typedef Scene<_ActorContainers,_Position,_Index> This;
+		typedef Scene<_Conformation,_Position,_Index> This;
 		typedef _Position Position;
 		typedef _Index Index;
-		typedef impl::Conformation<_ActorContainers> Conformation;
-		typedef impl::Conformation<_ActorContainers> ConformationConst;
+		// bcov
+		// old
+		// typedef impl::Conformation<_ActorContainers> Conformation;
+		// typedef impl::Conformation<_ActorContainers> ConformationConst;
+		// new
+		typedef _Conformation Conformation;
+		typedef _Conformation ConformationConst;
 		typedef typename Conformation::Actors Actors;
 		typedef impl::BodyTplt<Conformation,Index> Body;
 		typedef std::vector<Body> Bodies;

@@ -22,26 +22,33 @@ namespace devel {
 namespace scheme {
 
 template<
-    class _Index
+    class _Scaffold,
+    class _ScaffoldCache,
+    class _Index,
+    class _IndexLimits
 >
 struct ScaffoldProviderBase {
+    typedef _Scaffold Scaffold;
+    typedef _ScaffoldCache ScaffoldCache;
     typedef _Index Index;
+    typedef _IndexLimits IndexLimits;
     ScaffoldProviderBase() {}
 
 
-    virtual void get_scaffold(Index i) = 0;
+    virtual Scaffold get_scaffold(Index i) = 0;
+    virtual ScaffoldCache get_scaffold_cache() = 0;
 
+    virtual IndexLimits get_index_limits() = 0;
 
 };
 
-template<typename _Index>
-using ScaffoldProviderOP = shared_ptr<ScaffoldProviderBase< _Index > >;
-template<typename _Index>
-using ScaffoldProviderCOP = shared_ptr<ScaffoldProviderBase< _Index > const >;
+template<typename _Scaffold, typename _ScaffoldCache, typename _Index, typename _IndexLimits>
+using ScaffoldProviderOP = shared_ptr<ScaffoldProviderBase< _Scaffold, _ScaffoldCache, _Index, _IndexLimits > >;
+template<typename _Scaffold, typename _ScaffoldCache, typename _Index, typename _IndexLimits>
+using ScaffoldProviderCOP = shared_ptr<ScaffoldProviderBase< _Scaffold, _ScaffoldCache, _Index, _IndexLimits > const >;
 
 
 // Key Assumptions of this class:
-// - All unvisited TreeIndexes are equal
 
 
 struct TreeIndex {
@@ -54,46 +61,51 @@ struct TreeRelation {
     uint64_t parent_member;
     uint64_t first_child;
     uint64_t last_child;
-}
+};
 
+typedef std::vector<Range> TreeLimits;
+
+
+template<
+    class _Scaffold,
+    class _ScaffoldCache
+>
 struct TreeScaffoldProvider :
-    public ScaffoldProviderBase<TreeIndex> {
-
-    TreeScaffoldProvider() {
-        clear_new_children();
-    }
+    public ScaffoldProviderBase<_Scaffold, _ScaffoldCache, TreeIndex, TreeLimits> {
+    typedef _Scaffold Scaffold;
+    typedef _ScaffoldCache ScaffoldCache;
 
 
-    virtual void get_scaffold(TreeIndex i) = 0;
+    virtual Scaffold get_scaffold(TreeIndex i) = 0;
+    virtual ScaffoldCache get_scaffold_cache() = 0;
 
     virtual void fill_children(TreeIndex i) = 0;
 
-    shared_ptr<std::vector<TreeIndex const> > get_new_children() {
-        shared_ptr<std::vector<TreeIndex const> > to_ret = new_children_;
-        clear_new_children();
-        return to_ret;
-        
-    }
+    virtual TreeLimits get_index_limits() = 0;
 
-    shared_ptr<std::vector<TreeIndex const> > new_children_;
-
-protected:
-    void add_new_child(TreeIndex const index) {
-        new_children_.push_back(index);
-    }
-
-private:
-    void clear_new_children() {
-        new_children_ = shared_ptr<std::vector<TreeIndex const> >( new std::vector<TreeIndex const>() );
-    }
 
 };
 
 
-template<typename _Index>
-using ScaffoldProviderOP = shared_ptr<ScaffoldProviderBase< _Index > >;
-template<typename _Index>
-using ScaffoldProviderCOP = shared_ptr<ScaffoldProviderBase< _Index > const >;
+template<typename _Scaffold, typename _ScaffoldCache>
+using TreeProviderOP = shared_ptr<TreeScaffoldProvider< _Scaffold, _ScaffoldCache > >;
+template<typename _Scaffold, typename _ScaffoldCache>
+using TreeProviderCOP = shared_ptr<TreeScaffoldProvider< _Scaffold, _ScaffoldCache > const >;
+
+
+
+struct ScaffoldDataCache {
+    std::vector<std::vector<float> > const * rotamer_energies_1b_;
+    
+};
+
+
+
+
+
+
+
+
 
 }}
 

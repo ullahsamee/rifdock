@@ -54,7 +54,7 @@ struct TestScoreBBactor {
 
 
 TEST( SpatialBandB, test_test_utils ){
-	typedef kinematics::Scene< boost::mpl::vector< BBActor > , Xform > Scene;
+	typedef kinematics::Scene< ::scheme::kinematics::impl::Conformation< boost::mpl::vector< BBActor > > , Xform > Scene;
 	typedef objective::ObjectiveFunction< boost::mpl::vector< TestScoreBBactor >, int > Objective;
 
 	Objective obj;
