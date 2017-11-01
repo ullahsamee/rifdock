@@ -1,3 +1,8 @@
+
+
+#ifndef INCLUDED_rif_dock_test_hh
+#define INCLUDED_rif_dock_test_hh
+
 #include <basic/options/option_macros.hh>
 #include <basic/options/keys/corrections.OptionKeys.gen.hh>
 #include <vector>
@@ -476,3 +481,4 @@ struct RifDockOpt
 	}
 };
 
+#endif

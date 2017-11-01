@@ -1,3 +1,6 @@
+#ifndef INCLUDED_search_HackPack_hh
+#define INCLUDED_search_HackPack_hh
+
 #include "scheme/objective/storage/TwoBodyTable.hh"
 
 	#include <random>
@@ -47,6 +50,7 @@ struct HackPackOpts
 	float user_rotamer_bonus_constant = -2;
 	float user_rotamer_bonus_per_chi = -2;
 };
+inline
 std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 	out << "HackPackOpts:"
 		<< "\n  pack_iter_mult " << hpo.pack_iter_mult
@@ -464,3 +468,6 @@ struct HackPack
 
 } // namespace search
 } // namespace scheme
+
+
+#endif
