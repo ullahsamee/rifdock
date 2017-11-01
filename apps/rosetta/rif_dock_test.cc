@@ -460,6 +460,17 @@ int main(int argc, char *argv[]) {
 		shared_ptr<RifFactory> rif_factory = ::devel::scheme::create_rif_factory( rif_factory_config );
 
 
+		// shared_ptr<RifFactory> rif_factory;
+		// if ( opt.scaffold_provider_type == "SingleFile" ) {
+		// 	rif_factory = ::devel::scheme::create_rif_factory<SingleFileScaffoldProvider>(rif_factory_config);
+		// } else if ( opt.scaffold_provider_type == "Alex" ) {
+		// 	rif_factory = ::devel::scheme::create_rif_factory<MorphingScaffoldProvider>(rif_factory_config);
+		// } else {
+		// 	utility_exit_with_message( "rif_dock_test: unknown scaffold provider type "+opt.scaffold_provider_type );
+		// }
+
+
+
 
 	print_header( "create rotamer index" );
 		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();

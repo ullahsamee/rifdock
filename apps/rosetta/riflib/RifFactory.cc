@@ -580,7 +580,7 @@ std::string get_rif_type_from_file( std::string fname )
 	std::ostream & operator<<( std::ostream & out, ScoreBBActorVsRIF<B,X,V> const& si ){ return out << si.name(); }
 
 
-template< class XMap, class _ScaffoldProvider >
+template< class XMap >
 struct RifFactoryImpl :
 	public RifFactory,
 	enable_shared_from_this< RifFactoryImpl<XMap> >
@@ -779,7 +779,6 @@ struct RifFactoryImpl :
 };
 
 
-template<_ScaffoldProvider>
 shared_ptr<RifFactory>
 create_rif_factory( RifFactoryConfig const & config )
 {
@@ -795,7 +794,7 @@ create_rif_factory( RifFactoryConfig const & config )
 			> crfXMap;
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 32 );
 
-		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
 	else if( config.rif_type == "RotScore64" )
 	{
@@ -809,7 +808,7 @@ create_rif_factory( RifFactoryConfig const & config )
 			> crfXMap;
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
 
-		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
 	else if( config.rif_type == "RotScore128" )
 	{
@@ -823,7 +822,7 @@ create_rif_factory( RifFactoryConfig const & config )
 			> crfXMap;
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
 
-		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
 	else if( config.rif_type == "RotScoreSat" )
 	{
@@ -837,7 +836,7 @@ create_rif_factory( RifFactoryConfig const & config )
 			> crfXMap;
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
 
-		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
 	else if( config.rif_type == "RotScoreSat_1x16" )
 	{
@@ -853,13 +852,98 @@ create_rif_factory( RifFactoryConfig const & config )
 			> crfXMap;
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
 
-		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 
 	} else
 	{
 		utility_exit_with_message( "create_rif_factory_inner: unknown rif type "+config.rif_type );
 	}
 }
+
+
+
+
+// template<_ScaffoldProvider>
+// shared_ptr<RifFactory>
+// create_rif_factory( RifFactoryConfig const & config )
+// {
+// 	if( config.rif_type == "RotScore" )
+// 	{
+// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
+// 		typedef ::scheme::objective::storage::RotamerScores< 12, crfRotScore > crfXMapValue;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 24 );
+// 		typedef ::scheme::objective::hash::XformMap<
+// 				EigenXform,
+// 				crfXMapValue,
+// 				::scheme::objective::hash::XformHash_bt24_BCC6
+// 			> crfXMap;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 32 );
+
+// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+// 	}
+// 	else if( config.rif_type == "RotScore64" )
+// 	{
+// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
+// 		typedef ::scheme::objective::storage::RotamerScores< 28, crfRotScore > crfXMapValue;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+// 		typedef ::scheme::objective::hash::XformMap<
+// 				EigenXform,
+// 				crfXMapValue,
+// 				::scheme::objective::hash::XformHash_bt24_BCC6
+// 			> crfXMap;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+// 	}
+// 	else if( config.rif_type == "RotScore128" )
+// 	{
+// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
+// 		typedef ::scheme::objective::storage::RotamerScores< 60, crfRotScore > crfXMapValue;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 120 );
+// 		typedef ::scheme::objective::hash::XformMap<
+// 				EigenXform,
+// 				crfXMapValue,
+// 				::scheme::objective::hash::XformHash_bt24_BCC6
+// 			> crfXMap;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
+
+// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+// 	}
+// 	else if( config.rif_type == "RotScoreSat" )
+// 	{
+// 		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
+// 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+// 		typedef ::scheme::objective::hash::XformMap<
+// 				EigenXform,
+// 				crfXMapValue,
+// 				::scheme::objective::hash::XformHash_bt24_BCC6
+// 			> crfXMap;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+// 	}
+// 	else if( config.rif_type == "RotScoreSat_1x16" )
+// 	{
+// 		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
+// 		typedef ::scheme::objective::storage::RotamerScoreSat<
+// 					uint16_t, 9, -13, SatDatum, 1> crfRotScore;
+// 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+// 		typedef ::scheme::objective::hash::XformMap<
+// 				EigenXform,
+// 				crfXMapValue,
+// 				::scheme::objective::hash::XformHash_bt24_BCC6
+// 			> crfXMap;
+// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
+
+// 	} else
+// 	{
+// 		utility_exit_with_message( "create_rif_factory_inner: unknown rif type "+config.rif_type );
+// 	}
+// }
 
 
 

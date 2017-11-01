@@ -56,13 +56,16 @@ typedef ::scheme::kinematics::impl::Conformation<
 typedef shared_ptr<ParametricSceneConformation> ParametricSceneConformationOP;
 typedef shared_ptr<ParametricSceneConformation const > ParametricSceneConformationCOP;
 
-template<typename _ScaffoldProvider>
-using ScaffoldProviderParametricScene ::scheme::kinematics::ScaffoldProviderScene<
-        _ScaffoldProvider,
+// template<typename _ScaffoldProvider>
+// using ScaffoldProviderParametricScene ::scheme::kinematics::ScaffoldProviderScene<
+//         _ScaffoldProvider,
+//         ParametricSceneConformation,
+//         EigenXform
+//     >;
+typedef ::scheme::kinematics::Scene<
         ParametricSceneConformation,
         EigenXform
-    >;
-
+    > ParametricScene;
 
 }
 }
