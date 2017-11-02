@@ -69,6 +69,7 @@
 
 // refactor
 	#include <riflib/rifdock_subroutines/util.hh>
+	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
 	#include <riflib/rifdock_subroutines/clustering.hh>
 	#include <riflib/rifdock_subroutines/output_results.hh>
@@ -1329,91 +1330,24 @@ int main(int argc, char *argv[]) {
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
 
-				if( opt.hack_pack ){
-
-					if( opt.use_scaffold_bounding_grids ){
-						if( 0 == scene_minimal->template num_actors<SimpleAtom>(0) ){
-							BOOST_FOREACH( SimpleAtom const & sa, target_simple_atoms )	scene_minimal->add_actor( 0, sa );
-							runtime_assert( scene_minimal->template num_actors<SimpleAtom>(0) == target_simple_atoms.size() );
-						}
-					} else {
-						// for final stage, use all scaffold atoms, not just CB ones
-						runtime_assert( scene_minimal->clear_actors<SimpleAtom>( 1 ) );
-						runtime_assert( scene_minimal->template num_actors<SimpleAtom>(1) == 0 );
-						BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms_all ) scene_minimal->add_actor( 1, sa );
-						runtime_assert( scene_minimal->template num_actors<SimpleAtom>(1) == scaffold_simple_atoms_all.size() );
-						// these should be shallow copies in scene_pt
-						// so editing scene_minimal will change all conformations
-						runtime_assert( scene_pt.front()->template num_actors<SimpleAtom>(1) == scaffold_simple_atoms_all.size() );
-					}
-
-					// if( scene_minimal->template num_actors<SimpleAtom>(0) == 0 ){
-					// 	for(int i = 0; i < 10; ++i) std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!! hackpack add sterics back !!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-					// 	BOOST_FOREACH( SimpleAtom const & sa, target_simple_atoms )	scene_minimal->add_actor( 0, sa );
-					// }
-					// runtime_assert( scene_minimal->template num_actors<SimpleAtom>(0) == target_simple_atoms.size() );
-
-				    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-			        start = std::chrono::high_resolution_clock::now();
-
-					size_t n_packsamp = 0;
-					for( n_packsamp; n_packsamp < samples.back().size(); ++n_packsamp ){
-						if( samples.back()[n_packsamp].score > 0 ) break;
-					}
-					int const config = RESLS.size()-1;
-					npack = std::min( n_packsamp, (size_t)(total_search_effort *
-						( opt.hack_pack_frac / (packopts.pack_n_iters*packopts.pack_iter_mult)) ) );
-					//////////////
-					// npack = 1;
-					/////////////
-					packed_results.resize( npack );
-					print_header( "hack-packing top " + KMGT(npack) );
-					std::cout << "packing options: " << packopts << std::endl;
-					std::cout << "packing w/rif rofts ";
-					int64_t const out_interval = std::max<int64_t>(1,npack/100);
-					std::exception_ptr exception = nullptr;
-					#ifdef USE_OPENMP
-					#pragma omp parallel for schedule(dynamic,64)
-					#endif
-					for( int ipack = 0; ipack < npack; ++ipack ){
-						if( exception ) continue;
-						try {
-							if( ipack%out_interval==0 ){ cout << '*'; cout.flush();	}
-							uint64_t const isamp = samples.back()[ipack].index;
-							if( samples.back()[ipack].score > opt.global_score_cut ) continue;
-							packed_results[ ipack ].index = isamp;
-							packed_results[ ipack ].prepack_rank = ipack;
-							ScenePtr tscene( scene_pt[omp_get_thread_num()] );
-							director->set_scene( isamp, RESLS.size()-1, *tscene );
-							packed_results[ ipack ].score = packing_objective->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
-						} catch( std::exception const & ex ) {
-							#ifdef USE_OPENMP
-							#pragma omp critical
-							#endif
-							exception = std::current_exception();
-						}
-					}
-					if( exception ) std::rethrow_exception(exception);
-			        end = std::chrono::high_resolution_clock::now();
-
-					std::cout << std::endl;
-					std::cout << "full sort of packed samples" << std::endl;
-					__gnu_parallel::sort( packed_results.begin(), packed_results.end() );
-
-					std::chrono::duration<double> elapsed_seconds_pack = end-start;
-					std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
-					std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
-
-				} else {
-					packed_results.resize( samples.back().size() );
-					#ifdef USE_OPENMP
-					#pragma omp parallel for schedule(dynamic,1024)
-					#endif
-					for( int ipack = 0; ipack < packed_results.size(); ++ipack ){
-						packed_results[ipack].score = samples.back()[ipack].score;
-						packed_results[ipack].index = samples.back()[ipack].index;
-					}
-				}
+		        {
+		        	HackPackData<DirectorBase> data {
+		        		opt,
+						RESLS,
+						director,
+						total_search_effort,
+						packed_results,
+						scene_pt,
+						scene_minimal,
+						target_simple_atoms,
+						scaffold_simple_atoms_all,
+						samples,
+						npack,
+						packopts,
+						packing_objective
+					};
+		        	hack_pack( data );
+		        }
 
 				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
 				time_pck += elapsed_seconds_pack.count();
