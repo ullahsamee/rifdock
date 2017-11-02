@@ -1035,7 +1035,7 @@ int old_main( RifDockOpt opt ) {
 
 
 
-			std::vector< SearchPointWithRots > packed_results;
+			shared_ptr<std::vector< SearchPointWithRots >> packed_results_p;
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			int64_t non0_space_size = 0;
 			int64_t npack = 0;
@@ -1077,6 +1077,21 @@ int old_main( RifDockOpt opt ) {
 				time_rif += elapsed_seconds_rif.count();
 
 
+
+			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p = make_shared<std::vector< SearchPointWithRots >>();
+			    std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
+
+
+			    hsearch_results.resize( samples.back().size() );
+			    #ifdef USE_OPENMP
+			    #pragma omp parallel for schedule(dynamic,1024)
+			    #endif
+			    for( int ipack = 0; ipack < hsearch_results.size(); ++ipack ){
+			        hsearch_results[ipack].score = samples.back()[ipack].score;
+			        hsearch_results[ipack].index = samples.back()[ipack].index;
+			    }
+
+
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1088,23 +1103,22 @@ int old_main( RifDockOpt opt ) {
 						RESLS,
 						director,
 						total_search_effort,
-						packed_results,
 						scene_pt,
 						scene_minimal,
 						target_simple_atoms,
 						scaffold_simple_atoms_all,
-						samples,
 						npack,
 						packopts,
-						packing_objective
+						packing_objective,
+						hsearch_results_p
 					};
-		        	hack_pack( data );
+		        	hack_pack( packed_results_p, data );
 		        }
 
 				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
 				time_pck += elapsed_seconds_pack.count();
 			}
-
+			std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
 
 
 			bool const do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;

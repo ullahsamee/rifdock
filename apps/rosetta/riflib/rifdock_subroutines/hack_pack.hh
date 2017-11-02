@@ -22,15 +22,14 @@ struct HackPackData {
     std::vector<float> & RESLS;
     DirectorBase & director;
     int64_t & total_search_effort;
-    std::vector< SearchPointWithRots > & packed_results;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     devel::scheme::ScenePtr & scene_minimal;
     std::vector<devel::scheme::SimpleAtom> & target_simple_atoms;
     std::vector<devel::scheme::SimpleAtom > & scaffold_simple_atoms_all;
-    std::vector< std::vector< SearchPoint > > & samples;
     int64_t & npack;
     ::scheme::search::HackPackOpts & packopts;
     devel::scheme::ObjectivePtr & packing_objective;
+    shared_ptr< std::vector< SearchPointWithRots > > & hsearch_results_p;
 };
 
 
@@ -38,6 +37,7 @@ struct HackPackData {
 template<class DirectorBase>
 void
 hack_pack(
+    shared_ptr<std::vector< SearchPointWithRots > > & packed_results_p,
     HackPackData<DirectorBase> & d) {
 
 
@@ -60,6 +60,10 @@ hack_pack(
 
 
     if( d.opt.hack_pack ){
+
+        std::vector< SearchPointWithRots > & hsearch_results = *d.hsearch_results_p;
+        packed_results_p = make_shared<std::vector< SearchPointWithRots >>();
+        std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
 
         if( d.opt.use_scaffold_bounding_grids ){
             if( 0 == d.scene_minimal->template num_actors<SimpleAtom>(0) ){
@@ -87,14 +91,14 @@ hack_pack(
         start = std::chrono::high_resolution_clock::now();
 
         size_t n_packsamp = 0;
-        for( n_packsamp; n_packsamp < d.samples.back().size(); ++n_packsamp ){
-            if( d.samples.back()[n_packsamp].score > 0 ) break;
+        for( n_packsamp; n_packsamp < hsearch_results.size(); ++n_packsamp ){
+            if( hsearch_results[n_packsamp].score > 0 ) break;
         }
         int const config = d.RESLS.size()-1;
         d.npack = std::min( n_packsamp, (size_t)(d.total_search_effort *
             ( d.opt.hack_pack_frac / (d.packopts.pack_n_iters*d.packopts.pack_iter_mult)) ) );
 
-        d.packed_results.resize( d.npack );
+        packed_results.resize( d.npack );
         print_header( "hack-packing top " + KMGT(d.npack) );
         std::cout << "packing options: " << d.packopts << std::endl;
         std::cout << "packing w/rif rofts ";
@@ -107,13 +111,13 @@ hack_pack(
             if( exception ) continue;
             try {
                 if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
-                uint64_t const isamp = d.samples.back()[ipack].index;
-                if( d.samples.back()[ipack].score > d.opt.global_score_cut ) continue;
-                d.packed_results[ ipack ].index = isamp;
-                d.packed_results[ ipack ].prepack_rank = ipack;
+                uint64_t const isamp = hsearch_results[ipack].index;
+                if( hsearch_results[ipack].score > d.opt.global_score_cut ) continue;
+                packed_results[ ipack ].index = isamp;
+                packed_results[ ipack ].prepack_rank = ipack;
                 ScenePtr tscene( d.scene_pt[omp_get_thread_num()] );
                 d.director->set_scene( isamp, d.RESLS.size()-1, *tscene );
-                d.packed_results[ ipack ].score = d.packing_objective->score_with_rotamers( *tscene, d.packed_results[ ipack ].rotamers() );
+                packed_results[ ipack ].score = d.packing_objective->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
             } catch( std::exception const & ex ) {
                 #ifdef USE_OPENMP
                 #pragma omp critical
@@ -126,22 +130,17 @@ hack_pack(
 
         std::cout << std::endl;
         std::cout << "full sort of packed samples" << std::endl;
-        __gnu_parallel::sort( d.packed_results.begin(), d.packed_results.end() );
+        __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 
         std::chrono::duration<double> elapsed_seconds_pack = end-start;
         std::cout << "packing rate: " << (double)d.npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
         std::cout << "packing rate: " << (double)d.npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
 
     } else {
-        d.packed_results.resize( d.samples.back().size() );
-        #ifdef USE_OPENMP
-        #pragma omp parallel for schedule(dynamic,1024)
-        #endif
-        for( int ipack = 0; ipack < d.packed_results.size(); ++ipack ){
-            d.packed_results[ipack].score = d.samples.back()[ipack].score;
-            d.packed_results[ipack].index = d.samples.back()[ipack].index;
-        }
+        packed_results_p = d.hsearch_results_p;
+
     }
+
 
 
 
