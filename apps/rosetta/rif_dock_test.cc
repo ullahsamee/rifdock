@@ -69,6 +69,9 @@
 
 // refactor
 	#include <riflib/rifdock_subroutines/util.hh>
+	
+	#include <riflib/rifdock_subroutines/hsearch_original.hh>
+
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
 	#include <riflib/rifdock_subroutines/clustering.hh>
@@ -965,19 +968,19 @@ int main(int argc, char *argv[]) {
 
 			}
 			cout << "scores for scaffold in original position: " << std::endl;
-			// {
-			// 	EigenXform x(EigenXform::Identity());
-			// 	x.translation() = scaffold_center;
-			// 	scene_minimal->set_position(1,x);
-			// 	for(int i = 0; i < RESLS.size(); ++i){
-			// 		std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-			// 		cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-			// 		     << F( 7, 3, sc[0]+sc[1] ) << " "
-			// 		     << F( 7, 3, sc[0]       ) << " "
-			// 		     << F( 7, 3, sc[1]       ) << endl;
-			// 	}
+			{
+				EigenXform x(EigenXform::Identity());
+				x.translation() = scaffold_center;
+				scene_minimal->set_position(1,x);
+				for(int i = 0; i < RESLS.size(); ++i){
+					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					     << F( 7, 3, sc[0]       ) << " "
+					     << F( 7, 3, sc[1]       ) << endl;
+				}
 
-			// }
+			}
 
 			// utility_exit_with_message("FOO");
 
@@ -1015,39 +1018,12 @@ int main(int argc, char *argv[]) {
 			}
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-
-
-			// these are in rosetta numbers
-			// int rmsd_resid1 = 107;
-			// int rmsd_resid2 = 54;
-			// int rmsd_resid3 = 13;
-
-
-			// utility::vector1<core::Size> rmsd_resids { rmsd_resid1, rmsd_resid2, rmsd_resid3 };
-			// std::vector<SchemeAtom> rmsd_atoms;
-			// devel::scheme::get_scheme_atoms_cbonly( scaffold_unmodified_from_file, rmsd_resids, rmsd_atoms);
-			
-			// SchemeAtom rmsd_cb1 = rmsd_atoms[0];
-			// SchemeAtom rmsd_cb2 = rmsd_atoms[1];
-			// SchemeAtom rmsd_cb3 = rmsd_atoms[2];
-
-			// std::cout << "Checking that we have the right CBetas for rmsd" << std::endl;
-			// std::cout << I(5, rmsd_resid1) << " " << rmsd_cb1.position().transpose() << std::endl;
-			// std::cout << I(5, rmsd_resid2) << " " << rmsd_cb2.position().transpose() << std::endl;
-			// std::cout << I(5, rmsd_resid3) << " " << rmsd_cb3.position().transpose() << std::endl;
-
-
-//////////////////////////////////////////////////////////////////////////////////////
-
-
 
 			std::vector< SearchPointWithRots > packed_results;
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			int64_t non0_space_size = 0;
 			int64_t npack = 0;
 			int64_t total_search_effort = 0;
-			bool search_failed = false;
 			{
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
 
@@ -1055,275 +1031,35 @@ int main(int argc, char *argv[]) {
 				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				std::vector< std::vector< SearchPoint > > samples( RESLS.size() );
+
 				{
-					samples[0].resize( director->size(0) );
-					for( uint64_t i = 0; i < director->size(0); ++i ) samples[0][i] = SearchPoint( i );
-					BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_shallow();
-					for( int iresl = 0; iresl < RESLS.size(); ++iresl )
-					{
-						cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[iresl].size()) << " samples: ";
-						int64_t const out_interval = samples[iresl].size()/50;
-						std::exception_ptr exception = nullptr;
-					    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-				        start = std::chrono::high_resolution_clock::now();
-				        total_search_effort += samples[iresl].size();
+					HsearchData<DirectorBase> data {
+						opt,
+						RESLS,
+						director,
+						total_search_effort,
+						scene_pt,
+						scene_minimal,
+						samples,
+						scaffold_center,
+						redundancy_filter_rg,
+						scaffold_centered,
+						target,
+						symmetries_clash_check,
+						scaffold_simple_atoms,
+						rot_index,
+						scaffold_bounding_by_atype,
+						objectives,
+						non0_space_size
 
-				        std::vector< double > rmsds( samples[iresl].size(), 1000 );
-
-				        bool answer_exists = false;
-
-						#ifdef USE_OPENMP
-						#pragma omp parallel for schedule(dynamic,64)
-						#endif
-						for( int64_t i = 0; i < samples[iresl].size(); ++i ){
-							if( exception ) continue;
-							try {
-								if( i%out_interval==0 ){ cout << '*'; cout.flush();	}
-								uint64_t const isamp = samples[iresl][i].index;
-
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-								// if ( isamp < 3000000000000000 && isamp != 47729600827993 && 
-								// 	 isamp != 745775012937 && isamp != 11652734577 &&
-								// 	 isamp != 182073977 && isamp != 2844905 ) {
-								// 	continue;
-								// }
-								// if ( isamp > 3000000000000000 && isamp != 3054694452991568 ) {
-								// 	continue;
-								// }
-
-
-								// money 3054694452991568
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-
-								ScenePtr tscene( scene_pt[omp_get_thread_num()] );
-								director->set_scene( isamp, iresl, *tscene );
-
-								if( opt.tether_to_input_position ){
-									EigenXform x = tscene->position(1);
-									x.translation() -= scaffold_center;
-									float xmag =  xform_magnitude( x, redundancy_filter_rg );
-									if( xmag > opt.tether_to_input_position_cut + RESLS[iresl] ){
-										samples[iresl][i].score = 9e9;
-										continue;
-									} else {
-										// std::cout << "inbounds " << iresl << " " << xform_magnitude( tscene->position(1), redundancy_filter_rg ) << std::endl;
-									}
-								}
-
-   								float tot_sym_score = 0;
-                                if( opt.nfold_symmetry > 1 ){
-									bool dump = false;
-									if( iresl == 2 ) dump = true;
-									if(dump){
-									    scaffold_centered.dump_pdb("test_scaff.pdb");
-									    target.dump_pdb("test_target.pdb");
-									}
-									EigenXform x = tscene->position(1);
-									EigenXform xinv = x.inverse();
-                                    for(int isym = 0; isym < symmetries_clash_check.size(); ++isym){
-                                        EigenXform const & xsym = symmetries_clash_check[isym];
-									// for( EigenXform const & xsym : symmetries_clash_check ){
-                                        utility::io::ozstream * outp = nullptr;
-                                        if(dump){
-                                            outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
-                                        }
-										EigenXform x_to_internal = xinv * xsym * x;
-										for( SimpleAtom a : scaffold_simple_atoms ){
-											a.set_position( x_to_internal * a.position() );
-		                            		if(dump) ::scheme::actor::write_pdb( *outp, a, rot_index_p->chem_index_ );
-		                                    float atom_score = scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
-		                                 	if( atom_score > 0.0 ){ // clash only
-			                                    tot_sym_score += atom_score;
-		                                 	}
-										}
-                                        if(dump){
-                                            outp->close();
-                                            delete outp;
-    									}
-                                    }
-									if(dump){
-										std::cout << "tot_sym_score " << tot_sym_score << std::endl;
-										utility_exit_with_message("testing symmetric clash check");
-									}
-                                }
-
-
-                                // the real rif score!!!!!!
-                                samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////
-
-								// if ( isamp == 3054694452991568 || isamp == 47729600827993 ||
-								// 	 isamp == 745775012937 || isamp == 11652734577 ||
-								// 	 isamp == 182073977 || isamp == 2844905 ) {
-
-
-        //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-                                
-        //                         	// float score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-								// 	// answer_exists = true;
-
-								// 	#pragma omp critical
-								// 	std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
-								// }
-
-
-
-        //                         const SimpleAtom scene_cb1 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid1-1);
-        //                         const SimpleAtom scene_cb2 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid2-1);
-        //                         const SimpleAtom scene_cb3 = tscene->template get_actor<SimpleAtom>(1, rmsd_resid3-1);
-
-        //                         const float cb1_dist2 = ( scene_cb1.position() - rmsd_cb1.position() ).squaredNorm();
-        //                         const float cb2_dist2 = ( scene_cb2.position() - rmsd_cb2.position() ).squaredNorm();
-        //                         const float cb3_dist2 = ( scene_cb3.position() - rmsd_cb3.position() ).squaredNorm();
-
-        //                         const float rmsd_squared = cb1_dist2 + cb2_dist2 + cb3_dist2;
-        //                         // const float rmsd = std::sqrt( (cb1_dist * cb1_dist + cb2_dist * cb2_dist + cb3_dist * cb3_dist) / 3.00 );
-
-        //                         rmsds[i] = rmsd_squared;
-
-        //                         samples[iresl][i].score = rmsd_squared - 200.0;
-
-        //                         if (isamp > 3000000000000000) {
-        //                         	// samples[iresl][i].score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-        //                         }
-
-
-                                // if ( isamp == 47780569615988) {
-                                // 	double score = objectives[iresl]->score( *tscene ) + tot_sym_score;
-                                // 	std::cout << "Score for the one: " << score << std::endl;
-                                // }
-
-                               	// #pragma omp critical
-                                // std::cout << I(20, isamp) << F(7, 1, cb1_dist) << F(7, 1, cb2_dist) << F(7, 1, cb3_dist) << std::endl;
-
-                               	// SimpleAtom sa = tscene->template get_actor<SimpleAtom>(1,0);
-                               	// SimpleAtom sa2 = tscene->template get_actor<SimpleAtom>(1,13);
-                               	// bool success = true;
-                               	// // // bool success = tscene->get_actor( 1, 0, sa ); 
-                               	// if ( success ) {
-                               	// 	#pragma omp critical
-                               	// 	std::cout << "Succss: " << I(8, isamp) << " SA: " << sa << sa2 << std::endl;
-                               	// } else {
-                               	// 	#pragma omp critical
-                               	// 	std::cout << "Failure" << std::endl;
-                               	// }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-							} catch( std::exception const & ex ) {
-								#ifdef USE_OPENMP
-								#pragma omp critical
-								#endif
-								exception = std::current_exception();
-							}
-						}
-						if( exception ) std::rethrow_exception(exception);
-				      	end = std::chrono::high_resolution_clock::now();
-						std::chrono::duration<double> elapsed_seconds_rif = end-start;
-						float rate = (double)samples[iresl].size()/ elapsed_seconds_rif.count()/omp_max_threads();
-						cout << endl;// << "done threaded sampling, partitioning data..." << endl;
-
-//////////////////////////////////////////////////////////////////////////////////////
-
-						// shared_ptr<DirectorOriTrans6D> nest_director = std::dynamic_pointer_cast<DirectorOriTrans6D>(director);
-						// NestOriTrans6D const & nest( nest_director->nest() );
-
-						// std::cout << "Sorting rmsds... " << std::endl;
-						// std::vector< uint64_t > sorted( rmsds.size() );
-						// uint64_t n = 0;
-						// std::generate( std::begin(sorted), std::end(sorted), [&]{ return n++; });
-						// std::sort( std::begin( sorted), std::end(sorted),
-						// 	[&](int i1, int i2) { return rmsds[i1] < rmsds[i2]; } );
-
-						// for ( uint64_t i = 0; i < 64; i++ ) {
-						// 	uint64_t index = sorted[i];
-						// 	SearchPoint sp = samples[iresl][index];
-						// 	uint64_t isamp = sp.index;
-
-
-						// 	EigenXform trans;
-						// 	bool success = nest.get_state( isamp, iresl, trans );
-
-						// 	Eigen::Matrix<float,3,3> rot;
-						// 	scheme::objective::hash::get_transform_rotation<float>( trans, rot );
-
-						// 	// Eigen::Matrix<double,3,3> rot2 = rot.cast<double>();
-
-						// 	Eigen::Vector3f axis;
-						// 	axis.setRandom();
-						// 	axis.normalize();
-						// 	Eigen::AngleAxisf angle_axis( rot );
-
-
-						// 	std::cout << I(20, isamp) << F(7, 1, rmsds[index]) << "  Trans: " 
-						// 	<< F(7, 1, trans.translation()[0]) 
-						// 	<< F(7, 1, trans.translation()[1]) 
-						// 	<< F(7, 1, trans.translation()[2]) 
-						// 	<< "  Angle: " << F(7, 1, angle_axis.angle()*180.0/M_PI) 
-						// 	<< "  Score: " << F(7, 2, sp.score)
-
-						// 	<< std::endl;
-						// }
-////////////////////////////////////////////////////////////////////////////////////////
-
-
-						SearchPoint max_pt, min_pt;
-						int64_t len = samples[iresl].size();
-						if( samples[iresl].size() > opt.beam_size/opt.DIMPOW2 ){
-							__gnu_parallel::nth_element( samples[iresl].begin(), samples[iresl].begin()+opt.beam_size/opt.DIMPOW2, samples[iresl].end() );
-							len = opt.beam_size/opt.DIMPOW2;
-							min_pt = *__gnu_parallel::min_element( samples[iresl].begin(), samples[iresl].begin()+len );
-							max_pt = *(samples[iresl].begin()+opt.beam_size/opt.DIMPOW2);
-						} else {
-							min_pt = *__gnu_parallel::min_element( samples[iresl].begin(), samples[iresl].end() );
-							max_pt = *__gnu_parallel::max_element( samples[iresl].begin(), samples[iresl].end() );
-						}
-
-						cout << "HSearsh stage " << iresl+1 << " complete, resl. " << F(7,3,RESLS[iresl]) << ", "
-							  << " " << KMGT(samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
-							  << F(9,6, std::min(opt.global_score_cut,max_pt.score)) << " rate " << KMGT(rate) << "/s/t " << std::endl;
-
-						// cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
-
-						if( iresl+1 == samples.size() ) break;
-
-						for( int64_t i = 0; i < len; ++i ){
-							uint64_t isamp0 = samples[iresl][i].index;
-							if( samples[iresl][i].score >= opt.global_score_cut ) continue;
-							if( iresl == 0 ) ++non0_space_size;
-							for( uint64_t j = 0; j < opt.DIMPOW2; ++j ){
-								uint64_t isamp = isamp0 * opt.DIMPOW2 + j;
-								samples[iresl+1].push_back( SearchPoint(isamp) );
-							}
-						}
-						if( 0 == samples[iresl+1].size() ){
-							search_failed = true;
-							std::cout << "search fail, no valid samples!" << std::endl;
-							break;
-						}
-						samples[iresl].clear();
-
-					}
-					if( search_failed ) continue;
-					std::cout << "full sort of final samples" << std::endl;
-					__gnu_parallel::sort( samples.back().begin(), samples.back().end() );
+					};
+					bool hsearch_success = hsearch_original( data );
+					if ( ! hsearch_success ) continue;
 				}
-				if( search_failed ) continue;
 
 				std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
 				time_rif += elapsed_seconds_rif.count();
 
-				std::cout << "total non-0 space size was approx " << float(non0_space_size)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
-				std::cout << "total search effort " << KMGT(total_search_effort) << std::endl;
 
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
@@ -1355,9 +1091,6 @@ int main(int argc, char *argv[]) {
 
 
 
-
-
-
 			bool const do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
 
 			if( do_rosetta_score && opt.hack_pack ){
@@ -1384,7 +1117,6 @@ int main(int argc, char *argv[]) {
 				rosetta_rescore( data );
 
 			}
-
 
 
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
