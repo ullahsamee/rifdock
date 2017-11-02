@@ -138,20 +138,6 @@ awful_compile_output_helper(
 
 
 
-template<class DirectorBase>
-struct CompileAndFilterResultsData {
-    RifDockOpt & opt;
-    std::vector< SearchPointWithRots > & packed_results;
-    std::vector<float> & RESLS;
-    std::vector< devel::scheme::ScenePtr > & scene_pt;
-    DirectorBase & director;
-    float & redundancy_filter_rg;
-    Eigen::Vector3f & scaffold_center;
-    omp_lock_t & dump_lock;
-    std::vector< devel::scheme::ObjectivePtr > & objectives;
-    devel::scheme::EigenXform & scaffold_perturb;
-
-};
 
 /*
  this needs to get fixed
@@ -180,6 +166,21 @@ struct CompileAndFilterResultsData {
 
 
 */
+
+template<class DirectorBase>
+struct CompileAndFilterResultsData {
+    RifDockOpt & opt;
+    std::vector< SearchPointWithRots > & packed_results;
+    std::vector<float> & RESLS;
+    std::vector< devel::scheme::ScenePtr > & scene_pt;
+    DirectorBase & director;
+    float & redundancy_filter_rg;
+    Eigen::Vector3f & scaffold_center;
+    omp_lock_t & dump_lock;
+    std::vector< devel::scheme::ObjectivePtr > & objectives;
+    devel::scheme::EigenXform & scaffold_perturb;
+
+};
 
 
 template<class DirectorBase>
