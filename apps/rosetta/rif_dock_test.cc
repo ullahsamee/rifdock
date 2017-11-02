@@ -74,7 +74,7 @@
 
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
-	#include <riflib/rifdock_subroutines/clustering.hh>
+	#include <riflib/rifdock_subroutines/compile_and_filter_results.hh>
 	#include <riflib/rifdock_subroutines/output_results.hh>
 
 
@@ -84,9 +84,38 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
+template<class HSearchDirector>
+int old_main( RifDockOpt opt );
 
 
 int main(int argc, char *argv[]) {
+
+	register_options();
+	devel::init(argc,argv);
+
+
+	devel::scheme::print_header( "setup global options" );
+	RifDockOpt opt;
+	opt.init_from_cli();
+	utility::file::create_directory_recursive( opt.outdir );
+
+	typedef ::scheme::nest::NEST< 6,
+							  devel::scheme::EigenXform,
+							  ::scheme::nest::pmap::OriTransMap,
+							  ::scheme::util::StoreNothing, // do not store a transform in the Nest
+							  uint64_t,
+							  float,
+							  false // do not inherit from NestBase
+							 > NestOriTrans6D;
+
+	typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
+
+	return old_main<DirectorOriTrans6D>( opt );
+
+}
+
+template<class HSearchDirector>
+int old_main( RifDockOpt opt ) {
 
 	#ifdef USE_OPENMP
 		omp_lock_t cout_lock, dump_lock;
@@ -94,8 +123,6 @@ int main(int argc, char *argv[]) {
 		omp_init_lock( &dump_lock );
 	#endif
 
-	register_options();
-	devel::init(argc,argv);
 
 	using namespace core::scoring;
 		using std::cout;
@@ -116,23 +143,12 @@ int main(int argc, char *argv[]) {
 	typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
-		typedef ::scheme::nest::NEST< 6,
-									  EigenXform,
-									  ::scheme::nest::pmap::OriTransMap,
-									  ::scheme::util::StoreNothing, // do not store a transform in the Nest
-									  uint64_t,
-									  float,
-									  false // do not inherit from NestBase
-									 > NestOriTrans6D;
 
-		typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
-		typedef shared_ptr< ::scheme::kinematics::Director<EigenXform> > DirectorBase;
+		typedef typename HSearchDirector::Position DirectorPosition;
+		typedef typename HSearchDirector::Index DirectorIndex;
+		typedef shared_ptr< ::scheme::kinematics::Director<DirectorPosition, DirectorIndex, DirectorIndex> > DirectorBase;
 
 
-	print_header( "setup global options" );
-		RifDockOpt opt;
-		opt.init_from_cli();
-		utility::file::create_directory_recursive( opt.outdir );
 
 		::scheme::search::HackPackOpts packopts;
 		packopts.pack_n_iters         = opt.pack_n_iters;
@@ -1010,7 +1026,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<DirectorOriTrans6D> director_concrete = make_shared<DirectorOriTrans6D>( rot_resl_deg0, lb, ub, nc, 1 );
+				shared_ptr<HSearchDirector> director_concrete = make_shared<HSearchDirector>( rot_resl_deg0, lb, ub, nc, 1 );
 				std::cout << "Director:" << endl << *director_concrete << endl;
 				director = director_concrete;
 				std::cout << "nest size0:    " << director->size(0) << std::endl;

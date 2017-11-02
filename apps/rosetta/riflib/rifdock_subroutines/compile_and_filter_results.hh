@@ -2,8 +2,8 @@
 // vi: set ts=2 noet:
 
 
-#ifndef INCLUDED_riflib_rifdock_subroutines_clustering_hh
-#define INCLUDED_riflib_rifdock_subroutines_clustering_hh
+#ifndef INCLUDED_riflib_rifdock_subroutines_compile_and_filter_results_hh
+#define INCLUDED_riflib_rifdock_subroutines_compile_and_filter_results_hh
 
 
 #include <riflib/types.hh>
