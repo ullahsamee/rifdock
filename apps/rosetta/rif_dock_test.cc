@@ -68,7 +68,9 @@
 
 
 // refactor
+	#include <riflib/rifdock_subroutines/util.hh>
 	#include <riflib/rifdock_subroutines/clustering.hh>
+	#include <riflib/rifdock_subroutines/output_results.hh>
 
 
 
@@ -76,83 +78,6 @@ using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
-
-// ::scheme::util::SimpleArray<3,float>
-Eigen::Vector3f
-pose_center(
-	core::pose::Pose const & pose,
-	utility::vector1<core::Size> const & useres = utility::vector1<core::Size>()
-){
-	typedef numeric::xyzVector<core::Real> Vec;
-	Vec cen(0,0,0);
-	int count = 0;
-	for( int ir = 1; ir <= pose.size(); ++ir ) {
-		if( useres.size()==0 || std::find(useres.begin(),useres.end(),ir)!=useres.end() ){
-			for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
-				cen += pose.xyz(core::id::AtomID(ia,ir));
-				++count;
-			}
-		// } else {
-			// std::cout << "pose_center skip " << ir << std::endl;
-		}
-	}
-	cen /= double(count);
-	// ::scheme::util::SimpleArray<3,float> center;
-	Eigen::Vector3f center;
-	center[0] = cen[0];
-	center[1] = cen[1];
-	center[2] = cen[2];
-	return center;
-}
-
-
-void
-get_rg_radius(
-	core::pose::Pose const & pose,
-	float & rg,
-	float & radius,
-	utility::vector1<core::Size> const & useres = utility::vector1<core::Size>(),
-	bool allatom = false
-){
-	Eigen::Vector3f centmp = pose_center( pose, useres );
-	numeric::xyzVector<double> cen;
-	float maxdis = -9e9, avgdis2 = 0.0;
-	for( int i = 0; i < 3; ++i ) cen[i] = centmp[i];
-	for( int iri = 1; iri <= useres.size(); ++iri ){
-		int ir = useres[iri];
-		if( allatom ){
-			for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
-				numeric::xyzVector<double> coord = pose.residue(ir).xyz(ia);
-				avgdis2 += cen.distance_squared( coord );
-				maxdis = std::max( maxdis, (float)cen.distance( coord ) );
-			}
-		} else {
-			numeric::xyzVector<double> coord;
-			if(      pose.residue(ir).has("CB") ) coord = pose.residue(ir).xyz("CB");
-			else if( pose.residue(ir).has("CA") ) coord = pose.residue(ir).xyz("CA");
-			else                                  coord = pose.residue(ir).nbr_atom_xyz();
-			avgdis2 += cen.distance_squared( coord );
-			maxdis = std::max( maxdis, (float)cen.distance( coord ) );
-		}
-	}
-	avgdis2 /= useres.size();
-	rg = sqrt( avgdis2 );
-	radius = maxdis;
-}
-
-
-
-void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::Size sres=1, core::Size eres=0 ) {
-  if(eres==0) eres = pose.size();
-  for(core::Size ir = sres; ir <= eres; ++ir) {
-    for(core::Size ia = 1; ia <= pose.residue_type(ir).natoms(); ++ia) {
-      core::id::AtomID const aid(core::id::AtomID(ia,ir));
-      pose.set_xyz( aid, s*pose.xyz(aid) );
-    }
-  }
-}
-
-
 
 
 
@@ -197,11 +122,6 @@ int main(int argc, char *argv[]) {
 
 		typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 		typedef shared_ptr< ::scheme::kinematics::Director<EigenXform> > DirectorBase;
-
-		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
-		typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
-
-		typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
 
 
 	print_header( "setup global options" );
@@ -1900,34 +1820,6 @@ int main(int argc, char *argv[]) {
 			print_header( "compile and filter results" ); ///////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			/*
-			 this needs to get fixed
-			 the job of this code:
-			 (1) do redundancy filtering
-			 (2) build selected_results, allresults from packed_results
-			 could probably split these up?
-			       packed_results is
-			       		struct SearchPointWithRots {
-							float score;
-							uint32_t prepack_rank;
-							uint64_t index;
-							shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
-							core::pose::PoseOP pose_ = nullptr;
-					allresults is
-						struct RifDockResult {
-							float dist0, packscore, nopackscore, rifscore, stericscore;
-							uint64_t isamp, scene_index;
-							uint32_t prepack_rank;
-							float cluster_score;
-							bool operator< ( RifDockResult const & o ) const { return packscore < o.packscore; }
-							shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
-							core::pose::PoseOP pose_ = nullptr;
-							size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
-							std::vector< std::pair<intRot,intRot> > const & rotamers() const { assert(rotamers_!=nullptr); return *rotamers_; }
-
-
-			*/
-
 
 			std::vector< RifDockResult > selected_results, allresults;
 			{
@@ -1967,197 +1859,30 @@ int main(int argc, char *argv[]) {
 				; // nothing with all results ATM
 			}
 
-
-
-			if( opt.align_to_scaffold )	std::cout << "ALIGN TO SCAFFOLD" << std::endl;
-			else                        std::cout << "ALIGN TO TARGET"   << std::endl;
-			for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
-				RifDockResult const & selected_result = selected_results.at( i_selected_result );
-
-				std::string pdboutfile = opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-				if( opt.output_tag.size() ){
-					pdboutfile = opt.outdir + "/" + scafftag+"_" + opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-				}
-
-				std::ostringstream oss;
-		        oss << "rif score: " << I(4,i_selected_result)
-		            << " rank "       << I(9,selected_result.isamp)
-		            << " dist0:    "  << F(7,2,selected_result.dist0)
-		            << " packscore: " << F(7,3,selected_result.packscore)
-		            // << " score: "     << F(7,3,selected_result.nopackscore)
-		            // << " rif: "       << F(7,3,selected_result.rifscore)
-		            << " steric: "    << F(7,3,selected_result.stericscore)
-		            << " cluster: "   << I(7,selected_result.cluster_score)
-		            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)npack)
-		            << " " << pdboutfile
-		            << std::endl;
-		        std::cout << oss.str();
-		        dokout << oss.str(); dokout.flush();
-
-		        std::vector< std::pair< int, std::string > > brians_infolabels;
-				 // crappy pdb io
-		        {
-
-					director->set_scene( selected_result.scene_index, RESLS.size()-1, *scene_full    );
-					director->set_scene( selected_result.scene_index, RESLS.size()-1, *scene_minimal );
-
-					EigenXform xposition1 = scene_full->position(1);
-					EigenXform xalignout = EigenXform::Identity();
-					if( opt.align_to_scaffold ){
-						xalignout = xposition1.inverse();
-					}
-
-					std::ostringstream packout, allout;
-					std::map< int, std::string > pikaa;
-					for( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); ++i_actor ){
-						BBActor bba = scene_minimal->template get_actor<BBActor>(1,i_actor);
-						int const ires = scaffres_l2g.at( bba.index_ );
-
-						// if( opt.dump_all_rif_rots )
-						{
-							std::vector< std::pair< float, int > > rotscores;
-							rif_ptrs.back()->get_rotamers_for_xform( bba.position(), rotscores );
-							typedef std::pair<float,int> PairFI;
-							BOOST_FOREACH( PairFI const & p, rotscores ){
-								int const irot = p.second;
-								float const sc = p.first + scaffold_onebody_glob0.at( ires ).at( irot );
-								if( sc < 0 ){
-									allout << "MODEL" << endl;
-									BOOST_FOREACH( SchemeAtom a, rot_index.rotamers_.at( irot ).atoms_ ){
-										a.set_position( xalignout * bba.position() * a.position() ); // is copy
-										a.nonconst_data().resnum = ires;
-										::scheme::actor::write_pdb( allout, a, nullptr );
-									}
-									allout << "ENDMDL" << endl;
-									char oneletter = rot_index_p->oneletter(irot);
-									if( std::find( pikaa[ires+1].begin(), pikaa[ires+1].end(), oneletter ) == pikaa[ires+1].end() ){
-										pikaa[ires+1] += oneletter;
-									}
-
-
-									// Brian
-									std::pair< int, int > sat1_sat2 = rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
-
-									std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
-									std::cout << " ires: " << ires << " irot: " << irot << std::endl;
-
-									std::pair< int, std::string > brian_pair;
-									brian_pair.first = ires + 1;
-									brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);
-									brians_infolabels.push_back(brian_pair);
-
-								}
-
-							}
-						}
-
-						int packed_rot = -1;
-						for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
-							// std::cout << "checking rots " << sp.rotamers()[ipr].first << " " << scaffres_g2l[ires] << std::endl;
-							if( selected_result.rotamers().at(ipr).first == scaffres_g2l.at( ires ) ){
-								packed_rot = selected_result.rotamers().at(ipr).second;
-							}
-						}
-						if( packed_rot >= 0 ){
-							// packout << "MODEL" << endl;
-							BOOST_FOREACH( SchemeAtom a, rot_index.rotamers_.at( packed_rot ).atoms_ ){
-								a.set_position( xalignout * bba.position() * a.position() ); // is copy
-								a.nonconst_data().resnum = ires;
-								::scheme::actor::write_pdb( packout, a, nullptr );
-							}
-							packout << "TER" << endl;
-						}
-
-					}
-
-					core::pose::Pose pose_from_rif;
-					if     ( opt.full_scaffold_output ) pose_from_rif = both_full_pose;
-					else if( opt.output_scaffold_only ) pose_from_rif = scaffold_only_pose;
-					else if( opt.output_full_scaffold_only ) pose_from_rif = scaffold_only_full_pose;
-					else                                pose_from_rif = both_pose;
-					xform_pose( pose_from_rif, eigen2xyz(xalignout)           , scaffold.size()+1, pose_from_rif.size() );
-					xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     scaffold.size() );
-
-					// place the rotamers
-					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-					std::ostringstream resfile, expdb;
-					resfile << "ALLAA" << std::endl;
-					resfile << "start" << std::endl;
-					expdb << "rif_residues ";
-
-					for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
-						int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
-						int irot =                  selected_result.rotamers().at(ipr).second;
-						core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
-						pose_from_rif.replace_residue( ires+1, *newrsd, true );
-						resfile << ires+1 << " A NATRO" << std::endl;
-						expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one
-						for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
-							pose_from_rif.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
-						}
-					}
-
-					bool using_rosetta_model = selected_result.pose_ != nullptr;
-					core::pose::Pose & pose_to_dump( *(selected_result.pose_ ? selected_result.pose_.get() : &pose_from_rif) );
-					utility::io::ozstream out1( pdboutfile );
-					// scene_full->set_position( 1, xalignout * xposition1 );
-					// write_pdb( out1, dynamic_cast<Scene&>(*scene_full), rot_index.chem_index_ );
-					if( !using_rosetta_model ){
-						if( opt.pdb_info_pikaa ){
-							for( auto p : pikaa ){
-								std::sort( p.second.begin(), p.second.end() );
-								pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
-								pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
-							}
-						} else {
-							for( auto p : pikaa ){
-								pose_to_dump.pdb_info()->add_reslabel(p.first, "RIFRES" );
-							}
-						}
-					}
-
-					for ( auto p : brians_infolabels ) {
-						pose_to_dump.pdb_info()->add_reslabel(p.first, p.second);
-					}
-
-					// if( selected_result.pose_ ){
-					// 	for( auto p : pikaa ){
-					// 		std::cout << "residue " << p.first << " " << selected_result.pose_->residue(p.first).name() << " fa_rep: "
-					// 		          << selected_result.pose_->energies().residue_total_energies(p.first)[core::scoring::fa_rep] << std::endl;
-					// 	}
-					// }
-
-					out1 << expdb.str() << std::endl;
-					pose_to_dump.dump_pdb(out1);
-					out1.close();
-
-
-					// utility::io::ozstream outtmp( pdboutfile + ".orig.pdb" );
-					// pose_from_rif.dump_pdb(outtmp);
-					// outtmp.close();
-
-
-
-					if( opt.dump_resfile ){
-						utility::io::ozstream out1res( opt.outdir + "/" + scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile");
-						out1res << resfile.str();
-						out1res.close();
-					}
-
-					if( opt.dump_all_rif_rots ){
-						// utility_exit_with_message("this is not currently implemented, ask Will");
-						utility::io::ozstream out2( opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz");
-						out2 << allout.str();
-						out2.close();
-					}
-
-					// utility::io::ozstream out4(scafftag+"_pack_rot_"+devel::scheme::str(i_selected_result,9)+".pdb");
-					// out4 << packout.str();
-					// out4.close();
-
-				} // end crappy pdb io
-
+			{
+				OutputResultsData<DirectorBase> data { opt, 
+					RESLS, 
+					director, 
+					selected_results,
+					scafftag,
+					npack,
+					dokout,
+					scene_full,
+					scene_minimal,
+					scaffres_g2l,
+					scaffres_l2g,
+					rif_ptrs,
+					scaffold_onebody_glob0,
+					rot_index,
+					scaffold,
+					both_pose,
+					both_full_pose,
+					scaffold_only_pose,
+					scaffold_only_full_pose
+				};
+				output_results(data);
 			}
+			
 
 		} catch( std::exception const & ex ) {
 			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
