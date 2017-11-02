@@ -1046,7 +1046,8 @@ int old_main( RifDockOpt opt ) {
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				std::vector< std::vector< SearchPoint > > samples( RESLS.size() );
+				
+			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
 
 				{
 					HsearchData<DirectorBase> data {
@@ -1056,7 +1057,6 @@ int old_main( RifDockOpt opt ) {
 						total_search_effort,
 						scene_pt,
 						scene_minimal,
-						samples,
 						scaffold_center,
 						redundancy_filter_rg,
 						scaffold_centered,
@@ -1069,7 +1069,7 @@ int old_main( RifDockOpt opt ) {
 						non0_space_size
 
 					};
-					bool hsearch_success = hsearch_original( data );
+					bool hsearch_success = hsearch_original( hsearch_results_p, data );
 					if ( ! hsearch_success ) continue;
 				}
 
@@ -1077,19 +1077,6 @@ int old_main( RifDockOpt opt ) {
 				time_rif += elapsed_seconds_rif.count();
 
 
-
-			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p = make_shared<std::vector< SearchPointWithRots >>();
-			    std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
-
-
-			    hsearch_results.resize( samples.back().size() );
-			    #ifdef USE_OPENMP
-			    #pragma omp parallel for schedule(dynamic,1024)
-			    #endif
-			    for( int ipack = 0; ipack < hsearch_results.size(); ++ipack ){
-			        hsearch_results[ipack].score = samples.back()[ipack].score;
-			        hsearch_results[ipack].index = samples.back()[ipack].index;
-			    }
 
 
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

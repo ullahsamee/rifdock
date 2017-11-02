@@ -24,7 +24,6 @@ struct HsearchData {
     int64_t & total_search_effort;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     devel::scheme::ScenePtr & scene_minimal;
-    std::vector< std::vector< SearchPoint > > & samples;
     Eigen::Vector3f & scaffold_center;
     float & redundancy_filter_rg;
     core::pose::Pose & scaffold_centered;
@@ -43,6 +42,7 @@ struct HsearchData {
 template<class DirectorBase>
 bool
 hsearch_original(
+    shared_ptr<std::vector< SearchPointWithRots > > & hsearch_results_p,
     HsearchData<DirectorBase> & d) {
 
 
@@ -89,34 +89,34 @@ hsearch_original(
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-
+    std::vector< std::vector< SearchPoint > > samples( d.RESLS.size() );
 
     bool search_failed = false;
     {
-        d.samples[0].resize( d.director->size(0) );
-        for( uint64_t i = 0; i < d.director->size(0); ++i ) d.samples[0][i] = SearchPoint( i );
+        samples[0].resize( d.director->size(0) );
+        for( uint64_t i = 0; i < d.director->size(0); ++i ) samples[0][i] = SearchPoint( i );
         BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_shallow();
         for( int iresl = 0; iresl < d.RESLS.size(); ++iresl )
         {
-            cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,d.RESLS[iresl]) << " begin threaded sampling, " << KMGT(d.samples[iresl].size()) << " samples: ";
-            int64_t const out_interval = d.samples[iresl].size()/50;
+            cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,d.RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[iresl].size()) << " samples: ";
+            int64_t const out_interval = samples[iresl].size()/50;
             std::exception_ptr exception = nullptr;
             std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
             start = std::chrono::high_resolution_clock::now();
-            d.total_search_effort += d.samples[iresl].size();
+            d.total_search_effort += samples[iresl].size();
 
-            std::vector< double > rmsds( d.samples[iresl].size(), 1000 );
+            std::vector< double > rmsds( samples[iresl].size(), 1000 );
 
             bool answer_exists = false;
 
             #ifdef USE_OPENMP
             #pragma omp parallel for schedule(dynamic,64)
             #endif
-            for( int64_t i = 0; i < d.samples[iresl].size(); ++i ){
+            for( int64_t i = 0; i < samples[iresl].size(); ++i ){
                 if( exception ) continue;
                 try {
                     if( i%out_interval==0 ){ cout << '*'; cout.flush(); }
-                    uint64_t const isamp = d.samples[iresl][i].index;
+                    uint64_t const isamp = samples[iresl][i].index;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -142,7 +142,7 @@ hsearch_original(
                         x.translation() -= d.scaffold_center;
                         float xmag =  xform_magnitude( x, d.redundancy_filter_rg );
                         if( xmag > d.opt.tether_to_input_position_cut + d.RESLS[iresl] ){
-                            d.samples[iresl][i].score = 9e9;
+                            samples[iresl][i].score = 9e9;
                             continue;
                         } else {
                             // std::cout << "inbounds " << iresl << " " << xform_magnitude( tscene->position(1), d.redundancy_filter_rg ) << std::endl;
@@ -188,7 +188,7 @@ hsearch_original(
 
 
                     // the real rif score!!!!!!
-                    d.samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
+                    samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
 
 
 
@@ -200,13 +200,13 @@ hsearch_original(
                     //   isamp == 182073977 || isamp == 2844905 ) {
 
 
-//                          // d.samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
+//                          // samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
                     
 //                          // float score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
                     //  // answer_exists = true;
 
                     //  #pragma omp critical
-                    //  std::cout << "Score for the one: " << F(6, 2, d.samples[iresl][i].score) << std::endl;
+                    //  std::cout << "Score for the one: " << F(6, 2, samples[iresl][i].score) << std::endl;
                     // }
 
 
@@ -224,10 +224,10 @@ hsearch_original(
 
 //                         rmsds[i] = rmsd_squared;
 
-//                         d.samples[iresl][i].score = rmsd_squared - 200.0;
+//                         samples[iresl][i].score = rmsd_squared - 200.0;
 
 //                         if (isamp > 3000000000000000) {
-//                          // d.samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
+//                          // samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
 //                         }
 
 
@@ -266,7 +266,7 @@ hsearch_original(
             if( exception ) std::rethrow_exception(exception);
             end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed_seconds_rif = end-start;
-            float rate = (double)d.samples[iresl].size()/ elapsed_seconds_rif.count()/omp_max_threads();
+            float rate = (double)samples[iresl].size()/ elapsed_seconds_rif.count()/omp_max_threads();
             cout << endl;// << "done threaded sampling, partitioning data..." << endl;
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -283,7 +283,7 @@ hsearch_original(
 
             // for ( uint64_t i = 0; i < 64; i++ ) {
             //  uint64_t index = sorted[i];
-            //  SearchPoint sp = d.samples[iresl][index];
+            //  SearchPoint sp = samples[iresl][index];
             //  uint64_t isamp = sp.index;
 
 
@@ -314,50 +314,66 @@ hsearch_original(
 
 
             SearchPoint max_pt, min_pt;
-            int64_t len = d.samples[iresl].size();
-            if( d.samples[iresl].size() > d.opt.beam_size/d.opt.DIMPOW2 ){
-                __gnu_parallel::nth_element( d.samples[iresl].begin(), d.samples[iresl].begin()+d.opt.beam_size/d.opt.DIMPOW2, d.samples[iresl].end() );
+            int64_t len = samples[iresl].size();
+            if( samples[iresl].size() > d.opt.beam_size/d.opt.DIMPOW2 ){
+                __gnu_parallel::nth_element( samples[iresl].begin(), samples[iresl].begin()+d.opt.beam_size/d.opt.DIMPOW2, samples[iresl].end() );
                 len = d.opt.beam_size/d.opt.DIMPOW2;
-                min_pt = *__gnu_parallel::min_element( d.samples[iresl].begin(), d.samples[iresl].begin()+len );
-                max_pt = *(d.samples[iresl].begin()+d.opt.beam_size/d.opt.DIMPOW2);
+                min_pt = *__gnu_parallel::min_element( samples[iresl].begin(), samples[iresl].begin()+len );
+                max_pt = *(samples[iresl].begin()+d.opt.beam_size/d.opt.DIMPOW2);
             } else {
-                min_pt = *__gnu_parallel::min_element( d.samples[iresl].begin(), d.samples[iresl].end() );
-                max_pt = *__gnu_parallel::max_element( d.samples[iresl].begin(), d.samples[iresl].end() );
+                min_pt = *__gnu_parallel::min_element( samples[iresl].begin(), samples[iresl].end() );
+                max_pt = *__gnu_parallel::max_element( samples[iresl].begin(), samples[iresl].end() );
             }
 
             cout << "HSearsh stage " << iresl+1 << " complete, resl. " << F(7,3,d.RESLS[iresl]) << ", "
-                  << " " << KMGT(d.samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
+                  << " " << KMGT(samples[iresl].size()) << ", promote: " << F(9,6,min_pt.score) << " to "
                   << F(9,6, std::min(d.opt.global_score_cut,max_pt.score)) << " rate " << KMGT(rate) << "/s/t " << std::endl;
 
             // cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
-            if( iresl+1 == d.samples.size() ) break;
+            if( iresl+1 == samples.size() ) break;
 
             for( int64_t i = 0; i < len; ++i ){
-                uint64_t isamp0 = d.samples[iresl][i].index;
-                if( d.samples[iresl][i].score >= d.opt.global_score_cut ) continue;
+                uint64_t isamp0 = samples[iresl][i].index;
+                if( samples[iresl][i].score >= d.opt.global_score_cut ) continue;
                 if( iresl == 0 ) ++d.non0_space_size;
                 for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
                     uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
-                    d.samples[iresl+1].push_back( SearchPoint(isamp) );
+                    samples[iresl+1].push_back( SearchPoint(isamp) );
                 }
             }
-            if( 0 == d.samples[iresl+1].size() ){
+            if( 0 == samples[iresl+1].size() ){
                 search_failed = true;
                 std::cout << "search fail, no valid samples!" << std::endl;
                 break;
             }
-            d.samples[iresl].clear();
+            samples[iresl].clear();
 
         }
         if( search_failed ) return false;
         std::cout << "full sort of final samples" << std::endl;
-        __gnu_parallel::sort( d.samples.back().begin(), d.samples.back().end() );
+        __gnu_parallel::sort( samples.back().begin(), samples.back().end() );
     }
     if( search_failed ) return false;
 
     std::cout << "total non-0 space size was approx " << float(d.non0_space_size)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
     std::cout << "total search effort " << KMGT(d.total_search_effort) << std::endl;
+
+
+    hsearch_results_p = make_shared<std::vector< SearchPointWithRots >>();
+    std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
+
+
+    hsearch_results.resize( samples.back().size() );
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1024)
+    #endif
+    for( int ipack = 0; ipack < hsearch_results.size(); ++ipack ){
+        hsearch_results[ipack].score = samples.back()[ipack].score;
+        hsearch_results[ipack].index = samples.back()[ipack].index;
+    }
+
+
 
     return true;
 
