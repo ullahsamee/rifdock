@@ -1,6 +1,9 @@
 #ifndef INCLUDED_kinematics_Director_HH
 #define INCLUDED_kinematics_Director_HH
 
+
+#include <scheme/kinematics/Director.meta.hh>
+
 #include "scheme/types.hh"
 #include "scheme/kinematics/Scene.hh"
 #include "scheme/nest/MultiNest.hh"
@@ -8,6 +11,7 @@
 #include <boost/any.hpp>
 
 #include <vector>
+
 
 /*
 	NOTES

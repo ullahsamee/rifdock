@@ -68,6 +68,7 @@
 
 
 // refactor
+	#include <riflib/rifdock_subroutines/meta.hh>
 	#include <riflib/rifdock_subroutines/util.hh>
 	
 	#include <riflib/rifdock_subroutines/hsearch_original.hh>
@@ -88,6 +89,9 @@ template<class HSearchDirector, class HsearchFunction>
 int old_main( RifDockOpt opt, HsearchFunction hsearch);
 
 
+
+
+
 int main(int argc, char *argv[]) {
 
 	register_options();
@@ -99,26 +103,25 @@ int main(int argc, char *argv[]) {
 	opt.init_from_cli();
 	utility::file::create_directory_recursive( opt.outdir );
 
-	typedef ::scheme::nest::NEST< 6,
-							  devel::scheme::EigenXform,
-							  ::scheme::nest::pmap::OriTransMap,
-							  ::scheme::util::StoreNothing, // do not store a transform in the Nest
-							  uint64_t,
-							  float,
-							  false // do not inherit from NestBase
-							 > NestOriTrans6D;
 
-	typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
+	using NestOriTrans6D = ::scheme::nest::NEST< 6,
+								  devel::scheme::EigenXform,
+								  ::scheme::nest::pmap::OriTransMap,
+								  ::scheme::util::StoreNothing, // do not store a transform in the Nest
+								  uint64_t,
+								  float,
+								  false // do not inherit from NestBase
+								 >;
+
+	using DirectorOriTrans6D = ::scheme::kinematics::NestDirector< NestOriTrans6D >;
+
+	// typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 
 	if (true) {
 
-		typedef typename DirectorOriTrans6D::Position DirectorPosition;
-		typedef typename DirectorOriTrans6D::Index DirectorIndex;
-		typedef shared_ptr< ::scheme::kinematics::Director<DirectorPosition, DirectorIndex, DirectorIndex> > DirectorBase;
+		typedef _DirectorBase<DirectorOriTrans6D> DirectorBase;
 
-		typedef tmplSearchPointWithRots<DirectorIndex> SearchPointWithRots;
-
-		HsearchFunctionType<DirectorBase, SearchPointWithRots> hsearch = &hsearch_original<DirectorBase, SearchPointWithRots>;
+		auto hsearch = &hsearch_original<DirectorBase>;
 
 
 		return old_main<DirectorOriTrans6D>( opt, hsearch );
@@ -129,8 +132,10 @@ int main(int argc, char *argv[]) {
 
 }
 
-template<class HSearchDirector, class HsearchFunction>
+template<class _HSearchDirector, class HsearchFunction>
 int old_main( RifDockOpt opt, HsearchFunction hsearch) {
+
+	typedef _HSearchDirector HSearchDirector;
 
 	#ifdef USE_OPENMP
 		omp_lock_t cout_lock, dump_lock;
@@ -158,14 +163,11 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 	typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
+		typedef _DirectorBase<HSearchDirector> DirectorBase;
 
-		typedef typename HSearchDirector::Position DirectorPosition;
-		typedef typename HSearchDirector::Index DirectorIndex;
-		typedef shared_ptr< ::scheme::kinematics::Director<DirectorPosition, DirectorIndex, DirectorIndex> > DirectorBase;
-
-		typedef tmplRifDockResult<DirectorIndex> RifDockResult;
-		typedef tmplSearchPoint<DirectorIndex> SearchPoint;
-		typedef tmplSearchPointWithRots<DirectorIndex> SearchPointWithRots;
+		typedef _RifDockResult<HSearchDirector> RifDockResult;
+		typedef _SearchPoint<HSearchDirector> SearchPoint;
+		typedef _SearchPointWithRots<HSearchDirector> SearchPointWithRots;
 
 
 		::scheme::search::HackPackOpts packopts;
