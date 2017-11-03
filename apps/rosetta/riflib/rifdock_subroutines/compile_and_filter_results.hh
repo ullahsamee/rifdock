@@ -185,7 +185,6 @@ struct CompileAndFilterResultsData {
     omp_lock_t & dump_lock;
     std::vector< devel::scheme::ObjectivePtr > & objectives;
     devel::scheme::EigenXform & scaffold_perturb;
-
 };
 
 

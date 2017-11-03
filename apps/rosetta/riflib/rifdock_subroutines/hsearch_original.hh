@@ -27,12 +27,12 @@ struct HsearchData {
     devel::scheme::ScenePtr & scene_minimal;
     Eigen::Vector3f & scaffold_center;
     float & redundancy_filter_rg;
-    core::pose::Pose & scaffold_centered;
+    // core::pose::Pose & scaffold_centered;
     core::pose::Pose & target;
-    std::vector<devel::scheme::EigenXform> & symmetries_clash_check;
-    std::vector< devel::scheme::SimpleAtom > & scaffold_simple_atoms;
+    // std::vector<devel::scheme::EigenXform> & symmetries_clash_check;
+    // std::vector< devel::scheme::SimpleAtom > & scaffold_simple_atoms;
     devel::scheme::RotamerIndex & rot_index;
-    std::vector< std::vector< devel::scheme::VoxelArrayPtr > > & scaffold_bounding_by_atype;
+    // std::vector< std::vector< devel::scheme::VoxelArrayPtr > > & scaffold_bounding_by_atype;
     std::vector< devel::scheme::ObjectivePtr > & objectives;
     int64_t & non0_space_size;
 
@@ -156,46 +156,48 @@ hsearch_original(
                         }
                     }
 
-                    float tot_sym_score = 0;
-                    if( d.opt.nfold_symmetry > 1 ){
-                        bool dump = false;
-                        if( iresl == 2 ) dump = true;
-                        if(dump){
-                            d.scaffold_centered.dump_pdb("test_scaff.pdb");
-                            d.target.dump_pdb("test_target.pdb");
-                        }
-                        EigenXform x = tscene->position(1);
-                        EigenXform xinv = x.inverse();
-                        for(int isym = 0; isym < d.symmetries_clash_check.size(); ++isym){
-                            EigenXform const & xsym = d.symmetries_clash_check[isym];
-                        // for( EigenXform const & xsym : d.symmetries_clash_check ){
-                            utility::io::ozstream * outp = nullptr;
-                            if(dump){
-                                outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
-                            }
-                            EigenXform x_to_internal = xinv * xsym * x;
-                            for( SimpleAtom a : d.scaffold_simple_atoms ){
-                                a.set_position( x_to_internal * a.position() );
-                                if(dump) ::scheme::actor::write_pdb( *outp, a, d.rot_index.chem_index_ );
-                                float atom_score = d.scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
-                                if( atom_score > 0.0 ){ // clash only
-                                    tot_sym_score += atom_score;
-                                }
-                            }
-                            if(dump){
-                                outp->close();
-                                delete outp;
-                            }
-                        }
-                        if(dump){
-                            std::cout << "tot_sym_score " << tot_sym_score << std::endl;
-                            utility_exit_with_message("testing symmetric clash check");
-                        }
-                    }
+    // This is not debug code, this is the old symmetry clash check 
+    // This needs to be reimplemented after the ScaffoldProvider merge
+                    // float tot_sym_score = 0;
+                    // if( d.opt.nfold_symmetry > 1 ){
+                    //     bool dump = false;
+                    //     if( iresl == 2 ) dump = true;
+                    //     if(dump){
+                    //         d.scaffold_centered.dump_pdb("test_scaff.pdb");
+                    //         d.target.dump_pdb("test_target.pdb");
+                    //     }
+                    //     EigenXform x = tscene->position(1);
+                    //     EigenXform xinv = x.inverse();
+                    //     for(int isym = 0; isym < d.symmetries_clash_check.size(); ++isym){
+                    //         EigenXform const & xsym = d.symmetries_clash_check[isym];
+                    //     // for( EigenXform const & xsym : d.symmetries_clash_check ){
+                    //         utility::io::ozstream * outp = nullptr;
+                    //         if(dump){
+                    //             outp = new utility::io::ozstream("test_sym_"+str(isym)+".pdb");
+                    //         }
+                    //         EigenXform x_to_internal = xinv * xsym * x;
+                    //         for( SimpleAtom a : d.scaffold_simple_atoms ){
+                    //             a.set_position( x_to_internal * a.position() );
+                    //             if(dump) ::scheme::actor::write_pdb( *outp, a, d.rot_index.chem_index_ );
+                    //             float atom_score = d.scaffold_bounding_by_atype.at(iresl).at(5)->at(a.position());
+                    //             if( atom_score > 0.0 ){ // clash only
+                    //                 tot_sym_score += atom_score;
+                    //             }
+                    //         }
+                    //         if(dump){
+                    //             outp->close();
+                    //             delete outp;
+                    //         }
+                    //     }
+                    //     if(dump){
+                    //         std::cout << "tot_sym_score " << tot_sym_score << std::endl;
+                    //         utility_exit_with_message("testing symmetric clash check");
+                    //     }
+                    // }
 
 
                     // the real rif score!!!!!!
-                    samples[iresl][i].score = d.objectives[iresl]->score( *tscene ) + tot_sym_score;
+                    samples[iresl][i].score = d.objectives[iresl]->score( *tscene );// + tot_sym_score;
 
 
 

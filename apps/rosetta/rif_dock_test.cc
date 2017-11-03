@@ -1079,12 +1079,12 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						scene_minimal,
 						scaffold_center,
 						redundancy_filter_rg,
-						scaffold_centered,
+						// scaffold_centered,
 						target,
-						symmetries_clash_check,
-						scaffold_simple_atoms,
+						// symmetries_clash_check,
+						// scaffold_simple_atoms,
 						rot_index,
-						scaffold_bounding_by_atype,
+						// scaffold_bounding_by_atype,
 						objectives,
 						non0_space_size
 
