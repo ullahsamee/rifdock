@@ -84,8 +84,8 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class HSearchDirector>
-int old_main( RifDockOpt opt );
+template<class HSearchDirector, class HsearchFunction>
+int old_main( RifDockOpt opt, HsearchFunction hsearch);
 
 
 int main(int argc, char *argv[]) {
@@ -110,12 +110,27 @@ int main(int argc, char *argv[]) {
 
 	typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 
-	return old_main<DirectorOriTrans6D>( opt );
+	if (true) {
+
+		typedef typename DirectorOriTrans6D::Position DirectorPosition;
+		typedef typename DirectorOriTrans6D::Index DirectorIndex;
+		typedef shared_ptr< ::scheme::kinematics::Director<DirectorPosition, DirectorIndex, DirectorIndex> > DirectorBase;
+
+		typedef tmplSearchPointWithRots<DirectorIndex> SearchPointWithRots;
+
+		HsearchFunctionType<DirectorBase, SearchPointWithRots> hsearch = &hsearch_original<DirectorBase, SearchPointWithRots>;
+
+
+		return old_main<DirectorOriTrans6D>( opt, hsearch );
+	} else {
+		return 0;
+	}
+
 
 }
 
-template<class HSearchDirector>
-int old_main( RifDockOpt opt ) {
+template<class HSearchDirector, class HsearchFunction>
+int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 	#ifdef USE_OPENMP
 		omp_lock_t cout_lock, dump_lock;
@@ -1072,7 +1087,7 @@ int old_main( RifDockOpt opt ) {
 						non0_space_size
 
 					};
-					bool hsearch_success = hsearch_original( hsearch_results_p, data );
+					bool hsearch_success = (*hsearch)( hsearch_results_p, data );
 					if ( ! hsearch_success ) continue;
 				}
 

@@ -37,6 +37,8 @@ struct HsearchData {
 
 };
 
+template<typename DirectorBase, typename SearchPointWithRots>
+using HsearchFunctionType = bool (*)(std::shared_ptr<std::vector<SearchPointWithRots> >&, HsearchData<DirectorBase>&);
 
 
 template<class DirectorBase, class SearchPointWithRots>
