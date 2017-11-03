@@ -8,6 +8,7 @@
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rifdock_subroutines/meta.hh>
 
 
 using ::scheme::make_shared;
@@ -27,21 +28,20 @@ template<
     // class Scene,
     class ScenePtr,
     class ObjectivePtr,
-    class SearchPointWithRots,
-    class RifDockResult
+    class DirectorBase
 >
 void
 awful_compile_output_helper(
     int64_t isamp,
     int resl,
-    std::vector< SearchPointWithRots > const & packed_results,
+    std::vector< _SearchPointWithRots<DirectorBase> > const & packed_results,
     std::vector< ScenePtr > & scene_pt,
-    shared_ptr< ::scheme::kinematics::Director<EigenXform> > director,
+    DirectorBase director,
     float redundancy_filter_rg,
     float redundancy_filter_mag,
     Eigen::Vector3f scaffold_center,
-    std::vector< std::vector< RifDockResult > > & allresults_pt,
-                 std::vector< RifDockResult >   & selected_results,
+    std::vector< std::vector< _RifDockResult<DirectorBase> > > & allresults_pt,
+                 std::vector< _RifDockResult<DirectorBase> >   & selected_results,
     std::vector< std::pair< EigenXform, int64_t > > & selected_xforms,
     int n_pdb_out,
     #ifdef USE_OPENMP
@@ -53,6 +53,10 @@ awful_compile_output_helper(
     float nclosethresh,
     EigenXform scaffold_perturb
 ) {
+
+    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
+    typedef _RifDockResult<DirectorBase> RifDockResult;
+
     SearchPointWithRots const & sp = packed_results[isamp];
     if( sp.score >= 0.0f ) return;
     ScenePtr scene_minimal( scene_pt[omp_get_thread_num()] );
@@ -169,10 +173,10 @@ awful_compile_output_helper(
 
 */
 
-template<class DirectorBase, class RifDockResult, class SearchPointWithRots>
+template<class DirectorBase>
 struct CompileAndFilterResultsData {
     RifDockOpt & opt;
-    std::vector< SearchPointWithRots > & packed_results;
+    std::vector< _SearchPointWithRots<DirectorBase> > & packed_results;
     std::vector<float> & RESLS;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     DirectorBase & director;
@@ -185,11 +189,11 @@ struct CompileAndFilterResultsData {
 };
 
 
-template<class DirectorBase, class RifDockResult, class SearchPointWithRots>
+template<class DirectorBase>
 void compile_and_filter_results( 
-        std::vector< RifDockResult > & selected_results, 
-        std::vector< RifDockResult > & allresults,
-        CompileAndFilterResultsData<DirectorBase, RifDockResult, SearchPointWithRots> & d ) {
+        std::vector< _RifDockResult<DirectorBase> > & selected_results, 
+        std::vector< _RifDockResult<DirectorBase> > & allresults,
+        CompileAndFilterResultsData<DirectorBase> & d ) {
 
 
     using namespace core::scoring;
@@ -207,6 +211,8 @@ void compile_and_filter_results(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
+    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
+    typedef _RifDockResult<DirectorBase> RifDockResult;
 
 
 

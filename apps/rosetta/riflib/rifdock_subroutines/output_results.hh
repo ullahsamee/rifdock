@@ -9,6 +9,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rifdock_subroutines/meta.hh>
 
 
 using ::scheme::make_shared;
@@ -16,12 +17,12 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase, class RifDockResult >
+template<class DirectorBase>
 struct OutputResultsData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
     DirectorBase & director;
-    std::vector< RifDockResult > & selected_results;
+    std::vector< _RifDockResult<DirectorBase> > & selected_results;
     std::string & scafftag;
     int64_t & npack;
     utility::io::ozstream & dokout;
@@ -41,10 +42,10 @@ struct OutputResultsData {
 
 
 
-template<class DirectorBase, class RifDockResult>
+template<class DirectorBase>
 void
 output_results(
-    OutputResultsData<DirectorBase, RifDockResult> & d) {
+    OutputResultsData<DirectorBase> & d) {
 
 
     using namespace core::scoring;
@@ -62,8 +63,7 @@ output_results(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
-
-
+    typedef _RifDockResult<DirectorBase> RifDockResult;
 
     if( d.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
     else                        std::cout << "ALIGN TO TARGET"   << std::endl;

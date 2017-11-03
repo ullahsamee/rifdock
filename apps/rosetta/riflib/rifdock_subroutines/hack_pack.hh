@@ -9,6 +9,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rifdock_subroutines/meta.hh>
 
 
 using ::scheme::make_shared;
@@ -16,7 +17,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase, class SearchPointWithRots >
+template<class DirectorBase >
 struct HackPackData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -29,16 +30,16 @@ struct HackPackData {
     int64_t & npack;
     ::scheme::search::HackPackOpts & packopts;
     devel::scheme::ObjectivePtr & packing_objective;
-    shared_ptr< std::vector< SearchPointWithRots > > & hsearch_results_p;
+    shared_ptr< std::vector< _SearchPointWithRots<DirectorBase> > > & hsearch_results_p;
 };
 
 
 
-template<class DirectorBase, class SearchPointWithRots >
+template<class DirectorBase >
 void
 hack_pack(
-    shared_ptr<std::vector< SearchPointWithRots > > & packed_results_p,
-    HackPackData<DirectorBase, SearchPointWithRots> & d) {
+    shared_ptr<std::vector< _SearchPointWithRots<DirectorBase> > > & packed_results_p,
+    HackPackData<DirectorBase> & d) {
 
 
     using namespace core::scoring;
@@ -56,6 +57,7 @@ hack_pack(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
+    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
 
 
 

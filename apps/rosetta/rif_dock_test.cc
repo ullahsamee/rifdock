@@ -1105,7 +1105,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
 
 		        {
-		        	HackPackData<DirectorBase, SearchPointWithRots> data {
+		        	HackPackData<DirectorBase> data {
 		        		opt,
 						RESLS,
 						director,
@@ -1133,7 +1133,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			if( do_rosetta_score && opt.hack_pack ){
 
 
-				RosettaRescoreData<DirectorBase, SearchPointWithRots> data {
+				RosettaRescoreData<DirectorBase> data {
 				    opt,
 					RESLS,
 					director,
@@ -1163,7 +1163,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			std::vector< RifDockResult > selected_results, allresults;
 			{
-				CompileAndFilterResultsData<DirectorBase, RifDockResult, SearchPointWithRots> data {
+				CompileAndFilterResultsData<DirectorBase> data {
 					opt, 
 					packed_results, 
 					RESLS, 
@@ -1200,7 +1200,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			}
 
 			{
-				OutputResultsData<DirectorBase, RifDockResult> data { opt, 
+				OutputResultsData<DirectorBase> data { opt, 
 					RESLS, 
 					director, 
 					selected_results,

@@ -9,6 +9,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rifdock_subroutines/meta.hh>
 
 
 using ::scheme::make_shared;
@@ -16,7 +17,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase, class SearchPointWithRots >
+template<class DirectorBase >
 struct RosettaRescoreData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -29,7 +30,7 @@ struct RosettaRescoreData {
     utility::vector1<core::Size> & scaffold_res;
     core::pose::Pose & target;
     int64_t & total_search_effort;
-    std::vector< SearchPointWithRots > & packed_results;
+    std::vector< _SearchPointWithRots<DirectorBase> > & packed_results;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     std::vector< devel::scheme::VoxelArrayPtr > & target_field_by_atype;
     double & time_ros;
@@ -37,10 +38,10 @@ struct RosettaRescoreData {
 
 
 
-template<class DirectorBase, class SearchPointWithRots>
+template<class DirectorBase>
 void
 rosetta_rescore(
-    RosettaRescoreData<DirectorBase, SearchPointWithRots> & d) {
+    RosettaRescoreData<DirectorBase> & d) {
 
 
     using namespace core::scoring;
@@ -58,6 +59,7 @@ rosetta_rescore(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
+    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
 
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start_rosetta = std::chrono::high_resolution_clock::now();
