@@ -16,7 +16,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class SearchPointWithRots >
 struct RosettaRescoreData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -37,10 +37,10 @@ struct RosettaRescoreData {
 
 
 
-template<class DirectorBase>
+template<class DirectorBase, class SearchPointWithRots>
 void
 rosetta_rescore(
-    RosettaRescoreData<DirectorBase> & d) {
+    RosettaRescoreData<DirectorBase, SearchPointWithRots> & d) {
 
 
     using namespace core::scoring;

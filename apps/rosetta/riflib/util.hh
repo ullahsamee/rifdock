@@ -426,7 +426,16 @@ struct ScoreRotamerVsTarget {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//https://stackoverflow.com/questions/24314727/remove-pointer-analog-that-works-for-anything-that-supports-operator
+template <typename T>
+class remove_pointer {
+    template <typename U=T>
+    static auto test(int) -> std::remove_reference<decltype(*std::declval<U>())>;
+    static auto test(...) -> std::remove_cv<T>;
 
+public:
+    using type = typename decltype(test(0))::type;
+};
 
 }
 }

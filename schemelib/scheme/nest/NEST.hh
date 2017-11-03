@@ -661,10 +661,12 @@ namespace nest {
 			return wrap_indexes( ScaffoldIndex(), Parent::size( resl ) );
 		}
 
+		static
 		DirectorIndex
 		wrap_indexes( ScaffoldIndex scaffold_index, Index index ) {
 			return DirectorIndex( scaffold_index, index );
 		}
+		static
 		DirectorValue
 		wrap_value( ScaffoldIndex scaffold_index, Value value ) {
 			return DirectorValue( scaffold_index, value );
@@ -672,6 +674,21 @@ namespace nest {
 
 
 	};
+
+	inline
+	uint64_t
+	director_index_default_value(uint64_t) {
+		return 0;
+	}
+
+
+	template<class ScaffoldIndex>
+	std::pair<ScaffoldIndex,uint64_t>
+	director_index_default_value(std::pair<ScaffoldIndex,uint64_t>) {
+		ScaffoldIndex i;
+		uint64_t j;
+		return std::pair<ScaffoldIndex,uint64_t>( scheme::scaffold::scaffold_index_default_value(i), director_index_default_value(j) );
+	}
 
 
 }

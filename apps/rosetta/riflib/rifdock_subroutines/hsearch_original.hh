@@ -39,11 +39,11 @@ struct HsearchData {
 
 
 
-template<class DirectorBase>
+template<class DirectorBase, class SearchPointWithRots>
 bool
 hsearch_original(
     shared_ptr<std::vector< SearchPointWithRots > > & hsearch_results_p,
-    HsearchData<DirectorBase> & d) {
+    HsearchData<DirectorBase > & d) {
 
 
     using namespace core::scoring;
@@ -62,6 +62,9 @@ hsearch_original(
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
+    // this took a fair amount of googling - brian
+    typedef typename devel::scheme::remove_pointer<DirectorBase>::type::Index DirectorIndex;
+    typedef tmplSearchPoint<DirectorIndex> SearchPoint;
 
 //////////////////////////////////////////////////////////////////////////////////////
 

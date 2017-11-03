@@ -26,6 +26,7 @@
 namespace scheme {
 namespace kinematics {
 
+
 template<
 	class _Position,
 	class _BigIndex = uint64_t,

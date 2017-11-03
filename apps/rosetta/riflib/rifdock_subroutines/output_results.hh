@@ -16,7 +16,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class RifDockResult >
 struct OutputResultsData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -41,10 +41,10 @@ struct OutputResultsData {
 
 
 
-template<class DirectorBase>
+template<class DirectorBase, class RifDockResult>
 void
 output_results(
-    OutputResultsData<DirectorBase> & d) {
+    OutputResultsData<DirectorBase, RifDockResult> & d) {
 
 
     using namespace core::scoring;

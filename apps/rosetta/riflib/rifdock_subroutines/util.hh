@@ -93,12 +93,16 @@ void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::
 
 
 
-struct RifDockResult {
+template<class _DirectorIndex>
+struct tmplRifDockResult {
+    typedef _DirectorIndex DirectorIndex;
+    typedef tmplRifDockResult<DirectorIndex> This;
     float dist0, packscore, nopackscore, rifscore, stericscore;
-    uint64_t isamp, scene_index;
+    uint64_t isamp;
+    DirectorIndex scene_index;
     uint32_t prepack_rank;
     float cluster_score;
-    bool operator< ( RifDockResult const & o ) const { return packscore < o.packscore; }
+    bool operator< ( This const & o ) const { return packscore < o.packscore; }
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
     size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
@@ -109,12 +113,17 @@ struct RifDockResult {
 
 
 #pragma pack (push, 4) // allows size to be 12 rather than 16
-struct SearchPoint {
+template<class _DirectorIndex>
+struct tmplSearchPoint {
+    typedef _DirectorIndex DirectorIndex;
+    typedef tmplSearchPoint<DirectorIndex> This;
     float score;
-    uint64_t index;
-    SearchPoint() : score(9e9), index(0) {}
-    SearchPoint(uint64_t i) : score(9e9), index(i) {}
-    bool operator < (SearchPoint const & o) const {
+    DirectorIndex index;
+    tmplSearchPoint() : score(9e9) {
+        index = ::scheme::nest::director_index_default_value(index);
+    }
+    tmplSearchPoint(DirectorIndex i) : score(9e9), index(i) {}
+    bool operator < (This const & o) const {
         return score < o.score;
     }
 };
@@ -122,24 +131,28 @@ struct SearchPoint {
 
 
 
-
-struct SearchPointWithRots {
+template<class _DirectorIndex>
+struct tmplSearchPointWithRots {
+    typedef _DirectorIndex DirectorIndex;
+    typedef tmplSearchPointWithRots<DirectorIndex> This;
     float score;
     uint32_t prepack_rank;
-    uint64_t index;
+    DirectorIndex index;
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
-    SearchPointWithRots() : score(9e9), prepack_rank(0), index(0), rotamers_(nullptr) {}
-    SearchPointWithRots(uint64_t i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
+    tmplSearchPointWithRots() : score(9e9), prepack_rank(0), rotamers_(nullptr) {
+        index = ::scheme::nest::director_index_default_value(index);
+    }
+    tmplSearchPointWithRots(DirectorIndex i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
     // ~SearchPointWithRots() { delete rotamers_; }
     void checkinit() { if( rotamers_==nullptr ) rotamers_ = make_shared< std::vector< std::pair<intRot,intRot> > > ();  }
     std::vector< std::pair<intRot,intRot> > & rotamers() { checkinit(); return *rotamers_; }
     std::vector< std::pair<intRot,intRot> > const & rotamers() const { runtime_assert(rotamers_!=nullptr); return *rotamers_; }
     size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
-    bool operator < (SearchPointWithRots const & o) const {
+    bool operator < (This const & o) const {
         return score < o.score;
     }
-    friend void swap(SearchPointWithRots & a, SearchPointWithRots & b){
+    friend void swap(This & a, This & b){
         std::swap( a.score, b.score );
         std::swap( a.prepack_rank, b.prepack_rank );
         std::swap( a.index, b.index );

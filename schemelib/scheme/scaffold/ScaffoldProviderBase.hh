@@ -14,12 +14,15 @@
 
 #include <string>
 #include <vector>
+#include <limits>
 #include <boost/any.hpp>
 
 
 
 namespace scheme {
 namespace scaffold {
+
+const uint64_t BOGUS_INDEX = std::numeric_limits<uint64_t>::max();
 
 template<
     class _Scaffold,
@@ -51,6 +54,7 @@ using ScaffoldProviderCOP = shared_ptr<ScaffoldProviderBase< _Scaffold, _Scaffol
 struct TreeIndex {
     uint64_t depth;
     uint64_t member;
+    TreeIndex() : depth(BOGUS_INDEX), member(BOGUS_INDEX) {};
 };
 
 struct TreeRelation {
@@ -85,6 +89,17 @@ template<typename _Scaffold>
 using TreeProviderOP = shared_ptr<TreeScaffoldProvider< _Scaffold> >;
 template<typename _Scaffold>
 using TreeProviderCOP = shared_ptr<TreeScaffoldProvider< _Scaffold> const >;
+
+inline
+uint64_t scaffold_index_default_value(uint64_t) {
+    return BOGUS_INDEX;
+}
+
+inline
+TreeIndex scaffold_index_default_value(TreeIndex) {
+    return TreeIndex();
+}
+
 
 
 

@@ -26,7 +26,9 @@ template<
     class EigenXform,
     // class Scene,
     class ScenePtr,
-    class ObjectivePtr
+    class ObjectivePtr,
+    class SearchPointWithRots,
+    class RifDockResult
 >
 void
 awful_compile_output_helper(
@@ -167,7 +169,7 @@ awful_compile_output_helper(
 
 */
 
-template<class DirectorBase>
+template<class DirectorBase, class RifDockResult, class SearchPointWithRots>
 struct CompileAndFilterResultsData {
     RifDockOpt & opt;
     std::vector< SearchPointWithRots > & packed_results;
@@ -183,11 +185,11 @@ struct CompileAndFilterResultsData {
 };
 
 
-template<class DirectorBase>
+template<class DirectorBase, class RifDockResult, class SearchPointWithRots>
 void compile_and_filter_results( 
         std::vector< RifDockResult > & selected_results, 
         std::vector< RifDockResult > & allresults,
-        CompileAndFilterResultsData<DirectorBase> & d ) {
+        CompileAndFilterResultsData<DirectorBase, RifDockResult, SearchPointWithRots> & d ) {
 
 
     using namespace core::scoring;

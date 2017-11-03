@@ -16,7 +16,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class SearchPointWithRots >
 struct HackPackData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -34,11 +34,11 @@ struct HackPackData {
 
 
 
-template<class DirectorBase>
+template<class DirectorBase, class SearchPointWithRots >
 void
 hack_pack(
     shared_ptr<std::vector< SearchPointWithRots > > & packed_results_p,
-    HackPackData<DirectorBase> & d) {
+    HackPackData<DirectorBase, SearchPointWithRots> & d) {
 
 
     using namespace core::scoring;

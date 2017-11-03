@@ -148,6 +148,9 @@ int old_main( RifDockOpt opt ) {
 		typedef typename HSearchDirector::Index DirectorIndex;
 		typedef shared_ptr< ::scheme::kinematics::Director<DirectorPosition, DirectorIndex, DirectorIndex> > DirectorBase;
 
+		typedef tmplRifDockResult<DirectorIndex> RifDockResult;
+		typedef tmplSearchPoint<DirectorIndex> SearchPoint;
+		typedef tmplSearchPointWithRots<DirectorIndex> SearchPointWithRots;
 
 
 		::scheme::search::HackPackOpts packopts;
@@ -1085,7 +1088,7 @@ int old_main( RifDockOpt opt ) {
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
 
 		        {
-		        	HackPackData<DirectorBase> data {
+		        	HackPackData<DirectorBase, SearchPointWithRots> data {
 		        		opt,
 						RESLS,
 						director,
@@ -1113,7 +1116,7 @@ int old_main( RifDockOpt opt ) {
 			if( do_rosetta_score && opt.hack_pack ){
 
 
-				RosettaRescoreData<DirectorBase> data {
+				RosettaRescoreData<DirectorBase, SearchPointWithRots> data {
 				    opt,
 					RESLS,
 					director,
@@ -1143,7 +1146,7 @@ int old_main( RifDockOpt opt ) {
 
 			std::vector< RifDockResult > selected_results, allresults;
 			{
-				CompileAndFilterResultsData<DirectorBase> data {
+				CompileAndFilterResultsData<DirectorBase, RifDockResult, SearchPointWithRots> data {
 					opt, 
 					packed_results, 
 					RESLS, 
@@ -1180,7 +1183,7 @@ int old_main( RifDockOpt opt ) {
 			}
 
 			{
-				OutputResultsData<DirectorBase> data { opt, 
+				OutputResultsData<DirectorBase, RifDockResult> data { opt, 
 					RESLS, 
 					director, 
 					selected_results,
