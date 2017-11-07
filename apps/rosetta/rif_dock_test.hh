@@ -484,6 +484,8 @@ struct RifDockOpt
 			rosetta_score_ddg_only = false;
 		}
 
+
+
         nfold_symmetry = option[rif_dock::nfold_symmetry]();
         symmetry_axis.clear();
         if( option[rif_dock::symmetry_axis]().size() == 3 ){
@@ -498,6 +500,22 @@ struct RifDockOpt
             std::cout << "bad rif_dock::symmetry_axis option" << std::endl;
             std::exit(-1);
         }
+
+
+
+
+
+        if (option[rif_dock::use_scaffold_bounding_grids]()) {
+        	std::cout << "ERROR: use_scaffold_bounding_grids no longer supported. Email bcov@uw.edu" << std::endl;
+    		std::exit(-1);
+        }
+
+
+        if (option[rif_dock::nfold_symmetry]() > 1) {
+        	std::cout << "ERROR: nfold_symmetry no longer supported. Email bcov@uw.edu" << std::endl;
+    		std::exit(-1);
+        }
+
 
 	}
 
