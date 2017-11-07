@@ -69,7 +69,7 @@
 
 /// Brian
 	#include <scheme/objective/hash/XformHash.hh>
-	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
+	#include <riflib/scaffold/FileListScaffoldProvider.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 
@@ -654,16 +654,16 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 /////////////// Test code during refactor, delete this if you find it
 
 
-			SingleFileScaffoldProvider sf_scaffold_provider(
-				scaff_fname,
-				scaff_res_fname,
+			FileListScaffoldProvider sf_scaffold_provider(
+				std::vector<std::string> {scaff_fname},
+				std::vector<utility::vector1<core::Size>> {scaffold_res},
 				rot_index_p,
 				opt);
 
 			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
 			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
 
-			ScaffoldDataCache sdc = *(sf_scaffold_provider.data_cache_);
+			ScaffoldDataCache sdc = *(sf_scaffold_provider.temp_function__get_data_cache(0));
 
 			scaffold_res = *(sdc.scaffold_res_p);
 			scaffuseres = sdc.scaffuseres;

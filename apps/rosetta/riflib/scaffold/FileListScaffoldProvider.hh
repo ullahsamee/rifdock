@@ -7,8 +7,8 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#ifndef INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
-#define INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
+#ifndef INCLUDED_riflib_scaffold_FileListScaffoldProvider_hh
+#define INCLUDED_riflib_scaffold_FileListScaffoldProvider_hh
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
@@ -33,14 +33,14 @@ namespace scheme {
 
 
 
-struct SingleFileScaffoldProvider :
+struct FileListScaffoldProvider :
     public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, uint64_t, uint64_t> {
 
     // SingleFileScaffoldProvider();
 
-    SingleFileScaffoldProvider( 
-        std::string const & scaff_fname, 
-        std::string const & scaff_res_fname,
+    FileListScaffoldProvider( 
+        std::vector<std::string> const & scaff_fnames, 
+        std::vector<utility::vector1<core::Size>> const & scaffold_ress,
         shared_ptr< RotamerIndex > rot_index_p_in, 
         RifDockOpt const & opt_in);
 
@@ -54,15 +54,18 @@ struct SingleFileScaffoldProvider :
     //     return temp_data__data_cache_;
     // }
 
+    ScaffoldDataCacheOP temp_function__get_data_cache(uint64_t i);
 
     ParametricSceneConformationOP conformation_;
-    core::pose::PoseCOP pose_;
+    // core::pose::PoseCOP pose_;
 
 
     shared_ptr< RotamerIndex > rot_index_p;
     RifDockOpt const & opt;
 
-    ScaffoldDataCacheOP data_cache_;
+    std::vector<std::string> scaff_fnames_;
+    std::vector<utility::vector1<core::Size>> scaffold_ress_;
+    std::vector<ScaffoldDataCacheOP> temp__data_caches_;
 
 };
 
