@@ -8,6 +8,14 @@
 
 #include <riflib/types.hh>
 
+#include <core/conformation/Residue.hh>
+#include <core/id/AtomID.hh>
+#include <core/pose/Pose.hh>
+
+#include <numeric/xyzTransform.hh>
+#include <numeric/xyzVector.hh>
+#include <utility/vector1.hh>
+
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;

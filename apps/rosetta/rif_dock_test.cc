@@ -2,7 +2,11 @@
 // vi: set ts=2 noet:
 
 // INC
+
+#define GLOBAL_VARIABLES_ARE_BAD
 #include <rif_dock_test.hh>
+#undef GLOBAL_VARIABLES_ARE_BAD
+
 	#include <numeric/random/random.hh>
 
 	#include <ObjexxFCL/format.hh>
@@ -65,6 +69,8 @@
 
 /// Brian
 	#include <scheme/objective/hash/XformHash.hh>
+	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
+	#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 
 // refactor
@@ -235,7 +241,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 		double time_rif=0, time_pck=0, time_ros=0;
 
-		std::mt19937 rng( std::random_device{}() );
+		std::mt19937 rng( 0);//std::random_device{}() );
 
 
 		{
@@ -701,6 +707,39 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				runtime_assert( both_pose.size() == both_full_pose.size() );
 
 
+///////////////////////////////////////////////////////////////////////////////////
+/////////////// Test code during refactor, delete this if you find it
+
+
+			SingleFileScaffoldProvider sf_scaffold_provider(
+				scaff_fname,
+				scaff_res_fname,
+				rot_index_p,
+				opt);
+
+			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
+			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
+
+			ScaffoldDataCache sdc = *(sf_scaffold_provider.data_cache_);
+
+			scaffold_res = *(sdc.scaffold_res_p);
+			scaffuseres = sdc.scaffuseres;
+			scaffold_center = sdc.scaffold_center;
+			// scaff_redundancy_filter_rg = sdc.scaff_redundancy_filter_rg;
+			scaff_radius = sdc.scaff_radius;
+
+			scaffold_res = *(sdc.scaffold_res_p);
+			scaffres_g2l = *(sdc.scaffres_g2l_p);
+			scaffres_l2g = *(sdc.scaffres_l2g_p);
+
+			scaffold_centered = *(sdc.scaffold_centered_p);
+			scaffold_full_centered = *(sdc.scaffold_full_centered_p);
+			// scaffold_simple_atoms_all = *(sdc.scaffold_simple_atoms_all_p);
+			// scaffold_simple_atoms = *(sdc.scaffold_simple_atoms_p);
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
 
 				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					scaffca.push_back( scaffold.residue(ir).xyz("CA") );
@@ -750,6 +789,17 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						BOOST_FOREACH( float & f, scaffold_onebody_glob0[i] ) f = 9e9;
 					}
 				}
+
+
+///////////////////////////////////////////////////////////////////////////////////
+/////////////// Test code during refactor, delete this if you find it
+				sdc.setup_onebody_tables( rot_index_p, opt);
+				scaffold_onebody_glob0 = *(sdc.scaffold_onebody_glob0_p);
+				local_onebody = *(sdc.local_onebody_p);
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
 
 
 				std::cout << "rifdock: get_twobody_tables" << std::endl;
@@ -814,8 +864,24 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! must fix issue with non-global 2B table calculation, seems to use scaffold_res when it shouldn't" << endl;
 				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
+
+
+///////////////////////////////////////////////////////////////////////////////////
+/////////////// Test code during refactor, delete this if you find it
+				sdc.setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+				scaffold_twobody = sdc.scaffold_twobody_p;
+				local_twobody = sdc.local_twobody_p;
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+
 				// todo: prune twobody table???
 			}
+
+
+
+
 
 			// SOMETHING WRONG, SCORES OFF BY A LITTLE
 			// setup objectives, moved into scaffold loop to guarantee clean slate for each scaff...
@@ -824,9 +890,9 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				rso_config.rif_ptrs = rif_ptrs;
 				rso_config.target_bounding_by_atype = &target_bounding_by_atype;
 				rso_config.target_field_by_atype = &target_field_by_atype;
-				rso_config.local_onebody = &local_onebody;
-				rso_config.local_rotamers = &local_rotamers;
-				rso_config.local_twobody = local_twobody;
+				rso_config.local_onebody = &local_onebody;		//scaff
+				rso_config.local_rotamers = &local_rotamers;	//scaff
+				rso_config.local_twobody = local_twobody;		//scaff
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
@@ -899,9 +965,9 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 					{
 						std::vector<SchemeAtom> scaff_res_atoms;
 						if( !opt.lowres_sterics_cbonly && std::find( scaffold_res.begin(), scaffold_res.end(), ir ) != scaffold_res.end() ){
-							devel::scheme::get_scheme_atoms( scaffold_centered, resids, scaff_res_atoms, true );
+							devel::scheme::get_scheme_atoms( scaffold_centered, resids, scaff_res_atoms, true ); //bb + CB
 						} else { // is not selected residue
-							devel::scheme::get_scheme_atoms_cbonly( scaffold_centered, resids, scaff_res_atoms );
+							devel::scheme::get_scheme_atoms_cbonly( scaffold_centered, resids, scaff_res_atoms ); // literally only CB
 						}
 						int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
 						for( int ia = 0; ia < scaff_res_atoms.size(); ++ia){
@@ -928,6 +994,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms.size() << std::endl;
 
 			}
+
+
 
 			std::vector<EigenXform> symmetries_clash_check;
 			if( opt.nfold_symmetry > 1 ){

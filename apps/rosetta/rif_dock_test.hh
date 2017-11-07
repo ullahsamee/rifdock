@@ -1,11 +1,13 @@
 
 
-#ifndef INCLUDED_rif_dock_test_hh
-#define INCLUDED_rif_dock_test_hh
-
 #include <basic/options/option_macros.hh>
 #include <basic/options/keys/corrections.OptionKeys.gen.hh>
 #include <vector>
+
+#ifdef GLOBAL_VARIABLES_ARE_BAD
+	#ifndef INCLUDED_rif_dock_test_hh_1
+	#define INCLUDED_rif_dock_test_hh_1   
+
 
 
 OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
@@ -124,128 +126,137 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
 
-	void register_options() {
-		using namespace basic::options;
-		using namespace basic::options::OptionKeys;
 
-		NEW_OPT(  rif_dock::scaffolds, "" , utility::vector1<std::string>() );
-		NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
-		NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
-		NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
-		NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
-		NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
-		NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
-		NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
-		NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
+ 
 
-		NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
-		NEW_OPT(  rif_dock::target_pdb, "" , "" );
-		NEW_OPT(  rif_dock::target_res, "" , "" );
-		NEW_OPT(  rif_dock::target_rif, "" , "" );
-		NEW_OPT(  rif_dock::target_rf_resl, ""       , 0.25 );
-		NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
-		NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
+		void register_options() {
+			using namespace basic::options;
+			using namespace basic::options::OptionKeys;
 
-		NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
+			NEW_OPT(  rif_dock::scaffolds, "" , utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
+			NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
+			NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
+			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
+			NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
+			NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
 
-		NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
-		NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
-		NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
-		NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
-		NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
-		NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
-		NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
-		NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
+			NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::target_pdb, "" , "" );
+			NEW_OPT(  rif_dock::target_res, "" , "" );
+			NEW_OPT(  rif_dock::target_rif, "" , "" );
+			NEW_OPT(  rif_dock::target_rf_resl, ""       , 0.25 );
+			NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
+			NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
 
-		NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
-		NEW_OPT(  rif_dock::rf_oversample, "" , 2 );
+			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 
-		NEW_OPT(  rif_dock::rotrf_oversample, "" , 2 );
-		NEW_OPT(  rif_dock::rotrf_resl, "" , 0.3 );
-		NEW_OPT(  rif_dock::rotrf_spread, "" , 0.0 );
-		NEW_OPT(  rif_dock::rotrf_scale_atr, "" , 1.0 );
-		NEW_OPT(  rif_dock::rotrf_cache_dir, "" , "./" );
+			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
+			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
+			NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
+			NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
+			NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
+			NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
+			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
+			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
 
-		NEW_OPT(  rif_dock::hack_pack, "" , true );
-		NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
-		NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
-		NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
-		NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
-		NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
-		NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
+			NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
+			NEW_OPT(  rif_dock::rf_oversample, "" , 2 );
 
-		NEW_OPT(  rif_dock::n_result_limit, "" , 2000000000 );
+			NEW_OPT(  rif_dock::rotrf_oversample, "" , 2 );
+			NEW_OPT(  rif_dock::rotrf_resl, "" , 0.3 );
+			NEW_OPT(  rif_dock::rotrf_spread, "" , 0.0 );
+			NEW_OPT(  rif_dock::rotrf_scale_atr, "" , 1.0 );
+			NEW_OPT(  rif_dock::rotrf_cache_dir, "" , "./" );
 
-		NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
+			NEW_OPT(  rif_dock::hack_pack, "" , true );
+			NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
+			NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
+			NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
+			NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
+			NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
+			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
-		NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
-		NEW_OPT(  rif_dock::force_output_if_close_to_input_num, "" , 0 );
+			NEW_OPT(  rif_dock::n_result_limit, "" , 2000000000 );
 
-		NEW_OPT(  rif_dock::upweight_iface, "", 1.2 );
+			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
 
-		NEW_OPT(  rif_dock::use_scaffold_bounding_grids, "", false );
+			NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
+			NEW_OPT(  rif_dock::force_output_if_close_to_input_num, "" , 0 );
 
-		NEW_OPT(  rif_dock::search_diameter, "", 150.0 );
-		NEW_OPT(  rif_dock::hsearch_scale_factor, "global scaling of rotation/translation search grid", 1.0 );
+			NEW_OPT(  rif_dock::upweight_iface, "", 1.2 );
 
-		NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
-		NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
-		NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
+			NEW_OPT(  rif_dock::use_scaffold_bounding_grids, "", false );
 
-		NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
+			NEW_OPT(  rif_dock::search_diameter, "", 150.0 );
+			NEW_OPT(  rif_dock::hsearch_scale_factor, "global scaling of rotation/translation search grid", 1.0 );
 
-		NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
-		NEW_OPT(  rif_dock::outdir, "", "./" );
-		NEW_OPT(  rif_dock::output_tag, "", "" );
+			NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
+			NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
+			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
 
-		NEW_OPT(  rif_dock::dont_use_scaffold_loops, "", false );
+			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 
-		NEW_OPT(  rif_dock::full_scaffold_output, "", false );
-		NEW_OPT(  rif_dock::dump_resfile, "", false );
-		NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
+			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
+			NEW_OPT(  rif_dock::outdir, "", "./" );
+			NEW_OPT(  rif_dock::output_tag, "", "" );
 
-		NEW_OPT(  rif_dock::cache_scaffold_data, "", false );
+			NEW_OPT(  rif_dock::dont_use_scaffold_loops, "", false );
 
-		NEW_OPT(  rif_dock::tether_to_input_position, "", -1.0 );
+			NEW_OPT(  rif_dock::full_scaffold_output, "", false );
+			NEW_OPT(  rif_dock::dump_resfile, "", false );
+			NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
 
-		NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
+			NEW_OPT(  rif_dock::cache_scaffold_data, "", false );
 
-		NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
-		NEW_OPT(  rif_dock::require_n_rifres, "", 0 );
+			NEW_OPT(  rif_dock::tether_to_input_position, "", -1.0 );
 
-		NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
-		NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
-		NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
-		NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
-		NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
-		NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
-		NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
-		NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
-		NEW_OPT(  rif_dock::rosetta_min_fix_target, "",  false );
-		NEW_OPT(  rif_dock::rosetta_score_cut  , "", -10.0 );
-		NEW_OPT(  rif_dock::rosetta_hard_min  , "", false );
-		NEW_OPT(  rif_dock::rosetta_score_total  , "", false );
-		NEW_OPT(  rif_dock::rosetta_score_ddg_only  , "", false );
-		NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.75 );
-		NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
-		NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
-		NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
+			NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
 
-		NEW_OPT(  rif_dock::extra_rotamers, "", true );
-		NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
-		NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
-        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+			NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
+			NEW_OPT(  rif_dock::require_n_rifres, "", 0 );
 
-        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
-        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
+			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
+			NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
+			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
+			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
+			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
+			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
+			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
+			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
+			NEW_OPT(  rif_dock::rosetta_min_fix_target, "",  false );
+			NEW_OPT(  rif_dock::rosetta_score_cut  , "", -10.0 );
+			NEW_OPT(  rif_dock::rosetta_hard_min  , "", false );
+			NEW_OPT(  rif_dock::rosetta_score_total  , "", false );
+			NEW_OPT(  rif_dock::rosetta_score_ddg_only  , "", false );
+			NEW_OPT(  rif_dock::rosetta_score_rifres_rifres_weight, "", 0.75 );
+			NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
+			NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
+			NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
 
-        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
-		NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
+			NEW_OPT(  rif_dock::extra_rotamers, "", true );
+			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
+			NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
+	        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
 
-		NEW_OPT(  rif_dock::resl0, "", 16 );
+	        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
+	        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
+
+	        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
+			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
+
+			NEW_OPT(  rif_dock::resl0, "", 16 );
 
 
-	}
+		}
+	#endif
+#endif
+
+
+#ifndef INCLUDED_rif_dock_test_hh_3
+#define INCLUDED_rif_dock_test_hh_3   
 
 struct RifDockOpt
 {
@@ -348,8 +359,18 @@ struct RifDockOpt
     float user_rotamer_bonus_constant;
     float user_rotamer_bonus_per_chi;
 
+    void init_from_cli();
 
-	void init_from_cli()
+};
+
+#endif
+
+#ifdef GLOBAL_VARIABLES_ARE_BAD
+
+#ifndef INCLUDED_rif_dock_test_hh_4
+#define INCLUDED_rif_dock_test_hh_4 
+
+	void RifDockOpt::init_from_cli()
 	{
 		using basic::options::option;
 		using namespace basic::options::OptionKeys;
@@ -479,6 +500,9 @@ struct RifDockOpt
         }
 
 	}
-};
+
 
 #endif
+#endif
+
+

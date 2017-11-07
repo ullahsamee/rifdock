@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
+#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 #include <string>
 #include <vector>
@@ -35,23 +36,33 @@ namespace scheme {
 struct SingleFileScaffoldProvider :
     public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, uint64_t, uint64_t> {
 
-    SingleFileScaffoldProvider();
+    // SingleFileScaffoldProvider();
+
+    SingleFileScaffoldProvider( 
+        std::string const & scaff_fname, 
+        std::string const & scaff_res_fname,
+        shared_ptr< RotamerIndex > rot_index_p_in, 
+        RifDockOpt const & opt_in);
 
 
     ParametricSceneConformationCOP get_scaffold(uint64_t i) override;
 
     uint64_t get_scaffold_index_limits() override;
 
-    ScaffoldDataCacheOP temp_function__get_writable_data_cache() {
-        temp_data__data_cache_ = make_shared<ScaffoldDataCache>();
-        return temp_data__data_cache_;
-    }
+    // ScaffoldDataCacheOP temp_function__get_writable_data_cache() {
+    //     temp_data__data_cache_ = make_shared<ScaffoldDataCache>();
+    //     return temp_data__data_cache_;
+    // }
 
 
     ParametricSceneConformationOP conformation_;
     core::pose::PoseCOP pose_;
 
-    ScaffoldDataCacheOP temp_data__data_cache_;
+
+    shared_ptr< RotamerIndex > rot_index_p;
+    RifDockOpt const & opt;
+
+    ScaffoldDataCacheOP data_cache_;
 
 };
 

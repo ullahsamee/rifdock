@@ -19,14 +19,15 @@
 #include <scheme/actor/Atom.hh>
 #include <scheme/kinematics/Scene.hh>
 
-#include <riflib/scaffold/util.hh>
 
 #include <boost/mpl/vector.hpp>
 
 namespace devel {
 namespace scheme {
 
+
 struct RIFAnchor;
+struct ScaffoldDataCache;
 
 
 
