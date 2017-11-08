@@ -69,7 +69,7 @@
 
 /// Brian
 	#include <scheme/objective/hash/XformHash.hh>
-	#include <riflib/scaffold/FileListScaffoldProvider.hh>
+	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 
@@ -636,6 +636,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						scaffold_res.push_back(ir);
 					}
 				}
+
+
 				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
 				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
 				std::cout << "rifdock scaffold_res: " << scaffold_res << std::endl;
@@ -654,16 +656,18 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 /////////////// Test code during refactor, delete this if you find it
 
 
-			FileListScaffoldProvider sf_scaffold_provider(
-				std::vector<std::string> {scaff_fname},
-				std::vector<utility::vector1<core::Size>> {scaffold_res},
+			SingleFileScaffoldProvider sf_scaffold_provider(
+				iscaff,
+				// scaffold_unmodified_from_file,
+				// scaffold_res,
+				// scafftag,
 				rot_index_p,
 				opt);
 
 			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
 			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
 
-			ScaffoldDataCache sdc = *(sf_scaffold_provider.temp_function__get_data_cache(0));
+			ScaffoldDataCache sdc = *(sf_scaffold_provider.temp_function__get_data_cache());
 
 			scaffold_res = *(sdc.scaffold_res_p);
 			scaffuseres = sdc.scaffuseres;

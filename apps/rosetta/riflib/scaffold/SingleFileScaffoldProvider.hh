@@ -7,8 +7,8 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#ifndef INCLUDED_riflib_scaffold_FileListScaffoldProvider_hh
-#define INCLUDED_riflib_scaffold_FileListScaffoldProvider_hh
+#ifndef INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
+#define INCLUDED_riflib_scaffold_SingleFileScaffoldProvider_hh
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
@@ -23,9 +23,6 @@
 
 #include <core/pose/Pose.hh>
 
-// Key Assumptions of this class:
-// - Only one segment is morphable
-
 
 namespace devel {
 namespace scheme {
@@ -33,14 +30,13 @@ namespace scheme {
 
 
 
-struct FileListScaffoldProvider :
+struct SingleFileScaffoldProvider :
     public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, uint64_t, uint64_t> {
 
     // SingleFileScaffoldProvider();
 
-    FileListScaffoldProvider( 
-        std::vector<std::string> const & scaff_fnames, 
-        std::vector<utility::vector1<core::Size>> const & scaffold_ress,
+    SingleFileScaffoldProvider( 
+        uint64_t iscaff,
         shared_ptr< RotamerIndex > rot_index_p_in, 
         RifDockOpt const & opt_in);
 
@@ -54,7 +50,7 @@ struct FileListScaffoldProvider :
     //     return temp_data__data_cache_;
     // }
 
-    ScaffoldDataCacheOP temp_function__get_data_cache(uint64_t i);
+    ScaffoldDataCacheOP temp_function__get_data_cache();
 
     ParametricSceneConformationOP conformation_;
     // core::pose::PoseCOP pose_;
@@ -63,9 +59,7 @@ struct FileListScaffoldProvider :
     shared_ptr< RotamerIndex > rot_index_p;
     RifDockOpt const & opt;
 
-    std::vector<std::string> scaff_fnames_;
-    std::vector<utility::vector1<core::Size>> scaffold_ress_;
-    std::vector<ScaffoldDataCacheOP> temp__data_caches_;
+    ScaffoldDataCacheOP temp__data_cache_;
 
 };
 

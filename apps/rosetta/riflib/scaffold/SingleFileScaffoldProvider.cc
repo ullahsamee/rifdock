@@ -7,7 +7,8 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#include <riflib/scaffold/FileListScaffoldProvider.hh>
+#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
+#include <riflib/scaffold/util.hh>
 
 #include <riflib/types.hh>
 #include <scheme/numeric/rand_xform.hh>
@@ -24,40 +25,42 @@ namespace devel {
 namespace scheme {
 
 
-// FileListScaffoldProvider::FileListScaffoldProvider() {}
+// SingleFileScaffoldProvider::SingleFileScaffoldProvider() {}
 
-FileListScaffoldProvider::FileListScaffoldProvider( 
-        std::vector<std::string> const & scaff_fnames, 
-        std::vector<utility::vector1<core::Size>> const & scaffold_ress,
-        shared_ptr< RotamerIndex > rot_index_p_in, 
-        RifDockOpt const & opt_in ) :
-        scaff_fnames_( scaff_fnames ),
-        scaffold_ress_( scaffold_ress ),
-        rot_index_p( rot_index_p_in), 
-        opt(opt_in) {
-            assert( scaff_fnames.size() == scaffold_ress.size() );
-            temp__data_caches_.resize( scaff_fnames.size() );
-        }
+SingleFileScaffoldProvider::SingleFileScaffoldProvider( 
+    uint64_t iscaff,
+    shared_ptr< RotamerIndex > rot_index_p_in, 
+    RifDockOpt const & opt_in) :
+
+    rot_index_p( rot_index_p_in), 
+    opt(opt_in) {
 
 
-ScaffoldDataCacheOP 
-FileListScaffoldProvider::temp_function__get_data_cache(uint64_t i) {
-    assert(i < get_scaffold_index_limits());
-
-    std::string scafftag = utility::file_basename( utility::file::file_basename( scaff_fnames_[i] ) );
+    std::string scafftag;
     core::pose::Pose scaffold;
-    core::import_pose::pose_from_file( scaffold, scaff_fnames_[i] );
+    utility::vector1<core::Size> scaffold_res;
 
-    return make_shared<ScaffoldDataCache>( 
-        scaffold, 
-        scaffold_ress_[i],
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res);
+
+    temp__data_cache_ = make_shared<ScaffoldDataCache>(
+        scaffold,
+        scaffold_res,
         scafftag,
         rot_index_p,
         opt);
+
 }
 
 
-// FileListScaffoldProvider::FileListScaffoldProvider(
+ScaffoldDataCacheOP 
+SingleFileScaffoldProvider::temp_function__get_data_cache() {
+
+    return temp__data_cache_;
+
+}
+
+
+// SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 //         std::string const & scaff_fname, 
 //         std::string const & scaff_res_fname,
 //         shared_ptr< RotamerIndex > rot_index_p_in, 
@@ -110,7 +113,7 @@ FileListScaffoldProvider::temp_function__get_data_cache(uint64_t i) {
 
 
 ParametricSceneConformationCOP 
-FileListScaffoldProvider::get_scaffold(uint64_t i) {
+SingleFileScaffoldProvider::get_scaffold(uint64_t i) {
     if ( ! conformation_ ) {
         utility_exit_with_message("Conformation not intialized yet!!");
     }
@@ -119,8 +122,8 @@ FileListScaffoldProvider::get_scaffold(uint64_t i) {
 
 
 uint64_t 
-FileListScaffoldProvider::get_scaffold_index_limits() {
-    return scaff_fnames_.size();
+SingleFileScaffoldProvider::get_scaffold_index_limits() {
+    return 1;
 }
 
 
