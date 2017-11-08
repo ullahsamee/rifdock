@@ -37,9 +37,10 @@ namespace f = boost::fusion;
 
 namespace impl {
 
-	template< class ActorContainer, class CacheData=uint64_t >
+	template< class ActorContainer, class _CacheData=uint64_t >
 	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
 		typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
+		typedef _CacheData CacheData;
 		Conformation(){}
 		template<class Actor>
 		void add_actor(Actor const & a){

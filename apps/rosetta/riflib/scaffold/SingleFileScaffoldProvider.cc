@@ -53,7 +53,7 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 
 
 ScaffoldDataCacheOP 
-SingleFileScaffoldProvider::temp_function__get_data_cache() {
+SingleFileScaffoldProvider::get_data_cache_slow(uint64_t i) {
 
     return temp__data_cache_;
 

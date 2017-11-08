@@ -17,7 +17,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class ScaffoldProvider >
 struct HsearchData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -25,8 +25,8 @@ struct HsearchData {
     int64_t & total_search_effort;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     devel::scheme::ScenePtr & scene_minimal;
-    Eigen::Vector3f & scaffold_center;
-    float & redundancy_filter_rg;
+    // Eigen::Vector3f & scaffold_center;
+    float & target_redundancy_filter_rg;
     // core::pose::Pose & scaffold_centered;
     core::pose::Pose & target;
     // std::vector<devel::scheme::EigenXform> & symmetries_clash_check;
@@ -36,17 +36,19 @@ struct HsearchData {
     std::vector< devel::scheme::ObjectivePtr > & objectives;
     int64_t & non0_space_size;
 
+    ScaffoldProvider & scaffold_provider;
+
 };
 
 // template<__DirectorBase>
 // using HsearchFunctionType = typedef
 
 
-template<class DirectorBase>
+template<class DirectorBase, class ScaffoldProvider >
 bool
 hsearch_original(
     shared_ptr<std::vector< _SearchPointWithRots<DirectorBase> > > & hsearch_results_p,
-    HsearchData<DirectorBase > & d) {
+    HsearchData<DirectorBase, ScaffoldProvider > & d) {
 
 
     using namespace core::scoring;
@@ -94,6 +96,11 @@ hsearch_original(
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+
+
+    ScaffoldDataCacheOP sdc = d.scaffold_provider.get_data_cache_slow(0);
+    float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
+    Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
 
     std::vector< std::vector< SearchPoint > > samples( d.RESLS.size() );
@@ -146,8 +153,8 @@ hsearch_original(
 
                     if( d.opt.tether_to_input_position ){
                         EigenXform x = tscene->position(1);
-                        x.translation() -= d.scaffold_center;
-                        float xmag =  xform_magnitude( x, d.redundancy_filter_rg );
+                        x.translation() -= scaffold_center;
+                        float xmag =  xform_magnitude( x, redundancy_filter_rg );
                         if( xmag > d.opt.tether_to_input_position_cut + d.RESLS[iresl] ){
                             samples[iresl][i].score = 9e9;
                             continue;

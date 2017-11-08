@@ -50,7 +50,7 @@ struct SingleFileScaffoldProvider :
     //     return temp_data__data_cache_;
     // }
 
-    ScaffoldDataCacheOP temp_function__get_data_cache();
+    ScaffoldDataCacheOP get_data_cache_slow(uint64_t i) override;
 
     ParametricSceneConformationOP conformation_;
     // core::pose::PoseCOP pose_;

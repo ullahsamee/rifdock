@@ -33,12 +33,15 @@ struct ScaffoldProviderBase {
     typedef _Scaffold Scaffold;
     typedef _ScaffoldIndex ScaffoldIndex;
     typedef _ScaffoldIndexLimits ScaffoldIndexLimits;
+    typedef typename Scaffold::CacheData ScaffoldCacheData;
     ScaffoldProviderBase() {}
 
 
     virtual shared_ptr<Scaffold const> get_scaffold(ScaffoldIndex i) = 0;
 
     virtual ScaffoldIndexLimits get_scaffold_index_limits() = 0;
+
+    virtual shared_ptr<ScaffoldCacheData> get_data_cache_slow(ScaffoldIndex i) = 0;
 
 };
 

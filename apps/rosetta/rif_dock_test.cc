@@ -91,7 +91,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class HSearchDirector, class HsearchFunction>
+template<class HSearchDirector, class ScaffoldProvider, class HsearchFunction >
 int old_main( RifDockOpt opt, HsearchFunction hsearch);
 
 
@@ -127,10 +127,10 @@ int main(int argc, char *argv[]) {
 
 		typedef _DirectorBase<DirectorOriTrans6D> DirectorBase;
 
-		auto hsearch = &hsearch_original<DirectorBase>;
+		auto hsearch = &hsearch_original<DirectorBase, devel::scheme::SingleFileScaffoldProvider>;
 
 
-		return old_main<DirectorOriTrans6D>( opt, hsearch );
+		return old_main<DirectorOriTrans6D, devel::scheme::SingleFileScaffoldProvider>( opt, hsearch );
 	} else {
 		return 0;
 	}
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 
 }
 
-template<class _HSearchDirector, class HsearchFunction>
+template<class _HSearchDirector, class ScaffoldProvider, class HsearchFunction>
 int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 	typedef _HSearchDirector HSearchDirector;
@@ -593,70 +593,15 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			shared_ptr<TBT> local_twobody;							// twobody_rotamer_energies using local_seqpos
 
 			EigenXform scaffold_perturb = EigenXform::Identity();
-			{
-				core::import_pose::pose_from_file( scaffold, scaff_fname );
-				scaffold_unmodified_from_file = scaffold;
-				if( opt.random_perturb_scaffold ){
-					runtime_assert_msg( !opt.use_scaffold_bounding_grids,
-						"opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
-					::scheme::numeric::rand_xform(rng,scaffold_perturb);
-					xform_pose( scaffold, eigen2xyz(scaffold_perturb) );
-				}
-
-				scaffold_full_centered = scaffold;
-
-				for( int ir = 1; ir <= scaffold.size(); ++ir ){
-					scaffold_sequence_glob0.push_back( scaffold.residue(ir).name3() );
-				}
-
-				std::string scaff_res_fname = "";
-				if( opt.scaffold_res_fnames.size() ){
-					if( opt.scaffold_res_fnames.size() == opt.scaffold_fnames.size() ){
-						scaff_res_fname = opt.scaffold_res_fnames.at(iscaff);
-					} else if( opt.scaffold_res_fnames.size() == 1 ){
-						scaff_res_fname = opt.scaffold_res_fnames.front();
-					} else {
-						utility_exit_with_message( "-scaffold_res list not same length as -scaffolds list" );
-					}
-					if( opt.scaffold_res_use_best_guess ){
-						utility_exit_with_message("should only use -scaffold_res_use_best_guess true iff not specifying scaffold_res");
-					}
-					scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
-				} else if (opt.scaffold_res_use_best_guess ){
-					scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
-					std::cout << "using scaffold residues: ";
-					for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
-					std::cout << std::endl;
-				} else {
-					for( int ir = 1; ir <= scaffold.size(); ++ir){
-						if( !scaffold.residue(ir).is_protein() ) continue;
-						//if( scaffold.residue(ir).name3() == "PRO" ) continue;
-						//if( scaffold.residue(ir).name3() == "GLY" ) continue;
-						//if( scaffold.residue(ir).name3() == "CYS" ) continue;
-						scaffold_res.push_back(ir);
-					}
-				}
 
 
-				if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold );
-				else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold, scaffold_res );
-				std::cout << "rifdock scaffold_res: " << scaffold_res << std::endl;
-
-				// scaffold.dump_pdb( utility::file_basename(scaff_fname)+"_pruned.pdb");
-
-				float scaff_redundancy_filter_rg=0;
-				get_rg_radius( scaffold, scaff_redundancy_filter_rg, scaff_radius, scaffold_res, false ); // not allatom for scaff
-				redundancy_filter_rg = std::min( scaff_redundancy_filter_rg, target_redundancy_filter_rg );
-				std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
-				std::cout << "using redundancy_filter_rg: " << redundancy_filter_rg << std::endl;
-
-
+			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
 
 ///////////////////////////////////////////////////////////////////////////////////
 /////////////// Test code during refactor, delete this if you find it
 
 
-			SingleFileScaffoldProvider sf_scaffold_provider(
+			ScaffoldProvider scaffold_provider(
 				iscaff,
 				// scaffold_unmodified_from_file,
 				// scaffold_res,
@@ -667,7 +612,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
 			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
 
-			ScaffoldDataCache sdc = *(sf_scaffold_provider.temp_function__get_data_cache());
+			ScaffoldDataCache sdc = *(scaffold_provider.get_data_cache_slow(0));
 
 			scaffold_res = *(sdc.scaffold_res_p);
 			scaffuseres = sdc.scaffuseres;
@@ -681,12 +626,19 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			scaffold_centered = *(sdc.scaffold_centered_p);
 			scaffold_full_centered = *(sdc.scaffold_full_centered_p);
-			// scaffold_simple_atoms_all = *(sdc.scaffold_simple_atoms_all_p);
-			// scaffold_simple_atoms = *(sdc.scaffold_simple_atoms_p);
+			scaffold_simple_atoms_all = *(sdc.scaffold_simple_atoms_all_p);
+			scaffold_simple_atoms = *(sdc.scaffold_simple_atoms_p);
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 
+				float scaff_redundancy_filter_rg=0;
+				get_rg_radius( scaffold_centered, scaff_redundancy_filter_rg, scaff_radius, scaffold_res, false ); // not allatom for scaff
+				redundancy_filter_rg = std::min( scaff_redundancy_filter_rg, target_redundancy_filter_rg );
+				std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
+				std::cout << "using redundancy_filter_rg: " << redundancy_filter_rg << std::endl;
+
+				scaffold = scaffold_centered;
 				both_pose      = scaffold_centered;
 				both_full_pose = scaffold_full_centered;
 				scaffold_only_pose = scaffold_centered;
@@ -742,7 +694,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "filt_2b memuse: " << (float)local_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
 
 				// todo: prune twobody table???
-			}
+			
 
 
 
@@ -779,40 +731,40 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			print_header( "setup 3D rosetta_field grids for scaffold" );
 			std::vector< VoxelArrayPtr > scaffold_field_by_atype;
 			std::vector< std::vector< VoxelArrayPtr > > scaffold_bounding_by_atype;
-			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
+			// std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
 
 			std::cout << "not using scaffold bounding grids" << std::endl;
-			for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
-				utility::vector1<core::Size> resids(1,ir); // 1-index numbering
-				{
-					std::vector<SchemeAtom> scaff_res_atoms;
-					if( !opt.lowres_sterics_cbonly && std::find( scaffold_res.begin(), scaffold_res.end(), ir ) != scaffold_res.end() ){
-						devel::scheme::get_scheme_atoms( scaffold_centered, resids, scaff_res_atoms, true ); //bb + CB
-					} else { // is not selected residue
-						devel::scheme::get_scheme_atoms_cbonly( scaffold_centered, resids, scaff_res_atoms ); // literally only CB
-					}
-					int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
-					for( int ia = 0; ia < scaff_res_atoms.size(); ++ia){
-						SchemeAtom const & a( scaff_res_atoms[ia] );
-						runtime_assert( a.type() > 0 );
-						if( a.type() >= 21 ) continue;
-						SimpleAtom sa( a.position(), a.type(), restype, ia );
-						scaffold_simple_atoms.push_back(sa);
-					}
-				}
-				{
-					std::vector<SchemeAtom> all_scaff_res_atoms;
-					devel::scheme::get_scheme_atoms( scaffold_centered, resids, all_scaff_res_atoms, false );
-					int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
-					for( int ia = 0; ia < all_scaff_res_atoms.size(); ++ia){
-						SchemeAtom const & a( all_scaff_res_atoms[ia] );
-						runtime_assert( a.type() > 0 );
-						if( a.type() >= 21 ) continue;
-						SimpleAtom sa( a.position(), a.type(), restype, ia );
-						scaffold_simple_atoms_all.push_back(sa);
-					}
-				}
-			}
+			// for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
+			// 	utility::vector1<core::Size> resids(1,ir); // 1-index numbering
+			// 	{
+			// 		std::vector<SchemeAtom> scaff_res_atoms;
+			// 		if( !opt.lowres_sterics_cbonly && std::find( scaffold_res.begin(), scaffold_res.end(), ir ) != scaffold_res.end() ){
+			// 			devel::scheme::get_scheme_atoms( scaffold_centered, resids, scaff_res_atoms, true ); //bb + CB
+			// 		} else { // is not selected residue
+			// 			devel::scheme::get_scheme_atoms_cbonly( scaffold_centered, resids, scaff_res_atoms ); // literally only CB
+			// 		}
+			// 		int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
+			// 		for( int ia = 0; ia < scaff_res_atoms.size(); ++ia){
+			// 			SchemeAtom const & a( scaff_res_atoms[ia] );
+			// 			runtime_assert( a.type() > 0 );
+			// 			if( a.type() >= 21 ) continue;
+			// 			SimpleAtom sa( a.position(), a.type(), restype, ia );
+			// 			scaffold_simple_atoms.push_back(sa);
+			// 		}
+			// 	}
+			// 	{
+			// 		std::vector<SchemeAtom> all_scaff_res_atoms;
+			// 		devel::scheme::get_scheme_atoms( scaffold_centered, resids, all_scaff_res_atoms, false );
+			// 		int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
+			// 		for( int ia = 0; ia < all_scaff_res_atoms.size(); ++ia){
+			// 			SchemeAtom const & a( all_scaff_res_atoms[ia] );
+			// 			runtime_assert( a.type() > 0 );
+			// 			if( a.type() >= 21 ) continue;
+			// 			SimpleAtom sa( a.position(), a.type(), restype, ia );
+			// 			scaffold_simple_atoms_all.push_back(sa);
+			// 		}
+			// 	}
+			// }
 			std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms.size() << std::endl;
 
 
@@ -917,7 +869,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
 
 				{
-					HsearchData<DirectorBase> data {
+					HsearchData<DirectorBase, ScaffoldProvider> data {
 						opt,
 						RESLS,
 						director,
@@ -925,14 +877,16 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						scene_pt,
 						scene_minimal,
 						scaffold_center,
-						redundancy_filter_rg,
+						target_redundancy_filter_rg,
 						// scaffold_centered,
 						target,
 						// scaffold_simple_atoms,
 						rot_index,
 						// scaffold_bounding_by_atype,
 						objectives,
-						non0_space_size
+						non0_space_size,
+						scaffold_provider
+
 
 					};
 					bool hsearch_success = (*hsearch)( hsearch_results_p, data );

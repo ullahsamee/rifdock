@@ -278,6 +278,13 @@ struct ScaffoldDataCache {
     }
 
 
+    float
+    get_redundancy_filter_rg( float target_redundancy_filter_rg ) {
+        return std::min( target_redundancy_filter_rg, scaff_redundancy_filter_rg );
+    }
+
+
+
 };
 
 
