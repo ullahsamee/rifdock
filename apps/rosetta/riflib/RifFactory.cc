@@ -309,7 +309,7 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
 		mutable std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
-		std::vector< std::pair<int,int> > const * scaffold_rotamers_;
+		mutable std::vector< std::pair<int,int> > const * scaffold_rotamers_;
 		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
 		devel::scheme::ScoreRotamerVsTarget<
 				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -329,7 +329,7 @@ std::string get_rif_type_from_file( std::string fname )
 		}
 
 		void init_for_packing(
-			::scheme::objective::storage::TwoBodyTable<float> const & twob,
+			// ::scheme::objective::storage::TwoBodyTable<float> const & twob,
 			shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
 			std::vector<VoxelArrayPtr> const & target_field_by_atype,
 			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
@@ -339,7 +339,7 @@ std::string get_rif_type_from_file( std::string fname )
 			packing_ = true;
 			packperthread_.clear();
 			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
-				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(twob,hackpackopts,rot_index_p->ala_rot(),i);
+				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
 				packperthread_.push_back( tmp );
 			}
 			rot_tgt_scorer_.rot_index_p_ = rot_index_p;
@@ -375,11 +375,11 @@ std::string get_rif_type_from_file( std::string fname )
 		void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
 		{
 
-			// this code causes a major slowdown - Brian
-
+			// Added by brian ////////////////////////
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
 			rotamer_energies_1b_ = data_cache->local_onebody_p.get();
 			//////////////////////////////////////////
+
 			runtime_assert( rif_ );
 			runtime_assert( rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 ){
@@ -389,10 +389,16 @@ std::string get_rif_type_from_file( std::string fname )
 			scratch.has_rifrot_.resize(rotamer_energies_1b_->size(), false);
 			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
 			if( !packing_ ) return;
+
+			// Added by brian ////////////////////////
+			scaffold_rotamers_ = data_cache->local_rotamers_p.get();
+			//////////////////////////////////////////
+
+			runtime_assert( scaffold_rotamers_ );
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
 			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
-			scratch.hackpack_->reinitialize();
+			scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
 		}
 
 		template<class Config>
@@ -771,7 +777,7 @@ struct RifFactoryImpl :
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
 							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
 		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
-			*config.local_twobody,
+			// *config.local_twobody,
 			config.rot_index_p,
 			*config.target_field_by_atype,
 			*config.target_donors,

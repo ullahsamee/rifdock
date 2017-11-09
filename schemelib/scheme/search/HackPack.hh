@@ -81,29 +81,37 @@ struct HackPack
 	std::vector< std::pair<int32_t,int32_t> > rot_list_; // list of ireslocal / irotlocal pairs
 	std::vector< int32_t > current_rots_, trial_best_rots_, global_best_rots_; // current rotamer in local numbering
 	std::mt19937 rng;
-	::scheme::objective::storage::TwoBodyTable<float> const & twob_; // dangerous, but faster than ptr / shared_ptr
+	shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> twob_; 
 	float score_, trial_best_score_, global_best_score_;
 	HackPackOpts opts_;
 	int32_t default_rot_num_;
 	HackPack(
-		::scheme::objective::storage::TwoBodyTable<float> const & twob,
+		// ::scheme::objective::storage::TwoBodyTable<float> const & twob,
 		HackPackOpts const & opts,
 		int32_t default_rot_num,
 		int seed_offset = 0 // mainly for threads
 	)
 		: nres_(0)
 		, rng( 0)//time(0)+seed_offset )
-		, twob_( twob )
+		// , twob_( twob )
 		, opts_(opts)
 		, default_rot_num_( default_rot_num )
-	{
-		ALWAYS_ASSERT( twob_.nrot_ > 0 );
-		ALWAYS_ASSERT( twob_.nres_ > 0 );
-		ALWAYS_ASSERT( twob_.nrot_ < 99999 );
-		ALWAYS_ASSERT( twob_.nres_ < 99999 );
-	}
+	{}
 
-	void reinitialize(){
+	void reinitialize(
+		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> twob ){
+
+		// Brian
+
+		twob_ = twob;
+		ALWAYS_ASSERT( twob_->nrot_ > 0 );
+		ALWAYS_ASSERT( twob_->nres_ > 0 );
+		ALWAYS_ASSERT( twob_->nrot_ < 99999 );
+		ALWAYS_ASSERT( twob_->nres_ < 99999 );
+
+		////////////////////
+
+
 		// todo: always add native rotamer and ALA/GLY as appropriate
 		// should hopefully not deallocate memory
 		rot_list_.clear();
@@ -116,9 +124,9 @@ struct HackPack
 	template< class Int >
 	bool using_rotamer( Int const & ires, Int const & irotglobal )
 	{
-		ALWAYS_ASSERT( 0 <= ires && ires < twob_.all2sel_.shape()[0] );
-		ALWAYS_ASSERT( 0 <= irotglobal && irotglobal < twob_.all2sel_.shape()[1] );
-		return twob_.all2sel_[ires][irotglobal] >= 0;
+		ALWAYS_ASSERT( 0 <= ires && ires < twob_->all2sel_.shape()[0] );
+		ALWAYS_ASSERT( 0 <= irotglobal && irotglobal < twob_->all2sel_.shape()[1] );
+		return twob_->all2sel_[ires][irotglobal] >= 0;
 	}
 	template< class Int >
 	void add_tmp_rot( int const & ires, Int const & irotglobal, float const & onebody_e )
@@ -131,9 +139,9 @@ struct HackPack
 		if( onebody_e > 10.0 ){
 			return;
 		}
-		ALWAYS_ASSERT( 0 <= ires && ires < twob_.all2sel_.shape()[0] );
-		ALWAYS_ASSERT( 0 <= irotglobal && irotglobal < twob_.all2sel_.shape()[1] );
-		int32_t irotlocal = twob_.all2sel_[ires][irotglobal];
+		ALWAYS_ASSERT( 0 <= ires && ires < twob_->all2sel_.shape()[0] );
+		ALWAYS_ASSERT( 0 <= irotglobal && irotglobal < twob_->all2sel_.shape()[1] );
+		int32_t irotlocal = twob_->all2sel_[ires][irotglobal];
 		// std::cout << "irotlocal" << irotlocal << std::endl;
 		if( irotlocal >= 0 ){
 			if( nres_==0 || res_rots_.at(nres_-1).first != ires ){
@@ -141,7 +149,7 @@ struct HackPack
 				if( res_rots_.size() < nres_ ) res_rots_.resize( nres_ );
 				res_rots_.at(nres_-1).first = ires;
 				// always allow ALA as an option:
-				int alarot = twob_.all2sel_[ires][ default_rot_num_ ];
+				int alarot = twob_->all2sel_[ires][ default_rot_num_ ];
 				if( alarot >= 0 ) {
 					rot_list_.push_back( std::make_pair( nres_-1, res_rots_.at(nres_-1).second.size() ) );
 					res_rots_.at(nres_-1).second.push_back( RotInfo( alarot, 0.0 ) );
@@ -175,7 +183,7 @@ struct HackPack
 		// 		int   const iresglobal = res_rots_[i].first;
 		// 		int   const irottwob   = res_rots_[i].second[ rots[i] ].first;
 		// 		float const ionebody   = res_rots_[i].second[ rots[i] ].second;
-		// 		int irotglobal = twob_.sel2all_[ iresglobal ][ irottwob ];
+		// 		int irotglobal = twob_->sel2all_[ iresglobal ][ irottwob ];
 		// 		std::cout << "ONEBODY " << iresglobal << " " << rot_index_.resname(irotglobal) << irotglobal << " " << ionebody << std::endl;
 		// 	}
 		float score = 0.0;
@@ -197,10 +205,10 @@ struct HackPack
 				int32_t const jresglobal = res_rots_.at(jres).first;
 				int32_t const jrottwob   = res_rots_.at(jres).second.at( jrotlocal ).first;
 				float const jonebody     = res_rots_.at(jres).second.at( jrotlocal ).second;
-				float const twobodye     = twob_.twobody_rotlocalnumbering( iresglobal, jresglobal, irottwob, jrottwob );
+				float const twobodye     = twob_->twobody_rotlocalnumbering( iresglobal, jresglobal, irottwob, jrottwob );
 				score += twobodye;
-					// int irotglobal = twob_.sel2all_[ iresglobal ][ irottwob ];
-					// int jrotglobal = twob_.sel2all_[ jresglobal ][ jrottwob ];
+					// int irotglobal = twob_->sel2all_[ iresglobal ][ irottwob ];
+					// int jrotglobal = twob_->sel2all_[ jresglobal ][ jrottwob ];
 					// std::cout << "TWOBODY "
 					//           << I(2,ires) << "/" << I(2,jres) << " "
 					//           << I(3,iresglobal) << "/" << I(3,jresglobal) << " "
@@ -232,8 +240,8 @@ struct HackPack
 			int32_t const jresglobal = res_rots_.at(j).first;
 			int32_t const jrottwob   = res_rots_.at(j).second.at( rots.at(j) ).first;
 			float   const jonebody   = res_rots_.at(j).second.at( rots.at(j) ).second;
-			float   const twobodyeold = twob_.twobody_rotlocalnumbering( iresglobal, jresglobal, irottwobold, jrottwob );
-			float   const twobodyenew = twob_.twobody_rotlocalnumbering( iresglobal, jresglobal, irottwobnew, jrottwob );
+			float   const twobodyeold = twob_->twobody_rotlocalnumbering( iresglobal, jresglobal, irottwobold, jrottwob );
+			float   const twobodyenew = twob_->twobody_rotlocalnumbering( iresglobal, jresglobal, irottwobnew, jrottwob );
 			delta -= twobodyeold;
 			delta += twobodyenew;
 			// std::cout << "DELTA TWOB"
@@ -371,7 +379,7 @@ struct HackPack
 		for( int i = 0; i < nres_; ++i ){
 			int32_t iresglobal = res_rots_.at(i).first;
 			int32_t irottwob   = res_rots_.at(i).second.at( current_rots_.at(i) ).first;
-			ALWAYS_ASSERT( 0 <= iresglobal && iresglobal < twob_.sel2all_.shape()[0] );
+			ALWAYS_ASSERT( 0 <= iresglobal && iresglobal < twob_->sel2all_.shape()[0] );
 			if( irottwob < 0 ){
 				#ifdef USE_OPENMP
 				#pragma omp critical
@@ -383,8 +391,8 @@ struct HackPack
 					std::exit(-1);
 				}
 			}
-			ALWAYS_ASSERT( 0 <= irottwob   && irottwob   < twob_.sel2all_.shape()[1] );
-			int32_t irotglobal = twob_.sel2all_[ iresglobal ][ irottwob ];
+			ALWAYS_ASSERT( 0 <= irottwob   && irottwob   < twob_->sel2all_.shape()[1] );
+			int32_t irotglobal = twob_->sel2all_[ iresglobal ][ irottwob ];
 			result_rots.push_back( std::make_pair( iresglobal, irotglobal ) );
 		}
 	}
