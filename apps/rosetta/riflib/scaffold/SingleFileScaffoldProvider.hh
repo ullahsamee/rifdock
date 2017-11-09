@@ -52,14 +52,15 @@ struct SingleFileScaffoldProvider :
 
     ScaffoldDataCacheOP get_data_cache_slow(uint64_t i) override;
 
-    ParametricSceneConformationOP conformation_;
+    void set_fa_mode( bool fa ) override;
+
+    ParametricSceneConformationCOP conformation_;
     // core::pose::PoseCOP pose_;
 
 
     shared_ptr< RotamerIndex > rot_index_p;
     RifDockOpt const & opt;
 
-    ScaffoldDataCacheOP temp__data_cache_;
 
 };
 

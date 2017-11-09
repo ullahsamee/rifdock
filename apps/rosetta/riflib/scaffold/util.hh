@@ -92,6 +92,68 @@ get_info_for_iscaff(
 
 }
 
+// historically, non_fa was used during HSearch and fa was used during hack pack
+ParametricSceneConformationCOP
+make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa = false) {
+    typedef numeric::xyzVector<core::Real> Vec;
+    ParametricScene scene(1);
+
+    core::pose::Pose const & scaffold_centered = *(cache->scaffold_centered_p);
+    std::vector<int> const & scaffres_g2l = *(cache->scaffres_g2l_p);
+    utility::vector1<core::Size> const & scaffold_res = *(cache->scaffold_res_p);
+    std::vector< SimpleAtom > const & scaffold_simple_atoms = *(cache->scaffold_simple_atoms_p);
+    std::vector< SimpleAtom > const & scaffold_simple_atoms_all = *(cache->scaffold_simple_atoms_all_p);
+
+
+    for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
+        Vec N  = scaffold_centered.residue(ir).xyz("N" );
+        Vec CA = scaffold_centered.residue(ir).xyz("CA");
+        Vec C  = scaffold_centered.residue(ir).xyz("C" );
+
+        // todo map res indices, must also edit onebody_energies
+        BBActor bbactor( N, CA, C, '-', '-', scaffres_g2l[ir-1] );
+        runtime_assert( bbactor.index_ == scaffres_g2l[ir-1] );
+
+
+        if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
+            scene.add_actor(0,bbactor);
+        }
+    }
+
+    if (fa) {
+        BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms_all ) scene.add_actor( 0, sa );
+        runtime_assert( scene.template num_actors<SimpleAtom>(0) == scaffold_simple_atoms_all.size() );
+    } else {
+        BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms ) scene.add_actor( 0, sa );
+        runtime_assert( scene.template num_actors<SimpleAtom>(0) == scaffold_simple_atoms.size() );
+    }
+
+    ParametricSceneConformationCOP conformation = scene.conformation_ptr(0);
+
+    ParametricSceneConformationOP conformation_mutable = std::const_pointer_cast<ParametricSceneConformation>( conformation );
+
+    conformation_mutable->cache_data_ = cache;
+    conformation_mutable->cache_data_->conformation_is_fa = fa;
+
+    std::cout << "FA status is: " << (fa ? "True" : "False") << std::endl;
+
+    return conformation;
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }}

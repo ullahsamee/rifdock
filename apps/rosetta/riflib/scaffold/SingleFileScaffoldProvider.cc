@@ -42,12 +42,14 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 
     get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res);
 
-    temp__data_cache_ = make_shared<ScaffoldDataCache>(
+    ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
         scaffold_res,
         scafftag,
         rot_index_p,
         opt);
+
+    conformation_ = make_conformation_from_data_cache(temp_data_cache_, false);
 
 }
 
@@ -55,61 +57,9 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 ScaffoldDataCacheOP 
 SingleFileScaffoldProvider::get_data_cache_slow(uint64_t i) {
 
-    return temp__data_cache_;
+    return get_scaffold(i)->cache_data_;
 
 }
-
-
-// SingleFileScaffoldProvider::SingleFileScaffoldProvider(
-//         std::string const & scaff_fname, 
-//         std::string const & scaff_res_fname,
-//         shared_ptr< RotamerIndex > rot_index_p_in, 
-//         RifDockOpt const & opt_in ) :
-//         rot_index_p( rot_index_p_in), opt(opt_in) {
-
-//     std::string scafftag = utility::file_basename( utility::file::file_basename( scaff_fname ) );
-//     core::pose::Pose scaffold;
-//     core::import_pose::pose_from_file( scaffold, scaff_fname );
-
-//     if( opt.random_perturb_scaffold ){
-//         EigenXform scaffold_perturb = EigenXform::Identity();
-//         runtime_assert_msg( !opt.use_scaffold_bounding_grids,
-//             "opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
-
-//         std::mt19937 rng( 0);// std::random_device{}() );
-//         ::scheme::numeric::rand_xform(rng,scaffold_perturb);
-//         xform_pose( scaffold, eigen2xyz(scaffold_perturb) );
-//     }
-
-//     // setup scaffold_res
-//     utility::vector1<core::Size> scaffold_res;
-//     if( opt.scaffold_res_fnames.size() ){
-//         if( opt.scaffold_res_use_best_guess ){
-//             utility_exit_with_message("should only use -scaffold_res_use_best_guess true iff not specifying scaffold_res");
-//         }
-//         scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
-//     } else if (opt.scaffold_res_use_best_guess ){
-//         scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops );
-//         std::cout << "using scaffold residues: ";
-//         for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
-//         std::cout << std::endl;
-//     } else {
-//         for( int ir = 1; ir <= scaffold.size(); ++ir){
-//             if( !scaffold.residue(ir).is_protein() ) continue;
-//             //if( scaffold.residue(ir).name3() == "PRO" ) continue;
-//             //if( scaffold.residue(ir).name3() == "GLY" ) continue;
-//             //if( scaffold.residue(ir).name3() == "CYS" ) continue;
-//             scaffold_res.push_back(ir);
-//         }
-//     }
-
-//     data_cache_ = make_shared<ScaffoldDataCache>( 
-//         scaffold, 
-//         scaffold_res,
-//         scafftag,
-//         rot_index_p,
-//         opt);
-// }
 
 
 ParametricSceneConformationCOP 
@@ -126,6 +76,14 @@ SingleFileScaffoldProvider::get_scaffold_index_limits() {
     return 1;
 }
 
+
+void 
+SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
+    ScaffoldDataCacheOP cache = get_data_cache_slow( 0 );
+    if ( cache->conformation_is_fa != fa ) {
+        conformation_ = make_conformation_from_data_cache(cache, fa);
+    }
+}
 
 
 }}

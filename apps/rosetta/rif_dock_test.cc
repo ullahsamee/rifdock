@@ -174,6 +174,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 		typedef _RifDockResult<HSearchDirector> RifDockResult;
 		typedef _SearchPoint<HSearchDirector> SearchPoint;
 		typedef _SearchPointWithRots<HSearchDirector> SearchPointWithRots;
+		typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
 
 		::scheme::search::HackPackOpts packopts;
@@ -601,7 +602,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 /////////////// Test code during refactor, delete this if you find it
 
 
-			ScaffoldProvider scaffold_provider(
+			ScaffoldProviderOP scaffold_provider = make_shared<ScaffoldProvider>(
 				iscaff,
 				// scaffold_unmodified_from_file,
 				// scaffold_res,
@@ -612,7 +613,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
 			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
 
-			ScaffoldDataCache sdc = *(scaffold_provider.get_data_cache_slow(0));
+			ScaffoldDataCache & sdc = *(scaffold_provider->get_data_cache_slow(0));
 
 			scaffold_res = *(sdc.scaffold_res_p);
 			scaffuseres = sdc.scaffuseres;
@@ -802,6 +803,17 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 
 			}
+
+///////////////////////////////////////////////////////////////////////////////////
+/////////////// Test code during refactor, delete this if you find it
+
+			shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(scene_minimal));
+			scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(0));
+
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
 			cout << "scores for scaffold in original position: " << std::endl;
 			{
 				EigenXform x(EigenXform::Identity());
@@ -876,7 +888,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						total_search_effort,
 						scene_pt,
 						scene_minimal,
-						scaffold_center,
+						// scaffold_center,
 						target_redundancy_filter_rg,
 						// scaffold_centered,
 						target,
@@ -885,7 +897,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						// scaffold_bounding_by_atype,
 						objectives,
 						non0_space_size,
-						scaffold_provider
+						*scaffold_provider
 
 
 					};
@@ -905,7 +917,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
 
 		        {
-		        	HackPackData<DirectorBase> data {
+		        	HackPackData<DirectorBase,ScaffoldProvider> data {
 		        		opt,
 						RESLS,
 						director,
@@ -917,7 +929,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						npack,
 						packopts,
 						packing_objective,
-						hsearch_results_p
+						hsearch_results_p,
+						scaffold_provider
 					};
 		        	hack_pack( packed_results_p, data );
 		        }

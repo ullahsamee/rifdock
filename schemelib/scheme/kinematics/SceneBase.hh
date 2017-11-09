@@ -29,6 +29,7 @@ struct SceneBase {
 	virtual ~SceneBase(){}
 
 	virtual shared_ptr<THIS> clone_shallow() const { return clone_deep(); } // default to deep copy
+	virtual shared_ptr<THIS> clone_specific_deep(std::vector<Index> deep_bodies) const { return clone_deep(); }
 	virtual shared_ptr<THIS> clone_deep() const = 0;
 
 	Position position(Index i) const

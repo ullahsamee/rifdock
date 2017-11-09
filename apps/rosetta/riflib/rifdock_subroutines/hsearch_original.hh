@@ -109,7 +109,7 @@ hsearch_original(
     {
         samples[0].resize( d.director->size(0) );
         for( uint64_t i = 0; i < d.director->size(0); ++i ) samples[0][i] = SearchPoint( i );
-        BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_shallow();
+        BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
         for( int iresl = 0; iresl < d.RESLS.size(); ++iresl )
         {
             cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,d.RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[iresl].size()) << " samples: ";

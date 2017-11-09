@@ -26,7 +26,10 @@ namespace devel {
 namespace scheme {
 
 
-struct RIFAnchor;
+struct RIFAnchor {
+     RIFAnchor() {}
+};
+
 struct ScaffoldDataCache;
 
 
@@ -67,6 +70,7 @@ typedef ::scheme::kinematics::Scene<
         ParametricSceneConformation,
         EigenXform
     > ParametricScene;
+    
 
 }
 }

@@ -23,7 +23,7 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
-// ::scheme::util::SimpleArray<3,float>
+inline
 Eigen::Vector3f
 pose_center(
     core::pose::Pose const & pose,
@@ -51,7 +51,7 @@ pose_center(
     return center;
 }
 
-
+inline
 void
 get_rg_radius(
     core::pose::Pose const & pose,
@@ -87,7 +87,7 @@ get_rg_radius(
 }
 
 
-
+inline
 void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::Size sres=1, core::Size eres=0 ) {
   if(eres==0) eres = pose.size();
   for(core::Size ir = sres; ir <= eres; ++ir) {

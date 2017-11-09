@@ -17,7 +17,7 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class ScaffoldProvider >
 struct HackPackData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
@@ -31,15 +31,16 @@ struct HackPackData {
     ::scheme::search::HackPackOpts & packopts;
     devel::scheme::ObjectivePtr & packing_objective;
     shared_ptr< std::vector< _SearchPointWithRots<DirectorBase> > > & hsearch_results_p;
+    shared_ptr<ScaffoldProvider> scaffold_provider;
 };
 
 
 
-template<class DirectorBase >
+template<class DirectorBase, class ScaffoldProvider >
 void
 hack_pack(
     shared_ptr<std::vector< _SearchPointWithRots<DirectorBase> > > & packed_results_p,
-    HackPackData<DirectorBase> & d) {
+    HackPackData<DirectorBase, ScaffoldProvider> & d) {
 
 
     using namespace core::scoring;
@@ -58,7 +59,7 @@ hack_pack(
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
     typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
-
+    typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
 
     if( d.opt.hack_pack ){
@@ -67,27 +68,46 @@ hack_pack(
         packed_results_p = make_shared<std::vector< SearchPointWithRots >>();
         std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
 
-        if( d.opt.use_scaffold_bounding_grids ){
-            if( 0 == d.scene_minimal->template num_actors<SimpleAtom>(0) ){
-                BOOST_FOREACH( SimpleAtom const & sa, d.target_simple_atoms ) d.scene_minimal->add_actor( 0, sa );
-                runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(0) == d.target_simple_atoms.size() );
-            }
-        } else {
+        // if( d.opt.use_scaffold_bounding_grids ){
+        //     if( 0 == d.scene_minimal->template num_actors<SimpleAtom>(0) ){
+        //         // Brian - If this gets uncommented, it's probably wrong. This was written assuming
+        //         //  that the scene_pts are all clones of each other
+        //         BOOST_FOREACH( SimpleAtom const & sa, d.target_simple_atoms ) d.scene_minimal->add_actor( 0, sa );
+        //         runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(0) == d.target_simple_atoms.size() );
+        //     }
+        // } else {
             // for final stage, use all scaffold atoms, not just CB ones
-            runtime_assert( d.scene_minimal->template clear_actors<SimpleAtom>( 1 ) );
-            runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == 0 );
-            BOOST_FOREACH( SimpleAtom const & sa, d.scaffold_simple_atoms_all ) d.scene_minimal->add_actor( 1, sa );
+
+        d.scaffold_provider->set_fa_mode(true);
+
+
+        /// delete this later
+
+
+        shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(d.scene_minimal));
+        scene_minimal_typed->replace_body(1, d.scaffold_provider->get_scaffold(0));
+
+        for ( ScenePtr scene : d.scene_pt ) {
+            shared_ptr<ParametricScene> scene_typed( std::dynamic_pointer_cast<ParametricScene>(scene));
+            scene_typed->replace_body(1, d.scaffold_provider->get_scaffold(0));
+        }
+
+
+        // delete ///////////////////
+
+            // runtime_assert( d.scene_minimal->template clear_actors<SimpleAtom>( 1 ) );
+            // runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == 0 );
+            // BOOST_FOREACH( SimpleAtom const & sa, d.scaffold_simple_atoms_all ) d.scene_minimal->add_actor( 1, sa );
             runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
             // these should be shallow copies in d.scene_pt
             // so editing d.scene_minimal will change all conformations
             runtime_assert( d.scene_pt.front()->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
-        }
-
-        // if( d.scene_minimal->template num_actors<SimpleAtom>(0) == 0 ){
-        //  for(int i = 0; i < 10; ++i) std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!! hackpack add sterics back !!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-        //  BOOST_FOREACH( SimpleAtom const & sa, d.target_simple_atoms ) d.scene_minimal->add_actor( 0, sa );
         // }
-        // runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(0) == d.target_simple_atoms.size() );
+
+
+
+
+
 
         std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
         start = std::chrono::high_resolution_clock::now();

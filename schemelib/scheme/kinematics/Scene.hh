@@ -62,7 +62,7 @@ namespace impl {
 	struct BodyTplt {
 		typedef BodyTplt<_Conformation,Index> This;
 		typedef _Conformation Conformation;
-		typedef _Conformation ConformationConst; // TODO: fix this, requires figuring out Cereal load_and_construct
+		typedef _Conformation const ConformationConst; // TODO: fix this, requires figuring out Cereal load_and_construct
 		// typedef _Position Position;
 
 		BodyTplt() : conformation_() {}
@@ -97,6 +97,12 @@ namespace impl {
 		// void set_position(Position const & p){ position_ = p; }
 
 		Conformation const & conformation() const { return *conformation_; }
+		shared_ptr<ConformationConst> conformation_ptr() const { return conformation_; }
+
+		void
+		replace_conformation( shared_ptr<ConformationConst> new_conf) {
+			conformation_ = new_conf;
+		}
 
 		#ifdef CEREAL
 		    // friend class boost::serialization::access;
@@ -324,7 +330,7 @@ namespace impl {
 		// typedef impl::Conformation<_ActorContainers> ConformationConst;
 		// new
 		typedef _Conformation Conformation;
-		typedef _Conformation ConformationConst;
+		typedef _Conformation const ConformationConst;
 		typedef typename Conformation::Actors Actors;
 		typedef impl::BodyTplt<Conformation,Index> Body;
 		typedef std::vector<Body> Bodies;
@@ -338,15 +344,28 @@ namespace impl {
 			this->update_symmetry( (Index)bodies_.size() );
 		}
 
-		Scene( This const & o, bool deep = 1 ) : Base(o) {
+		Scene( This const & o, bool deep = 1, std::vector<Index> const & deep_bodies = std::vector<Index>() ) : Base(o) {
 			if( deep ){
 				bodies_.resize(o.bodies_.size());
-				for( int i = 0; i < bodies_.size(); ++i ){
-					bodies_[i].deepcopy( o.bodies_[i] );
+				if ( deep_bodies.size() == 0) {
+					for( int i = 0; i < bodies_.size(); ++i ){
+						bodies_[i].deepcopy( o.bodies_[i] );
+					}
+				} else {
+					for( int i = 0; i < bodies_.size(); ++i ){
+						if ( std::find( deep_bodies.begin(), deep_bodies.end(), i ) != deep_bodies.end() ) {
+							bodies_[i].deepcopy( o.bodies_[i] );
+						} else {
+							bodies_[i] = o.bodies_[i];
+						}
+					}
 				}
 			} else {
 				bodies_ = o.bodies_; // is shallow copy
 			}
+		}
+		virtual shared_ptr<Base> clone_specific_deep(std::vector<Index> deep_bodies) const {
+			return make_shared<This>(*this,true,deep_bodies);
 		}
 		virtual shared_ptr<Base> clone_deep() const {
 			return make_shared<This>(*this,true);
@@ -404,14 +423,14 @@ namespace impl {
 		}
 		// Replaces a body with an empty one without modifying it
 		void reset_body(Index i) {
-			bodies_.at(i) = make_shared<ConformationConst>();
+			bodies_.at(i).replace_conformation(make_shared<ConformationConst>());
 			this->positions_.at(i) = Position::Identity();
 			this->update_symmetry( (Index)bodies_.size() );
 		}
 		// Replaces a body with another one
 		// Does not reset position
-		void replace_body(Index i, ConformationConst conformation) {
-			bodies_.at(i) = conformation;
+		void replace_body(Index i, shared_ptr<ConformationConst> conformation) {
+			bodies_.at(i).replace_conformation(conformation);
 			this->update_symmetry( (Index)bodies_.size() );
 		}
 		// void add_body(Body const & b){
@@ -425,6 +444,7 @@ namespace impl {
 
 
 		Conformation const & conformation(Index i) const { return bodies_.at(i%bodies_.size()).conformation(); }
+		shared_ptr<Conformation const> conformation_ptr(Index i) const { return bodies_.at(i%bodies_.size()).conformation_ptr(); }
 		// Body const & body       (Index i) const { return bodies_.at(i); }
 
 		/// mainly internal use

@@ -76,6 +76,10 @@ struct ScaffoldDataCache {
     shared_ptr<TBT> local_twobody_p;                                           // twobody_rotamer_energies using local_seqpos
 
 
+// Conformation state
+    bool conformation_is_fa;
+
+
     ScaffoldDataCache() {}
 
     ScaffoldDataCache( core::pose::Pose & pose, 

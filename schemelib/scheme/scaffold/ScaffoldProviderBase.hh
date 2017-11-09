@@ -43,6 +43,8 @@ struct ScaffoldProviderBase {
 
     virtual shared_ptr<ScaffoldCacheData> get_data_cache_slow(ScaffoldIndex i) = 0;
 
+    virtual void set_fa_mode( bool is_fa ) = 0;
+
 };
 
 template<typename _Scaffold, typename _ScaffoldIndex, typename _ScaffoldIndexLimits>

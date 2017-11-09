@@ -29,6 +29,8 @@
 #include <scheme/objective/ObjectiveFunction.hh>
 #include <scheme/search/HackPack.hh>
 
+#include <riflib/scaffold/ScaffoldDataCache.hh>
+
 
 namespace devel {
 namespace scheme {
@@ -265,9 +267,9 @@ std::string get_rif_type_from_file( std::string fname )
 
 	// should move to libraries somewhere
 	// empty class, serves only to position RIF in absolute space
-	struct RIFAnchor {
-		RIFAnchor() {}
-	};
+	// struct RIFAnchor {
+	// 	RIFAnchor() {}
+	// };
 	std::ostream & operator<<( std::ostream & out, RIFAnchor const& va ){
 		return out << "RIFAnchor";
 	}
@@ -306,7 +308,7 @@ std::string get_rif_type_from_file( std::string fname )
 	private:
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
-		std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
+		mutable std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
 		std::vector< std::pair<int,int> > const * scaffold_rotamers_;
 		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
 		devel::scheme::ScoreRotamerVsTarget<
@@ -370,8 +372,14 @@ std::string get_rif_type_from_file( std::string fname )
 		}
 
 		template<class Scene, class Config>
-		void pre( Scene const & , Result & result, Scratch & scratch, Config const & config ) const
+		void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
 		{
+
+			// this code causes a major slowdown - Brian
+
+			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
+			rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+			//////////////////////////////////////////
 			runtime_assert( rif_ );
 			runtime_assert( rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 ){
