@@ -26,7 +26,7 @@ struct OutputResultsData {
     std::string & scafftag;
     int64_t & npack;
     utility::io::ozstream & dokout;
-    devel::scheme::ScenePtr & scene_full;
+    // devel::scheme::ScenePtr & scene_full;
     devel::scheme::ScenePtr & scene_minimal;
     std::vector<int> & scaffres_g2l;
     std::vector<int> & scaffres_l2g;
@@ -94,10 +94,10 @@ output_results(
          // crappy pdb io
         {
 
-            d.director->set_scene( selected_result.scene_index, d.RESLS.size()-1, *d.scene_full    );
+            // d.director->set_scene( selected_result.scene_index, d.RESLS.size()-1, *d.scene_full    );
             d.director->set_scene( selected_result.scene_index, d.RESLS.size()-1, *d.scene_minimal );
 
-            EigenXform xposition1 = d.scene_full->position(1);
+            EigenXform xposition1 = d.scene_minimal->position(1);
             EigenXform xalignout = EigenXform::Identity();
             if( d.opt.align_to_scaffold ){
                 xalignout = xposition1.inverse();

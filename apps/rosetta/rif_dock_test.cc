@@ -773,7 +773,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			print_header( "setup scene from scaffold and target" );
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
-			ScenePtr scene_full( scene_prototype->clone_deep() );
+			// ScenePtr scene_full( scene_prototype->clone_deep() );
 			{
 				for( int ir = 1; ir <= scaffold.size(); ++ir ){
 					Vec N  = scaffold_centered.residue(ir).xyz("N" );
@@ -785,7 +785,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 					runtime_assert( bbactor.index_ == scaffres_g2l[ir-1] );
 
 
-					scene_full->add_actor(1,bbactor);
+					// scene_full->add_actor(1,bbactor);
 					if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
 						scene_minimal->add_actor(1,bbactor);
 					}
@@ -1020,7 +1020,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 					scafftag,
 					npack,
 					dokout,
-					scene_full,
+					// scene_full,
 					scene_minimal,
 					scaffres_g2l,
 					scaffres_l2g,
