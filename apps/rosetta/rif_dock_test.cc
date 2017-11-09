@@ -708,9 +708,9 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				rso_config.rif_ptrs = rif_ptrs;
 				rso_config.target_bounding_by_atype = &target_bounding_by_atype;
 				rso_config.target_field_by_atype = &target_field_by_atype;
-				rso_config.local_onebody = &local_onebody;		//scaff
-				rso_config.local_rotamers = &local_rotamers;	//scaff
-				rso_config.local_twobody = local_twobody;		//scaff
+				// rso_config.local_onebody = &local_onebody;		//scaff
+				// rso_config.local_rotamers = &local_rotamers;	//scaff
+				// rso_config.local_twobody = local_twobody;		//scaff
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;

@@ -96,9 +96,9 @@ struct RifSceneObjectiveConfig
 	std::vector<RifPtr> rif_ptrs;
 	std::vector< std::vector< VoxelArrayPtr > > const * target_bounding_by_atype;
 	std::vector< VoxelArrayPtr > const * target_field_by_atype;
-	std::vector<std::vector<float> > * local_onebody;
-	std::vector< std::pair<int,int> > * local_rotamers;
-	shared_ptr< ::scheme::objective::storage::TwoBodyTable<float> > local_twobody;
+	// std::vector<std::vector<float> > * local_onebody;
+	// std::vector< std::pair<int,int> > * local_rotamers;
+	// shared_ptr< ::scheme::objective::storage::TwoBodyTable<float> > local_twobody;
 	shared_ptr< ::devel::scheme::RotamerIndex> rot_index_p;
 	std::vector< ::scheme::chemical::HBondRay > * target_donors;
 	std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
