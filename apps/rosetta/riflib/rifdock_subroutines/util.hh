@@ -15,6 +15,7 @@
 #include <numeric/xyzTransform.hh>
 #include <numeric/xyzVector.hh>
 #include <utility/vector1.hh>
+#include <scheme/kinematics/Director.hh>
 
 
 using ::scheme::make_shared;
@@ -128,7 +129,7 @@ struct tmplSearchPoint {
     float score;
     DirectorIndex index;
     tmplSearchPoint() : score(9e9) {
-        index = ::scheme::nest::director_index_default_value(index);
+        index = ::scheme::kinematics::director_index_default_value(index);
     }
     tmplSearchPoint(DirectorIndex i) : score(9e9), index(i) {}
     bool operator < (This const & o) const {
@@ -149,7 +150,7 @@ struct tmplSearchPointWithRots {
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
     tmplSearchPointWithRots() : score(9e9), prepack_rank(0), rotamers_(nullptr) {
-        index = ::scheme::nest::director_index_default_value(index);
+        index = ::scheme::kinematics::director_index_default_value(index);
     }
     tmplSearchPointWithRots(DirectorIndex i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
     // ~SearchPointWithRots() { delete rotamers_; }
