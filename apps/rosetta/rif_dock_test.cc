@@ -125,12 +125,15 @@ int main(int argc, char *argv[]) {
 
 	if (true) {
 
-		typedef _DirectorBase<DirectorOriTrans6D> DirectorBase;
+		typedef devel::scheme::SingleFileScaffoldProvider ScaffoldProvider;
+		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider > DirectorScaffoldOriTrans6D;
 
-		auto hsearch = &hsearch_original<DirectorBase, devel::scheme::SingleFileScaffoldProvider>;
+		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
+
+		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
 
 
-		return old_main<DirectorOriTrans6D, devel::scheme::SingleFileScaffoldProvider>( opt, hsearch );
+		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
 	} else {
 		return 0;
 	}
@@ -857,11 +860,11 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<HSearchDirector> director_concrete = make_shared<HSearchDirector>( rot_resl_deg0, lb, ub, nc, 1 );
+				shared_ptr<HSearchDirector> director_concrete = make_shared<HSearchDirector>( scaffold_provider, rot_resl_deg0, lb, ub, nc, 1 );
 				std::cout << "Director:" << endl << *director_concrete << endl;
 				director = director_concrete;
-				std::cout << "nest size0:    " << director->size(0) << std::endl;
-				std::cout << "size of search space: ~" << float(director->size(0))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
+				std::cout << "nest size0:    " << ::scheme::kinematics::bigindex_nest_part(director->size(0)) << std::endl;
+				std::cout << "size of search space: ~" << float(::scheme::kinematics::bigindex_nest_part(director->size(0)))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 			}
 
 

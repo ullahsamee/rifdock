@@ -17,15 +17,15 @@ using ::scheme::shared_ptr;
 
 template <class __Director>
 using _DirectorBase = shared_ptr< ::scheme::kinematics::Director<_DirectorPosition<__Director>,
-    _DirectorIndex<__Director>,
+    _DirectorBigIndex<__Director>,
     _DirectorIndex<__Director>> >;
 
 
 template <class __Director>
-using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorIndex<__Director>>;
+using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
 
 template <class __Director>
-using _RifDockResult = tmplRifDockResult<_DirectorIndex<__Director>>;
+using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
 
 template <class __Director>
-using _SearchPoint = tmplSearchPoint<_DirectorIndex<__Director>>;
+using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;

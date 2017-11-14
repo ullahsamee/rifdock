@@ -68,8 +68,7 @@ hsearch_original(
 
     typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
 
-    // this took a fair amount of googling - brian
-    typedef typename ::scheme::util::meta::remove_pointer<DirectorBase>::type::Index DirectorIndex;
+    typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
     typedef tmplSearchPoint<DirectorIndex> SearchPoint;
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -107,8 +106,8 @@ hsearch_original(
 
     bool search_failed = false;
     {
-        samples[0].resize( d.director->size(0) );
-        for( uint64_t i = 0; i < d.director->size(0); ++i ) samples[0][i] = SearchPoint( i );
+        samples[0].resize( ::scheme::kinematics::bigindex_nest_part(d.director->size(0)) );
+        for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(d.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorIndex( i, 0) );
         BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
         for( int iresl = 0; iresl < d.RESLS.size(); ++iresl )
         {
@@ -130,7 +129,7 @@ hsearch_original(
                 if( exception ) continue;
                 try {
                     if( i%out_interval==0 ){ cout << '*'; cout.flush(); }
-                    uint64_t const isamp = samples[iresl][i].index;
+                    DirectorIndex const isamp = samples[iresl][i].index;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -350,12 +349,12 @@ hsearch_original(
             if( iresl+1 == samples.size() ) break;
 
             for( int64_t i = 0; i < len; ++i ){
-                uint64_t isamp0 = samples[iresl][i].index;
+                uint64_t isamp0 = ::scheme::kinematics::bigindex_nest_part(samples[iresl][i].index);
                 if( samples[iresl][i].score >= d.opt.global_score_cut ) continue;
                 if( iresl == 0 ) ++d.non0_space_size;
                 for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
                     uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
-                    samples[iresl+1].push_back( SearchPoint(isamp) );
+                    samples[iresl+1].push_back( SearchPoint(DirectorIndex(isamp, 0)) );
                 }
             }
             if( 0 == samples[iresl+1].size() ){

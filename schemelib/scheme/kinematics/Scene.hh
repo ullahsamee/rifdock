@@ -316,7 +316,8 @@ namespace impl {
 	template<
 		class _Conformation,
 		class _Position,
-		class _Index = uint64_t
+		class _Index = uint64_t,
+		class _ScaffoldIndex = uint64_t
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
 
@@ -922,7 +923,7 @@ namespace impl {
 		class _Index = uint64_t
 	>
 	struct ScaffoldProviderScene : public Scene<_Conformation,_Position,_Index> {
-		typedef Scene<_Conformation,_Position,_Index> Parent;
+		typedef Scene<_Conformation,_Position,_Index,typename _ScaffoldProvider::ScaffoldIndex> Parent;
 
 
 		typedef _ScaffoldProvider ScaffoldProvider;
@@ -941,13 +942,11 @@ namespace impl {
 			body_index_(body_index) {}
 
 
-		void set_position( Index i, DirectorPosition const & newp) {
+		virtual bool set_conformation( Index ib, ScaffoldIndex si ) override {
 			assert( scaffold_provider_ );
-			Position const & p = newp.second;
-			if ( i == body_index_ ) {
-				replace_body( body_index_, scaffold_provider_->get_scaffold( newp.first ) );
-			}
-			Parent::set_position( i, p );
+			assert( i == body_index_ );
+
+			replace_body( body_index_, scaffold_provider_->get_scaffold( si ) );
 		}
 
 

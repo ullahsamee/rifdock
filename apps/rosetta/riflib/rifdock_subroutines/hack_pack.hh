@@ -61,6 +61,8 @@ hack_pack(
     typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
     typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
+    typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
+
 
     if( d.opt.hack_pack ){
 
@@ -133,7 +135,7 @@ hack_pack(
             if( exception ) continue;
             try {
                 if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
-                uint64_t const isamp = hsearch_results[ipack].index;
+                DirectorIndex const isamp = hsearch_results[ipack].index;
                 if( hsearch_results[ipack].score > d.opt.global_score_cut ) continue;
                 packed_results[ ipack ].index = isamp;
                 packed_results[ ipack ].prepack_rank = ipack;

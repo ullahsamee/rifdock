@@ -60,8 +60,8 @@ template< class _Nest >
 struct NestDirector
  :  public Director<
 		typename _Nest::Value,
-		typename _Nest::Index,
 		typename _Nest::Index
+		// typename _Nest::Index // brian - This is related to nbodies. Should not be same as _Nest::Index
 	> {
 	typedef _Nest Nest;
 	typedef typename Nest::Value Position;
@@ -112,8 +112,43 @@ std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
 	return out;
 }
 
+
+
+inline
+uint64_t
+bigindex_nest_part(uint64_t size) {
+	return size;
+}
+
+template< class ScaffoldIndex >
+uint64_t
+bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
+	return size.first;
+}
+
+
+inline
+uint64_t
+director_index_default_value(uint64_t) {
+	return 0;
+}
+
+
+template<class ScaffoldIndex>
+std::pair<ScaffoldIndex,uint64_t>
+director_index_default_value(std::pair<ScaffoldIndex,uint64_t>) {
+	ScaffoldIndex i;
+	uint64_t j;
+	return std::pair<ScaffoldIndex,uint64_t>( scheme::scaffold::scaffold_index_default_value(i), director_index_default_value(j) );
+}
+
+
+
+
+
 template<class _Nest, class _ScaffoldProvider>
 using _ScaffoldNestDirectorIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
+
 
 
 template< 
@@ -123,28 +158,27 @@ template<
 struct ScaffoldNestDirector
  :  public Director<
 		typename _Nest::Value,
-		_ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider>,
 		_ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider>
 	> {
+	typedef Director< typename _Nest::Value, _ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider>> Base;
 	typedef _Nest Nest;
 	typedef _ScaffoldProvider ScaffoldProvider;
 	typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
-	typedef typename Nest::Value Position;
-	typedef _ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider> BigIndex;
-	typedef _ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider> Index;
-	typedef SceneBase<Position,Index> Scene;
+	typedef typename Base::Position Position;
+	typedef typename Base::BigIndex BigIndex;
+	typedef typename Base::Index Index;
+	typedef typename Base::Scene Scene;
 
 	typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 	typedef typename Nest::Index NestBigIndex;
-	typedef typename Nest::Index NestIndex;
 
 	Index ibody_;
 	Nest nest_;
 	ScaffoldProviderOP scaffold_provider_;
 
 	ScaffoldNestDirector(ScaffoldProviderOP sp) : ibody_(0),nest_(),scaffold_provider_(sp) {}
-	ScaffoldNestDirector( Index ibody ) : ibody_(ibody),nest_() {}
+	ScaffoldNestDirector(ScaffoldProviderOP sp, Index ibody ) : ibody_(ibody),nest_() {}
 	template<class A>
 	ScaffoldNestDirector(ScaffoldProviderOP sp, A const & a, Index ibody ) : ibody_(ibody),nest_(a),scaffold_provider_(sp) {}
 	template<class A, class B>
@@ -162,7 +196,7 @@ struct ScaffoldNestDirector
 		BigIndex const & i,
 		int resl,
 		Scene & scene
-	) const {
+	) const override {
 		assert( scaffold_provider_ );
 
 		NestBigIndex ni = i.first;
@@ -171,14 +205,15 @@ struct ScaffoldNestDirector
 		Position p;
 		bool success = nest_.get_state( ni, resl, p );
 		if( !success ) return false;
-		scene.replace_body( ibody_, scaffold_provider_->get_scaffold( si ) );
+		scene.set_conformation( ibody_, si );
 		scene.set_position( ibody_, p );
 		return true;
 	}
 
-	virtual BigIndex size(int resl) const {
-		return nest_.size(resl);
+	virtual BigIndex size(int resl) const override {
+		return BigIndex( nest_.size(resl), director_index_default_value(ScaffoldIndex()));
 	}
+
 
 
 };
@@ -189,22 +224,6 @@ std::ostream & operator << ( std::ostream & out, ScaffoldNestDirector<Nest,Scaff
 	return out;
 }
 
-
-
-inline
-uint64_t
-director_index_default_value(uint64_t) {
-	return 0;
-}
-
-
-template<class ScaffoldIndex>
-std::pair<ScaffoldIndex,uint64_t>
-director_index_default_value(std::pair<ScaffoldIndex,uint64_t>) {
-	ScaffoldIndex i;
-	uint64_t j;
-	return std::pair<ScaffoldIndex,uint64_t>( scheme::scaffold::scaffold_index_default_value(i), director_index_default_value(j) );
-}
 
 
 

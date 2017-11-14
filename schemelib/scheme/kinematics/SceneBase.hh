@@ -12,12 +12,14 @@ namespace kinematics {
 
 template<
 	class _Position,
-	class _Index = uint64_t
+	class _Index = uint64_t,
+	class _ScaffoldIndex = uint64_t
 >
 struct SceneBase {
 	typedef _Index Index;
 	typedef _Position Position;
-	typedef SceneBase<Position,Index> THIS;
+	typedef _ScaffoldIndex ScaffoldIndex;
+	typedef SceneBase<Position,Index,ScaffoldIndex> THIS;
 
 	// members
 		std::vector<Position> symframes_; // include identity at first position
@@ -102,6 +104,8 @@ struct SceneBase {
 	std::vector<Position> const & symframes() const { return symframes_; }
 	Index nbodies() const { return n_sym_bodies_; }
 	Index nbodies_asym() const { return n_bodies_; }
+
+	virtual bool set_conformation( Index ib, ScaffoldIndex const & si ) { return false; }
 
 };
 

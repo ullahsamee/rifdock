@@ -6,4 +6,6 @@ template <class __Director>
 using _DirectorPosition = typename ::scheme::util::meta::remove_pointer<__Director>::type::Position;
 template <class __Director>
 using _DirectorIndex = typename ::scheme::util::meta::remove_pointer<__Director>::type::Index;
+template <class __Director>
+using _DirectorBigIndex = typename ::scheme::util::meta::remove_pointer<__Director>::type::BigIndex;
 #endif
