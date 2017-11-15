@@ -316,8 +316,7 @@ namespace impl {
 	template<
 		class _Conformation,
 		class _Position,
-		class _Index = uint64_t,
-		class _ScaffoldIndex = uint64_t
+		class _Index = uint64_t
 	>
 	struct Scene : public SceneBase<_Position,_Index> {
 
@@ -433,6 +432,10 @@ namespace impl {
 		void replace_body(Index i, shared_ptr<ConformationConst> conformation) {
 			bodies_.at(i).replace_conformation(conformation);
 			this->update_symmetry( (Index)bodies_.size() );
+		}
+
+		virtual void replace_body( Index ib, boost::any & a) {
+			replace_body(ib, boost::any_cast<shared_ptr<ConformationConst>>(a));
 		}
 		// void add_body(Body const & b){
 		// 	bodies_.push_back(b);
@@ -916,45 +919,47 @@ namespace impl {
 // ScaffoldProviderScene makes these assumptions
 // - Only one body is going to be using a ScaffoldProvider
 
-	template<
-		class _ScaffoldProvider,
-		class _Conformation,
-		class _Position,
-		class _Index = uint64_t
-	>
-	struct ScaffoldProviderScene : public Scene<_Conformation,_Position,_Index> {
-		typedef Scene<_Conformation,_Position,_Index,typename _ScaffoldProvider::ScaffoldIndex> Parent;
+	// template<
+	// 	class _ScaffoldProvider,
+	// 	class _Conformation,
+	// 	class _Position,
+	// 	class _Index = uint64_t
+	// >
+	// struct ScaffoldProviderScene : public Scene<_Conformation,_Position,_Index> {
+	// 	typedef Scene<_Conformation,_Position,_Index> Parent;
 
 
-		typedef _ScaffoldProvider ScaffoldProvider;
-		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-		typedef _Conformation Conformation;
-		typedef _Position Position;
-		typedef _Index Index;
+	// 	typedef _ScaffoldProvider ScaffoldProvider;
+	// 	typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
+	// 	typedef _Conformation Conformation;
+	// 	typedef _Position Position;
+	// 	typedef _Index Index;
 
-		typedef shared_ptr<_ScaffoldProvider> ScaffoldProviderOP;
+	// 	typedef shared_ptr<_ScaffoldProvider> ScaffoldProviderOP;
 
-		// this must be the same as ScaffoldProviderNEST::DirectorValue
-		typedef std::pair<ScaffoldIndex,Position> DirectorPosition;
+	// 	// this must be the same as ScaffoldProviderNEST::DirectorValue
+	// 	typedef std::pair<ScaffoldIndex,Position> DirectorPosition;
 
-		ScaffoldProviderScene( ScaffoldProviderOP scaffold_provider, Index body_index ) :
-			scaffold_provider_(scaffold_provider),
-			body_index_(body_index) {}
-
-
-		virtual bool set_conformation( Index ib, ScaffoldIndex si ) override {
-			assert( scaffold_provider_ );
-			assert( i == body_index_ );
-
-			replace_body( body_index_, scaffold_provider_->get_scaffold( si ) );
-		}
+	// 	ScaffoldProviderScene( ScaffoldProviderOP scaffold_provider, Index body_index ) :
+	// 		scaffold_provider_(scaffold_provider),
+	// 		body_index_(body_index) {}
 
 
-	private:
-		ScaffoldProviderOP scaffold_provider_;
-		Index body_index_;
+	// 	void set_position( Index i, DirectorPosition const & newp) {
+	// 		assert( scaffold_provider_ );
+	// 		Position const & p = newp.second;
+	// 		if ( i == body_index_ ) {
+	// 			replace_body( body_index_, scaffold_provider_->get_scaffold( newp.first ) );
+	// 		}
+	// 		Parent::set_position( i, p );
+	// 	}
 
-	};
+
+	// private:
+	// 	ScaffoldProviderOP scaffold_provider_;
+	// 	Index body_index_;
+
+	// };
 
 
 

@@ -10,6 +10,7 @@
 
 #include <scheme/util/meta/util.hh>
 #include <scheme/kinematics/Director.meta.hh>
+#include <riflib/rifdock_typedefs.hh>
     
 
 using ::scheme::make_shared;
@@ -18,7 +19,8 @@ using ::scheme::shared_ptr;
 template <class __Director>
 using _DirectorBase = shared_ptr< ::scheme::kinematics::Director<_DirectorPosition<__Director>,
     _DirectorBigIndex<__Director>,
-    _DirectorIndex<__Director>> >;
+    _DirectorIndex<__Director>
+     >>;
 
 
 template <class __Director>

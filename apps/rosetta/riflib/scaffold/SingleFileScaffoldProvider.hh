@@ -31,7 +31,7 @@ namespace scheme {
 
 
 struct SingleFileScaffoldProvider :
-    public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, uint64_t, uint64_t> {
+    public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, ::scheme::scaffold::TreeIndex, uint64_t> {
 
     // SingleFileScaffoldProvider();
 
@@ -41,7 +41,7 @@ struct SingleFileScaffoldProvider :
         RifDockOpt const & opt_in);
 
 
-    ParametricSceneConformationCOP get_scaffold(uint64_t i) override;
+    ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
     uint64_t get_scaffold_index_limits() override;
 
@@ -50,7 +50,7 @@ struct SingleFileScaffoldProvider :
     //     return temp_data__data_cache_;
     // }
 
-    ScaffoldDataCacheOP get_data_cache_slow(uint64_t i) override;
+    ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
 
     void set_fa_mode( bool fa ) override;
 

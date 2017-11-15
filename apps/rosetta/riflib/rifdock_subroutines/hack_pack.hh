@@ -62,6 +62,7 @@ hack_pack(
     typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
     typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
+    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 
     if( d.opt.hack_pack ){
@@ -87,11 +88,11 @@ hack_pack(
 
 
         shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(d.scene_minimal));
-        scene_minimal_typed->replace_body(1, d.scaffold_provider->get_scaffold(0));
+        scene_minimal_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
 
         for ( ScenePtr scene : d.scene_pt ) {
             shared_ptr<ParametricScene> scene_typed( std::dynamic_pointer_cast<ParametricScene>(scene));
-            scene_typed->replace_body(1, d.scaffold_provider->get_scaffold(0));
+            scene_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
         }
 
 

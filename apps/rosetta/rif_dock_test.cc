@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 	if (true) {
 
 		typedef devel::scheme::SingleFileScaffoldProvider ScaffoldProvider;
-		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider > DirectorScaffoldOriTrans6D;
+		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
 
 		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
 
@@ -178,6 +178,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 		typedef _SearchPoint<HSearchDirector> SearchPoint;
 		typedef _SearchPointWithRots<HSearchDirector> SearchPointWithRots;
 		typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
+
+		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 
 		::scheme::search::HackPackOpts packopts;
@@ -616,7 +618,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
 			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
 
-			ScaffoldDataCache & sdc = *(scaffold_provider->get_data_cache_slow(0));
+			ScaffoldDataCache & sdc = *(scaffold_provider->get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex())));
 
 			scaffold_res = *(sdc.scaffold_res_p);
 			scaffuseres = sdc.scaffuseres;
@@ -811,7 +813,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 /////////////// Test code during refactor, delete this if you find it
 
 			shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(scene_minimal));
-			scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(0));
+			scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
 
 
 ////////////////////////////////////////////////////////////////////////////////////

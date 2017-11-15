@@ -71,6 +71,8 @@ hsearch_original(
     typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
     typedef tmplSearchPoint<DirectorIndex> SearchPoint;
 
+    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -97,7 +99,7 @@ hsearch_original(
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-    ScaffoldDataCacheOP sdc = d.scaffold_provider.get_data_cache_slow(0);
+    ScaffoldDataCacheOP sdc = d.scaffold_provider.get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex()));
     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
@@ -107,7 +109,7 @@ hsearch_original(
     bool search_failed = false;
     {
         samples[0].resize( ::scheme::kinematics::bigindex_nest_part(d.director->size(0)) );
-        for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(d.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorIndex( i, 0) );
+        for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(d.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
         BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
         for( int iresl = 0; iresl < d.RESLS.size(); ++iresl )
         {
@@ -354,7 +356,7 @@ hsearch_original(
                 if( iresl == 0 ) ++d.non0_space_size;
                 for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
                     uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
-                    samples[iresl+1].push_back( SearchPoint(DirectorIndex(isamp, 0)) );
+                    samples[iresl+1].push_back( SearchPoint(DirectorIndex(isamp, scaffold_index_default_value( ScaffoldIndex()))) );
                 }
             }
             if( 0 == samples[iresl+1].size() ){

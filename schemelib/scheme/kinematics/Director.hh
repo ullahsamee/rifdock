@@ -112,40 +112,6 @@ std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
 	return out;
 }
 
-
-
-inline
-uint64_t
-bigindex_nest_part(uint64_t size) {
-	return size;
-}
-
-template< class ScaffoldIndex >
-uint64_t
-bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
-	return size.first;
-}
-
-
-inline
-uint64_t
-director_index_default_value(uint64_t) {
-	return 0;
-}
-
-
-template<class ScaffoldIndex>
-std::pair<ScaffoldIndex,uint64_t>
-director_index_default_value(std::pair<ScaffoldIndex,uint64_t>) {
-	ScaffoldIndex i;
-	uint64_t j;
-	return std::pair<ScaffoldIndex,uint64_t>( scheme::scaffold::scaffold_index_default_value(i), director_index_default_value(j) );
-}
-
-
-
-
-
 template<class _Nest, class _ScaffoldProvider>
 using _ScaffoldNestDirectorIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
 
@@ -205,13 +171,14 @@ struct ScaffoldNestDirector
 		Position p;
 		bool success = nest_.get_state( ni, resl, p );
 		if( !success ) return false;
-		scene.set_conformation( ibody_, si );
+		boost::any a = scaffold_provider_->get_scaffold( si );
+		scene.replace_body( ibody_, a );
 		scene.set_position( ibody_, p );
 		return true;
 	}
 
 	virtual BigIndex size(int resl) const override {
-		return BigIndex( nest_.size(resl), director_index_default_value(ScaffoldIndex()));
+		return BigIndex( nest_.size(resl), scaffold::scaffold_index_default_value(ScaffoldIndex()));
 	}
 
 
@@ -224,6 +191,34 @@ std::ostream & operator << ( std::ostream & out, ScaffoldNestDirector<Nest,Scaff
 	return out;
 }
 
+
+inline
+uint64_t
+bigindex_nest_part(uint64_t size) {
+	return size;
+}
+
+template< class ScaffoldIndex >
+uint64_t
+bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
+	return size.first;
+}
+
+
+inline
+uint64_t
+director_index_default_value(uint64_t) {
+	return 0;
+}
+
+
+template<class ScaffoldIndex>
+std::pair<uint64_t,ScaffoldIndex>
+director_index_default_value(std::pair<uint64_t,ScaffoldIndex>) {
+	ScaffoldIndex i;
+	uint64_t j;
+	return std::pair<uint64_t,ScaffoldIndex>( director_index_default_value(j), scheme::scaffold::scaffold_index_default_value(i) );
+}
 
 
 

@@ -55,7 +55,7 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 
 
 ScaffoldDataCacheOP 
-SingleFileScaffoldProvider::get_data_cache_slow(uint64_t i) {
+SingleFileScaffoldProvider::get_data_cache_slow(::scheme::scaffold::TreeIndex i) {
 
     return get_scaffold(i)->cache_data_;
 
@@ -63,7 +63,7 @@ SingleFileScaffoldProvider::get_data_cache_slow(uint64_t i) {
 
 
 ParametricSceneConformationCOP 
-SingleFileScaffoldProvider::get_scaffold(uint64_t i) {
+SingleFileScaffoldProvider::get_scaffold(::scheme::scaffold::TreeIndex i) {
     if ( ! conformation_ ) {
         utility_exit_with_message("Conformation not intialized yet!!");
     }
@@ -79,7 +79,7 @@ SingleFileScaffoldProvider::get_scaffold_index_limits() {
 
 void 
 SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
-    ScaffoldDataCacheOP cache = get_data_cache_slow( 0 );
+    ScaffoldDataCacheOP cache = get_data_cache_slow( scaffold_index_default_value( ScaffoldIndex()) );
     if ( cache->conformation_is_fa != fa ) {
         conformation_ = make_conformation_from_data_cache(cache, fa);
     }
