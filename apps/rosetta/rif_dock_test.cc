@@ -173,6 +173,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 
 		typedef _DirectorBase<HSearchDirector> DirectorBase;
+		typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
 
 		typedef _RifDockResult<HSearchDirector> RifDockResult;
 		typedef _SearchPoint<HSearchDirector> SearchPoint;
@@ -778,61 +779,47 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			print_header( "setup scene from scaffold and target" );
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
+			scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
 			// ScenePtr scene_full( scene_prototype->clone_deep() );
-			{
-				for( int ir = 1; ir <= scaffold.size(); ++ir ){
-					Vec N  = scaffold_centered.residue(ir).xyz("N" );
-					Vec CA = scaffold_centered.residue(ir).xyz("CA");
-					Vec C  = scaffold_centered.residue(ir).xyz("C" );
+			// {
+			// 	for( int ir = 1; ir <= scaffold.size(); ++ir ){
+			// 		Vec N  = scaffold_centered.residue(ir).xyz("N" );
+			// 		Vec CA = scaffold_centered.residue(ir).xyz("CA");
+			// 		Vec C  = scaffold_centered.residue(ir).xyz("C" );
 
-					// todo map res indices, must also edit onebody_energies
-					BBActor bbactor( N, CA, C, '-', '-', scaffres_g2l[ir-1] );
-					runtime_assert( bbactor.index_ == scaffres_g2l[ir-1] );
-
-
-					// scene_full->add_actor(1,bbactor);
-					if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
-						scene_minimal->add_actor(1,bbactor);
-					}
-				}
-
-				if( opt.use_scaffold_bounding_grids ){
-					BOOST_FOREACH( SimpleAtom const & sa, target_simple_atoms )	scene_minimal->add_actor( 0, sa );
-					runtime_assert( scene_minimal->template num_actors<SimpleAtom>(0) == target_simple_atoms.size() );
-					scene_minimal->add_actor( 1, VoxelActor(scaffold_bounding_by_atype) );
-				} else {
-					BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms ) scene_minimal->add_actor( 1, sa );
-					runtime_assert( scene_minimal->template num_actors<SimpleAtom>(1) == scaffold_simple_atoms.size() );
-					scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
-				}
+			// 		// todo map res indices, must also edit onebody_energies
+			// 		BBActor bbactor( N, CA, C, '-', '-', scaffres_g2l[ir-1] );
+			// 		runtime_assert( bbactor.index_ == scaffres_g2l[ir-1] );
 
 
-			}
+			// 		// scene_full->add_actor(1,bbactor);
+			// 		if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
+			// 			// scene_minimal->add_actor(1,bbactor);
+			// 		}
+			// 	}
+
+			// 	if( opt.use_scaffold_bounding_grids ){
+			// 		BOOST_FOREACH( SimpleAtom const & sa, target_simple_atoms )	scene_minimal->add_actor( 0, sa );
+			// 		runtime_assert( scene_minimal->template num_actors<SimpleAtom>(0) == target_simple_atoms.size() );
+			// 		scene_minimal->add_actor( 1, VoxelActor(scaffold_bounding_by_atype) );
+			// 	} else {
+			// 		// BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms ) scene_minimal->add_actor( 1, sa );
+			// 		// runtime_assert( scene_minimal->template num_actors<SimpleAtom>(1) == scaffold_simple_atoms.size() );
+			// 		scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
+			// 	}
+
+
+			// }
 
 ///////////////////////////////////////////////////////////////////////////////////
 /////////////// Test code during refactor, delete this if you find it
 
-			shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(scene_minimal));
-			scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
+			// shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(scene_minimal));
+			// scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
 
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-
-			cout << "scores for scaffold in original position: " << std::endl;
-			{
-				EigenXform x(EigenXform::Identity());
-				x.translation() = scaffold_center;
-				scene_minimal->set_position(1,x);
-				for(int i = 0; i < RESLS.size(); ++i){
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
-					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
-				}
-
-			}
 
 			// utility_exit_with_message("FOO");
 
@@ -868,6 +855,24 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "nest size0:    " << ::scheme::kinematics::bigindex_nest_part(director->size(0)) << std::endl;
 				std::cout << "size of search space: ~" << float(::scheme::kinematics::bigindex_nest_part(director->size(0)))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 			}
+
+			cout << std::endl;
+			cout << "scores for scaffold in original position: " << std::endl;
+			{
+				EigenXform x(EigenXform::Identity());
+				x.translation() = scaffold_center;
+				director->set_scene( DirectorIndex(0, scaffold_index_default_value( ScaffoldIndex())), 0, *scene_minimal);
+				scene_minimal->set_position(1,x);
+				for(int i = 0; i < RESLS.size(); ++i){
+					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					     << F( 7, 3, sc[0]       ) << " "
+					     << F( 7, 3, sc[1]       ) << endl;
+				}
+
+			}
+
 
 
 
@@ -930,7 +935,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						scene_pt,
 						scene_minimal,
 						target_simple_atoms,
-						scaffold_simple_atoms_all,
+						// scaffold_simple_atoms_all,
 						npack,
 						packopts,
 						packing_objective,

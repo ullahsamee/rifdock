@@ -26,7 +26,7 @@ struct HackPackData {
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     devel::scheme::ScenePtr & scene_minimal;
     std::vector<devel::scheme::SimpleAtom> & target_simple_atoms;
-    std::vector<devel::scheme::SimpleAtom > & scaffold_simple_atoms_all;
+    // std::vector<devel::scheme::SimpleAtom > & scaffold_simple_atoms_all;
     int64_t & npack;
     ::scheme::search::HackPackOpts & packopts;
     devel::scheme::ObjectivePtr & packing_objective;
@@ -101,10 +101,10 @@ hack_pack(
             // runtime_assert( d.scene_minimal->template clear_actors<SimpleAtom>( 1 ) );
             // runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == 0 );
             // BOOST_FOREACH( SimpleAtom const & sa, d.scaffold_simple_atoms_all ) d.scene_minimal->add_actor( 1, sa );
-            runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
+            // runtime_assert( d.scene_minimal->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
             // these should be shallow copies in d.scene_pt
             // so editing d.scene_minimal will change all conformations
-            runtime_assert( d.scene_pt.front()->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
+            // runtime_assert( d.scene_pt.front()->template num_actors<SimpleAtom>(1) == d.scaffold_simple_atoms_all.size() );
         // }
 
 
@@ -160,6 +160,8 @@ hack_pack(
         std::chrono::duration<double> elapsed_seconds_pack = end-start;
         std::cout << "packing rate: " << (double)d.npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
         std::cout << "packing rate: " << (double)d.npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
+
+
 
     } else {
         packed_results_p = d.hsearch_results_p;
