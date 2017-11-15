@@ -171,8 +171,8 @@ struct ScaffoldNestDirector
 		Position p;
 		bool success = nest_.get_state( ni, resl, p );
 		if( !success ) return false;
-		boost::any a = scaffold_provider_->get_scaffold( si );
-		scene.replace_body( ibody_, a );
+		// boost::any a = scaffold_provider_->get_scaffold( si );
+		scene.replace_body( ibody_, scaffold_provider_->get_scaffold( si ) );
 		scene.set_position( ibody_, p );
 		return true;
 	}

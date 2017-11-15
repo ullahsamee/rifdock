@@ -38,7 +38,7 @@ namespace f = boost::fusion;
 namespace impl {
 
 	template< class ActorContainer, class _CacheData=uint64_t >
-	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer> {
+	struct Conformation : util::meta::ContainerInstanceMap<ActorContainer>, ConformationBase {
 		typedef typename util::meta::ContainerInstanceMap<ActorContainer>::Keys Actors;
 		typedef _CacheData CacheData;
 		Conformation(){}
@@ -433,10 +433,12 @@ namespace impl {
 			bodies_.at(i).replace_conformation(conformation);
 			this->update_symmetry( (Index)bodies_.size() );
 		}
-
-		virtual void replace_body( Index ib, boost::any & a) {
-			replace_body(ib, boost::any_cast<shared_ptr<ConformationConst>>(a));
+		virtual void replace_body( Index ib, shared_ptr<ConformationBase const> cb) {
+			replace_body(ib, std::dynamic_pointer_cast<ConformationConst>(cb));
 		}
+		// virtual void replace_body( Index ib, boost::any & a) {
+		// 	replace_body(ib, boost::any_cast<shared_ptr<ConformationConst>>(a));
+		// }
 		// void add_body(Body const & b){
 		// 	bodies_.push_back(b);
 		// 	positions_.push_back(Position::Identity());

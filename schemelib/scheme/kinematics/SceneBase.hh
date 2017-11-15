@@ -3,6 +3,7 @@
 
 #include "scheme/types.hh"
 #include "scheme/util/meta/util.hh"
+#include "scheme/kinematics/ConformationBase.hh"
 
 #include <boost/any.hpp>
 #include <vector>
@@ -104,13 +105,13 @@ struct SceneBase {
 	Index nbodies_asym() const { return n_bodies_; }
 
 	// sketch courtesy of brian
-	template< class ConformationCOP >
-	void replace_body( Index ib, ConformationCOP conf) {
-		boost::any any_conf = conf;
-		replace_body( ib, any_conf );
-	}
+	// template< class ConformationCOP >
+	// void replace_body( Index ib, ConformationCOP conf) {
+	// 	boost::any any_conf = conf;
+	// 	replace_body( ib, any_conf );
+	// }
 
-	virtual void replace_body( Index ib, boost::any & a) {}
+	virtual void replace_body( Index ib, shared_ptr<ConformationBase const> cb) {}
 
 };
 
