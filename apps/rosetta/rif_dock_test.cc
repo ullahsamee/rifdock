@@ -956,25 +956,27 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			}
 
 			{
-				OutputResultsData<DirectorBase> data { opt, 
+				OutputResultsData<DirectorBase,ScaffoldProvider> data { opt, 
 					RESLS, 
 					director, 
 					selected_results,
-					scafftag,
+					// scafftag,
 					npack,
 					dokout,
 					// scene_full,
 					scene_minimal,
-					scaffres_g2l,
-					scaffres_l2g,
+					// scaffres_g2l,
+					// scaffres_l2g,
 					rif_ptrs,
-					scaffold_onebody_glob0,
+					// scaffold_onebody_glob0,
 					rot_index,
-					scaffold,
-					both_pose,
-					both_full_pose,
-					scaffold_only_pose,
-					scaffold_only_full_pose
+					target,
+					// scaffold,
+					// both_pose,
+					// both_full_pose,
+					// scaffold_only_pose,
+					// scaffold_only_full_pose
+					scaffold_provider
 				};
 				output_results(data);
 			}

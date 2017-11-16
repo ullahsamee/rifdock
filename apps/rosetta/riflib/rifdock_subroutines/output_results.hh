@@ -17,35 +17,38 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase>
+template<class DirectorBase,class ScaffoldProvider>
 struct OutputResultsData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
     DirectorBase & director;
     std::vector< _RifDockResult<DirectorBase> > & selected_results;
-    std::string & scafftag;
+    // std::string & scafftag;
     int64_t & npack;
     utility::io::ozstream & dokout;
     // devel::scheme::ScenePtr & scene_full;
     devel::scheme::ScenePtr & scene_minimal;
-    std::vector<int> & scaffres_g2l;
-    std::vector<int> & scaffres_l2g;
+    // std::vector<int> & scaffres_g2l;
+    // std::vector<int> & scaffres_l2g;
     std::vector<shared_ptr<devel::scheme::RifBase> > & rif_ptrs;
-    std::vector<std::vector<float> > & scaffold_onebody_glob0;
+    // std::vector<std::vector<float> > & scaffold_onebody_glob0;
     devel::scheme::RotamerIndex & rot_index;
-    core::pose::Pose & scaffold;
-    core::pose::Pose & both_pose;
-    core::pose::Pose & both_full_pose;                
-    core::pose::Pose & scaffold_only_pose;            
-    core::pose::Pose & scaffold_only_full_pose;
+    core::pose::Pose & target;
+    // core::pose::Pose & scaffold;
+    // core::pose::Pose & both_pose;
+    // core::pose::Pose & both_full_pose;                
+    // core::pose::Pose & scaffold_only_pose;            
+    // core::pose::Pose & scaffold_only_full_pose;
+    shared_ptr<ScaffoldProvider> scaffold_provider;
+
 };
 
 
 
-template<class DirectorBase>
+template<class DirectorBase,class ScaffoldProvider>
 void
 output_results(
-    OutputResultsData<DirectorBase> & d) {
+    OutputResultsData<DirectorBase,ScaffoldProvider> & d) {
 
 
     using namespace core::scoring;
@@ -64,15 +67,28 @@ output_results(
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
     typedef _RifDockResult<DirectorBase> RifDockResult;
+    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
     if( d.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
     else                        std::cout << "ALIGN TO TARGET"   << std::endl;
     for( int i_selected_result = 0; i_selected_result < d.selected_results.size(); ++i_selected_result ){
         RifDockResult const & selected_result = d.selected_results.at( i_selected_result );
 
-        std::string pdboutfile = d.opt.outdir + "/" + d.scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+// Brian Injection
+        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(d.selected_results[i_selected_result].scene_index);
+        ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow( si );
+
+
+        std::string const & scafftag = sdc->scafftag;
+        std::vector<int> const & scaffres_g2l = *(sdc->scaffres_g2l_p);
+        std::vector<int> const & scaffres_l2g = *(sdc->scaffres_l2g_p);
+        std::vector<std::vector<float> > const & scaffold_onebody_glob0 = *(sdc->scaffold_onebody_glob0_p);
+        uint64_t const scaffold_size = scaffres_g2l.size();
+
+/////
+        std::string pdboutfile = d.opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
         if( d.opt.output_tag.size() ){
-            pdboutfile = d.opt.outdir + "/" + d.scafftag+"_" + d.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+            pdboutfile = d.opt.outdir + "/" + scafftag+"_" + d.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
         }
 
         std::ostringstream oss;
@@ -107,7 +123,7 @@ output_results(
             std::map< int, std::string > pikaa;
             for( int i_actor = 0; i_actor < d.scene_minimal->template num_actors<BBActor>(1); ++i_actor ){
                 BBActor bba = d.scene_minimal->template get_actor<BBActor>(1,i_actor);
-                int const ires = d.scaffres_l2g.at( bba.index_ );
+                int const ires = scaffres_l2g.at( bba.index_ );
 
                 // if( d.opt.dump_all_rif_rots )
                 {
@@ -116,7 +132,7 @@ output_results(
                     typedef std::pair<float,int> PairFI;
                     BOOST_FOREACH( PairFI const & p, rotscores ){
                         int const irot = p.second;
-                        float const sc = p.first + d.scaffold_onebody_glob0.at( ires ).at( irot );
+                        float const sc = p.first + scaffold_onebody_glob0.at( ires ).at( irot );
                         if( sc < 0 ){
                             allout << "MODEL" << endl;
                             BOOST_FOREACH( SchemeAtom a, d.rot_index.rotamers_.at( irot ).atoms_ ){
@@ -150,7 +166,7 @@ output_results(
                 int packed_rot = -1;
                 for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
                     // std::cout << "checking rots " << sp.rotamers()[ipr].first << " " << d.scaffres_g2l[ires] << std::endl;
-                    if( selected_result.rotamers().at(ipr).first == d.scaffres_g2l.at( ires ) ){
+                    if( selected_result.rotamers().at(ipr).first == scaffres_g2l.at( ires ) ){
                         packed_rot = selected_result.rotamers().at(ipr).second;
                     }
                 }
@@ -167,12 +183,16 @@ output_results(
             }
 
             core::pose::Pose pose_from_rif;
-            if     ( d.opt.full_scaffold_output ) pose_from_rif = d.both_full_pose;
-            else if( d.opt.output_scaffold_only ) pose_from_rif = d.scaffold_only_pose;
-            else if( d.opt.output_full_scaffold_only ) pose_from_rif = d.scaffold_only_full_pose;
-            else                                pose_from_rif = d.both_pose;
-            xform_pose( pose_from_rif, eigen2xyz(xalignout)           , d.scaffold.size()+1, pose_from_rif.size() );
-            xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,     d.scaffold.size() );
+
+            if ( d.opt.full_scaffold_output ) {        sdc->setup_both_full_pose( d.target ); pose_from_rif = *(sdc->mpc_both_full_pose.get_pose());
+            } else if( d.opt.output_scaffold_only ) {                                         pose_from_rif = *(sdc->scaffold_centered_p);
+            } else if( d.opt.output_full_scaffold_only ) {                                    pose_from_rif = *(sdc->scaffold_full_centered_p);
+            } else {                                        sdc->setup_both_pose( d.target ); pose_from_rif = *(sdc->mpc_both_pose.get_pose());
+            }
+
+
+            xform_pose( pose_from_rif, eigen2xyz(xalignout)           ,        scaffold_size+1, pose_from_rif.size());
+            xform_pose( pose_from_rif, eigen2xyz(xalignout*xposition1),                      1,        scaffold_size );
 
             // place the rotamers
             core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
@@ -182,7 +202,7 @@ output_results(
             expdb << "rif_residues ";
 
             for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
-                int ires = d.scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
+                int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
                 int irot =                  selected_result.rotamers().at(ipr).second;
                 core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(d.rot_index.resname(irot)) );
                 pose_from_rif.replace_residue( ires+1, *newrsd, true );
@@ -235,14 +255,14 @@ output_results(
 
 
             if( d.opt.dump_resfile ){
-                utility::io::ozstream out1res( d.opt.outdir + "/" + d.scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile");
+                utility::io::ozstream out1res( d.opt.outdir + "/" + scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile");
                 out1res << resfile.str();
                 out1res.close();
             }
 
             if( d.opt.dump_all_rif_rots ){
                 // utility_exit_with_message("this is not currently implemented, ask Will");
-                utility::io::ozstream out2( d.opt.outdir + "/" + d.scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz");
+                utility::io::ozstream out2( d.opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz");
                 out2 << allout.str();
                 out2.close();
             }
