@@ -39,13 +39,15 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     std::string scafftag;
     core::pose::Pose scaffold;
     utility::vector1<core::Size> scaffold_res;
+    EigenXform scaffold_perturb;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb);
 
     ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
         scaffold_res,
         scafftag,
+        scaffold_perturb,
         rot_index_p,
         opt);
 

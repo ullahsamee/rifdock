@@ -41,7 +41,8 @@ get_info_for_iscaff(
     RifDockOpt const & opt, 
     std::string & scafftag,
     core::pose::Pose & scaffold,
-    utility::vector1<core::Size> & scaffold_res
+    utility::vector1<core::Size> & scaffold_res,
+    EigenXform & scaffold_perturb
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -51,8 +52,8 @@ get_info_for_iscaff(
 
     core::import_pose::pose_from_file( scaffold, scaff_fname );
 
+    scaffold_perturb = EigenXform::Identity();
     if( opt.random_perturb_scaffold ){
-        EigenXform scaffold_perturb = EigenXform::Identity();
         runtime_assert_msg( !opt.use_scaffold_bounding_grids,
             "opt.use_scaffold_bounding_grids incompatible with random_perturb_scaffold" );
         std::mt19937 rng( 0);// std::random_device{}() );

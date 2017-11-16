@@ -233,11 +233,11 @@ rosetta_rescore(
 
 // Brian Injection
                 //~~~~~~~~~~~~~~~~~~~~~~~
-                // Instead of work_pose, we clone the correct scaffold-target from scene::conformation
-                // Get data cache
-                // clone pose
-                // copy out l2g
-                // copy out scaffold_res
+                // Instead of both_per_thread, we clone the correct scaffold-target from the ScaffoldDataCache
+                // Get ScaffoldDataCache
+                // clone both_pose or both_full_pose
+                // copy out scaffres_l2g
+                // copy out scaffuseres
 
                 ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index);
                 ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(si);
@@ -358,7 +358,7 @@ rosetta_rescore(
                     //~~~~~~~~~~~~~~~~~~~~~~~
                     // get the movemap from the movemap list
                     // set the movemap like normal
-                    // add it into the minmover_pt 
+                    // set it into the minmover_pt 
 
                     core::kinematics::MoveMapOP movemap = movemap_pt[ithread];
                     movemap->set_chi(true);

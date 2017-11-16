@@ -58,24 +58,42 @@ struct MultithreadPoseCloner {
     core::pose::PoseCOP
     get_pose() {
         runtime_assert( poses_.size() > 0);
-        int got_lock_at = -1;
-        {
-            std::lock_guard<std::mutex> guard( vector_mutex_ );
-            for ( int i = 0; i < pose_mutexes_.size(); i++ ) {
-                if ( pose_mutexes_[i].try_lock() ) {
-                    got_lock_at = i;
-                    break;
+
+        core::pose::PoseCOP to_return;
+
+        while ( ! to_return ) {
+            int got_lock_at = -1;
+            {
+                std::lock_guard<std::mutex> guard( vector_mutex_ );
+                for ( int i = 0; i < pose_mutexes_.size(); i++ ) {
+                    if ( pose_mutexes_[i].try_lock() ) {
+                        got_lock_at = i;
+                        break;
+                    }
                 }
             }
-        }
-        if (got_lock_at != -1) {
-            core::pose::PoseCOP to_return = clone_a_pose( poses_[got_lock_at] );
-            pose_mutexes_[got_lock_at].unlock();
-            return to_return;
+            if (got_lock_at != -1) {
+                to_return = clone_a_pose( poses_[got_lock_at] );
+                pose_mutexes_[got_lock_at].unlock();
+
+                bool should_duplicate = false;
+                {
+                    std::lock_guard<std::mutex> guard( lock_need_more_poses_ );
+                    if (need_more_poses_ > 0) {
+                        need_more_poses_ -= 1;
+                        should_duplicate = true;
+                    }  
+                }
+                if (should_duplicate) {
+                    core::pose::PoseCOP new_pose = clone_a_pose( to_return );
+                }
+            } else {
+                std::this_thread::sleep_for( std::chrono::milliseconds {1});
+            }
         }
 
-        duplicate_a_pose();
-        return get_pose();
+        return to_return;
+
     }
 
     // Don't be super smart/clever here. Just wait for a mutex on the last
@@ -87,7 +105,10 @@ struct MultithreadPoseCloner {
             std::lock_guard<std::mutex> guard( vector_mutex_ );
             pose_to_lock = pose_mutexes_.size() - 1;
         }
-
+        {
+            std::lock_guard<std::mutex> guard( lock_need_more_poses_ );
+            need_more_poses_ += 1;
+        }
         pose_mutexes_[pose_to_lock].lock();
         core::pose::PoseCOP new_pose = clone_a_pose( poses_[pose_to_lock] );
         pose_mutexes_[pose_to_lock].unlock();
@@ -110,6 +131,10 @@ struct MultithreadPoseCloner {
     }
 
 
+private:
+
+    std::mutex lock_need_more_poses_;
+    bool need_more_poses_;
 };
 
 

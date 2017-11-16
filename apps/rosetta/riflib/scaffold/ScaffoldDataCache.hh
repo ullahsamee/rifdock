@@ -48,6 +48,7 @@ struct ScaffoldDataCache {
     Eigen::Vector3f scaffold_center;
     float scaff_redundancy_filter_rg;
     float scaff_radius;
+    EigenXform scaffold_perturb;
 
     core::pose::PoseCOP scaffold_centered_p;                                   // centered scaffold, some ALA mutations based on scaff2ala/scaff2alaselonly
     core::pose::PoseCOP scaffold_full_centered_p;                              // centered scaffold, identical to input       
@@ -89,13 +90,15 @@ struct ScaffoldDataCache {
 
     ScaffoldDataCache( core::pose::Pose & pose, 
         utility::vector1<core::Size> const & scaffold_res_in, 
-        std::string const &scafftag_in, 
+        std::string const &scafftag_in,
+        EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt) {
 
         scaffold_res_p = make_shared<utility::vector1<core::Size>>(scaffold_res_in);
         scafftag = scafftag_in;
         scaff_res_hashstr = ::devel::scheme::get_res_list_hash( *scaffold_res_p );
+        scaffold_perturb = scaffold_perturb_in;
 
         typedef numeric::xyzVector<core::Real> Vec;
 

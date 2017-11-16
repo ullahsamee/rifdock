@@ -655,10 +655,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
 				runtime_assert( both_pose.size() == both_full_pose.size() );
 
-				// scaffold_only_pose.dump_pdb("og_scaffold_only_pose.pdb");
-				// scaffold_only_full_pose.dump_pdb("og_scaffold_only_full_pose.pdb");
-				both_pose.dump_pdb("og_both_pose.pdb");
-				both_full_pose.dump_pdb("og_both_full_pose.pdb");
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -745,37 +741,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			// std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
 
 			std::cout << "not using scaffold bounding grids" << std::endl;
-			// for( int ir = 1; ir <= scaffold_centered.size(); ++ir ){
-			// 	utility::vector1<core::Size> resids(1,ir); // 1-index numbering
-			// 	{
-			// 		std::vector<SchemeAtom> scaff_res_atoms;
-			// 		if( !opt.lowres_sterics_cbonly && std::find( scaffold_res.begin(), scaffold_res.end(), ir ) != scaffold_res.end() ){
-			// 			devel::scheme::get_scheme_atoms( scaffold_centered, resids, scaff_res_atoms, true ); //bb + CB
-			// 		} else { // is not selected residue
-			// 			devel::scheme::get_scheme_atoms_cbonly( scaffold_centered, resids, scaff_res_atoms ); // literally only CB
-			// 		}
-			// 		int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
-			// 		for( int ia = 0; ia < scaff_res_atoms.size(); ++ia){
-			// 			SchemeAtom const & a( scaff_res_atoms[ia] );
-			// 			runtime_assert( a.type() > 0 );
-			// 			if( a.type() >= 21 ) continue;
-			// 			SimpleAtom sa( a.position(), a.type(), restype, ia );
-			// 			scaffold_simple_atoms.push_back(sa);
-			// 		}
-			// 	}
-			// 	{
-			// 		std::vector<SchemeAtom> all_scaff_res_atoms;
-			// 		devel::scheme::get_scheme_atoms( scaffold_centered, resids, all_scaff_res_atoms, false );
-			// 		int restype = rot_index.chem_index_.resname2num( scaffold_centered.residue(ir).name3() ); // for UNK will be -1
-			// 		for( int ia = 0; ia < all_scaff_res_atoms.size(); ++ia){
-			// 			SchemeAtom const & a( all_scaff_res_atoms[ia] );
-			// 			runtime_assert( a.type() > 0 );
-			// 			if( a.type() >= 21 ) continue;
-			// 			SimpleAtom sa( a.position(), a.type(), restype, ia );
-			// 			scaffold_simple_atoms_all.push_back(sa);
-			// 		}
-			// 	}
-			// }
+
 			std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms.size() << std::endl;
 
 
@@ -784,45 +750,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
 			scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
-			// ScenePtr scene_full( scene_prototype->clone_deep() );
-			// {
-			// 	for( int ir = 1; ir <= scaffold.size(); ++ir ){
-			// 		Vec N  = scaffold_centered.residue(ir).xyz("N" );
-			// 		Vec CA = scaffold_centered.residue(ir).xyz("CA");
-			// 		Vec C  = scaffold_centered.residue(ir).xyz("C" );
-
-			// 		// todo map res indices, must also edit onebody_energies
-			// 		BBActor bbactor( N, CA, C, '-', '-', scaffres_g2l[ir-1] );
-			// 		runtime_assert( bbactor.index_ == scaffres_g2l[ir-1] );
-
-
-			// 		// scene_full->add_actor(1,bbactor);
-			// 		if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
-			// 			// scene_minimal->add_actor(1,bbactor);
-			// 		}
-			// 	}
-
-			// 	if( opt.use_scaffold_bounding_grids ){
-			// 		BOOST_FOREACH( SimpleAtom const & sa, target_simple_atoms )	scene_minimal->add_actor( 0, sa );
-			// 		runtime_assert( scene_minimal->template num_actors<SimpleAtom>(0) == target_simple_atoms.size() );
-			// 		scene_minimal->add_actor( 1, VoxelActor(scaffold_bounding_by_atype) );
-			// 	} else {
-			// 		// BOOST_FOREACH( SimpleAtom const & sa, scaffold_simple_atoms ) scene_minimal->add_actor( 1, sa );
-			// 		// runtime_assert( scene_minimal->template num_actors<SimpleAtom>(1) == scaffold_simple_atoms.size() );
-			// 		scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
-			// 	}
-
-
-			// }
-
-///////////////////////////////////////////////////////////////////////////////////
-/////////////// Test code during refactor, delete this if you find it
-
-			// shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(scene_minimal));
-			// scene_minimal_typed->replace_body(1, scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
-
-
-////////////////////////////////////////////////////////////////////////////////////
 
 
 			// utility_exit_with_message("FOO");
@@ -991,17 +918,18 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			std::vector< RifDockResult > selected_results, allresults;
 			{
-				CompileAndFilterResultsData<DirectorBase> data {
+				CompileAndFilterResultsData<DirectorBase,ScaffoldProvider> data {
 					opt, 
 					packed_results, 
 					RESLS, 
 					scene_pt, 
 					director, 
-					redundancy_filter_rg, 
-					scaffold_center, 
+					target_redundancy_filter_rg, 
+					// scaffold_center, 
 					dump_lock,
 					objectives, 
-					scaffold_perturb
+					// scaffold_perturb,
+					scaffold_provider
 				};
 
 				compile_and_filter_results( selected_results, allresults, data );
