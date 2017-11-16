@@ -622,7 +622,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			ScaffoldDataCache & sdc = *(scaffold_provider->get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex())));
 
 			scaffold_res = *(sdc.scaffold_res_p);
-			scaffuseres = sdc.scaffuseres;
+			scaffuseres = *(sdc.scaffuseres_p);
 			scaffold_center = sdc.scaffold_center;
 			// scaff_redundancy_filter_rg = sdc.scaff_redundancy_filter_rg;
 			scaff_radius = sdc.scaff_radius;
@@ -655,6 +655,10 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
 				runtime_assert( both_pose.size() == both_full_pose.size() );
 
+				// scaffold_only_pose.dump_pdb("og_scaffold_only_pose.pdb");
+				// scaffold_only_full_pose.dump_pdb("og_scaffold_only_full_pose.pdb");
+				both_pose.dump_pdb("og_both_pose.pdb");
+				both_full_pose.dump_pdb("og_both_full_pose.pdb");
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -956,22 +960,23 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			if( do_rosetta_score && opt.hack_pack ){
 
 
-				RosettaRescoreData<DirectorBase> data {
+				RosettaRescoreData<DirectorBase,ScaffoldProvider> data {
 				    opt,
 					RESLS,
 					director,
-					scaffres_l2g,
+					// scaffres_l2g,
 					rot_index,
-					scaffold,
-					both_pose,
-					both_full_pose,
-					scaffold_res,
+					// scaffold,
+					// both_pose,
+					// both_full_pose,
+					// scaffold_res,
 					target,
 					total_search_effort,
 					packed_results,
 					scene_pt,
 					target_field_by_atype,
-					time_ros
+					time_ros,
+					scaffold_provider
 				};
 
 				rosetta_rescore( data );

@@ -11,37 +11,39 @@
 #include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/rifdock_subroutines/meta.hh>
 
+#include <unordered_map>
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase >
+template<class DirectorBase, class ScaffoldProvider >
 struct RosettaRescoreData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
     DirectorBase & director;
-    std::vector<int> & scaffres_l2g;
+    // std::vector<int> & scaffres_l2g;///////
     devel::scheme::RotamerIndex & rot_index;
-    core::pose::Pose & scaffold;
-    core::pose::Pose & both_pose;
-    core::pose::Pose & both_full_pose;
-    utility::vector1<core::Size> & scaffold_res;
+    // core::pose::Pose & scaffold;////
+    // core::pose::Pose & both_pose;////
+    // core::pose::Pose & both_full_pose;//////
+    // utility::vector1<core::Size> & scaffold_res;///////
     core::pose::Pose & target;
     int64_t & total_search_effort;
     std::vector< _SearchPointWithRots<DirectorBase> > & packed_results;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     std::vector< devel::scheme::VoxelArrayPtr > & target_field_by_atype;
     double & time_ros;
+    shared_ptr<ScaffoldProvider> scaffold_provider;
 };
 
 
 
-template<class DirectorBase>
+template<class DirectorBase, class ScaffoldProvider>
 void
 rosetta_rescore(
-    RosettaRescoreData<DirectorBase> & d) {
+    RosettaRescoreData<DirectorBase,ScaffoldProvider> & d) {
 
 
     using namespace core::scoring;
@@ -60,6 +62,7 @@ rosetta_rescore(
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
     typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
+    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start_rosetta = std::chrono::high_resolution_clock::now();
@@ -68,10 +71,10 @@ rosetta_rescore(
     int do_min = 2;
     if( d.opt.rosetta_min_fraction == 0.0 ) do_min = 1;
 
-    std::vector<bool> is_scaffold_fixed_res(d.scaffold.size()+1,true);
-    for(int designable : d.scaffold_res){
-        is_scaffold_fixed_res[designable] = false;
-    }
+    // std::vector<bool> is_scaffold_fixed_res(scaffold_size+1,true);  // this is a one-indexed lookup
+    // for(int designable : d.scaffold_res){
+    //     is_scaffold_fixed_res[designable] = false;
+    // }
 
     for( int minimizing = 0; minimizing < do_min; ++minimizing ){
 
@@ -82,19 +85,20 @@ rosetta_rescore(
         else         print_header( "rosetta score" ); ////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        std::vector<core::kinematics::MoveMapOP> movemap_pt(omp_max_threads());
         std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
         std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
         // std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
-        std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
-        std::vector<core::pose::Pose> target_pt           (omp_max_threads());
+        // std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
+        // std::vector<core::pose::Pose> target_pt           (omp_max_threads());
         std::vector<core::pose::Pose> work_pose_pt        (omp_max_threads());
         for( int i = 0; i < omp_max_threads(); ++i){
             // both_full_per_thread[i] = d.both_full_pose;
-            if( d.opt.replace_orig_scaffold_res ){
-                both_per_thread[i] = d.both_full_pose;
-            } else {
-                both_per_thread[i] = d.both_pose;
-            }
+            // if( d.opt.replace_orig_scaffold_res ){
+            //     both_per_thread[i] = d.both_full_pose;
+            // } else {
+            //     both_per_thread[i] = d.both_pose;
+            // }
             scorefunc_pt[i] = core::scoring::ScoreFunctionFactory::create_score_function(d.opt.rosetta_soft_score);
             if( minimizing ){
                 if( d.opt.rosetta_hard_min ){
@@ -129,7 +133,7 @@ rosetta_rescore(
             }
 
             // score one pose single threaded maybe helps lkball issue
-            scorefunc_pt[i]->score(both_per_thread[i]);
+            // scorefunc_pt[i]->score(both_per_thread[i]);
 
             // scorefunc_pt[i]->set_weight( core::scoring::fa_rep, scorefunc_pt[i]->get_weight(core::scoring::fa_rep)*0.67 );
             // scorefunc_pt[i]->set_weight( core::scoring::fa_dun, scorefunc_pt[i]->get_weight(core::scoring::fa_dun)*0.67 );
@@ -139,16 +143,7 @@ rosetta_rescore(
             // opts.hbond_options( hopts );
             // scorefunc_pt[i]->set_energy_method_options( opts );
             core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
-            movemap->set_chi(true);
-            movemap->set_jump(true);
-            for(int ir = 1; ir <= d.both_full_pose.size(); ++ir){
-                bool is_scaffold = ir <= d.scaffold.size();
-                if( is_scaffold ) movemap->set_bb(ir, d.opt.rosetta_min_allbb || d.opt.rosetta_min_scaffoldbb );
-                else              movemap->set_bb(ir, d.opt.rosetta_min_allbb || d.opt.rosetta_min_targetbb );
-                if( d.opt.rosetta_min_fix_target && !is_scaffold ){
-                    movemap->set_chi(ir,false);
-                }
-            }
+            movemap_pt[i] = movemap;
             minmover_pt[i] = protocols::simple_moves::MinMoverOP(
                 new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
         }
@@ -174,11 +169,45 @@ rosetta_rescore(
             n_score_calculations = n_scormin;
         }
         d.packed_results.resize(n_scormin);
+
+
+// Brian injection
+        //~~~~~~~~~~~~~~~~~~~~~~~
+        // 1. Determine unique scaffolds
+        // 2. Populate their correct scaffold-target form
+
+        std::unordered_map<ScaffoldIndex,bool> unique_scaffolds_dict;
+
+        for ( int imin = 0; imin < n_scormin; ++imin ) {
+            if ( unique_scaffolds_dict.count(::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index)) == 0) {
+                unique_scaffolds_dict[::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index)] = true;
+            }
+        }
+        std::vector<ScaffoldIndex> uniq_scaffolds;
+        for ( std::pair<ScaffoldIndex,bool> pair : unique_scaffolds_dict ) uniq_scaffolds.push_back(pair.first);
+
+        int n_uniq = uniq_scaffolds.size();
+        std::cout << "Building " << n_uniq << " scaffold+target poses" << std::endl;
+        // #ifdef USE_OPENMP
+        // #pragma omp parallel for schedule(dynamic,1)
+        // #endif
+        for ( int iuniq = 0; iuniq < n_uniq; ++iuniq ) {
+            ScaffoldIndex si = uniq_scaffolds[iuniq];
+            ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(si);
+            if( d.opt.replace_orig_scaffold_res ){
+                sdc->setup_both_full_pose(*(d.target.clone()));
+            } else {
+                sdc->setup_both_pose(*(d.target.clone()));
+            }
+        }
+/////////
+
+
+
         int64_t const out_interval = std::max<int64_t>(1,n_scormin/50);
         if( minimizing) std::cout << "rosetta min on "   << KMGT(n_scormin) << ": ";
         else            std::cout << "rosetta score on " << KMGT(n_scormin) << ": ";
         std::exception_ptr exception = nullptr;
-
 
         #ifdef USE_OPENMP
         #pragma omp parallel for schedule(dynamic,1)
@@ -202,17 +231,43 @@ rosetta_rescore(
                 std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
                 start = std::chrono::high_resolution_clock::now();
 
-                // core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
+// Brian Injection
+                //~~~~~~~~~~~~~~~~~~~~~~~
+                // Instead of work_pose, we clone the correct scaffold-target from scene::conformation
+                // Get data cache
+                // clone pose
+                // copy out l2g
+                // copy out scaffold_res
+
+                ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index);
+                ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(si);
+
                 core::pose::Pose & pose_to_min( work_pose_pt[ithread] );
-                pose_to_min = both_per_thread[ithread];
-                xform_pose( pose_to_min, eigen2xyz(xalignout)            , d.scaffold.size()+1 , pose_to_min.size() );
-                xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    d.scaffold.size() );
+
+                if( d.opt.replace_orig_scaffold_res ){
+                    pose_to_min = *(sdc->mpc_both_full_pose.get_pose());
+                } else {
+                    pose_to_min = *(sdc->mpc_both_pose.get_pose());
+                }
+
+                // these guys are multi-thread shared. Definitely don't modify them
+                shared_ptr<std::vector<int> const> scaffres_l2g_p = sdc->scaffres_l2g_p;
+                shared_ptr<std::vector<bool>> scaffuseres_p = sdc->scaffuseres_p;
+                int scaffold_size = scaffuseres_p->size();
+
+//////////
+                // pose_to_min = both_per_thread[ithread]; // the old way to get the pose
+
+                // core::pose::PoseOP pose_to_min_ptr = core::pose::PoseOP(new core::pose::Pose);
+
+                xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold_size+1 , pose_to_min.size() );
+                xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold_size );
 
                 // place the rotamers
                 core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
                 std::vector<bool> is_rif_res(pose_to_min.size(),false);
                 for( int ipr = 0; ipr < d.packed_results[imin].numrots(); ++ipr ){
-                    int ires = d.scaffres_l2g.at( d.packed_results[imin].rotamers().at(ipr).first );
+                    int ires = scaffres_l2g_p->at( d.packed_results[imin].rotamers().at(ipr).first );
                     int irot =                  d.packed_results[imin].rotamers().at(ipr).second;
                     core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(d.rot_index.resname(irot)) );
                     pose_to_min.replace_residue( ires+1, *newrsd, true );
@@ -237,8 +292,9 @@ rosetta_rescore(
 
                 // pose_to_min.dump_pdb("test_rep_scaff_rots_"+str(imin)+"_before.pdb");
 
+                // The purpose of this loop is to figure out which residues to prune
                 std::vector<int> rifatypemap = get_rif_atype_map();
-                for( int ir = 1; ir <= d.scaffold.size(); ++ir){
+                for( int ir = 1; ir <= scaffold_size; ++ir){
                     auto const & ires = pose_to_min.residue(ir);
                     if( !ires.is_protein() ) continue;
                     if( ires.aa()==core::chemical::aa_gly ||
@@ -248,7 +304,8 @@ rosetta_rescore(
                         rifres.push_back(ir);
                         continue;
                     }
-                    if(is_scaffold_fixed_res[ir]) continue;
+                    // if(is_scaffold_fixed_res[ir]) continue;
+                    if ( ! (*scaffuseres_p)[ir-1] ) continue;   // i.e. if we weren't set to designable, continue
                     bool ir_clash = false;
 
                     // check against target_field_by_atype
@@ -266,7 +323,7 @@ rosetta_rescore(
 
                     // check against other rif res
                     for( int ipr = 0; ipr < d.packed_results[imin].numrots(); ++ipr ){
-                        int jr = 1+d.scaffres_l2g.at( d.packed_results[imin].rotamers().at(ipr).first );
+                        int jr = 1+scaffres_l2g_p->at( d.packed_results[imin].rotamers().at(ipr).first );
                         auto const & jres = pose_to_min.residue(jr);
                         // should do rsd nbr check... but speed not critical here ATM...
                         for( int ia = 6; ia <= ires.nheavyatoms(); ++ia){
@@ -296,6 +353,27 @@ rosetta_rescore(
                 // pose_to_min.dump_pdb("test_pre.pdb");
 
                 if( minimizing ){
+
+// Brian injection
+                    //~~~~~~~~~~~~~~~~~~~~~~~
+                    // get the movemap from the movemap list
+                    // set the movemap like normal
+                    // add it into the minmover_pt 
+
+                    core::kinematics::MoveMapOP movemap = movemap_pt[ithread];
+                    movemap->set_chi(true);
+                    movemap->set_jump(true);
+                    for(int ir = 1; ir <= pose_to_min.size(); ++ir){
+                        bool is_scaffold = ir <= scaffold_size;
+                        if( is_scaffold ) movemap->set_bb(ir, d.opt.rosetta_min_allbb || d.opt.rosetta_min_scaffoldbb );
+                        else              movemap->set_bb(ir, d.opt.rosetta_min_allbb || d.opt.rosetta_min_targetbb );
+                        if( d.opt.rosetta_min_fix_target && !is_scaffold ){
+                            movemap->set_chi(ir,false);
+                        }
+                    }
+                    minmover_pt[ithread]->set_movemap(movemap);
+////////////
+
                     // std::cout << "MIN!" << std::endl;
                     // start = std::chrono::high_resolution_clock::now();
                     // #pragma omp critical
@@ -328,7 +406,7 @@ rosetta_rescore(
                 //  d.packed_results[imin].score += 1.00*pose_to_min.energies().total_energies()[core::scoring::hbond_sc]; // last res is ligand
                 //  d.packed_results[imin].score += 1.00*pose_to_min.energies().residue_total_energy(pose_to_min.size());
                 //  for( int ipr = 0; ipr < d.packed_results[imin].numrots(); ++ipr ){
-                //      int ires = d.scaffres_l2g.at( d.packed_results[imin].rotamers().at(ipr).first );
+                //      int ires = scaffres_l2g_p->at( d.packed_results[imin].rotamers().at(ipr).first );
                 //      d.packed_results[imin].score += 0.5*pose_to_min.energies().residue_total_energy(ires);
                 //  }
                 // } else {
@@ -339,7 +417,7 @@ rosetta_rescore(
                     double rosetta_score = 0.0;
                     auto const & weights = pose_to_min.energies().weights();
                     if( !d.opt.rosetta_score_ddg_only ){
-                        for( int ir = 1; ir <= d.scaffold.size(); ++ir ){
+                        for( int ir = 1; ir <= scaffold_size; ++ir ){
                             if( is_rif_res[ir-1] ){
                                 rosetta_score += pose_to_min.energies().onebody_energies(ir).dot(weights);
                             }
@@ -360,11 +438,11 @@ rosetta_rescore(
                             int jr = edge.get_second_node_ind();
 
                             // this is DDG
-                            if( ir <= d.scaffold.size() && jr > d.scaffold.size() ){
+                            if( ir <= scaffold_size && jr > scaffold_size ){
                                 // ir in scaff, jr in target
                                 rosetta_score += edge.dot(weights);
                             }
-                            if( !d.opt.rosetta_score_ddg_only && jr <= d.scaffold.size() ){
+                            if( !d.opt.rosetta_score_ddg_only && jr <= scaffold_size ){
                                 // ir & jr in scaffold
                                 if( is_rif_res[ir-1] || is_rif_res[jr-1] ){
                                     double const edgescore = edge.dot(weights);

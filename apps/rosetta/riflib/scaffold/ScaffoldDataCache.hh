@@ -23,6 +23,7 @@
 #include <riflib/util.hh>
 #include <rif_dock_test.hh>
 #include <riflib/rotamer_energy_tables.hh>
+#include <riflib/scaffold/MultithreadPoseCloner.hh>
 
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
@@ -42,7 +43,7 @@ struct ScaffoldDataCache {
 
     shared_ptr<std::vector<int>> scaffres_g2l_p;                               // maps global_seqpos -> local_seqpos  (local_seqpos.size() == scaffold_res.size())
     shared_ptr<std::vector<int>> scaffres_l2g_p;                               // maps local_seqpos  -> global_seqpos
-    std::vector<bool> scaffuseres;                                             // maps global_seqpos -> (bool)being used
+    shared_ptr<std::vector<bool>> scaffuseres_p;                                 // maps global_seqpos -> (bool)being used
 
     Eigen::Vector3f scaffold_center;
     float scaff_redundancy_filter_rg;
@@ -76,6 +77,10 @@ struct ScaffoldDataCache {
     shared_ptr<TBT> local_twobody_p;                                           // twobody_rotamer_energies using local_seqpos
 
 
+    MultithreadPoseCloner mpc_both_pose;                                       // scaffold_centered_p + target
+    MultithreadPoseCloner mpc_both_full_pose;                                  // scaffold_full_centered_p + target
+
+
 // Conformation state
     bool conformation_is_fa;
 
@@ -95,16 +100,17 @@ struct ScaffoldDataCache {
         typedef numeric::xyzVector<core::Real> Vec;
 
 
-        // setting up scaffres_g2l_p, scaffres_l2g_p, and scaffuseres
+        // setting up scaffres_g2l_p, scaffres_l2g_p, and scaffuseres_p
         int count = 0;
         scaffres_l2g_p = make_shared<std::vector<int>>();
         scaffres_g2l_p = make_shared<std::vector<int>>(pose.size(), -1);
-        scaffuseres.resize(pose.size(), false);
+        scaffuseres_p = make_shared<std::vector<bool>>(pose.size(), false);
+
 
         for ( core::Size ir : *scaffold_res_p) {
             (*scaffres_g2l_p)[ir-1] = count++;
             scaffres_l2g_p->push_back(ir-1);
-            scaffuseres[ir-1] = true;
+            (*scaffuseres_p)[ir-1] = true;
         }
 
         // This is setting scaff_redundancy_filter_rg and scaff_radius
@@ -278,13 +284,45 @@ struct ScaffoldDataCache {
             );
 
 
-        local_twobody_p = scaffold_twobody_p->create_subtable( scaffuseres, *scaffold_onebody_glob0_p, make2bopts.onebody_threshold );
+        local_twobody_p = scaffold_twobody_p->create_subtable( *scaffuseres_p, *scaffold_onebody_glob0_p, make2bopts.onebody_threshold );
     }
 
 
     float
     get_redundancy_filter_rg( float target_redundancy_filter_rg ) {
         return std::min( target_redundancy_filter_rg, scaff_redundancy_filter_rg );
+    }
+
+
+
+    void
+    setup_both_pose( core::pose::Pose const & target ) {
+        if ( mpc_both_pose.size() > 0 ) return;
+        mpc_both_pose.add_pose(helper_setup_both_pose( target ));
+
+        runtime_assert( mpc_both_pose.get_pose()->size() == scaffold_centered_p->size() + target.size() );
+    }
+
+    core::pose::PoseOP
+    helper_setup_both_pose( core::pose::Pose const & target ) {
+        core::pose::PoseOP __both_pose_p = make_shared<core::pose::Pose>( *scaffold_centered_p );
+        ::devel::scheme::append_pose_to_pose( *__both_pose_p, target );
+        return __both_pose_p;
+    }
+
+    void
+    setup_both_full_pose( core::pose::Pose const & target ) {
+        if ( mpc_both_full_pose.size() > 0 ) return;
+        mpc_both_full_pose.add_pose(helper_setup_both_full_pose(target));
+
+        runtime_assert( mpc_both_full_pose.get_pose()->size() == scaffold_full_centered_p->size() + target.size() );
+    }
+
+    core::pose::PoseOP
+    helper_setup_both_full_pose( core::pose::Pose const & target ) {
+        core::pose::PoseOP __both_full_pose_p = make_shared<core::pose::Pose>( *scaffold_full_centered_p );
+        ::devel::scheme::append_pose_to_pose( *__both_full_pose_p, target );
+        return __both_full_pose_p;
     }
 
 

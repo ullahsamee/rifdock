@@ -205,6 +205,14 @@ bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
 }
 
 
+
+template< class ScaffoldIndex >
+ScaffoldIndex
+bigindex_scaffold_index(std::pair<uint64_t, ScaffoldIndex> size) {
+	return size.second;
+}
+
+
 inline
 uint64_t
 director_index_default_value(uint64_t) {

@@ -16,6 +16,7 @@
 #include <vector>
 #include <limits>
 #include <boost/any.hpp>
+#include <boost/functional/hash.hpp>
 
 
 
@@ -60,6 +61,12 @@ struct TreeIndex {
     uint64_t depth;
     uint64_t member;
     TreeIndex() : depth(BOGUS_INDEX), member(BOGUS_INDEX) {};
+
+    bool operator==(const TreeIndex &other) const { 
+        return (depth == other.depth
+            && member == other.member);
+    }
+
 };
 
 struct TreeRelation {
@@ -109,5 +116,33 @@ TreeIndex scaffold_index_default_value(TreeIndex) {
 
 
 }}
+
+
+
+
+
+namespace std {
+
+    template <>
+    struct hash<scheme::scaffold::TreeIndex>
+    {
+        std::size_t operator()(const scheme::scaffold::TreeIndex& ti) const {
+            using std::size_t;
+            using boost::hash;
+            using boost::hash_combine;
+
+            std::size_t seed = 0;
+
+            boost::hash<int> hasher;
+            hash_combine(seed, hasher(ti.depth));
+            hash_combine(seed, hasher(ti.member));
+
+            return seed;
+        }
+    };
+
+}
+
+
 
 #endif
