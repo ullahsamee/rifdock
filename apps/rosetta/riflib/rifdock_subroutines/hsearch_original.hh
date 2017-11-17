@@ -31,7 +31,7 @@ struct HsearchData {
     core::pose::Pose & target;
     // std::vector<devel::scheme::EigenXform> & symmetries_clash_check;
     // std::vector< devel::scheme::SimpleAtom > & scaffold_simple_atoms;
-    devel::scheme::RotamerIndex & rot_index;
+    shared_ptr< devel::scheme::RotamerIndex > & rot_index_p;
     // std::vector< std::vector< devel::scheme::VoxelArrayPtr > > & scaffold_bounding_by_atype;
     std::vector< devel::scheme::ObjectivePtr > & objectives;
     int64_t & non0_space_size;
@@ -102,6 +102,8 @@ hsearch_original(
     ScaffoldDataCacheOP sdc = d.scaffold_provider.get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex()));
     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
+
+    sdc->setup_onebody_tables( d.rot_index_p, d.opt);
 
 
     std::vector< std::vector< SearchPoint > > samples( d.RESLS.size() );

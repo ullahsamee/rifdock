@@ -574,137 +574,42 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-			core::pose::Pose scaffold;								// the input scaffold, gets converted to alanine with flags
-			core::pose::Pose scaffold_centered;                     // input (maybe alanine) scaffold centered using scaffold_center
-			core::pose::Pose scaffold_full_centered;				// input full aa scaffold centered using scaffold_center
-			core::pose::Pose both_pose;								// scaffold (maybe alanine) centered + target (from rifgen)
-			core::pose::Pose both_full_pose; 						// scaffold centered + target (from rifgen)
-			core::pose::Pose scaffold_only_pose;				
-			core::pose::Pose scaffold_only_full_pose;
-			core::pose::Pose scaffold_unmodified_from_file;
-
-			float scaff_radius = 0.0;
-			float redundancy_filter_rg = 0.0;						// rg of scaffold to decide minimum angular resolution?
-
-			std::vector<int> scaffres_g2l;							// maps global_seqpos -> local_seqpos  (local_seqpos.size() == scaffold_res.size())
-			std::vector<int> scaffres_l2g;							// maps local_seqpos  -> global_seqpos
-			std::vector<bool> scaffuseres;							// maps global_seqpos -> being_used
-			Eigen::Vector3f scaffold_center;						// center of scaffold heavy atoms after conversion to alanine
-			std::vector<Vec> scaffca;								// xyz coordinates of scaffold CA
-			std::vector<std::vector<float> > scaffold_onebody_glob0;// onebody_rotamer_energies using global_seqpos
-			std::vector<std::vector<float> > local_onebody;			// onebody_rotamer_energies using local_seqpos
-			std::vector< std::pair<int,int> > local_rotamers;		// lower and upper bounds into rotamer_index for each local_seqpos
-			typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
-
-			shared_ptr<TBT> scaffold_twobody = make_shared<TBT>( scaffold.size(), rot_index.size()  );  // twobody_rotamer_energies using global_seqpos
-			shared_ptr<TBT> local_twobody;							// twobody_rotamer_energies using local_seqpos
-
-			EigenXform scaffold_perturb = EigenXform::Identity();
-
-
-			std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
-
-///////////////////////////////////////////////////////////////////////////////////
-/////////////// Test code during refactor, delete this if you find it
-
 
 			ScaffoldProviderOP scaffold_provider = make_shared<ScaffoldProvider>(
 				iscaff,
-				// scaffold_unmodified_from_file,
-				// scaffold_res,
-				// scafftag,
 				rot_index_p,
 				opt);
 
-			// ScaffoldDataCache sdc(scaffold_unmodified_from_file, scaffold_res, "yolo_" + 
-			// 	utility::file_basename( utility::file::file_basename( scaff_fname ) ), rot_index_p, opt);
+			ScaffoldIndex rep_si = scaffold_provider->get_representative_scaffold_index();
+			ScaffoldDataCacheOP rep_data_cache = scaffold_provider->get_data_cache_slow( rep_si );
 
-			ScaffoldDataCache & sdc = *(scaffold_provider->get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex())));
+			// debugging info
+			scaffold_sequence_glob0 = *(rep_data_cache->scaffold_sequence_glob0_p);
+			scaffold_res = *(rep_data_cache->scaffold_res_p);
 
-			scaffold_res = *(sdc.scaffold_res_p);
-			scaffuseres = *(sdc.scaffuseres_p);
-			scaffold_center = sdc.scaffold_center;
-			// scaff_redundancy_filter_rg = sdc.scaff_redundancy_filter_rg;
-			scaff_radius = sdc.scaff_radius;
+			// needed for scene
+			float rep_scaff_radius = rep_data_cache->scaff_radius;
 
-			scaffold_res = *(sdc.scaffold_res_p);
-			scaffres_g2l = *(sdc.scaffres_g2l_p);
-			scaffres_l2g = *(sdc.scaffres_l2g_p);
-
-			scaffold_centered = *(sdc.scaffold_centered_p);
-			scaffold_full_centered = *(sdc.scaffold_full_centered_p);
-			scaffold_simple_atoms_all = *(sdc.scaffold_simple_atoms_all_p);
-			scaffold_simple_atoms = *(sdc.scaffold_simple_atoms_p);
-
-////////////////////////////////////////////////////////////////////////////////////
-
-
-				float scaff_redundancy_filter_rg=0;
-				get_rg_radius( scaffold_centered, scaff_redundancy_filter_rg, scaff_radius, scaffold_res, false ); // not allatom for scaff
-				redundancy_filter_rg = std::min( scaff_redundancy_filter_rg, target_redundancy_filter_rg );
-				std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
-				std::cout << "using redundancy_filter_rg: " << redundancy_filter_rg << std::endl;
-
-				scaffold = scaffold_centered;
-				both_pose      = scaffold_centered;
-				both_full_pose = scaffold_full_centered;
-				scaffold_only_pose = scaffold_centered;
-				scaffold_only_full_pose = scaffold_full_centered;
-				::devel::scheme::append_pose_to_pose( both_pose, target );
-				::devel::scheme::append_pose_to_pose( both_full_pose, target );
-				runtime_assert( both_pose.size() == scaffold.size() + target.size() );
-				runtime_assert( both_pose.size() == both_full_pose.size() );
+			// needed for cout
+			float rep_scaff_redundancy_filter_rg = rep_data_cache->scaff_redundancy_filter_rg;
+			Eigen::Vector3f rep_scaffold_center = rep_data_cache->scaffold_center;
 
 
 
-///////////////////////////////////////////////////////////////////////////////////
-/////////////// Test code during refactor, delete this if you find it
-				sdc.setup_onebody_tables( rot_index_p, opt);
-				scaffold_onebody_glob0 = *(sdc.scaffold_onebody_glob0_p);
-				local_onebody = *(sdc.local_onebody_p);
+			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
+			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;
 
 
-
-////////////////////////////////////////////////////////////////////////////////////
-
-
-				MakeTwobodyOpts make2bopts;
-				// hacked by brian             VVVV
-				make2bopts.onebody_threshold = 30.0;
-				make2bopts.distance_cut = 15.0;
-				make2bopts.hbond_weight = packopts.hbond_weight;
+			MakeTwobodyOpts make2bopts;
+			// hacked by brian             VVVV
+			make2bopts.onebody_threshold = 30.0;
+			make2bopts.distance_cut = 15.0;
+			make2bopts.hbond_weight = packopts.hbond_weight;
 
 
-///////////////////////////////////////////////////////////////////////////////////
-/////////////// Test code during refactor, delete this if you find it
-
-				sdc.setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
-				scaffold_twobody = sdc.scaffold_twobody_p;
-				local_twobody = sdc.local_twobody_p;
-
-
-
-////////////////////////////////////////////////////////////////////////////////////
-
-				std::cout << "rifdock: twobody memuse: " << (float)scaffold_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
-
-				{
-					std::cout << "rifdock: onebody dimension: " << scaffold_onebody_glob0.size() << " " << scaffold_onebody_glob0.front().size() << std::endl;
-					int onebody_n_allowed = 0;
-					for( auto const & t : scaffold_onebody_glob0 ){
-						for( auto const & v : t ){
-							if( v < make2bopts.onebody_threshold ) onebody_n_allowed++;
-						}
-					}
-					std::cout << "rifdock: onebody Nallowed: " << onebody_n_allowed << std::endl;
-				}
-				std::cout << "filt_2b memuse: " << (float)local_twobody->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
-
-				// todo: prune twobody table???
-			
-
-
-
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			print_header( "setup scene from scaffold and target" );
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 			// SOMETHING WRONG, SCORES OFF BY A LITTLE
@@ -714,9 +619,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				rso_config.rif_ptrs = rif_ptrs;
 				rso_config.target_bounding_by_atype = &target_bounding_by_atype;
 				rso_config.target_field_by_atype = &target_field_by_atype;
-				// rso_config.local_onebody = &local_onebody;		//scaff
-				// rso_config.local_rotamers = &local_rotamers;	//scaff
-				// rso_config.local_twobody = local_twobody;		//scaff
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
@@ -733,21 +635,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 
 
-
-
-			print_header( "setup 3D rosetta_field grids for scaffold" );
-			std::vector< VoxelArrayPtr > scaffold_field_by_atype;
-			std::vector< std::vector< VoxelArrayPtr > > scaffold_bounding_by_atype;
-			// std::vector< SimpleAtom > scaffold_simple_atoms, scaffold_simple_atoms_all;  // the CB atom of each scaffold residue
-
-			std::cout << "not using scaffold bounding grids" << std::endl;
-
-			std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms.size() << std::endl;
-
-
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "setup scene from scaffold and target" );
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
 			scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
 
@@ -759,7 +646,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
-				float const body_radius = std::min( scaff_radius, rif_radius );
+				float const body_radius = std::min( rep_scaff_radius, rif_radius );
 				double const cart_grid = opt.resl0*opt.hsearch_scale_factor/sqrt(3); // 1.5 is a big hack here.... 2 would be more "correct"
 				double const hackysin = std::min( 1.0, opt.resl0*opt.hsearch_scale_factor/2.0/ body_radius );
 				runtime_assert( hackysin > 0.0 );
@@ -770,7 +657,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "resl0:           " << opt.resl0 << std::endl;
 				std::cout << "body_radius:     " << body_radius << std::endl;
 				std::cout << "rif_radius:      " << rif_radius << std::endl;
-				std::cout << "scaffold_radius: " << scaff_radius << std::endl;
+				std::cout << "scaffold_radius: " << rep_scaff_radius << std::endl;
 				std::cout << "cart_grid:       " << cart_grid  << std::endl;
 				std::cout << "rot_resl_deg0:   " << rot_resl_deg0 << std::endl;
 				I3 nc( nside, nside, nside );
@@ -787,12 +674,17 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "size of search space: ~" << float(::scheme::kinematics::bigindex_nest_part(director->size(0)))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 			}
 
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    		rep_data_cache->setup_onebody_tables( rot_index_p, opt);
 			cout << std::endl;
 			cout << "scores for scaffold in original position: " << std::endl;
 			{
 				EigenXform x(EigenXform::Identity());
-				x.translation() = scaffold_center;
-				director->set_scene( DirectorIndex(0, scaffold_index_default_value( ScaffoldIndex())), 0, *scene_minimal);
+				x.translation() = rep_scaffold_center;
+				director->set_scene( DirectorIndex(0, rep_si), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
@@ -829,13 +721,9 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						total_search_effort,
 						scene_pt,
 						scene_minimal,
-						// scaffold_center,
 						target_redundancy_filter_rg,
-						// scaffold_centered,
 						target,
-						// scaffold_simple_atoms,
-						rot_index,
-						// scaffold_bounding_by_atype,
+						rot_index_p,
 						objectives,
 						non0_space_size,
 						*scaffold_provider
@@ -866,11 +754,13 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						scene_pt,
 						scene_minimal,
 						target_simple_atoms,
-						// scaffold_simple_atoms_all,
 						npack,
 						packopts,
 						packing_objective,
 						hsearch_results_p,
+						make2bopts,
+						rot_index_p,
+						rotrf_table_manager,
 						scaffold_provider
 					};
 		        	hack_pack( packed_results_p, data );
@@ -891,12 +781,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				    opt,
 					RESLS,
 					director,
-					// scaffres_l2g,
 					rot_index,
-					// scaffold,
-					// both_pose,
-					// both_full_pose,
-					// scaffold_res,
 					target,
 					total_search_effort,
 					packed_results,
@@ -925,10 +810,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 					scene_pt, 
 					director, 
 					target_redundancy_filter_rg, 
-					// scaffold_center, 
 					dump_lock,
 					objectives, 
-					// scaffold_perturb,
 					scaffold_provider
 				};
 
@@ -960,22 +843,12 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 					RESLS, 
 					director, 
 					selected_results,
-					// scafftag,
 					npack,
 					dokout,
-					// scene_full,
 					scene_minimal,
-					// scaffres_g2l,
-					// scaffres_l2g,
 					rif_ptrs,
-					// scaffold_onebody_glob0,
 					rot_index,
 					target,
-					// scaffold,
-					// both_pose,
-					// both_full_pose,
-					// scaffold_only_pose,
-					// scaffold_only_full_pose
 					scaffold_provider
 				};
 				output_results(data);

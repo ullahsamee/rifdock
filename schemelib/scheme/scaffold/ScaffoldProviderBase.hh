@@ -46,6 +46,8 @@ struct ScaffoldProviderBase {
 
     virtual void set_fa_mode( bool is_fa ) = 0;
 
+    virtual ScaffoldIndex get_representative_scaffold_index() = 0;
+
 };
 
 template<typename _Scaffold, typename _ScaffoldIndex, typename _ScaffoldIndexLimits>

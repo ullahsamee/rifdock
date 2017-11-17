@@ -31,6 +31,9 @@ struct HackPackData {
     ::scheme::search::HackPackOpts & packopts;
     devel::scheme::ObjectivePtr & packing_objective;
     shared_ptr< std::vector< _SearchPointWithRots<DirectorBase> > > & hsearch_results_p;
+    devel::scheme::MakeTwobodyOpts & make2bopts;
+    shared_ptr< devel::scheme::RotamerIndex > & rot_index_p;
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager;
     shared_ptr<ScaffoldProvider> scaffold_provider;
 };
 
@@ -81,19 +84,20 @@ hack_pack(
         // } else {
             // for final stage, use all scaffold atoms, not just CB ones
 
+
         d.scaffold_provider->set_fa_mode(true);
 
 
         /// delete this later
 
 
-        shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(d.scene_minimal));
-        scene_minimal_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
+        // shared_ptr<ParametricScene> scene_minimal_typed( std::dynamic_pointer_cast<ParametricScene>(d.scene_minimal));
+        // scene_minimal_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
 
-        for ( ScenePtr scene : d.scene_pt ) {
-            shared_ptr<ParametricScene> scene_typed( std::dynamic_pointer_cast<ParametricScene>(scene));
-            scene_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
-        }
+        // for ( ScenePtr scene : d.scene_pt ) {
+        //     shared_ptr<ParametricScene> scene_typed( std::dynamic_pointer_cast<ParametricScene>(scene));
+        //     scene_typed->replace_body(1, d.scaffold_provider->get_scaffold(scaffold_index_default_value( ScaffoldIndex())));
+        // }
 
 
         // delete ///////////////////
@@ -124,7 +128,18 @@ hack_pack(
             ( d.opt.hack_pack_frac / (d.packopts.pack_n_iters*d.packopts.pack_iter_mult)) ) );
 
         packed_results.resize( d.npack );
+
+
         print_header( "hack-packing top " + KMGT(d.npack) );
+
+        std::cout << "Building twobody tables before hack-pack" << std::endl;
+        for( int ipack = 0; ipack < d.npack; ++ipack ) {
+            ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(hsearch_results[ipack].index);
+            ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow( si );
+            sdc->setup_twobody_tables( d.rot_index_p, d.opt, d.make2bopts, d.rotrf_table_manager);
+        }
+
+
         std::cout << "packing options: " << d.packopts << std::endl;
         std::cout << "packing w/rif rofts ";
         int64_t const out_interval = std::max<int64_t>(1,d.npack/100);

@@ -202,6 +202,8 @@ struct ScaffoldDataCache {
 
 
 
+        std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
+        std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
     }
 
 
@@ -211,6 +213,7 @@ struct ScaffoldDataCache {
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt ) {
 
+        if (local_onebody_p) return;
 
         scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>();
 
@@ -268,6 +271,8 @@ struct ScaffoldDataCache {
         MakeTwobodyOpts const & make2bopts,
         ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager) {
 
+        if (local_twobody_p) return;
+
         scaffold_twobody_p = make_shared<TBT>( scaffold_centered_p->size(), rot_index_p->size()  );
 
         std::cout << "rifdock: get_twobody_tables" << std::endl;
@@ -288,6 +293,18 @@ struct ScaffoldDataCache {
 
 
         local_twobody_p = scaffold_twobody_p->create_subtable( *scaffuseres_p, *scaffold_onebody_glob0_p, make2bopts.onebody_threshold );
+    
+
+        std::cout << "rifdock: twobody memuse: " << (float)scaffold_twobody_p->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
+        std::cout << "rifdock: onebody dimension: " << scaffold_onebody_glob0_p->size() << " " << scaffold_onebody_glob0_p->front().size() << std::endl;
+        int onebody_n_allowed = 0;
+        for( auto const & t : *(scaffold_onebody_glob0_p) ){
+            for( auto const & v : t ){
+                if( v < make2bopts.onebody_threshold ) onebody_n_allowed++;
+            }
+        }
+        std::cout << "rifdock: onebody Nallowed: " << onebody_n_allowed << std::endl;
+        std::cout << "filt_2b memuse: " << (float)local_twobody_p->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
     }
 
 

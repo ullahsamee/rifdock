@@ -179,8 +179,9 @@ rosetta_rescore(
         std::unordered_map<ScaffoldIndex,bool> unique_scaffolds_dict;
 
         for ( int imin = 0; imin < n_scormin; ++imin ) {
-            if ( unique_scaffolds_dict.count(::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index)) == 0) {
-                unique_scaffolds_dict[::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index)] = true;
+            ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(d.packed_results[imin].index);
+            if ( unique_scaffolds_dict.count( si ) == 0) {
+                unique_scaffolds_dict[ si ] = true;
             }
         }
         std::vector<ScaffoldIndex> uniq_scaffolds;
@@ -188,9 +189,9 @@ rosetta_rescore(
 
         int n_uniq = uniq_scaffolds.size();
         std::cout << "Building " << n_uniq << " scaffold+target poses" << std::endl;
-        // #ifdef USE_OPENMP
-        // #pragma omp parallel for schedule(dynamic,1)
-        // #endif
+        #ifdef USE_OPENMP
+        #pragma omp parallel for schedule(dynamic,1)
+        #endif
         for ( int iuniq = 0; iuniq < n_uniq; ++iuniq ) {
             ScaffoldIndex si = uniq_scaffolds[iuniq];
             ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(si);
