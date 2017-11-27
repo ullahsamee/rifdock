@@ -36,7 +36,7 @@ struct HsearchData {
     std::vector< devel::scheme::ObjectivePtr > & objectives;
     int64_t & non0_space_size;
 
-    ScaffoldProvider & scaffold_provider;
+    shared_ptr<ScaffoldProvider> scaffold_provider;
 
 };
 
@@ -99,7 +99,7 @@ hsearch_original(
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-    ScaffoldDataCacheOP sdc = d.scaffold_provider.get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex()));
+    ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex()));
     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 

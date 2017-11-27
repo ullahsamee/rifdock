@@ -70,6 +70,7 @@
 /// Brian
 	#include <scheme/objective/hash/XformHash.hh>
 	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
+	#include <riflib/scaffold/MorphingScaffoldProvider.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 
@@ -77,7 +78,8 @@
 	#include <riflib/rifdock_subroutines/meta.hh>
 	#include <riflib/rifdock_subroutines/util.hh>
 	
-	#include <riflib/rifdock_subroutines/hsearch_original.hh>
+	#include <riflib/rifdock_subroutines/hsearch_original.hh>	
+	#include <riflib/rifdock_subroutines/hsearch_morph_test.hh>
 
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
 
 	// typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 
-	if (true) {
+	if (false) {
 
 		typedef devel::scheme::SingleFileScaffoldProvider ScaffoldProvider;
 		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
@@ -132,6 +134,19 @@ int main(int argc, char *argv[]) {
 
 		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
 
+
+		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
+	} else if (true) {
+		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
+		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
+
+		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
+
+		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
+
+		if (true) {
+			hsearch = &hsearch_morph_test<DirectorBase, ScaffoldProvider>;
+		}
 
 		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
 	} else {
@@ -726,7 +741,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						rot_index_p,
 						objectives,
 						non0_space_size,
-						*scaffold_provider
+						scaffold_provider
 
 
 					};

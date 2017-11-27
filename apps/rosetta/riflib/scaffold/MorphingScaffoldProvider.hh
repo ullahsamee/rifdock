@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
+#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 #include <string>
 #include <vector>
@@ -22,8 +23,6 @@
 
 #include <core/pose/Pose.hh>
 
-// Key Assumptions of this class:
-// - Only one segment is morphable
 
 
 namespace devel {
@@ -31,19 +30,31 @@ namespace scheme {
 
 
 
-
-struct MorphInfo {
-    ::scheme::Bounds<uint64_t> morph_range;
+struct MorphAction {
+    core::Size first_seq_pos;
+    core::Size last_seq_pos;
+    core::Size frag_length;
+    std::string frag_id;
 };
 
-typedef shared_ptr<MorphInfo> MorphInfoOP;
-typedef shared_ptr<MorphInfo const> MorphInfoCOP;
+
+
+
+struct MorphRule {
+    ::scheme::Bounds<core::Size> morph_range;
+    ::scheme::Bounds<core::Size> fragment_length_range;
+};
+
+
+
+typedef std::vector<MorphRule> MorphRules;
 
 
 struct MorphMember {
-    core::pose::PoseCOP pose;
-    ParametricSceneConformation conformation;
-    MorphInfoCOP morph_info;
+    ParametricSceneConformationCOP conformation;
+    MorphRules morph_rules;
+    std::vector<MorphAction> morph_history;
+    ::scheme::scaffold::TreeRelation tree_relation;
 };
 
 
@@ -52,19 +63,46 @@ struct MorphMember {
 struct MorphingScaffoldProvider :
     public ::scheme::scaffold::TreeScaffoldProvider<ParametricSceneConformation> {
 
-    MorphingScaffoldProvider(); 
+    // MorphingScaffoldProvider(); 
+
+    MorphingScaffoldProvider( 
+        uint64_t iscaff,
+        shared_ptr< RotamerIndex > rot_index_p_in, 
+        RifDockOpt const & opt_in);
 
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
     ::scheme::scaffold::TreeLimits get_scaffold_index_limits() override;
 
+    ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
+
+    void set_fa_mode( bool fa ) override;
+
+    ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
+
+
+    void test_make_children(::scheme::scaffold::TreeIndex ti);
 
 private:
+
+    bool
+    is_valid_index(::scheme::scaffold::TreeIndex i);
+
+
+    MorphMember & 
+    get_morph_member(::scheme::scaffold::TreeIndex i);
+
+    ::scheme::scaffold::TreeIndex
+    add_morph_member( MorphMember mmember );
 
     // By definition, all members at depth 0 are provided by
     // the user
     std::vector< std::vector< MorphMember > > map_;
+
+
+    shared_ptr< RotamerIndex > rot_index_p;
+    RifDockOpt const & opt;
 
 };
 

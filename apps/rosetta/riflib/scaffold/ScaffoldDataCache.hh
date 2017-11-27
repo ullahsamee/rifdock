@@ -24,6 +24,7 @@
 #include <rif_dock_test.hh>
 #include <riflib/rotamer_energy_tables.hh>
 #include <riflib/scaffold/MultithreadPoseCloner.hh>
+#include <riflib/scaffold/util.hh>
 
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
@@ -123,8 +124,10 @@ struct ScaffoldDataCache {
         // Setup scaffold_centered_p and scaffold_full_centered_p
         scaffold_centered_p = make_shared<core::pose::Pose const>( pose );
         core::pose::Pose & scaffold_centered = const_cast<core::pose::Pose &>( *scaffold_centered_p );
+        add_pdbinfo_if_missing( scaffold_centered );
         scaffold_full_centered_p = make_shared<core::pose::Pose const>( pose );
         core::pose::Pose & scaffold_full_centered = const_cast<core::pose::Pose &>( *scaffold_full_centered_p );
+        add_pdbinfo_if_missing( scaffold_full_centered );
 
         if     ( opt.scaff2ala )        ::devel::scheme::pose_to_ala( scaffold_centered );
         else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold_centered, *scaffold_res_p );
@@ -327,6 +330,7 @@ struct ScaffoldDataCache {
     helper_setup_both_pose( core::pose::Pose const & target ) {
         core::pose::PoseOP __both_pose_p = make_shared<core::pose::Pose>( *scaffold_centered_p );
         ::devel::scheme::append_pose_to_pose( *__both_pose_p, target );
+        add_pdbinfo_if_missing( *__both_pose_p );
         return __both_pose_p;
     }
 
@@ -342,6 +346,7 @@ struct ScaffoldDataCache {
     helper_setup_both_full_pose( core::pose::Pose const & target ) {
         core::pose::PoseOP __both_full_pose_p = make_shared<core::pose::Pose>( *scaffold_full_centered_p );
         ::devel::scheme::append_pose_to_pose( *__both_full_pose_p, target );
+        add_pdbinfo_if_missing( *__both_full_pose_p );
         return __both_full_pose_p;
     }
 

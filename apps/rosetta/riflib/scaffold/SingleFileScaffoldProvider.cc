@@ -43,7 +43,7 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
 
     get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb);
 
-    ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
+    ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
         scaffold,
         scaffold_res,
         scafftag,
@@ -51,7 +51,7 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
         rot_index_p,
         opt);
 
-    conformation_ = make_conformation_from_data_cache(temp_data_cache_, false);
+    conformation_ = make_conformation_from_data_cache(temp_data_cache, false);
 
 }
 

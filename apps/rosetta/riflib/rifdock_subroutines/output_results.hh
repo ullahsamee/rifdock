@@ -124,7 +124,7 @@ output_results(
             for( int i_actor = 0; i_actor < d.scene_minimal->template num_actors<BBActor>(1); ++i_actor ){
                 BBActor bba = d.scene_minimal->template get_actor<BBActor>(1,i_actor);
                 int const ires = scaffres_l2g.at( bba.index_ );
-
+                // std::cout << "IRES " << ires << std::endl;
                 // if( d.opt.dump_all_rif_rots )
                 {
                     std::vector< std::pair< float, int > > rotscores;

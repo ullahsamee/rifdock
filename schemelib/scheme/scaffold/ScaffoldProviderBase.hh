@@ -63,6 +63,7 @@ struct TreeIndex {
     uint64_t depth;
     uint64_t member;
     TreeIndex() : depth(BOGUS_INDEX), member(BOGUS_INDEX) {};
+    TreeIndex(uint64_t _depth, uint64_t _member) : depth(_depth), member(_member) {};
 
     bool operator==(const TreeIndex &other) const { 
         return (depth == other.depth
@@ -71,6 +72,12 @@ struct TreeIndex {
 
 };
 
+inline
+std::ostream & operator << ( std::ostream & out, TreeIndex const & ti ){
+    out << "TreeIndex: " << ti.depth << " " << ti.member;
+    return out;
+}
+
 struct TreeRelation {
     uint64_t depth;
     uint64_t parent_member;
@@ -78,7 +85,7 @@ struct TreeRelation {
     uint64_t last_child;
 };
 
-typedef std::vector<Bounds<uint64_t>> TreeLimits;
+typedef std::vector<uint64_t> TreeLimits;
 
 
 template<
@@ -91,12 +98,13 @@ struct TreeScaffoldProvider :
 
     virtual shared_ptr<Scaffold const> get_scaffold(TreeIndex i) = 0;
 
-    virtual void fill_children(TreeIndex i) = 0;
+    // virtual void fill_children(TreeIndex i) = 0;
 
     virtual TreeLimits get_scaffold_index_limits() = 0;
 
 
 };
+
 
 
 template<typename _Scaffold>
