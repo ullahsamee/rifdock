@@ -169,18 +169,6 @@ MorphingScaffoldProvider::get_morph_member(TreeIndex i) {
 }
 
 
-bool
-MorphingScaffoldProvider::is_valid_index(TreeIndex i) {
-    TreeLimits limits = get_scaffold_index_limits();
-
-    if ( i.depth >= limits.size() )
-        return false;
-
-    if ( i.member >= limits[i.depth] )
-        return false;
-
-    return true;
-}
 
 TreeLimits
 MorphingScaffoldProvider::get_scaffold_index_limits() {

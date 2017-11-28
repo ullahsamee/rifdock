@@ -126,6 +126,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
 
+    OPT_1GRP_KEY( String       , rif_dock, nineA_cluster_path )
 
  
 
@@ -249,6 +250,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::resl0, "", 16 );
 
+			NEW_OPT(  rif_dock::nineA_cluster_path, "", "" );
+
 
 		}
 	#endif
@@ -356,8 +359,10 @@ struct RifDockOpt
     int         nfold_symmetry                       ;
     std::vector<float> symmetry_axis                 ;
 
-    float user_rotamer_bonus_constant;
-    float user_rotamer_bonus_per_chi;
+    float user_rotamer_bonus_constant				 ;
+    float user_rotamer_bonus_per_chi				 ;
+
+    std::string nineA_cluster_path					 ;
 
     void init_from_cli();
 
@@ -460,11 +465,12 @@ struct RifDockOpt
   		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();
   		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();
 		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();
-		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  ]();
-		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score  ]();
-		rosetta_beta                           = option[corrections::beta]();
-		user_rotamer_bonus_constant = option[rif_dock::user_rotamer_bonus_constant]();
-		user_rotamer_bonus_per_chi = option[rif_dock::user_rotamer_bonus_per_chi]();
+		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  					]();
+		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score 				    ]();
+		rosetta_beta                           = option[corrections::beta 								]();
+		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
+		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
+		nineA_cluster_path					   = option[rif_dock::nineA_cluster_path                    ]();
 
 
 

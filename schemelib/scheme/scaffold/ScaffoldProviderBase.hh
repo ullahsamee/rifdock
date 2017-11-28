@@ -103,6 +103,21 @@ struct TreeScaffoldProvider :
     virtual TreeLimits get_scaffold_index_limits() = 0;
 
 
+protected:
+
+    bool
+    is_valid_index(TreeIndex i) const {
+        TreeLimits limits = get_scaffold_index_limits();
+
+        if ( i.depth >= limits.size() )
+            return false;
+
+        if ( i.member >= limits[i.depth] )
+            return false;
+
+        return true;
+    }
+
 };
 
 

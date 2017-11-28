@@ -7,6 +7,9 @@ doc/_build
 dox/html
 dox/xml
 
+brian_build.sh
+brian_debug_build.sh
+
 CMakeCache.txt
 
 CMakeFiles
