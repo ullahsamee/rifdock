@@ -325,7 +325,7 @@ private:
         }
 
         // Set the name
-        std::string name = boost::str( boost::format( "da9_%02i_%07i.pdb.gz" ) % cdindex % clust );
+        std::string name = boost::str( boost::format( "da9_%02i_%07i" ) % cdindex % clust );
         pose.pdb_info()->name( name );
 
 
