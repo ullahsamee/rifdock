@@ -258,25 +258,25 @@ namespace rif {
          				
 					
 						
-	     	 			if (!this->opts.single_file_hotspots_insertion){
-          				//svd superimpose
-          				//matrix to be SVD decomposed
-          				::Eigen::Matrix<float,3,3> cov_mtx;										
-          				cov_mtx = (rif_res.col(0) - rot_cen)*(hot_atom1 - hot_cen).transpose() + (rif_res.col(1) - rot_cen)*(hot_atom2 - hot_cen).transpose() + (rif_res.col(2) - rot_cen)*(hot_atom3 - hot_cen).transpose();
-            			//Eigen SVD
-            			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
-						//Rotation Matrix
-						::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
-						//Translation Matrix
-     					::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*rot_cen + hot_cen;
-        				//Puting R/T together
-        				::Eigen::Matrix<float,3,4> Tran_mtx;					
-				  		Tran_mtx.block<3,3>(0,0) = R_mtx;
-        				Tran_mtx.block<3,1>(0,3) = T_mtx;
-        				//Final superimpose EigenXform matrix
-						//EigenXform impose;
-						impose.matrix() = Tran_mtx;
-						}
+	     // 	 			if (!this->opts.single_file_hotspots_insertion){
+      //     				//svd superimpose
+      //     				//matrix to be SVD decomposed
+      //     				::Eigen::Matrix<float,3,3> cov_mtx;										
+      //     				cov_mtx = (rif_res.col(0) - rot_cen)*(hot_atom1 - hot_cen).transpose() + (rif_res.col(1) - rot_cen)*(hot_atom2 - hot_cen).transpose() + (rif_res.col(2) - rot_cen)*(hot_atom3 - hot_cen).transpose();
+      //       			//Eigen SVD
+      //       			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
+						// //Rotation Matrix
+						// ::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
+						// //Translation Matrix
+     	// 				::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*rot_cen + hot_cen;
+      //   				//Puting R/T together
+      //   				::Eigen::Matrix<float,3,4> Tran_mtx;					
+				  // 		Tran_mtx.block<3,3>(0,0) = R_mtx;
+      //   				Tran_mtx.block<3,1>(0,3) = T_mtx;
+      //   				//Final superimpose EigenXform matrix
+						// //EigenXform impose;
+						// impose.matrix() = Tran_mtx;
+						// }
 						
 						impose = Xref * Xrotamer.inverse();						
 						//Additional matrix definition for manipulation
@@ -398,7 +398,7 @@ namespace rif {
 
 									
 									
-									if (dump_target){
+									if (dump_target && opts.dump_hotspot_samples>=NSAMP){
 										core::pose::Pose target_pose(*params->target);
 										target_pose.dump_pdb(myfile);
 										dump_target = false;

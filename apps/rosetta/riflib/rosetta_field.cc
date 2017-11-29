@@ -363,19 +363,19 @@ get_rosetta_fields_specified_cache_prefix(
 					field_by_atype[itype]->save( out );
 					out.close();
 				}
-				if( opts.cache_mismatch_tolerance < 9e8 ){
-					double erf = static_cast<FieldCache&>(*field_by_atype[itype]).check_against_field( rfa, oversample, opts.cache_mismatch_tolerance );
-					if( erf > 0.0 ){
-						#ifdef USE_OPENMP
-						#pragma omp critical
-						#endif
-						{
-							cout << "FIELD MISMATCH ERROR ATYPE " << itype << " error_frac: " << erf << endl;
-							cout << "ERROR ON " << cachefile << endl;
-							utility_exit_with_message("field cache errors!");
-						}
-					}
-				}
+				// if( opts.cache_mismatch_tolerance < 9e8 ){
+				// 	double erf = static_cast<FieldCache&>(*field_by_atype[itype]).check_against_field( rfa, oversample, opts.cache_mismatch_tolerance );
+				// 	if( erf > 0.0 ){
+				// 		#ifdef USE_OPENMP
+				// 		#pragma omp critical
+				// 		#endif
+				// 		{
+				// 			cout << "FIELD MISMATCH ERROR ATYPE " << itype << " error_frac: " << erf << endl;
+				// 			cout << "ERROR ON " << cachefile << endl;
+				// 			utility_exit_with_message("field cache errors!");
+				// 		}
+				// 	}
+				// }
 			} catch( ... ) {
 				#ifdef USE_OPENMP
 				#pragma omp critical
