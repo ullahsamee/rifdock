@@ -43,7 +43,7 @@ struct SingleFileScaffoldProvider :
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
-    uint64_t get_scaffold_index_limits() override;
+    uint64_t get_scaffold_index_limits() const override;
 
     // ScaffoldDataCacheOP temp_function__get_writable_data_cache() {
     //     temp_data__data_cache_ = make_shared<ScaffoldDataCache>();

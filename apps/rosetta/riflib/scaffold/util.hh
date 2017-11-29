@@ -47,6 +47,9 @@ apply_direct_segment_lookup_mover(
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
     core::pose::Pose const & pose );
 
+void
+get_default_scaffold_res( core::pose::Pose const & pose,
+    utility::vector1<core::Size> & scaffold_res );
 
 void
 add_pdbinfo_if_missing( core::pose::Pose & pose );

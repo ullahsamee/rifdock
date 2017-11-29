@@ -93,15 +93,20 @@ get_info_for_iscaff(
         for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
         std::cout << std::endl;
     } else {
-        for( int ir = 1; ir <= scaffold.size(); ++ir){
-            if( !scaffold.residue(ir).is_protein() ) continue;
-            //if( scaffold.residue(ir).name3() == "PRO" ) continue;
-            //if( scaffold.residue(ir).name3() == "GLY" ) continue;
-            //if( scaffold.residue(ir).name3() == "CYS" ) continue;
-            scaffold_res.push_back(ir);
-        }
+        get_default_scaffold_res( scaffold, scaffold_res );
     }
 
+}
+
+
+void
+get_default_scaffold_res( core::pose::Pose const & pose,
+    utility::vector1<core::Size> & scaffold_res ) {
+
+    for( int ir = 1; ir <= pose.size(); ++ir){
+        if( !pose.residue(ir).is_protein() ) continue;
+        scaffold_res.push_back(ir);
+    }
 }
 
 // historically, non_fa was used during HSearch and fa was used during hack pack
@@ -144,8 +149,13 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
 
     ParametricSceneConformationOP conformation_mutable = std::const_pointer_cast<ParametricSceneConformation>( conformation );
 
+    uint64_t sanity = cache->debug_sanity + 1;
+    cache->debug_sanity = sanity;
+
     conformation_mutable->cache_data_ = cache;
     conformation_mutable->cache_data_->conformation_is_fa = fa;
+
+    runtime_assert( conformation->cache_data_->debug_sanity == sanity );
 
     std::cout << "FA status is: " << (fa ? "True" : "False") << std::endl;
 

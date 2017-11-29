@@ -40,7 +40,7 @@ struct ScaffoldProviderBase {
 
     virtual shared_ptr<Scaffold const> get_scaffold(ScaffoldIndex i) = 0;
 
-    virtual ScaffoldIndexLimits get_scaffold_index_limits() = 0;
+    virtual ScaffoldIndexLimits get_scaffold_index_limits() const = 0;
 
     virtual shared_ptr<ScaffoldCacheData> get_data_cache_slow(ScaffoldIndex i) = 0;
 
@@ -100,7 +100,7 @@ struct TreeScaffoldProvider :
 
     // virtual void fill_children(TreeIndex i) = 0;
 
-    virtual TreeLimits get_scaffold_index_limits() = 0;
+    virtual TreeLimits get_scaffold_index_limits() const = 0;
 
 
 protected:

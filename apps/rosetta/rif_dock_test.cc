@@ -71,6 +71,7 @@
 	#include <scheme/objective/hash/XformHash.hh>
 	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
 	#include <riflib/scaffold/MorphingScaffoldProvider.hh>
+	#include <riflib/scaffold/Baseline9AScaffoldProvider.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 
 
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
 
 	// typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 
-	if (false) {
+	if (opt.scaff_search_mode == "default") {
 
 		typedef devel::scheme::SingleFileScaffoldProvider ScaffoldProvider;
 		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
@@ -136,7 +137,7 @@ int main(int argc, char *argv[]) {
 
 
 		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
-	} else if (true) {
+	} else if (opt.scaff_search_mode == "test") {
 		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
 		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
 
@@ -146,6 +147,19 @@ int main(int argc, char *argv[]) {
 
 		if (true) {
 			hsearch = &hsearch_morph_test<DirectorBase, ScaffoldProvider>;
+		}
+
+		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
+	} else if (opt.scaff_search_mode == "nineA_baseline") {
+		typedef devel::scheme::Baseline9AScaffoldProvider ScaffoldProvider;
+		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
+
+		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
+
+		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
+
+		if (true) {
+			hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
 		}
 
 		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
@@ -597,6 +611,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			ScaffoldIndex rep_si = scaffold_provider->get_representative_scaffold_index();
 			ScaffoldDataCacheOP rep_data_cache = scaffold_provider->get_data_cache_slow( rep_si );
+			assert(rep_data_cache);
 
 			// debugging info
 			scaffold_sequence_glob0 = *(rep_data_cache->scaffold_sequence_glob0_p);
@@ -608,8 +623,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			// needed for cout
 			float rep_scaff_redundancy_filter_rg = rep_data_cache->scaff_redundancy_filter_rg;
 			Eigen::Vector3f rep_scaffold_center = rep_data_cache->scaffold_center;
-
-
 
 			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
 			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;

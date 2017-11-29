@@ -68,6 +68,8 @@ struct ScaffoldDataCache {
     std::string scaff_res_hashstr;
 
 
+    uint64_t debug_sanity;
+
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
     shared_ptr<std::vector<std::vector<float> > > local_onebody_p;       //onebodies in local numbering
@@ -83,6 +85,8 @@ struct ScaffoldDataCache {
     MultithreadPoseCloner mpc_both_full_pose;                                  // scaffold_full_centered_p + target
 
 
+
+
 // Conformation state
     bool conformation_is_fa;
 
@@ -95,6 +99,8 @@ struct ScaffoldDataCache {
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt) {
+
+        debug_sanity = 1337;
 
         scaffold_res_p = make_shared<utility::vector1<core::Size>>(scaffold_res_in);
         scafftag = scafftag_in;
@@ -134,6 +140,9 @@ struct ScaffoldDataCache {
 
         // Setup scaffold_center
         scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
+        if ( opt.dont_center_scaffold ) {
+            scaffold_center = Eigen::Vector3f( 0, 0, 0 );
+        }
 
         // Move scaffold_centered_p and scaffold_full_centered_p to origin
         for( int ir = 1; ir <= scaffold_full_centered.size(); ++ir ){

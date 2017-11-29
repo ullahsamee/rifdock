@@ -7,27 +7,29 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
-#include <riflib/scaffold/util.hh>
 
 #include <riflib/types.hh>
-#include <scheme/numeric/rand_xform.hh>
-#include <core/import_pose/import_pose.hh>
-#include <utility/file/file_sys_util.hh>
+#include <riflib/scaffold/Baseline9AScaffoldProvider.hh>
+#include <riflib/scaffold/util.hh>
+#include <ObjexxFCL/format.hh>
+#include <riflib/scaffold/nineA_util.hh>
+#include <riflib/scaffold/NineAManager.hh>
 
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
+#include <boost/format.hpp>
 
+using ::scheme::scaffold::BOGUS_INDEX;
+using ::scheme::scaffold::TreeIndex;
+using ::scheme::scaffold::TreeLimits;
 
 
 namespace devel {
 namespace scheme {
 
 
-// SingleFileScaffoldProvider::SingleFileScaffoldProvider() {}
-
-SingleFileScaffoldProvider::SingleFileScaffoldProvider( 
+Baseline9AScaffoldProvider::Baseline9AScaffoldProvider( 
     uint64_t iscaff,
     shared_ptr< RotamerIndex > rot_index_p_in, 
     RifDockOpt const & opt_in) :
@@ -35,63 +37,65 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     rot_index_p( rot_index_p_in), 
     opt(opt_in) {
 
+    nineA_manager_ = NineAManager::get_instance( rot_index_p, opt );
 
-    std::string scafftag;
-    core::pose::Pose scaffold;
-    utility::vector1<core::Size> scaffold_res;
-    EigenXform scaffold_perturb;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb);
+    std::vector<uint64_t> cdindex_clust_lo_hi = parse_nineA_baseline_range(opt.nineA_baseline_range);
+    
+    uint64_t cdindex = cdindex_clust_lo_hi[0];
+    uint64_t this_clust = cdindex_clust_lo_hi[1] + iscaff;
+    runtime_assert( this_clust < cdindex_clust_lo_hi[2] );
 
-    ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
-        scaffold,
-        scaffold_res,
-        scafftag,
-        scaffold_perturb,
-        rot_index_p,
-        opt);
 
-    conformation_ = make_conformation_from_data_cache(temp_data_cache, false);
-
+    nmember_ = nineA_manager_->get_nineA_member( cdindex, this_clust );
 }
 
 
+
+
 ScaffoldDataCacheOP 
-SingleFileScaffoldProvider::get_data_cache_slow(::scheme::scaffold::TreeIndex i) {
+Baseline9AScaffoldProvider::get_data_cache_slow(::scheme::scaffold::TreeIndex i) {
 
     return get_scaffold(i)->cache_data_;
-
 }
 
 
 ParametricSceneConformationCOP 
-SingleFileScaffoldProvider::get_scaffold(::scheme::scaffold::TreeIndex i) {
-    if ( ! conformation_ ) {
+Baseline9AScaffoldProvider::get_scaffold(::scheme::scaffold::TreeIndex i) {
+
+    if ( ! nmember_.conformation ) {
         utility_exit_with_message("Conformation not intialized yet!!");
     }
-    return conformation_;
+
+    return nmember_.conformation;
 }
 
 
 uint64_t 
-SingleFileScaffoldProvider::get_scaffold_index_limits() const {
+Baseline9AScaffoldProvider::get_scaffold_index_limits() const {
     return 1;
 }
 
 
 void 
-SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
+Baseline9AScaffoldProvider::set_fa_mode( bool fa ) {
     ScaffoldDataCacheOP cache = get_data_cache_slow( scaffold_index_default_value( ScaffoldIndex()) );
     if ( cache->conformation_is_fa != fa ) {
-        conformation_ = make_conformation_from_data_cache(cache, fa);
+        nmember_.conformation = make_conformation_from_data_cache(cache, fa);
     }
 }
 
 
 ::scheme::scaffold::TreeIndex 
-SingleFileScaffoldProvider::get_representative_scaffold_index() {
+Baseline9AScaffoldProvider::get_representative_scaffold_index() {
     scaffold_index_default_value( ScaffoldIndex());
 }
+
+
+
+
+
+
 
 
 

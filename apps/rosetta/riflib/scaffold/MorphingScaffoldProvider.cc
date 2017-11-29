@@ -171,7 +171,7 @@ MorphingScaffoldProvider::get_morph_member(TreeIndex i) {
 
 
 TreeLimits
-MorphingScaffoldProvider::get_scaffold_index_limits() {
+MorphingScaffoldProvider::get_scaffold_index_limits() const {
     TreeLimits limits(map_.size());
 
     for ( uint64_t i = 0; i < map_.size(); i++ ) {

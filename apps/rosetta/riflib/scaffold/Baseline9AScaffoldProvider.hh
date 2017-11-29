@@ -15,6 +15,7 @@
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/scaffold/nineA_util.hh>
+#include <riflib/scaffold/NineAManager.hh>
 
 #include <string>
 #include <vector>
@@ -33,7 +34,7 @@ namespace scheme {
 
 
 struct Baseline9AScaffoldProvider :
-    public ::scheme::scaffold::TreeScaffoldProvider<ParametricSceneConformation> {
+    public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, ::scheme::scaffold::TreeIndex, uint64_t> {
 
 
     Baseline9AScaffoldProvider( 
@@ -44,7 +45,7 @@ struct Baseline9AScaffoldProvider :
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
-    ::scheme::scaffold::TreeLimits get_scaffold_index_limits() override;
+    uint64_t get_scaffold_index_limits() const override;
 
     ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
 
@@ -56,19 +57,17 @@ struct Baseline9AScaffoldProvider :
 private:
 
 
-    NineAMember & 
-    get_nineA_member(::scheme::scaffold::TreeIndex i);
+    shared_ptr<NineAManager> nineA_manager_;
 
-    ::scheme::scaffold::TreeIndex
-    add_nineA_member( NineAMember nmember );
-
-    std::vector< std::vector< NineAMember > > map_;
+    NineAMember nmember_;
 
 
     shared_ptr< RotamerIndex > rot_index_p;
     RifDockOpt const & opt;
 
 };
+
+
 
 
 

@@ -2,6 +2,7 @@
 
 #include <basic/options/option_macros.hh>
 #include <basic/options/keys/corrections.OptionKeys.gen.hh>
+#include <riflib/scaffold/nineA_util.hh>
 #include <vector>
 
 #ifdef GLOBAL_VARIABLES_ARE_BAD
@@ -19,6 +20,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, dont_center_scaffold )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
 	OPT_1GRP_KEY(  String      , rif_dock, target_pdb )
@@ -126,7 +128,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
 
+    OPT_1GRP_KEY( String       , rif_dock, scaff_search_mode )
     OPT_1GRP_KEY( String       , rif_dock, nineA_cluster_path )
+    OPT_1GRP_KEY( String       , rif_dock, nineA_baseline_range )
 
  
 
@@ -143,6 +147,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
 			NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 			NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
+			NEW_OPT(  rif_dock::dont_center_scaffold, "don't use this", false );
 
 			NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::target_pdb, "" , "" );
@@ -250,7 +255,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::resl0, "", 16 );
 
+			NEW_OPT(  rif_dock::scaff_search_mode, "Which scaffold mode and HSearch do you want?", "default");
 			NEW_OPT(  rif_dock::nineA_cluster_path, "", "" );
+			NEW_OPT(  rif_dock::nineA_baseline_range, "format cdindex:low-high (python range style)", "");
 
 
 		}
@@ -309,6 +316,7 @@ struct RifDockOpt
 	std::string target_rf_cache                      ;
 	bool        downscale_atr_by_hierarchy           ;
 	bool        random_perturb_scaffold              ;
+	bool        dont_center_scaffold				 ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
@@ -362,7 +370,9 @@ struct RifDockOpt
     float user_rotamer_bonus_constant				 ;
     float user_rotamer_bonus_per_chi				 ;
 
+    std::string scaff_search_mode					 ;
     std::string nineA_cluster_path					 ;
+    std::string nineA_baseline_range				 ;
 
     void init_from_cli();
 
@@ -424,6 +434,7 @@ struct RifDockOpt
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
+		dont_center_scaffold				   = option[rif_dock::dont_center_scaffold					]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
@@ -436,7 +447,7 @@ struct RifDockOpt
 		rotrf_cache_dir                        = option[rif_dock::rotrf_cache_dir                       ]();
 		rotrf_scale_atr                        = option[rif_dock::rotrf_scale_atr                       ]();
 		pack_iter_mult                         = option[rif_dock::pack_iter_mult                        ]();
-		pack_n_iters                           = option[rif_dock::pack_n_iters                         ]();
+		pack_n_iters                           = option[rif_dock::pack_n_iters                          ]();
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
 		upweight_iface                         = option[rif_dock::upweight_iface                        ]();
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
@@ -470,7 +481,10 @@ struct RifDockOpt
 		rosetta_beta                           = option[corrections::beta 								]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
+
+		scaff_search_mode					   = option[rif_dock::scaff_search_mode   				    ]();
 		nineA_cluster_path					   = option[rif_dock::nineA_cluster_path                    ]();
+		nineA_baseline_range				   = option[rif_dock::nineA_baseline_range                  ]();
 
 
 
@@ -508,7 +522,7 @@ struct RifDockOpt
         }
 
 
-
+// Brian
 
 
         if (option[rif_dock::use_scaffold_bounding_grids]()) {
@@ -518,9 +532,25 @@ struct RifDockOpt
 
 
         if (option[rif_dock::nfold_symmetry]() > 1) {
-        	std::cout << "ERROR: nfold_symmetry no longer supported. Email bcov@uw.edu" << std::endl;
+        	std::cout << "ERROR: nfold_symmetry not currently supported. Email bcov@uw.edu" << std::endl;
     		std::exit(-1);
         }
+
+
+        if ( scaff_search_mode == "nineA_baseline" ) {
+        	if ( scaffold_fnames.size() > 0 ) {
+        		std::cout << "ERROR: can't use -scaffolds with nineA_baseline." << std::endl;
+        		std::exit(-1);
+        	}
+
+        	std::vector<uint64_t> cdindex_lo_hi = devel::scheme::parse_nineA_baseline_range( nineA_baseline_range );
+        	uint64_t num_scaffolds = cdindex_lo_hi[2] - cdindex_lo_hi[1];
+        	runtime_assert( num_scaffolds > 0 );
+        	scaffold_fnames.resize(num_scaffolds);
+
+        	dont_center_scaffold = true;
+        }
+
 
 
 	}

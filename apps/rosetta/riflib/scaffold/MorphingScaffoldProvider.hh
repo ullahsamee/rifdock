@@ -15,6 +15,9 @@
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 
+// temporary, delete this
+#include <riflib/scaffold/NineAManager.hh>
+
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
@@ -73,7 +76,7 @@ struct MorphingScaffoldProvider :
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
-    ::scheme::scaffold::TreeLimits get_scaffold_index_limits() override;
+    ::scheme::scaffold::TreeLimits get_scaffold_index_limits() const override;
 
     ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
 
