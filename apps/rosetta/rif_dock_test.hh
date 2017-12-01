@@ -141,6 +141,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, high_cut_site )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_insertion )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_deletion )
+    OPT_1GRP_KEY(  Real        , rif_dock, fragment_cluster_tolerance )
 
 
 
@@ -280,6 +281,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::high_cut_site, "", 0 );
 			NEW_OPT(  rif_dock::max_insertion, "", 0 );
 			NEW_OPT(  rif_dock::max_deletion, "", 0 );
+			NEW_OPT(  rif_dock::fragment_cluster_tolerance, "", 0.5 );
 
 		}
 	#endif
@@ -405,6 +407,7 @@ struct RifDockOpt
     int         high_cut_site                        ;
     int         max_insertion                        ;
     int         max_deletion                         ;
+    float       fragment_cluster_tolerance           ;
 
     void init_from_cli();
 
@@ -528,6 +531,8 @@ struct RifDockOpt
 		high_cut_site                          = option[rif_dock::high_cut_site                         ]();
 		max_insertion                          = option[rif_dock::max_insertion                         ]();
 		max_deletion                           = option[rif_dock::max_deletion                          ]();
+		fragment_cluster_tolerance             = option[rif_dock::fragment_cluster_tolerance            ]();
+
 
 
 

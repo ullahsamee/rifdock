@@ -75,7 +75,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
     protocols::indexed_structure_store::DirectSegmentLookupConfig config;
     config.rmsd_tolerance = 0.3;
-    config.segment_cluster_tolerance = 1.5;
+    config.segment_cluster_tolerance = opt.fragment_cluster_tolerance;
     config.max_insertion_length = removed_length + opt.max_insertion;
     dsl_mover.lookup_config( config );
 
