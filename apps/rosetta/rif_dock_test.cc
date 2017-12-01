@@ -754,7 +754,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 						rot_index_p,
 						objectives,
 						non0_space_size,
-						scaffold_provider
+						scaffold_provider,
+						rif_ptrs
 
 
 					};

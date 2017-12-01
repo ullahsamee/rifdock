@@ -167,7 +167,8 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
-    core::pose::Pose const & pose ) {
+    core::pose::Pose const & pose,
+    uint64_t minimum_loop_length ) {
 
     using namespace core::pack::task::operation;
     using namespace core::select::residue_selector;
@@ -230,6 +231,10 @@ apply_direct_segment_lookup_mover(
     do {
         if ( result->num_chains() > 1 ) {
             std::cout << "Broken pose" << std::endl;
+            continue;
+        }
+        if ( result->size() - pose.size() < minimum_loop_length ) {
+            std::cout << "Loop too short" << std::endl;
             continue;
         }
         to_ala.apply( *result );

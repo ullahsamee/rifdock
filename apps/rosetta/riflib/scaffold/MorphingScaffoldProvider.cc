@@ -71,10 +71,12 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     using ObjexxFCL::format::I;
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover dsl_mover;
 
+    uint64_t removed_length = opt.high_cut_site - opt.low_cut_site - 1;
+
     protocols::indexed_structure_store::DirectSegmentLookupConfig config;
     config.rmsd_tolerance = 0.3;
     config.segment_cluster_tolerance = 1.5;
-    config.max_insertion_length = 7;
+    config.max_insertion_length = removed_length + opt.max_insertion;
     dsl_mover.lookup_config( config );
 
     dsl_mover.from_chain( 1 );
@@ -86,17 +88,17 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
     core::pose::Pose segmented_scaffold;
 
-    for (uint64_t i = 1; i <= 9; i++) {
-        if (i <= 3 || i >= 7) {
+    for (uint64_t i = 1; i <= scaffold->size(); i++) {
+        if (i <= opt.low_cut_site || i >= opt.high_cut_site + 1) {
             segmented_scaffold.append_residue_by_bond( scaffold->residue(i) );
-        } else if ( i == 6 ) {
+        } else if ( i == opt.high_cut_site ) {
             segmented_scaffold.append_residue_by_jump( scaffold->residue(i), 1, "N", "N", true );
         }
     }
 
 
 
-    std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( dsl_mover, segmented_scaffold );
+    std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( dsl_mover, segmented_scaffold, removed_length + opt.max_insertion );
 
 
     std::string scafftag;

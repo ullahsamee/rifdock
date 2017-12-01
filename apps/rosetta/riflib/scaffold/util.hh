@@ -45,11 +45,12 @@ make_conformation_from_data_cache(shared_ptr<ScaffoldDataCache> cache, bool fa =
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
-    core::pose::Pose const & pose );
+    core::pose::Pose const & pose,
+    uint64_t minimum_loop_length );
 
 void
 get_default_scaffold_res( core::pose::Pose const & pose,
-    utility::vector1<core::Size> & scaffold_res );
+    utility::vector1<core::Size> & scaffold_res);
 
 void
 add_pdbinfo_if_missing( core::pose::Pose & pose );

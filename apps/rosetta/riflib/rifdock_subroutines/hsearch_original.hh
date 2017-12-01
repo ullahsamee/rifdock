@@ -37,8 +37,13 @@ struct HsearchData {
     int64_t & non0_space_size;
 
     shared_ptr<ScaffoldProvider> scaffold_provider;
+    std::vector<shared_ptr<devel::scheme::RifBase> > & rif_ptrs;
+
 
 };
+
+
+
 
 // template<__DirectorBase>
 // using HsearchFunctionType = typedef
@@ -104,6 +109,22 @@ hsearch_original(
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
     sdc->setup_onebody_tables( d.rot_index_p, d.opt);
+
+
+    DumpRifResultsData<DirectorBase, ScaffoldProvider> dump_data = {
+        d.opt,
+        d.RESLS,
+        d.director,
+        d.scene_minimal,
+        d.rif_ptrs,
+        *d.rot_index_p,
+        d.target,
+        d.scaffold_provider,
+        "",
+        ""
+    };
+
+
 
 
     std::vector< std::vector< SearchPoint > > samples( d.RESLS.size() );
@@ -350,17 +371,41 @@ hsearch_original(
 
             // cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
-            if( iresl+1 == samples.size() ) break;
+            bool extra_for_dump = d.opt.dump_x_frames_per_resl > 0 && iresl+1 == samples.size();
+
+            if( iresl+1 == samples.size() && ! extra_for_dump ) break;
+
+            uint64_t dump_every = 0;
+            if (d.opt.dump_x_frames_per_resl > 0) {
+                dump_every = std::floor( len / d.opt.dump_x_frames_per_resl );
+                if ( d.opt.dump_only_best_frames ) {
+                    dump_every = std::max( 1, d.opt.dump_only_best_stride );
+                    __gnu_parallel::sort( samples[iresl].begin(), samples[iresl].end() );
+                }
+            }
 
             for( int64_t i = 0; i < len; ++i ){
                 uint64_t isamp0 = ::scheme::kinematics::bigindex_nest_part(samples[iresl][i].index);
                 if( samples[iresl][i].score >= d.opt.global_score_cut ) continue;
-                if( iresl == 0 ) ++d.non0_space_size;
-                for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
-                    uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
-                    samples[iresl+1].push_back( SearchPoint(DirectorIndex(isamp, scaffold_index_default_value( ScaffoldIndex()))) );
+                if ( ! extra_for_dump ) {
+                    if( iresl == 0 ) ++d.non0_space_size;
+                    for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
+                        uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
+                        samples[iresl+1].push_back( SearchPoint(DirectorIndex(isamp, scaffold_index_default_value( ScaffoldIndex()))) );
+                    }
                 }
+
+                if ( dump_every > 0 ) {  
+                    if ( (   d.opt.dump_only_best_frames && i < d.opt.dump_x_frames_per_resl) ||
+                         ( ! d.opt.dump_only_best_frames && ( i % dump_every ) == 0 )) {
+                        std::string filename = "hsearch_" + sdc->scafftag + boost::str( boost::format( "_resl%i_%06i.pdb.gz" ) % iresl % (i/dump_every));
+                        dump_search_point( dump_data, samples[iresl][i], filename, iresl, true );
+                    }
+                }
+
             }
+            if ( extra_for_dump ) break;
+
             if( 0 == samples[iresl+1].size() ){
                 search_failed = true;
                 std::cout << "search fail, no valid samples!" << std::endl;

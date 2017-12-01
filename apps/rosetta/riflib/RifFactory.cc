@@ -650,39 +650,39 @@ struct RifFactoryImpl :
 
 
 		// old
-		// int progress0 = 0;
-		// for( auto const & v : from->map_ ){
-		// 	// if( ++progress0 % std::max((size_t)1,(from->size()/100)) == 0 ){
-		// 		// std::cout << '*'; std::cout.flush();
-		// 	// }
-		// 	EigenXform x = from->hasher_.get_center( v.first );
-		// 	uint64_t k = to->hasher_.get_key(x);
-		// 	typename XMap::Map::iterator iter = to->map_.find(k);
-		// 	if( iter == to->map_.end() ){
-		// 		to->map_.insert( std::make_pair(k,v.second) );
-		// 	} else {
-		// 		iter->second.merge( v.second );
-		// 	}
-		// }
-		// // std::cout << std::endl;
-
-		// new
 		int progress0 = 0;
 		for( auto const & v : from->map_ ){
 			// if( ++progress0 % std::max((size_t)1,(from->size()/100)) == 0 ){
 				// std::cout << '*'; std::cout.flush();
 			// }
 			EigenXform x = from->hasher_.get_center( v.first );
-			std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
-			for ( uint64_t const & k : keys ) {
-				typename XMap::Map::iterator iter = to->map_.find(k);
-				if( iter == to->map_.end() ){
-					to->map_.insert( std::make_pair(k,v.second) );
-				} else {
-					iter->second.merge( v.second );
-				}
+			uint64_t k = to->hasher_.get_key(x);
+			typename XMap::Map::iterator iter = to->map_.find(k);
+			if( iter == to->map_.end() ){
+				to->map_.insert( std::make_pair(k,v.second) );
+			} else {
+				iter->second.merge( v.second );
 			}
 		}
+		// // std::cout << std::endl;
+
+		// new
+		// int progress0 = 0;
+		// for( auto const & v : from->map_ ){
+		// 	// if( ++progress0 % std::max((size_t)1,(from->size()/100)) == 0 ){
+		// 		// std::cout << '*'; std::cout.flush();
+		// 	// }
+		// 	EigenXform x = from->hasher_.get_center( v.first );
+		// 	std::vector<uint64_t> keys = to->hasher_.get_key_and_nbrs(x);
+		// 	for ( uint64_t const & k : keys ) {
+		// 		typename XMap::Map::iterator iter = to->map_.find(k);
+		// 		if( iter == to->map_.end() ){
+		// 			to->map_.insert( std::make_pair(k,v.second) );
+		// 		} else {
+		// 			iter->second.merge( v.second );
+		// 		}
+		// 	}
+		// }
 		// std::cout << std::endl;
 
 

@@ -76,6 +76,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, add_native_scaffold_rots_when_packing )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, all_rif_rots_as_models_not_chains )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -127,10 +129,20 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_x_frames_per_resl )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_only_best_frames )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_only_best_stride )
 
-    OPT_1GRP_KEY( String       , rif_dock, scaff_search_mode )
-    OPT_1GRP_KEY( String       , rif_dock, nineA_cluster_path )
-    OPT_1GRP_KEY( String       , rif_dock, nineA_baseline_range )
+    OPT_1GRP_KEY(  String      , rif_dock, scaff_search_mode )
+    OPT_1GRP_KEY(  String      , rif_dock, nineA_cluster_path )
+    OPT_1GRP_KEY(  String      , rif_dock, nineA_baseline_range )
+
+    OPT_1GRP_KEY(  Integer     , rif_dock, low_cut_site )
+    OPT_1GRP_KEY(  Integer     , rif_dock, high_cut_site )
+    OPT_1GRP_KEY(  Integer     , rif_dock, max_insertion )
+    OPT_1GRP_KEY(  Integer     , rif_dock, max_deletion )
+
+
 
  
 
@@ -204,6 +216,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
 
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
+			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
+			NEW_OPT(  rif_dock::all_rif_rots_as_models_not_chains, "dump rif rots as models instead of chains, loses resnum if false", true );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -254,11 +268,18 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
 
 			NEW_OPT(  rif_dock::resl0, "", 16 );
+			NEW_OPT(  rif_dock::dump_x_frames_per_resl, "Use this to make a movie", 0 );
+			NEW_OPT(  rif_dock::dump_only_best_frames, "Only dump the best frames for the movie", false );
+			NEW_OPT(  rif_dock::dump_only_best_stride, "When doing dump_only_best_frames, dump every Xth element of the best", 1 );
 
 			NEW_OPT(  rif_dock::scaff_search_mode, "Which scaffold mode and HSearch do you want?", "default");
 			NEW_OPT(  rif_dock::nineA_cluster_path, "", "" );
 			NEW_OPT(  rif_dock::nineA_baseline_range, "format cdindex:low-high (python range style)", "");
 
+			NEW_OPT(  rif_dock::low_cut_site, "", 0 );
+			NEW_OPT(  rif_dock::high_cut_site, "", 0 );
+			NEW_OPT(  rif_dock::max_insertion, "", 0 );
+			NEW_OPT(  rif_dock::max_deletion, "", 0 );
 
 		}
 	#endif
@@ -290,6 +311,8 @@ struct RifDockOpt
 	std::string output_tag                           ;
 	std::string dokfile_fname                        ;
 	bool        dump_all_rif_rots                    ;
+	bool        dump_all_rif_rots_into_output        ;
+	bool        all_rif_rots_as_models_not_chains    ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -367,12 +390,21 @@ struct RifDockOpt
     int         nfold_symmetry                       ;
     std::vector<float> symmetry_axis                 ;
 
-    float user_rotamer_bonus_constant				 ;
-    float user_rotamer_bonus_per_chi				 ;
+    float       user_rotamer_bonus_constant		     ;
+    float       user_rotamer_bonus_per_chi		     ;
+
+    int         dump_x_frames_per_resl				 ;
+    bool        dump_only_best_frames                ;
+    int         dump_only_best_stride                ;
 
     std::string scaff_search_mode					 ;
     std::string nineA_cluster_path					 ;
     std::string nineA_baseline_range				 ;
+
+    int         low_cut_site                         ;
+    int         high_cut_site                        ;
+    int         max_insertion                        ;
+    int         max_deletion                         ;
 
     void init_from_cli();
 
@@ -408,6 +440,8 @@ struct RifDockOpt
 		output_tag                             = option[rif_dock::output_tag                         ]();
 		dokfile_fname                          = outdir + "/" + option[rif_dock::dokfile             ]();
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
+		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
+		all_rif_rots_as_models_not_chains      = option[rif_dock::all_rif_rots_as_models_not_chains  ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -482,9 +516,18 @@ struct RifDockOpt
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
 
+		dump_x_frames_per_resl				   = option[rif_dock::dump_x_frames_per_resl                ]();
+		dump_only_best_frames				   = option[rif_dock::dump_only_best_frames                 ]();
+		dump_only_best_stride                  = option[rif_dock::dump_only_best_stride                 ]();
+
 		scaff_search_mode					   = option[rif_dock::scaff_search_mode   				    ]();
 		nineA_cluster_path					   = option[rif_dock::nineA_cluster_path                    ]();
 		nineA_baseline_range				   = option[rif_dock::nineA_baseline_range                  ]();
+
+		low_cut_site                           = option[rif_dock::low_cut_site                          ]();
+		high_cut_site                          = option[rif_dock::high_cut_site                         ]();
+		max_insertion                          = option[rif_dock::max_insertion                         ]();
+		max_deletion                           = option[rif_dock::max_deletion                          ]();
 
 
 
