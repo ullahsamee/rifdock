@@ -591,8 +591,8 @@ struct RifDockOpt
         		std::exit(-1);
         	}
 
-        	std::vector<uint64_t> cdindex_lo_hi = devel::scheme::parse_nineA_baseline_range( nineA_baseline_range );
-        	uint64_t num_scaffolds = cdindex_lo_hi[2] - cdindex_lo_hi[1];
+        	std::vector<uint64_t> cdindex_then_clusts = devel::scheme::parse_nineA_baseline_range( nineA_baseline_range );
+        	uint64_t num_scaffolds = cdindex_then_clusts.size() - 1;
         	runtime_assert( num_scaffolds > 0 );
         	scaffold_fnames.resize(num_scaffolds);
 

@@ -40,12 +40,10 @@ Baseline9AScaffoldProvider::Baseline9AScaffoldProvider(
     nineA_manager_ = NineAManager::get_instance( rot_index_p, opt );
 
 
-    std::vector<uint64_t> cdindex_clust_lo_hi = parse_nineA_baseline_range(opt.nineA_baseline_range);
+    std::vector<uint64_t> cdindex_then_clusts = parse_nineA_baseline_range(opt.nineA_baseline_range);
     
-    uint64_t cdindex = cdindex_clust_lo_hi[0];
-    uint64_t this_clust = cdindex_clust_lo_hi[1] + iscaff;
-    runtime_assert( this_clust < cdindex_clust_lo_hi[2] );
-
+    uint64_t cdindex = cdindex_then_clusts[0];
+    uint64_t this_clust = cdindex_then_clusts[ iscaff + 1];
 
     nmember_ = nineA_manager_->get_nineA_member( cdindex, this_clust );
 }

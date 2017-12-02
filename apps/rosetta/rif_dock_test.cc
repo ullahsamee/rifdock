@@ -81,6 +81,7 @@
 	
 	#include <riflib/rifdock_subroutines/hsearch_original.hh>	
 	#include <riflib/rifdock_subroutines/hsearch_morph_test.hh>
+	#include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
 
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
@@ -147,6 +148,19 @@ int main(int argc, char *argv[]) {
 
 		if (true) {
 			hsearch = &hsearch_morph_test<DirectorBase, ScaffoldProvider>;
+		}
+
+		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
+	} else if (opt.scaff_search_mode == "morph_dive_pop") {
+		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
+		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
+
+		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
+
+		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
+
+		if (true) {
+			hsearch = &hsearch_morph_dive_pop<DirectorBase, ScaffoldProvider>;
 		}
 
 		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
