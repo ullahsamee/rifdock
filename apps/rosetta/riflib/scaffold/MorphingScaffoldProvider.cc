@@ -98,7 +98,11 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
 
 
-    std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( dsl_mover, segmented_scaffold, removed_length + opt.max_insertion );
+    std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
+            dsl_mover, 
+            segmented_scaffold, 
+            removed_length + opt.max_insertion,
+            opt.max_structures );
 
 
     std::string scafftag;

@@ -137,11 +137,16 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      , rif_dock, nineA_cluster_path )
     OPT_1GRP_KEY(  String      , rif_dock, nineA_baseline_range )
 
+// These are all rather temporary
     OPT_1GRP_KEY(  Integer     , rif_dock, low_cut_site )
     OPT_1GRP_KEY(  Integer     , rif_dock, high_cut_site )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_insertion )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_deletion )
     OPT_1GRP_KEY(  Real        , rif_dock, fragment_cluster_tolerance )
+    OPT_1GRP_KEY(  Real        , rif_dock, fragment_max_rmsd )
+    OPT_1GRP_KEY(  Integer     , rif_dock, max_structures )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dive_resl )
+    OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
 
 
 
@@ -282,6 +287,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_insertion, "", 0 );
 			NEW_OPT(  rif_dock::max_deletion, "", 0 );
 			NEW_OPT(  rif_dock::fragment_cluster_tolerance, "", 0.5 );
+			NEW_OPT(  rif_dock::fragment_max_rmsd , "", 10000 );
+			NEW_OPT(  rif_dock::max_structures , "", 10000000 );
+			NEW_OPT(  rif_dock::dive_resl , "", 5 );
+			NEW_OPT(  rif_dock::pop_resl , "", 4 );
+
 
 		}
 	#endif
@@ -408,6 +418,10 @@ struct RifDockOpt
     int         max_insertion                        ;
     int         max_deletion                         ;
     float       fragment_cluster_tolerance           ;
+    float       fragment_max_rmsd                    ;
+    int         max_structures                       ;
+    int         dive_resl                            ;
+    int         pop_resl                             ;
 
     void init_from_cli();
 
@@ -532,6 +546,11 @@ struct RifDockOpt
 		max_insertion                          = option[rif_dock::max_insertion                         ]();
 		max_deletion                           = option[rif_dock::max_deletion                          ]();
 		fragment_cluster_tolerance             = option[rif_dock::fragment_cluster_tolerance            ]();
+        fragment_max_rmsd                      = option[rif_dock::fragment_max_rmsd                     ]();
+        max_structures                         = option[rif_dock::max_structures                        ]();
+        dive_resl                              = option[rif_dock::dive_resl                             ]();
+        pop_resl                               = option[rif_dock::pop_resl                              ]();
+
 
 
 

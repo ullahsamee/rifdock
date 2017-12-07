@@ -168,7 +168,8 @@ std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
     core::pose::Pose const & pose,
-    uint64_t minimum_loop_length ) {
+    uint64_t minimum_loop_length,
+    uint64_t max_structures ) {
 
     using namespace core::pack::task::operation;
     using namespace core::select::residue_selector;
@@ -241,7 +242,7 @@ apply_direct_segment_lookup_mover(
         hardmin_bb.apply( *result );
 
         results.push_back( result );
-    } while ( ( result = dsl_mover.get_additional_output() ) );
+    } while ( results.size() < max_structures && ( result = dsl_mover.get_additional_output() ) );
 
 
 

@@ -186,7 +186,48 @@ using ::scheme::scaffold::BOGUS_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
 
+
+    BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
+
+
     shared_ptr<MorphingScaffoldProvider> morph_provider = std::dynamic_pointer_cast<MorphingScaffoldProvider>(d.scaffold_provider);
+
+    ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(TreeIndex(0, 0));
+    sdc->setup_onebody_tables( d.rot_index_p, d.opt);
+
+
+    runtime_assert( d.opt.dive_resl <= d.RESLS.size() );
+    std::vector< std::vector< SearchPoint > > samples( d.opt.dive_resl );
+    samples[0].resize( ::scheme::kinematics::bigindex_nest_part(d.director->size(0)) );
+
+    uint64_t index_count = 0;
+    for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(d.director->size(0)); ++i ) {
+        samples[0][index_count++] = SearchPoint( DirectorIndex( i, TreeIndex(0, 0)) );
+    }
+    
+
+
+
+
+
+
+
+    bool success = do_an_hsearch( 0, samples, d );
+
+    if ( ! success ) return false;
+
+
+    runtime_assert( d.opt.pop_resl <= d.opt.dive_resl );
+    int dropped_resls = d.opt.dive_resl - d.opt.pop_resl;
+    int shift_factor = dropped_resls * 6;
+
+    std::unordered_map<uint64_t, bool> uniq_positions;
+
+    for ( SearchPoint sp : samples.back() ) {
+        uniq_positions[::scheme::kinematics::bigindex_nest_part(sp.index) >> shift_factor] = true;
+    }
+
+
 
     morph_provider->test_make_children( TreeIndex(0, 0) );
 
@@ -200,24 +241,31 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
+    std::cout << "Num unique positions: " << uniq_positions.size() << std::endl;
 
-    std::vector< std::vector< SearchPoint > > samples( d.RESLS.size() );
-    samples[0].resize( ::scheme::kinematics::bigindex_nest_part(d.director->size(0))*num_scaffolds );
 
-    uint64_t index_count = 0;
+    std::vector< std::vector< SearchPoint > > samples2( d.RESLS.size() - d.opt.pop_resl + 1 );
+    samples2[0].resize( uniq_positions.size()*num_scaffolds );
+
+
+    uint64_t index_count2 = 0;
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
-        for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(d.director->size(0)); ++i ) {
-            samples[0][index_count++] = SearchPoint( DirectorIndex( i, TreeIndex(1, scaffno)) );
+        for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
+            samples2[0][index_count2++] = SearchPoint( DirectorIndex( pair.first, TreeIndex(1, scaffno)) );
         }
     }
 
-    BOOST_FOREACH( ScenePtr & s, d.scene_pt ) s = d.scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
 
-
-
-    bool success = do_an_hsearch( 0, samples, d );
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d );
 
     if ( ! success ) return false;
+
+
+
+
+
+
+
 
 
     std::cout << "total non-0 space size was approx " << float(d.non0_space_size)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
@@ -228,13 +276,13 @@ using ::scheme::scaffold::TreeLimits;
     std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
 
 
-    hsearch_results.resize( samples.back().size() );
+    hsearch_results.resize( samples2.back().size() );
     #ifdef USE_OPENMP
     #pragma omp parallel for schedule(dynamic,1024)
     #endif
     for( int ipack = 0; ipack < hsearch_results.size(); ++ipack ){
-        hsearch_results[ipack].score = samples.back()[ipack].score;
-        hsearch_results[ipack].index = samples.back()[ipack].index;
+        hsearch_results[ipack].score = samples2.back()[ipack].score;
+        hsearch_results[ipack].index = samples2.back()[ipack].index;
     }
 
 
