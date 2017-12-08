@@ -27,6 +27,9 @@
 #include <utility/io/izstream.hh>
 #include <utility/io/ozstream.hh>
 
+#include <core/scoring/rms_util.hh>
+#include <core/select/util.hh>
+
 #include <boost/functional/hash/hash.hpp>
 
 
@@ -386,6 +389,46 @@ get_rif_atype_map()
 
 	return atypemap;
 }
+
+
+
+std::map< core::id::AtomID, core::id::AtomID >
+residue_subset_to_CA_atom_map( 
+    core::select::residue_selector::ResidueSubset const & subset, 
+    core::pose::Pose const & pose ) {
+
+    std::map< core::id::AtomID, core::id::AtomID > atom_map;
+    utility::vector1<core::Size> seq_poss = core::select::get_residues_from_subset( subset );
+    for ( core::Size seq_pos : seq_poss ) {
+        core::conformation::Residue const & res( pose.residue( seq_pos ) );
+        if ( res.has( "CA" ) ) {
+            core::id::AtomID const id( res.atom_index( "CA" ), seq_pos );
+            atom_map[ id ] = id;
+        }
+    }
+    return atom_map;
+}
+
+
+
+core::Real
+subset_CA_rmsd(
+    core::pose::Pose const & pose1,
+    core::pose::Pose const & pose2,
+    core::select::residue_selector::ResidueSubset const & subset,
+    bool superimpose) {
+
+    utility::vector1<core::Size> calc_rms_res = core::select::get_residues_from_subset( subset );
+    std::map< core::id::AtomID, core::id::AtomID > atom_map = 
+        residue_subset_to_CA_atom_map( subset, pose1 );
+
+    if ( superimpose ) {
+        return core::scoring::rms_at_corresponding_atoms( pose1, pose2, atom_map, calc_rms_res );
+    } else {
+        return core::scoring::rms_at_corresponding_atoms_no_super( pose1, pose2, atom_map, calc_rms_res );
+    }
+}
+
 
 
 }

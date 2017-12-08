@@ -63,7 +63,7 @@ using ::scheme::scaffold::TreeLimits;
         for( int this_stage = 0; this_stage < samples.size(); ++this_stage )
         {
             int iresl = this_stage + start_resl;
-            cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,d.RESLS[this_stage]) << " begin threaded sampling, " << KMGT(samples[this_stage].size()) << " samples: ";
+            cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,d.RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[this_stage].size()) << " samples: ";
             int64_t const out_interval = samples[this_stage].size()/50;
             std::exception_ptr exception = nullptr;
             std::chrono::time_point<std::chrono::high_resolution_clock> start, end;

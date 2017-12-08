@@ -86,23 +86,15 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
     core::pose::PoseCOP scaffold = data_cache->scaffold_centered_p;
 
-    core::pose::Pose segmented_scaffold;
-
-    for (uint64_t i = 1; i <= scaffold->size(); i++) {
-        if (i <= opt.low_cut_site || i >= opt.high_cut_site + 1) {
-            segmented_scaffold.append_residue_by_bond( scaffold->residue(i) );
-        } else if ( i == opt.high_cut_site ) {
-            segmented_scaffold.append_residue_by_jump( scaffold->residue(i), 1, "N", "N", true );
-        }
-    }
-
-
 
     std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
             dsl_mover, 
-            segmented_scaffold, 
+            *scaffold, 
+            opt.low_cut_site,
+            opt.high_cut_site,
             removed_length + opt.max_insertion,
-            opt.max_structures );
+            opt.max_structures,
+            opt.fragment_max_rmsd );
 
 
     std::string scafftag;

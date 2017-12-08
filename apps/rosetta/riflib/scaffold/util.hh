@@ -46,8 +46,11 @@ std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
     core::pose::Pose const & pose,
+    uint64_t low_cut_site,
+    uint64_t high_cut_site,
     uint64_t minimum_loop_length,
-    uint64_t max_structures );
+    uint64_t max_structures,
+    uint64_t max_rmsd  );
 
 void
 get_default_scaffold_res( core::pose::Pose const & pose,

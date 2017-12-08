@@ -167,13 +167,34 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
-    core::pose::Pose const & pose,
+    core::pose::Pose const & in_pose,
+    uint64_t low_cut_site,
+    uint64_t high_cut_site,
     uint64_t minimum_loop_length,
-    uint64_t max_structures ) {
+    uint64_t max_structures,
+    uint64_t max_rmsd ) {
 
     using namespace core::pack::task::operation;
     using namespace core::select::residue_selector;
     using namespace protocols::residue_selectors;
+
+
+    core::pose::Pose pose;
+    utility::vector1<core::Size> rmsd_range;
+    core::select::residue_selector::ResidueSubset rmsd_region(in_pose.size(), false);
+
+    for (uint64_t i = 1; i <= in_pose.size(); i++) {
+        if (i <= low_cut_site || i >= high_cut_site + 1) {
+            pose.append_residue_by_bond( in_pose.residue(i) );
+        } else if ( i == high_cut_site ) {
+            pose.append_residue_by_jump( in_pose.residue(i), 1, "N", "N", true );
+        } else {
+            rmsd_region[i] = true;
+        }
+    }
+
+
+
 
     const std::string stored_subset_name = "inserted_lookup_segment";
     dsl_mover.stored_subset_name( stored_subset_name );
@@ -240,6 +261,15 @@ apply_direct_segment_lookup_mover(
         }
         to_ala.apply( *result );
         hardmin_bb.apply( *result );
+
+// this doesn't handle insertions or deletion!!!!!!!!
+        core::Real rmsd = subset_CA_rmsd(*result, in_pose, rmsd_region, false );
+        std::cout << "RMSD: " << rmsd << std::endl;
+        std::cout << rmsd_region << std::endl;
+        if ( rmsd > max_rmsd ) {
+            std::cout << "RMSD too high" << std::endl;
+            continue;
+        }
 
         results.push_back( result );
     } while ( results.size() < max_structures && ( result = dsl_mover.get_additional_output() ) );

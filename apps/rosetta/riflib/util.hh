@@ -25,6 +25,9 @@
 #include <utility/io/ozstream.fwd.hh>
 #include <utility/io/izstream.fwd.hh>
 
+#include <core/select/residue_selector/ResidueSelector.fwd.hh>
+#include <core/id/AtomID.hh>
+
 namespace devel {
 namespace scheme {
 
@@ -423,6 +426,29 @@ struct ScoreRotamerVsTarget {
 		return score * upweight_iface_;
 	}
 };
+
+
+
+/// @brief Returns an map mapping the CA of the atoms given in the subset
+/// to themselves
+std::map< core::id::AtomID, core::id::AtomID >
+residue_subset_to_CA_atom_map( 
+    core::select::residue_selector::ResidueSubset const & subset, 
+    core::pose::Pose const & pose );
+
+
+/// @brief Returns the CA rmsd of the residues in the ResidueSubset
+/// with or without superposition
+core::Real
+subset_CA_rmsd(
+    core::pose::Pose const & pose1,
+    core::pose::Pose const & pose2,
+    core::select::residue_selector::ResidueSubset const & subset,
+    bool superimpose);
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
