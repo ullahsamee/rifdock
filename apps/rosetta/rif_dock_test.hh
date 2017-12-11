@@ -132,6 +132,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_x_frames_per_resl )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_only_best_frames )
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_only_best_stride )
+    OPT_1GRP_KEY(  String      , rif_dock, dump_prefix )
 
     OPT_1GRP_KEY(  String      , rif_dock, scaff_search_mode )
     OPT_1GRP_KEY(  String      , rif_dock, nineA_cluster_path )
@@ -277,6 +278,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_x_frames_per_resl, "Use this to make a movie", 0 );
 			NEW_OPT(  rif_dock::dump_only_best_frames, "Only dump the best frames for the movie", false );
 			NEW_OPT(  rif_dock::dump_only_best_stride, "When doing dump_only_best_frames, dump every Xth element of the best", 1 );
+			NEW_OPT(  rif_dock::dump_prefix, "Convince Brian to make this autocreate the folder", "hsearch" );
 
 			NEW_OPT(  rif_dock::scaff_search_mode, "Which scaffold mode and HSearch do you want?", "default");
 			NEW_OPT(  rif_dock::nineA_cluster_path, "", "" );
@@ -408,6 +410,7 @@ struct RifDockOpt
     int         dump_x_frames_per_resl				 ;
     bool        dump_only_best_frames                ;
     int         dump_only_best_stride                ;
+    std::string dump_prefix                          ;
 
     std::string scaff_search_mode					 ;
     std::string nineA_cluster_path					 ;
@@ -536,6 +539,7 @@ struct RifDockOpt
 		dump_x_frames_per_resl				   = option[rif_dock::dump_x_frames_per_resl                ]();
 		dump_only_best_frames				   = option[rif_dock::dump_only_best_frames                 ]();
 		dump_only_best_stride                  = option[rif_dock::dump_only_best_stride                 ]();
+		dump_prefix                            = option[rif_dock::dump_prefix                           ]();
 
 		scaff_search_mode					   = option[rif_dock::scaff_search_mode   				    ]();
 		nineA_cluster_path					   = option[rif_dock::nineA_cluster_path                    ]();

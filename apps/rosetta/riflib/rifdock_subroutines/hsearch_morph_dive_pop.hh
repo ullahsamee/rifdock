@@ -23,7 +23,8 @@ template<class DirectorBase, class ScaffoldProvider >
 bool
 do_an_hsearch(uint64_t start_resl, 
     std::vector< std::vector< tmplSearchPoint<_DirectorBigIndex<DirectorBase>> > > & samples, 
-    HsearchData<DirectorBase, ScaffoldProvider > & d) {
+    HsearchData<DirectorBase, ScaffoldProvider > & d,
+    std::string const & dump_prefix) {
 
 
     using namespace core::scoring;
@@ -53,6 +54,20 @@ do_an_hsearch(uint64_t start_resl,
 using ::scheme::scaffold::BOGUS_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
+
+
+    DumpRifResultsData<DirectorBase, ScaffoldProvider> dump_data = {
+        d.opt,
+        d.RESLS,
+        d.director,
+        d.scene_minimal,
+        d.rif_ptrs,
+        *d.rot_index_p,
+        d.target,
+        d.scaffold_provider,
+        "",
+        ""
+    };
 
 
 
@@ -117,17 +132,43 @@ using ::scheme::scaffold::TreeLimits;
 
             // cout << "Answer: " << ( answer_exists ? "exists" : "doesn't exist" ) << std::endl;
 
-            if( this_stage+1 == samples.size() ) break;
+
+            bool extra_for_dump = d.opt.dump_x_frames_per_resl > 0 && this_stage+1 == samples.size();
+
+            if( this_stage+1 == samples.size() && ! extra_for_dump ) break;
+
+            uint64_t dump_every = 0;
+            if (d.opt.dump_x_frames_per_resl > 0) {
+                dump_every = std::floor( len / d.opt.dump_x_frames_per_resl );
+                if ( d.opt.dump_only_best_frames ) {
+                    dump_every = std::max( 1, d.opt.dump_only_best_stride );
+                    __gnu_parallel::sort( samples[this_stage].begin(), samples[this_stage].end() );
+                }
+            }
 
             for( int64_t i = 0; i < len; ++i ){
                 uint64_t isamp0 = ::scheme::kinematics::bigindex_nest_part(samples[this_stage][i].index);
                 if( samples[this_stage][i].score >= d.opt.global_score_cut ) continue;
-                if( iresl == 0 ) ++d.non0_space_size;
-                for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
-                    uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
-                    samples[this_stage+1].push_back( SearchPoint(DirectorIndex(isamp, ::scheme::kinematics::bigindex_scaffold_index(samples[this_stage][i].index))) );
+                if ( ! extra_for_dump ) {
+                    if( iresl == 0 ) ++d.non0_space_size;
+                    for( uint64_t j = 0; j < d.opt.DIMPOW2; ++j ){
+                        uint64_t isamp = isamp0 * d.opt.DIMPOW2 + j;
+                        samples[this_stage+1].push_back( SearchPoint(DirectorIndex(isamp, ::scheme::kinematics::bigindex_scaffold_index(samples[this_stage][i].index))) );
+                    }
                 }
+
+                if ( dump_every > 0 ) {  
+                    if ( (   d.opt.dump_only_best_frames && i < d.opt.dump_x_frames_per_resl) ||
+                         ( ! d.opt.dump_only_best_frames && ( i % dump_every ) == 0 )) {
+                        std::string filename = dump_prefix + boost::str( boost::format( "_resl%i_%06i.pdb.gz" ) % iresl % (i/dump_every));
+                        dump_search_point( dump_data, samples[this_stage][i], filename, iresl, true );
+                    }
+                }
+
             }
+
+            if ( extra_for_dump ) break;
+
             if( 0 == samples[this_stage+1].size() ){
                 search_failed = true;
                 std::cout << "search fail, no valid samples!" << std::endl;
@@ -212,7 +253,7 @@ using ::scheme::scaffold::TreeLimits;
 
 
 
-    bool success = do_an_hsearch( 0, samples, d );
+    bool success = do_an_hsearch( 0, samples, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp0" );
 
     if ( ! success ) return false;
 
@@ -256,7 +297,7 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
-    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d );
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1" );
 
     if ( ! success ) return false;
 
