@@ -218,6 +218,44 @@ struct ScaffoldDataCache {
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
     }
 
+    void
+    setup_fake_onebody_tables(
+        shared_ptr< RotamerIndex> rot_index_p,
+        RifDockOpt const & opt ) {
+
+        RotamerIndex & rot_index = *rot_index_p;
+
+        scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>(scaffold_centered_p->size());
+        
+
+        for( int ir = 1; ir <= scaffold_centered_p->size(); ++ir ){
+
+            (*scaffold_onebody_glob0_p)[ir-1].resize( rot_index.size(), 12345.0 );
+
+            if( std::find(scaffold_res_p->begin(), scaffold_res_p->end(), ir) == scaffold_res_p->end() ){
+                continue;
+            }
+            
+            if( ! scaffold_centered_p->residue(ir).is_protein()   ) continue;
+            if(   scaffold_centered_p->residue(ir).name3()=="GLY" ) continue;
+            if(   scaffold_centered_p->residue(ir).name3()=="PRO" ) continue;
+            for( int jr = 0; jr < rot_index.size(); ++jr ) { 
+                (*scaffold_onebody_glob0_p)[ir-1][jr] = 0;
+            }
+
+            local_onebody_p = make_shared<std::vector<std::vector<float> > >();
+            for( int i = 0; i < scaffres_l2g_p->size(); ++i ){
+                local_onebody_p->push_back( scaffold_onebody_glob0_p->at( scaffres_l2g_p->at(i) ) );
+            }
+
+            for( int i = 0; i < scaffres_g2l_p->size(); ++i ){
+                if( (*scaffres_g2l_p)[i] < 0 ){
+                    BOOST_FOREACH( float & f, (*scaffold_onebody_glob0_p)[i] ) f = 9e9;
+                }
+            }
+        }
+       
+    }
 
     // setup scaffold_onebody_glob0_p and local_onebody_p
     void
@@ -225,7 +263,8 @@ struct ScaffoldDataCache {
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt ) {
 
-        if (local_onebody_p) return;
+        // if (local_onebody_p) return;
+
 
         scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>();
 

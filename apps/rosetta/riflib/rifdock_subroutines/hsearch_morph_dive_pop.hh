@@ -12,6 +12,8 @@
 #include <riflib/rifdock_subroutines/meta.hh>
 #include <riflib/rifdock_subroutines/hsearch_original.hh>
 
+#include <core/import_pose/import_pose.hh>
+
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
@@ -24,7 +26,8 @@ bool
 do_an_hsearch(uint64_t start_resl, 
     std::vector< std::vector< tmplSearchPoint<_DirectorBigIndex<DirectorBase>> > > & samples, 
     HsearchData<DirectorBase, ScaffoldProvider > & d,
-    std::string const & dump_prefix) {
+    std::string const & dump_prefix,
+    uint64_t beam_multiplier = 1) {
 
 
     using namespace core::scoring;
@@ -116,7 +119,7 @@ using ::scheme::scaffold::TreeLimits;
 
             SearchPoint max_pt, min_pt;
             int64_t len = samples[this_stage].size();
-            if( samples[this_stage].size() > d.opt.beam_size/d.opt.DIMPOW2 ){
+            if( samples[this_stage].size() > d.opt.beam_size/d.opt.DIMPOW2 * beam_multiplier ){
                 __gnu_parallel::nth_element( samples[this_stage].begin(), samples[this_stage].begin()+d.opt.beam_size/d.opt.DIMPOW2, samples[this_stage].end() );
                 len = d.opt.beam_size/d.opt.DIMPOW2;
                 min_pt = *__gnu_parallel::min_element( samples[this_stage].begin(), samples[this_stage].begin()+len );
@@ -268,6 +271,50 @@ using ::scheme::scaffold::TreeLimits;
         uniq_positions[::scheme::kinematics::bigindex_nest_part(sp.index) >> shift_factor] = true;
     }
 
+    std::vector<uint64_t> usable_positions;
+    if ( d.opt.match_this_pdb == "" ) {
+        for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
+            usable_positions.push_back( pair.first );
+        }
+    } else {
+        core::pose::Pose match_this = *core::import_pose::pose_from_file( d.opt.match_this_pdb );
+        Eigen::Vector3f match_center = pose_center(match_this,*(sdc->scaffold_res_p));
+
+
+        core::conformation::Residue const & match_res = match_this.residue(1);
+        core::conformation::Residue const & scaff_res = sdc->scaffold_centered_p->residue(1);
+
+
+        EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                    match_res.xyz("N"),
+                                                                    match_res.xyz("CA"),
+                                                                    match_res.xyz("C") );
+        EigenXform scaff_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                    scaff_res.xyz("N"),
+                                                                    scaff_res.xyz("CA"),
+                                                                    scaff_res.xyz("C") );
+
+        EigenXform scaff2match = match_x * scaff_x.inverse();
+        scaff2match.translation() = match_center - sdc->scaffold_center;
+
+        float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
+
+        for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
+
+
+            d.director->set_scene( DirectorIndex( pair.first, TreeIndex(0, 0)), d.opt.dive_resl, *d.scene_minimal );
+            EigenXform x = d.scene_minimal->position(1);
+            x.translation() -= scaff2match.translation();
+            float xmag =  xform_magnitude( x, redundancy_filter_rg );
+
+            if ( xmag < 7 ) {
+                usable_positions.push_back( pair.first );
+            }
+        }
+
+
+
+    }
 
 
     morph_provider->test_make_children( TreeIndex(0, 0) );
@@ -278,7 +325,7 @@ using ::scheme::scaffold::TreeLimits;
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
         TreeIndex ti(1, scaffno);
         ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(ti);
-        sdc->setup_onebody_tables( d.rot_index_p, d.opt);
+        sdc->setup_fake_onebody_tables( d.rot_index_p, d.opt);
     }
 
 
@@ -297,12 +344,17 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
-    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1" );
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", 1);//num_scaffolds );
 
     if ( ! success ) return false;
 
 
 
+    for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
+        TreeIndex ti(1, scaffno);
+        ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(ti);
+        sdc->setup_onebody_tables( d.rot_index_p, d.opt);
+    }
 
 
 

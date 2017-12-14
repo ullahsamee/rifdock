@@ -98,7 +98,7 @@ awful_compile_output_helper(
 
     bool force_selected = ( dist0 < nclosethresh && ++nclose < nclosemax ); // not thread-safe... is this important?
 
-    if( selected_results.size() < n_pdb_out || force_selected ){
+    if( selected_xforms.size() < n_pdb_out || force_selected ){
 
         EigenXform xposition1 = scene_minimal->position(1);
         EigenXform xposition1inv = xposition1.inverse();

@@ -149,6 +149,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, dive_resl )
     OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
 
+    OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
+
+
 
 
  
@@ -293,6 +296,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_structures , "", 10000000 );
 			NEW_OPT(  rif_dock::dive_resl , "", 5 );
 			NEW_OPT(  rif_dock::pop_resl , "", 4 );
+			NEW_OPT(  rif_dock::match_this_pdb, "for prelim exam", "" );
 
 
 		}
@@ -425,6 +429,7 @@ struct RifDockOpt
     int         max_structures                       ;
     int         dive_resl                            ;
     int         pop_resl                             ;
+    std::string match_this_pdb                       ;
 
     void init_from_cli();
 
@@ -554,6 +559,7 @@ struct RifDockOpt
         max_structures                         = option[rif_dock::max_structures                        ]();
         dive_resl                              = option[rif_dock::dive_resl                             ]();
         pop_resl                               = option[rif_dock::pop_resl                              ]();
+        match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
 
 
 

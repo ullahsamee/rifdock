@@ -26,6 +26,7 @@
 
 	#include <core/id/AtomID.hh>
 	#include <core/pose/Pose.hh>
+    #include <core/pose/variant_util.hh>
 	#include <core/scoring/motif/util.hh>
 
 	#include <devel/init.hh>
