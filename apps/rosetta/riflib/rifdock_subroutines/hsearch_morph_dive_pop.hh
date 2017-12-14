@@ -330,16 +330,17 @@ using ::scheme::scaffold::TreeLimits;
 
 
     std::cout << "Num unique positions: " << uniq_positions.size() << std::endl;
+    std::cout << "Num usable positions: " << usable_positions.size() << std::endl;
 
 
     std::vector< std::vector< SearchPoint > > samples2( d.RESLS.size() - d.opt.pop_resl + 1 );
-    samples2[0].resize( uniq_positions.size()*num_scaffolds );
+    samples2[0].resize( usable_positions.size()*num_scaffolds );
 
 
     uint64_t index_count2 = 0;
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
-        for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
-            samples2[0][index_count2++] = SearchPoint( DirectorIndex( pair.first, TreeIndex(1, scaffno)) );
+        for( uint64_t position : usable_positions ) {
+            samples2[0][index_count2++] = SearchPoint( DirectorIndex( position, TreeIndex(1, scaffno)) );
         }
     }
 
