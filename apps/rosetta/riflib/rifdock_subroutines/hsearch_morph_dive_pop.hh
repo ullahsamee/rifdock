@@ -368,7 +368,7 @@ using ::scheme::scaffold::TreeLimits;
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
         TreeIndex ti(1, scaffno);
         ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(ti);
-        sdc->setup_fake_onebody_tables( d.rot_index_p, d.opt);
+        sdc->setup_onebody_tables( d.rot_index_p, d.opt);
     }
 
 
@@ -394,11 +394,11 @@ using ::scheme::scaffold::TreeLimits;
 
 
 
-    for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
-        TreeIndex ti(1, scaffno);
-        ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(ti);
-        sdc->setup_onebody_tables( d.rot_index_p, d.opt);
-    }
+    // for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
+    //     TreeIndex ti(1, scaffno);
+    //     ScaffoldDataCacheOP sdc = morph_provider->get_data_cache_slow(ti);
+    //     sdc->setup_onebody_tables( d.rot_index_p, d.opt);
+    // }
 
 
 
