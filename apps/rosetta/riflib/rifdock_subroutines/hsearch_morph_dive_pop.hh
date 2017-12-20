@@ -100,6 +100,20 @@ using ::scheme::scaffold::TreeLimits;
                     ScenePtr tscene( d.scene_pt[omp_get_thread_num()] );
                     d.director->set_scene( isamp, iresl, *tscene );
 
+                    if( d.opt.tether_to_input_position ){
+                        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(isamp);
+                        ScaffoldDataCacheOP sdc = d.scaffold_provider->get_data_cache_slow(si);
+                        float redundancy_filter_rg = sdc->get_redundancy_filter_rg( d.target_redundancy_filter_rg );
+
+                        EigenXform x = tscene->position(1);
+                        x.translation() -= sdc->scaffold_center;
+                        float xmag =  xform_magnitude( x, redundancy_filter_rg );
+                        if( xmag > d.opt.tether_to_input_position_cut + d.RESLS[iresl] ){
+                            samples[this_stage][i].score = 9e9;
+                            continue;
+                        } 
+                    }
+
                     // the real rif score!!!!!!
                     samples[this_stage][i].score = d.objectives[iresl]->score( *tscene );// + tot_sym_score;
 
@@ -282,9 +296,6 @@ using ::scheme::scaffold::TreeLimits;
         Eigen::Vector3f match_center = pose_center(match_this,*(sdc->scaffold_res_p));
 
 
-        //core::conformation::Residue const & match_res = match_this.residue(1);
-       // core::conformation::Residue const & scaff_res = sdc->scaffold_centered_p->residue(1);
-
         utility::vector1<core::Size> target_res {1};
         std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > match_atoms;
         std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > scaff_atoms;
@@ -332,15 +343,14 @@ using ::scheme::scaffold::TreeLimits;
             d.director->set_scene( DirectorIndex( pair.first, TreeIndex(0, 0)), d.opt.pop_resl-1, *d.scene_minimal );
             EigenXform x = d.scene_minimal->position(1);
             EigenXform xdiff = scaff2match.inverse() * x;
-            //xdiff.translation() -= scaff2match.translation();
             float xmag =  xform_magnitude( xdiff, redundancy_filter_rg );
-            if (count++ < 10000) {
-            std::cout << xmag << " " << "  Trans: " 
-              << F(7, 1, xdiff.translation()[0]) 
-              << F(7, 1, xdiff.translation()[1]) 
-              << F(7, 1, xdiff.translation()[2]) << std::endl; 
-            }
-            if ( xmag < 7 ) {
+            // if (count++ < 10000) {
+            // std::cout << xmag << " " << "  Trans: " 
+            //   << F(7, 1, xdiff.translation()[0]) 
+            //   << F(7, 1, xdiff.translation()[1]) 
+            //   << F(7, 1, xdiff.translation()[2]) << std::endl; 
+            // }
+            if ( xmag < d.opt.match_this_rmsd ) {
                 usable_positions.push_back( pair.first );
             }
         }
@@ -378,7 +388,7 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
-    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", 1);//num_scaffolds );
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", 1 );//num_scaffolds );
 
     if ( ! success ) return false;
 
