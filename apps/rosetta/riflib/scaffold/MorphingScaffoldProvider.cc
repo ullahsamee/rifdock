@@ -116,6 +116,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             rot_index_p,
             opt);
 
+        temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+
         ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
         MorphMember mmember;
