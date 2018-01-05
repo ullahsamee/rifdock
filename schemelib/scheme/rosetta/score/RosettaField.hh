@@ -96,7 +96,8 @@ struct RosettaField {
 		}
 		float e = 0.8*atr0 + 0.44*rep0 + 0.75*sol0;
 		// float e = 0.8*atr0 + 0.01*rep0 + 0.75*sol0;
-		return std::min<float>(e,100.0f);
+		return e;
+		// return std::min<float>(e,100.0f);
 	}
 
 	float compute_rosetta_energy_safe(float x, float y, float z, int atype) const

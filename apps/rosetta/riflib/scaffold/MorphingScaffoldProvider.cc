@@ -84,7 +84,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
     ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
 
-    core::pose::PoseCOP scaffold = data_cache->scaffold_centered_p;
+    core::pose::PoseCOP scaffold = data_cache->scaffold_full_centered_p;
 
 
     std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 

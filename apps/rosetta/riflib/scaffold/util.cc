@@ -246,6 +246,11 @@ apply_direct_segment_lookup_mover(
 
     //<PROTOCOLS>
 
+    core::pose::Pose clash_check_reference = pose;
+    ::devel::scheme::pose_to_ala( clash_check_reference );
+    (*scorefxn)(clash_check_reference);
+    core::scoring::Energies const & clash_check_reference_energies = clash_check_reference.energies();
+
     core::pose::PoseOP result = pose.clone();
     dsl_mover.apply( *result );
 
@@ -261,6 +266,12 @@ apply_direct_segment_lookup_mover(
         }
         to_ala.apply( *result );
         hardmin_bb.apply( *result );
+
+        if ( internal_comparative_clash_check( clash_check_reference_energies, *result, scorefxn,
+                8, low_cut_site - 1, high_cut_site + 1 ) ) {
+            std::cout << "Internal Clash!!" << std::endl;
+            continue;
+        }
 
 // this doesn't handle insertions or deletion!!!!!!!!
         core::Real rmsd = subset_CA_rmsd(*result, in_pose, rmsd_region, false );
@@ -285,6 +296,35 @@ add_pdbinfo_if_missing( core::pose::Pose & pose ) {
         core::pose::PDBInfoOP pdb_info = make_shared<core::pose::PDBInfo>( pose );
         pose.pdb_info(pdb_info);
     }
+}
+
+
+bool
+internal_comparative_clash_check( core::scoring::Energies const & original_energies,
+    core::pose::Pose const & to_check,
+    core::scoring::ScoreFunctionOP scorefxn,
+    core::Real max_fa_rep_delta,
+    core::Size low_position,
+    core::Size high_position ) {
+
+    core::pose::Pose pose = to_check;
+    ::devel::scheme::pose_to_ala(pose);
+
+    (*scorefxn)(pose);
+
+    core::scoring::Energies const & energies = pose.energies();
+
+    for ( core::Size i = low_position; i <= high_position; i++ ) {
+        core::Real original = original_energies.residue_total_energies(i)[core::scoring::fa_rep];
+        core::Real new_score = original_energies.residue_total_energies(i)[core::scoring::fa_rep];
+
+        if ( new_score - original > max_fa_rep_delta ) {
+            return true;
+        }
+    }
+
+    return false;
+
 }
 
 

@@ -15,6 +15,7 @@
 #include <rif_dock_test.hh>
 
 #include <core/pose/Pose.hh>
+#include <core/scoring/Energies.hh>
 #include <protocols/indexed_structure_store/movers/DirectSegmentLookupMover.hh>
 
 #include <string>
@@ -60,7 +61,13 @@ void
 add_pdbinfo_if_missing( core::pose::Pose & pose );
 
 
-
+bool
+internal_comparative_clash_check( core::scoring::Energies const & original_energies,
+    core::pose::Pose const & to_check,
+    core::scoring::ScoreFunctionOP scorefxn,
+    core::Real max_fa_rep_delta,
+    core::Size low_position,
+    core::Size high_position );
 
 
 
