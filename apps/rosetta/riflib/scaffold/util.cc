@@ -250,7 +250,7 @@ apply_direct_segment_lookup_mover(
     ::devel::scheme::pose_to_ala( clash_check_reference );
 
     core::scoring::ScoreFunctionOP rep_scorefxn = make_shared<core::scoring::ScoreFunction>();
-    scorefxn->set_weight(core::scoring::fa_rep, 2);
+    rep_scorefxn->set_weight(core::scoring::fa_rep, 1);
 
     (*rep_scorefxn)(clash_check_reference);
     core::scoring::Energies const & clash_check_reference_energies = clash_check_reference.energies();
