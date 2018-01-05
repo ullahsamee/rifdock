@@ -320,7 +320,7 @@ internal_comparative_clash_check( core::scoring::Energies const & original_energ
 
     for ( core::Size i = low_position; i <= high_position; i++ ) {
         core::Real original = original_energies.residue_total_energies(i)[core::scoring::fa_rep];
-        core::Real new_score = original_energies.residue_total_energies(i)[core::scoring::fa_rep];
+        core::Real new_score = energies.residue_total_energies(i)[core::scoring::fa_rep];
 
         if ( new_score - original > max_fa_rep_delta ) {
             return true;
