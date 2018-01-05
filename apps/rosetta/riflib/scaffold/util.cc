@@ -248,7 +248,11 @@ apply_direct_segment_lookup_mover(
 
     core::pose::Pose clash_check_reference = pose;
     ::devel::scheme::pose_to_ala( clash_check_reference );
-    (*scorefxn)(clash_check_reference);
+
+    core::scoring::ScoreFunctionOP rep_scorefxn = make_shared<core::scoring::ScoreFunction>();
+    scorefxn->set_weight(core::scoring::fa_rep, 2);
+
+    (*rep_scorefxn)(clash_check_reference);
     core::scoring::Energies const & clash_check_reference_energies = clash_check_reference.energies();
 
     core::pose::PoseOP result = pose.clone();
@@ -267,7 +271,7 @@ apply_direct_segment_lookup_mover(
         to_ala.apply( *result );
         hardmin_bb.apply( *result );
 
-        if ( internal_comparative_clash_check( clash_check_reference_energies, *result, scorefxn,
+        if ( internal_comparative_clash_check( clash_check_reference_energies, *result, rep_scorefxn,
                 8, low_cut_site - 1, high_cut_site + 1 ) ) {
             std::cout << "Internal Clash!!" << std::endl;
             continue;
