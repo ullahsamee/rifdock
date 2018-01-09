@@ -388,7 +388,7 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
-    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", std::min(10ull, num_scaffolds ));
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", std::min((uint64_t)10, num_scaffolds ));
 
     if ( ! success ) return false;
 
