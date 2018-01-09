@@ -134,10 +134,10 @@ using ::scheme::scaffold::TreeLimits;
             SearchPoint max_pt, min_pt;
             int64_t len = samples[this_stage].size();
             if( samples[this_stage].size() > d.opt.beam_size/d.opt.DIMPOW2 * beam_multiplier ){
-                __gnu_parallel::nth_element( samples[this_stage].begin(), samples[this_stage].begin()+d.opt.beam_size/d.opt.DIMPOW2, samples[this_stage].end() );
-                len = d.opt.beam_size/d.opt.DIMPOW2;
+                __gnu_parallel::nth_element( samples[this_stage].begin(), samples[this_stage].begin()+d.opt.beam_size/d.opt.DIMPOW2 * beam_multiplier, samples[this_stage].end() );
+                len = d.opt.beam_size/d.opt.DIMPOW2 * beam_multiplier;
                 min_pt = *__gnu_parallel::min_element( samples[this_stage].begin(), samples[this_stage].begin()+len );
-                max_pt = *(samples[this_stage].begin()+d.opt.beam_size/d.opt.DIMPOW2);
+                max_pt = *(samples[this_stage].begin()+d.opt.beam_size/d.opt.DIMPOW2* beam_multiplier);
             } else {
                 min_pt = *__gnu_parallel::min_element( samples[this_stage].begin(), samples[this_stage].end() );
                 max_pt = *__gnu_parallel::max_element( samples[this_stage].begin(), samples[this_stage].end() );
