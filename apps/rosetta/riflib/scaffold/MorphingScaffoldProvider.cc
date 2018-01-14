@@ -30,10 +30,14 @@ namespace scheme {
 MorphingScaffoldProvider::MorphingScaffoldProvider( 
     uint64_t iscaff,
     shared_ptr< RotamerIndex > rot_index_p_in, 
-    RifDockOpt const & opt_in) :
+    RifDockOpt const & opt_in,
+    MakeTwobodyOpts const & make2bopts_in,
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in ) :
 
     rot_index_p( rot_index_p_in), 
-    opt(opt_in) {
+    opt(opt_in),
+    make2bopts(make2bopts_in),
+    rotrf_table_manager(rotrf_table_manager_in) {
 
 
     std::string scafftag;
@@ -117,6 +121,22 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             opt);
 
         temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+
+        if ( opt.use_parent_body_energies ) {
+            std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
+            if ( ! data_cache->local_onebody_p ) {
+                data_cache->setup_onebody_tables( rot_index_p, opt );
+            }
+            if ( ! data_cache->local_twobody_p ) {
+                data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+            }
+            // one-body
+            temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
+            temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
+            // two-body
+            temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
+            temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+        }
 
         ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 

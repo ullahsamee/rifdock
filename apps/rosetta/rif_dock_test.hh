@@ -151,6 +151,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
 
 
 
@@ -300,6 +301,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::match_this_pdb, "for prelim exam", "" );
 			NEW_OPT(  rif_dock::match_this_rmsd, "", 7 );
+			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1/2-body energies for fragment insertions", false );
 
 
 		}
@@ -432,8 +434,10 @@ struct RifDockOpt
     int         max_structures                       ;
     int         dive_resl                            ;
     int         pop_resl                             ;
+
     std::string match_this_pdb                       ;
     float       match_this_rmsd                      ;
+    bool        use_parent_body_energies             ;
 
     void init_from_cli();
 
@@ -563,8 +567,10 @@ struct RifDockOpt
         max_structures                         = option[rif_dock::max_structures                        ]();
         dive_resl                              = option[rif_dock::dive_resl                             ]();
         pop_resl                               = option[rif_dock::pop_resl                              ]();
+
         match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
         match_this_rmsd                        = option[rif_dock::match_this_rmsd                       ]();
+        use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
 
 
 

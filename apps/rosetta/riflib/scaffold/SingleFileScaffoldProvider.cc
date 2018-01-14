@@ -30,10 +30,14 @@ namespace scheme {
 SingleFileScaffoldProvider::SingleFileScaffoldProvider( 
     uint64_t iscaff,
     shared_ptr< RotamerIndex > rot_index_p_in, 
-    RifDockOpt const & opt_in) :
+    RifDockOpt const & opt_in,
+    MakeTwobodyOpts const & make2bopts_in,
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in ) :
 
     rot_index_p( rot_index_p_in), 
-    opt(opt_in) {
+    opt(opt_in),
+    make2bopts(make2bopts_in),
+    rotrf_table_manager(rotrf_table_manager_in) {
 
 
     std::string scafftag;

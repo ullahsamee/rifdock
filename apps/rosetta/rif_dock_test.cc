@@ -370,6 +370,12 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 		::devel::scheme::RotamerRFTablesManager rotrf_table_manager( rot_index_p, rotrfopts );
 		// rotrf_table_manager.preinit_all();
 
+		MakeTwobodyOpts make2bopts;
+		// hacked by brian             VVVV
+		make2bopts.onebody_threshold = 30.0;
+		make2bopts.distance_cut = 15.0;
+		make2bopts.hbond_weight = packopts.hbond_weight;
+
 
 
 
@@ -618,10 +624,14 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
 
+
+
 			ScaffoldProviderOP scaffold_provider = make_shared<ScaffoldProvider>(
 				iscaff,
 				rot_index_p,
-				opt);
+				opt,
+				make2bopts,
+				rotrf_table_manager);
 
 			ScaffoldIndex rep_si = scaffold_provider->get_representative_scaffold_index();
 			ScaffoldDataCacheOP rep_data_cache = scaffold_provider->get_data_cache_slow( rep_si );
@@ -640,13 +650,6 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
 			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;
-
-
-			MakeTwobodyOpts make2bopts;
-			// hacked by brian             VVVV
-			make2bopts.onebody_threshold = 30.0;
-			make2bopts.distance_cut = 15.0;
-			make2bopts.hbond_weight = packopts.hbond_weight;
 
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

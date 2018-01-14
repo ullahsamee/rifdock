@@ -41,7 +41,9 @@ struct Clustered9AScaffoldProvider :
     Clustered9AScaffoldProvider( 
         uint64_t iscaff,
         shared_ptr< RotamerIndex > rot_index_p_in, 
-        RifDockOpt const & opt_in);
+        RifDockOpt const & opt_in,
+        MakeTwobodyOpts const & make2bopts_in,
+        ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in );
 
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
@@ -69,6 +71,8 @@ private:
 
     shared_ptr< RotamerIndex > rot_index_p;
     RifDockOpt const & opt;
+    MakeTwobodyOpts const & make2bopts;
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager ;
 
 };
 
