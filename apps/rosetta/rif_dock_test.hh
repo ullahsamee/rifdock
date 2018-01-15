@@ -148,10 +148,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_structures )
     OPT_1GRP_KEY(  Integer     , rif_dock, dive_resl )
     OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
 
     OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
+    OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
 
 
 
@@ -298,10 +300,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_structures , "", 10000000 );
 			NEW_OPT(  rif_dock::dive_resl , "", 5 );
 			NEW_OPT(  rif_dock::pop_resl , "", 4 );
+			NEW_OPT(  rif_dock::include_parent, "", false );
 
 			NEW_OPT(  rif_dock::match_this_pdb, "for prelim exam", "" );
 			NEW_OPT(  rif_dock::match_this_rmsd, "", 7 );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1/2-body energies for fragment insertions", false );
+			NEW_OPT(  rif_dock::max_beam_multiplier, "", 1 );
 
 
 		}
@@ -434,10 +438,12 @@ struct RifDockOpt
     int         max_structures                       ;
     int         dive_resl                            ;
     int         pop_resl                             ;
+    bool        include_parent                       ;
 
     std::string match_this_pdb                       ;
     float       match_this_rmsd                      ;
     bool        use_parent_body_energies             ;
+    float       max_beam_multiplier                  ;
 
     void init_from_cli();
 
@@ -567,10 +573,12 @@ struct RifDockOpt
         max_structures                         = option[rif_dock::max_structures                        ]();
         dive_resl                              = option[rif_dock::dive_resl                             ]();
         pop_resl                               = option[rif_dock::pop_resl                              ]();
+        include_parent                         = option[rif_dock::include_parent                        ]();
 
         match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
         match_this_rmsd                        = option[rif_dock::match_this_rmsd                       ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
+        max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                   ]();
 
 
 

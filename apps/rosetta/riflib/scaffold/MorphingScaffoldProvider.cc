@@ -152,6 +152,19 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
         add_morph_member( mmember );
     }
+
+    if ( opt.include_parent ) {
+        MorphMember const & parent_mm = get_morph_member( ti );
+        
+        MorphMember mmember;
+        mmember.conformation = parent_mm.conformation;
+        mmember.tree_relation.depth = 1;
+        mmember.tree_relation.parent_member = 0;
+        mmember.tree_relation.first_child = BOGUS_INDEX;
+        mmember.tree_relation.last_child = BOGUS_INDEX;
+
+        add_morph_member( mmember );
+    }
 }
 
 

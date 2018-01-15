@@ -27,7 +27,7 @@ do_an_hsearch(uint64_t start_resl,
     std::vector< std::vector< tmplSearchPoint<_DirectorBigIndex<DirectorBase>> > > & samples, 
     HsearchData<DirectorBase, ScaffoldProvider > & d,
     std::string const & dump_prefix,
-    uint64_t beam_multiplier = 1) {
+    double beam_multiplier = 1.00) {
 
 
     using namespace core::scoring;
@@ -391,7 +391,8 @@ using ::scheme::scaffold::TreeLimits;
     }
 
 
-    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", std::min((uint64_t)10, num_scaffolds ));
+    success = do_an_hsearch( d.opt.pop_resl-1, samples2, d, d.opt.dump_prefix + "_" + sdc->scafftag + "_dp1", 
+        std::min((double)d.opt.max_beam_multiplier, (double)num_scaffolds ));
 
     if ( ! success ) return false;
 
