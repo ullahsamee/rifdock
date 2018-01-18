@@ -253,7 +253,7 @@ public:
 		float dump_dist_sq = dump_dist * dump_dist;
 
 		// transform and irot
-		std::vector<std::pair<EigenXform, int>> to_dump;
+		std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
 		to_dump.reserve( from->map_.size() );
 
 
@@ -304,8 +304,9 @@ public:
 									dist_sq = (last_vector3f - last_atom_point).squaredNorm();
 									if (dist_sq < dump_dist_sq) {
 
+										float score = rotscores.score(i_rs);
 
-										to_dump.push_back(std::pair<EigenXform, int>(x, irot));
+										to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(x, std::pair<int, float>(irot, score)));
 									}
 								}
 							}
@@ -320,7 +321,7 @@ public:
 		uint64_t dump_every = to_dump.size() / num_dump;
 
 
-		std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << num_dump << "..." << std::endl;
+		std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << num_dump << " to " << file_name << " ..." << std::endl;
 
 
 		utility::io::ozstream out( file_name );
@@ -330,10 +331,12 @@ public:
 				continue;
 			}
 			EigenXform x = to_dump[i].first;
-			int irot = to_dump[i].second;
+			auto inner_pair = to_dump[i].second;
+			int irot = inner_pair.first;
+			float score = inner_pair.second;
 
 
-			out << std::string("MODEL") << std::endl;
+			out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
 
             BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
                 a.set_position( x * a.position() ); 

@@ -149,7 +149,8 @@ dump_rif_result(
 
                     if ( ! quiet ) {
                         std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
-                        std::cout << " ires: " << ires << " irot: " << irot << std::endl;
+                        std::cout << " ires: " << ires << " irot: " << irot << " seqpos: " << ires+1;
+                        std::cout << boost::str(boost::format(" rif score: %.2f 1-body: %.2f")%p.first%scaffold_onebody_glob0.at( ires ).at( irot )) << std::endl;
                     }
 
                     std::pair< int, std::string > brian_pair;
