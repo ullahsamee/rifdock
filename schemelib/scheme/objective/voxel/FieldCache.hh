@@ -109,6 +109,9 @@ struct FieldCache3D : public VoxelArray<3,Float> {
 				Float test1 = this->operator[]( cen );
 				// Float test2 = field( cen[0], cen[1], cen[2] );
 				Float test2 = sample_field(field,cen,oversample);
+				if (test1 > 99 && test2 > 99) {
+					continue;
+				}
 				if( fabs(test1-test2) > tolerance ){
 					std::cout << "FIELD MISMATCH stored: " << test1 << " recalculated: " << test2 << std::endl;
 					++nerror;

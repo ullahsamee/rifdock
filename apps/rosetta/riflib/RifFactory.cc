@@ -13,6 +13,7 @@
 #include <riflib/rifdock_typedefs.hh>
 
 #include <utility/io/izstream.hh>
+#include <utility/io/ozstream.hh>
 #include <utility/file/file_sys_util.hh>
 #include <ObjexxFCL/format.hh>
 
@@ -235,6 +236,110 @@ public:
             ((typename XMap::Map const &)xmap_ptr_->map_).end()  );
         return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
     }
+
+
+    bool dump_rotamers_near_points( Eigen::Vector3f const & search_point, Eigen::Vector3f const & last_atom_point, std::string const & name3,
+                                           float dump_dist, std::string const & file_name, float dump_frac,
+                                           shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+    	std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
+    	const RifBase * base = this;
+		shared_ptr<XMap const> from;
+		base->get_xmap_const_ptr( from );
+
+
+		float coarse_dist_sq = (dump_dist + 5) * (dump_dist + 5);
+		float dump_dist_sq = dump_dist * dump_dist;
+
+		// transform and irot
+		std::vector<std::pair<EigenXform, int>> to_dump;
+		to_dump.reserve( from->map_.size() );
+
+
+		std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
+
+		// old
+		int progress0 = 0;
+		for( auto const & v : from->map_ ){
+			EigenXform x = from->hasher_.get_center( v.first );
+
+			float dist_sq = (x.translation() - search_point).squaredNorm();
+
+			if (dist_sq < coarse_dist_sq) {
+
+				typename XMap::Value const & rotscores = from->operator[]( x );
+				static int const Nrots = XMap::Value::N;
+				for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+					if( rotscores.empty(i_rs) ) {
+						break;
+					}
+
+					int irot = rotscores.rotamer(i_rs);
+					if (irot >= index_bounds.first && irot < index_bounds.second ) {
+
+
+						SchemeAtom ca = rot_index_p->rotamers_.at( irot ).atoms_[1];
+						Eigen::Vector3f ca_vector3f = x * ca.position();
+						dist_sq = (ca_vector3f - search_point).squaredNorm();
+
+						if (dist_sq < dump_dist_sq) {
+
+							SchemeAtom last_atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
+							Eigen::Vector3f last_vector3f = x * last_atom.position();
+
+							dist_sq = (last_vector3f - last_atom_point).squaredNorm();
+							if (dist_sq < dump_dist_sq) {
+
+
+								to_dump.push_back(std::pair<EigenXform, int>(x, irot));
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+		uint64_t num_dump = to_dump.size() * dump_frac;
+		uint64_t dump_every = to_dump.size() / num_dump;
+
+
+		std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << num_dump << "..." << std::endl;
+
+
+		utility::io::ozstream out( file_name );
+		uint64_t dumped = 0;
+		for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
+			if ( i % dump_every != 0 ) {
+				continue;
+			}
+			EigenXform x = to_dump[i].first;
+			int irot = to_dump[i].second;
+
+
+			out << std::string("MODEL") << std::endl;
+
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
+
+            dumped ++;
+
+			out << std::string("ENDMDL") << std::endl;
+
+		}
+
+		out.close();
+
+
+
+    }
+
+
+
 
 };
 

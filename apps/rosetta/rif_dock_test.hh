@@ -79,6 +79,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, all_rif_rots_as_models_not_chains )
 
+	OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_near_pdb )
+	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
+	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
+
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
 	OPT_1GRP_KEY(  String     , rif_dock, output_tag )
@@ -233,6 +237,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::all_rif_rots_as_models_not_chains, "dump rif rots as models instead of chains, loses resnum if false", true );
 
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", "");
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 5 );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 0.001 );
+
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
 			NEW_OPT(  rif_dock::output_tag, "", "" );
@@ -340,6 +348,9 @@ struct RifDockOpt
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
 	bool        all_rif_rots_as_models_not_chains    ;
+	std::string dump_rifgen_near_pdb                 ;
+	float       dump_rifgen_near_pdb_dist            ;
+	float       dump_rifgen_near_pdb_frac            ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -481,6 +492,9 @@ struct RifDockOpt
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
 		all_rif_rots_as_models_not_chains      = option[rif_dock::all_rif_rots_as_models_not_chains  ]();
+		dump_rifgen_near_pdb                   = option[rif_dock::dump_rifgen_near_pdb               ]();
+		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
+		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
