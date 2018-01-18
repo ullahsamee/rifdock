@@ -99,7 +99,8 @@ struct RifBase
 
     virtual RifBaseKeyRange key_range() const = 0;
 
-    virtual bool dump_rotamers_near_points( Eigen::Vector3f const & search_point, Eigen::Vector3f const & last_atom_point, 
+    virtual bool dump_rotamers_near_points( Eigen::Vector3f const & nbr_point, Eigen::Vector3f const & last_atom_point, 
+                                           Eigen::Vector3f const & n_point, Eigen::Vector3f const & ca_point,
                                            std::string const & name3, float dump_dist, std::string const & file_name, 
                                            float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 

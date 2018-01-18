@@ -608,7 +608,20 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_rifgen_near_pdb));
 			core::conformation::Residue const & res = pose.residue(1);
 			std::string name3 = res.name3();
-			numeric::xyzVector<core::Real> nbr_xyz = res.xyz("CA");
+
+			numeric::xyzVector<core::Real> n_xyz = res.xyz("N");
+			Eigen::Vector3f n;
+			n[0] = n_xyz.x();
+			n[1] = n_xyz.y();
+			n[2] = n_xyz.z();
+
+			numeric::xyzVector<core::Real> ca_xyz = res.xyz("CA");
+			Eigen::Vector3f ca;
+			ca[0] = ca_xyz.x();
+			ca[1] = ca_xyz.y();
+			ca[2] = ca_xyz.z();
+
+			numeric::xyzVector<core::Real> nbr_xyz = res.nbr_atom_xyz();
 			Eigen::Vector3f search_point;
 			search_point[0] = nbr_xyz.x();
 			search_point[1] = nbr_xyz.y();
@@ -623,7 +636,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			std::stringstream fname;
 			fname << "rifgen_dump_" << opt.dump_rifgen_near_pdb << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
 
-			rif_ptrs.back()->dump_rotamers_near_points( search_point, last_atom, name3, dump_dist, fname.str(), dump_frac, rot_index_p );
+			rif_ptrs.back()->dump_rotamers_near_points( search_point, last_atom, n, ca, name3, dump_dist, fname.str(), dump_frac, rot_index_p );
 
 		}
 	}

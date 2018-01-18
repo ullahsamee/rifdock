@@ -238,7 +238,8 @@ public:
     }
 
 
-    bool dump_rotamers_near_points( Eigen::Vector3f const & search_point, Eigen::Vector3f const & last_atom_point, std::string const & name3,
+    bool dump_rotamers_near_points( Eigen::Vector3f const & nbr_point, Eigen::Vector3f const & last_atom_point, 
+                                           Eigen::Vector3f const & n_point, Eigen::Vector3f const & ca_point, std::string const & name3,
                                            float dump_dist, std::string const & file_name, float dump_frac,
                                            shared_ptr<RotamerIndex> rot_index_p ) const override {
 
@@ -263,7 +264,7 @@ public:
 		for( auto const & v : from->map_ ){
 			EigenXform x = from->hasher_.get_center( v.first );
 
-			float dist_sq = (x.translation() - search_point).squaredNorm();
+			float dist_sq = (x.translation() - nbr_point).squaredNorm();
 
 			if (dist_sq < coarse_dist_sq) {
 
@@ -280,18 +281,33 @@ public:
 
 						SchemeAtom ca = rot_index_p->rotamers_.at( irot ).atoms_[1];
 						Eigen::Vector3f ca_vector3f = x * ca.position();
-						dist_sq = (ca_vector3f - search_point).squaredNorm();
+						dist_sq = (ca_vector3f - ca_point).squaredNorm();
 
 						if (dist_sq < dump_dist_sq) {
 
-							SchemeAtom last_atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
-							Eigen::Vector3f last_vector3f = x * last_atom.position();
+							SchemeAtom n = rot_index_p->rotamers_.at( irot ).atoms_[0];
+							Eigen::Vector3f n_vector3f = x * n.position();
+							dist_sq = (n_vector3f - n_point).squaredNorm();
 
-							dist_sq = (last_vector3f - last_atom_point).squaredNorm();
 							if (dist_sq < dump_dist_sq) {
 
+								SchemeAtom nbr = rot_index_p->rotamers_.at( irot ).atoms_[3];
+								Eigen::Vector3f nbr_vector3f = x * nbr.position();
+								dist_sq = (nbr_vector3f - nbr_point).squaredNorm();
 
-								to_dump.push_back(std::pair<EigenXform, int>(x, irot));
+
+								if (dist_sq < dump_dist_sq) {
+
+									SchemeAtom last_atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
+									Eigen::Vector3f last_vector3f = x * last_atom.position();
+
+									dist_sq = (last_vector3f - last_atom_point).squaredNorm();
+									if (dist_sq < dump_dist_sq) {
+
+
+										to_dump.push_back(std::pair<EigenXform, int>(x, irot));
+									}
+								}
 							}
 						}
 					}
