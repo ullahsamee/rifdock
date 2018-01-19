@@ -122,9 +122,10 @@ dump_rif_result(
             typedef std::pair<float,int> PairFI;
             BOOST_FOREACH( PairFI const & p, rotscores ){
                 int const irot = p.second;
-                float const sc = p.first + scaffold_onebody_glob0.at( ires ).at( irot );
-                float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
-                if( sc < 0 || rescore < 0 ){
+                float const onebody = scaffold_onebody_glob0.at( ires ).at( irot );
+                float const sc = p.first + onebody;
+                float const rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+                if( sc < 0 || rescore + onebody < 0 ){
                     if (rdd.opt.all_rif_rots_as_models_not_chains) {
                         allout << "MODEL" << endl;
                     }
@@ -156,7 +157,7 @@ dump_rif_result(
                         std::cout << " " << oneletter;
                         std::cout << " score:" << F(7, 2, sc);
                         std::cout << " irot:" << I(3, irot);
-                        std::cout << " 1-body:" << F(7, 2, scaffold_onebody_glob0.at( ires ).at( irot ) );
+                        std::cout << " 1-body:" << F(7, 2, onebody );
                         std::cout << " rif score:" << F(7, 2, p.first);
                         std::cout << " rif rescore:" << F(7, 2, rescore);
                         std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second);
