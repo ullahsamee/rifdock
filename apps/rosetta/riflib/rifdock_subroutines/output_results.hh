@@ -51,6 +51,10 @@ dump_rif_result(
     std::string const & allrifrotsoutfile = ""
     ) {
 
+
+    using ObjexxFCL::format::F;
+    using ObjexxFCL::format::I;
+
     using namespace devel::scheme;
     using std::cout;
     using std::endl;
@@ -76,6 +80,19 @@ dump_rif_result(
 
 
     rdd.director->set_scene( selected_result.scene_index, iresl, *rdd.scene_minimal );
+
+    devel::scheme::ScoreRotamerVsTarget<
+        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+    > rot_tgt_scorer;
+    rot_tgt_scorer.rot_index_p_ = rdd.rot_index_p;
+    rot_tgt_scorer.target_field_by_atype_ = rdd.target_field_by_atype;
+    rot_tgt_scorer.target_donors_ = *rdd.target_donors;
+    rot_tgt_scorer.target_acceptors_ = *rdd.target_acceptors;
+    rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
+    rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
+    rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+
+
 
     EigenXform xposition1 = rdd.scene_minimal->position(1);
     EigenXform xalignout = EigenXform::Identity();
@@ -133,9 +150,17 @@ dump_rif_result(
                     std::pair< int, int > sat1_sat2 = rdd.rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
 
                     if ( ! quiet ) {
-                        std::cout << "Brian: " << oneletter << " " << sat1_sat2.first << " " << sat1_sat2.second << " sc: " << sc;
-                        std::cout << " ires: " << ires << " irot: " << irot << " seqpos: " << ires+1;
-                        std::cout << boost::str(boost::format(" rif score: %.2f 1-body: %.2f")%p.first%scaffold_onebody_glob0.at( ires ).at( irot )) << std::endl;
+                        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+
+                        std::cout << "seqpos:" << I(3, ires+1);
+                        std::cout << " " << oneletter;
+                        std::cout << " score:" << F(7, 2, sc);
+                        std::cout << " irot:" << I(3, irot);
+                        std::cout << " 1-body:" << F(7, 2, scaffold_onebody_glob0.at( ires ).at( irot ) );
+                        std::cout << " rif score:" << F(7, 2, p.first);
+                        std::cout << " rif rescore:" << F(7, 2, rescore);
+                        std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second);
+                        std::cout << std::endl;
                     }
 
                     if (sat1_sat2.first > -1) {
