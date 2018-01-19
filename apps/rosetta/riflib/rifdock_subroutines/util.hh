@@ -17,6 +17,11 @@
 #include <utility/vector1.hh>
 #include <scheme/kinematics/Director.hh>
 
+#include <rif_dock_test.hh>
+#include <riflib/rotamer_energy_tables.hh>
+#include <riflib/RifFactory.hh>
+
+
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
@@ -169,6 +174,41 @@ struct tmplSearchPointWithRots {
         std::swap( a.pose_, b.pose_ );
     }
 };
+
+
+
+template<class DirectorBase, class ScaffoldProvider >
+struct RifDockData {
+    RifDockOpt & opt;
+    std::vector<float> & RESLS;
+    DirectorBase & director;
+    std::vector< devel::scheme::ScenePtr > & scene_pt;
+    devel::scheme::ScenePtr & scene_minimal;
+    std::vector<devel::scheme::SimpleAtom> & target_simple_atoms;
+    std::vector< devel::scheme::VoxelArrayPtr > & target_field_by_atype;
+    std::vector< std::vector< devel::scheme::VoxelArrayPtr > > const * target_bounding_by_atype;
+    std::vector< ::scheme::chemical::HBondRay > * target_donors;
+    std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
+    float & target_redundancy_filter_rg;
+    core::pose::Pose & target;
+    shared_ptr< devel::scheme::RotamerIndex > & rot_index_p;
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager;
+    std::vector< devel::scheme::ObjectivePtr > & objectives;
+    devel::scheme::ObjectivePtr & packing_objective;
+    ::scheme::search::HackPackOpts & packopts;
+    std::vector<shared_ptr<devel::scheme::RifBase> > & rif_ptrs;
+
+    shared_ptr<ScaffoldProvider> scaffold_provider;
+};
+
+
+
+
+
+
+
+
+
 
 
 #endif

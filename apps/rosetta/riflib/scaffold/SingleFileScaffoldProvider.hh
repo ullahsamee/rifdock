@@ -59,6 +59,9 @@ struct SingleFileScaffoldProvider :
 
     ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
     
+    void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
+
+    
     ParametricSceneConformationCOP conformation_;
     // core::pose::PoseCOP pose_;
 

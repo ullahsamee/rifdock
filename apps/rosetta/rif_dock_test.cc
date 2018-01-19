@@ -80,7 +80,6 @@
 	#include <riflib/rifdock_subroutines/util.hh>
 	
 	#include <riflib/rifdock_subroutines/hsearch_original.hh>	
-	#include <riflib/rifdock_subroutines/hsearch_morph_test.hh>
 	#include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
 
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
@@ -138,19 +137,7 @@ int main(int argc, char *argv[]) {
 
 
 		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
-	} else if (opt.scaff_search_mode == "test") {
-		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
-		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
 
-		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
-
-		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
-
-		if (true) {
-			hsearch = &hsearch_morph_test<DirectorBase, ScaffoldProvider>;
-		}
-
-		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
 	} else if (opt.scaff_search_mode == "morph_dive_pop") {
 		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
 		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
@@ -780,11 +767,35 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 			}
 
-
-
-
-			shared_ptr<std::vector< SearchPointWithRots >> packed_results_p;
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
+			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
+
+			RifDockData<DirectorBase, ScaffoldProvider> rdd {
+						opt,
+						RESLS,
+						director,
+						scene_pt,
+						scene_minimal,
+						target_simple_atoms,
+						target_field_by_atype,
+						&target_bounding_by_atype,
+						&target_donors,
+ 						&target_acceptors,
+ 						target_redundancy_filter_rg,
+ 						target,
+ 						rot_index_p,
+ 						rotrf_table_manager,
+ 						objectives,
+ 						packing_objective,
+ 						packopts,
+ 						rif_ptrs,
+ 						scaffold_provider
+			};
+
+
+
+
+			std::vector< SearchPointWithRots > packed_results;
 			int64_t non0_space_size = 0;
 			int64_t npack = 0;
 			int64_t total_search_effort = 0;
@@ -799,23 +810,11 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 				{
 					HsearchData<DirectorBase, ScaffoldProvider> data {
-						opt,
-						RESLS,
-						director,
 						total_search_effort,
-						scene_pt,
-						scene_minimal,
-						target_redundancy_filter_rg,
-						target,
-						rot_index_p,
-						objectives,
 						non0_space_size,
-						scaffold_provider,
-						rif_ptrs
-
-
 					};
-					bool hsearch_success = (*hsearch)( hsearch_results_p, data );
+
+					bool hsearch_success = (*hsearch)( rdd, data, hsearch_results_p );
 					if ( ! hsearch_success ) continue;
 				}
 
@@ -823,60 +822,30 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				time_rif += elapsed_seconds_rif.count();
 
 
-
-
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
+				
 
-		        {
-		        	HackPackData<DirectorBase,ScaffoldProvider> data {
-		        		opt,
-						RESLS,
-						director,
-						total_search_effort,
-						scene_pt,
-						scene_minimal,
-						target_simple_atoms,
-						npack,
-						packopts,
-						packing_objective,
-						hsearch_results_p,
-						make2bopts,
-						rot_index_p,
-						rotrf_table_manager,
-						scaffold_provider
-					};
-		        	hack_pack( packed_results_p, data );
+				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
+		        if (opt.hack_pack) {
+		        	hack_pack( hsearch_results_p, packed_results, rdd, total_search_effort, npack );
+		        } else {
+		        	packed_results = *hsearch_results_p;
 		        }
 
 				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
 				time_pck += elapsed_seconds_pack.count();
 			}
-			std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
+			// std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
 
 
 			bool const do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
 
 			if( do_rosetta_score && opt.hack_pack ){
 
-
-				RosettaRescoreData<DirectorBase,ScaffoldProvider> data {
-				    opt,
-					RESLS,
-					director,
-					rot_index,
-					target,
-					total_search_effort,
-					packed_results,
-					scene_pt,
-					target_field_by_atype,
-					time_ros,
-					scaffold_provider
-				};
-
-				rosetta_rescore( data );
+				rosetta_rescore( packed_results, rdd, total_search_effort, time_ros );
 
 			}
 
@@ -885,23 +854,9 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			print_header( "compile and filter results" ); ///////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-
 			std::vector< RifDockResult > selected_results, allresults;
-			{
-				CompileAndFilterResultsData<DirectorBase,ScaffoldProvider> data {
-					opt, 
-					packed_results, 
-					RESLS, 
-					scene_pt, 
-					director, 
-					target_redundancy_filter_rg, 
-					dump_lock,
-					objectives, 
-					scaffold_provider
-				};
+			compile_and_filter_results( packed_results, selected_results, allresults, rdd, dump_lock );
 
-				compile_and_filter_results( selected_results, allresults, data );
-			}
 
 
 			std::cout << "allresults.size(): " << allresults.size() << " selected_results.size(): " << selected_results.size() << std::endl;
@@ -923,21 +878,8 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				; // nothing with all results ATM
 			}
 
-			{
-				OutputResultsData<DirectorBase,ScaffoldProvider> data { opt, 
-					RESLS, 
-					director, 
-					selected_results,
-					npack,
-					dokout,
-					scene_minimal,
-					rif_ptrs,
-					rot_index,
-					target,
-					scaffold_provider
-				};
-				output_results(data);
-			}
+			output_results(selected_results, rdd, dokout, npack);
+			
 			
 
 		} catch( std::exception const & ex ) {

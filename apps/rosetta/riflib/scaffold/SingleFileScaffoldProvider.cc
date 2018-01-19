@@ -98,6 +98,11 @@ SingleFileScaffoldProvider::get_representative_scaffold_index() {
 }
 
 
+void 
+SingleFileScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) {
+    get_data_cache_slow( i )->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+}
+
 
 
 }}

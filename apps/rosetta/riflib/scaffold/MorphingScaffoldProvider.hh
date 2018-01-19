@@ -86,6 +86,8 @@ struct MorphingScaffoldProvider :
 
     ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
 
+    void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
+
 
     void test_make_children(::scheme::scaffold::TreeIndex ti);
 

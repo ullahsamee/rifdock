@@ -48,6 +48,8 @@ struct ScaffoldProviderBase {
 
     virtual ScaffoldIndex get_representative_scaffold_index() = 0;
 
+    virtual void setup_twobody_tables( ScaffoldIndex i ) = 0;
+
 };
 
 template<typename _Scaffold, typename _ScaffoldIndex, typename _ScaffoldIndexLimits>

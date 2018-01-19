@@ -55,6 +55,8 @@ struct Baseline9AScaffoldProvider :
 
     ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
 
+    void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
+
 
 private:
 
