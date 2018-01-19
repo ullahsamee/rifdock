@@ -123,7 +123,8 @@ dump_rif_result(
             BOOST_FOREACH( PairFI const & p, rotscores ){
                 int const irot = p.second;
                 float const sc = p.first + scaffold_onebody_glob0.at( ires ).at( irot );
-                if( sc < 0 ){
+                float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+                if( sc < 0 || rescore < 0 ){
                     if (rdd.opt.all_rif_rots_as_models_not_chains) {
                         allout << "MODEL" << endl;
                     }
@@ -150,7 +151,6 @@ dump_rif_result(
                     std::pair< int, int > sat1_sat2 = rdd.rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
 
                     if ( ! quiet ) {
-                        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
 
                         std::cout << "seqpos:" << I(3, ires+1);
                         std::cout << " " << oneletter;
