@@ -263,17 +263,17 @@ struct RotamerScores {
 	}
 
 
-	void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const {
-		for( int i = 0; i < N; ++i ){
-			if ( rotscores_[i].empty()) break;
+	// void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const {
+	// 	for( int i = 0; i < N; ++i ){
+	// 		if ( rotscores_[i].empty()) break;
 
-			uint64_t irot = rotscores_[i].rotamer();
+	// 		uint64_t irot = rotscores_[i].rotamer();
 
 
-			out << rot_index_p->resname( irot ) << " " << rotscores_[i].score() << std::endl;
-			// rotscores_[i].super_print( out, rot_index_p );
-		}
-	}
+	// 		out << rot_index_p->resname( irot ) << " " << rotscores_[i].score() << std::endl;
+	// 		// rotscores_[i].super_print( out, rot_index_p );
+	// 	}
+	// }
 	// void add_rotamer( Data rot, float score ){
 		// add_rotamer( RotScore(rot,score) );
 	// }

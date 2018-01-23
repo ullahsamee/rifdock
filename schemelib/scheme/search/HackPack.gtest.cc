@@ -15,7 +15,7 @@ TEST( HackPack, create_empty_packer ){
 		::scheme::objective::storage::TwoBodyTable<float> twob(1,1);
 		HackPackOpts opts;
 
-		HackPack packer( twob, opts, 0 );
+		HackPack packer( opts, 0 );
 
 
 }

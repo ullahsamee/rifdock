@@ -111,7 +111,7 @@ TEST(SceneObjective,basic){
 	ObjFun score;
 
 	typedef m::vector< ADI, ADC > Actors;
-	typedef Scene<Actors,X1dim,size_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,size_t> Scene;
 
 	Scene scene(3);
 	ASSERT_EQ( score(scene).sum(), 0 );
@@ -155,7 +155,7 @@ TEST(SceneObjective,symmetry){
 	ObjFun score;
 
 	typedef m::vector< ADI, ADC > Actors;
-	typedef Scene<Actors,X1dim,size_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,size_t> Scene;
 
 	Scene scene(2);
 	scene.add_symframe(10);
@@ -243,7 +243,7 @@ TEST( SceneObjective, big_scene_performance ){
 	ObjFun score;
 
 	typedef m::vector< ADI, ADC > Actors;
-	typedef Scene<Actors,X1dim,uint32_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,uint32_t> Scene;
 
 	ScoreADIADI obj;
 	Config c;

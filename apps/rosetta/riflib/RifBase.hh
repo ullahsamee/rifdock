@@ -68,7 +68,7 @@ struct RifBase
     virtual void get_rotamers_for_xform( EigenXform const & x, std::vector< std::pair< float, int > > & rotscores ) const = 0;
 	virtual void get_rotamer_ids_in_use( std::vector<bool> & using_rot ) const = 0;
 	virtual void print( std::ostream & out ) const = 0;
-    virtual void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const = 0;
+    // virtual void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const = 0;
 	virtual void collision_analysis( std::ostream & out ) const = 0;
 	virtual std::string value_name() const = 0;
 

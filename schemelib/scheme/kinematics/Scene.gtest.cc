@@ -79,7 +79,7 @@ void test_iterator_visitor_agree_for_interaction(Scene const & scene){
 
 void test_iterator_visitor_agree(std::vector<int> nbod, int nsym){
 	typedef m::vector< ADI, ADC, FixedActor > Actors;
-	typedef Scene<Actors,X1dim,size_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,size_t> Scene;
 	typedef size_t Index;
 	typedef std::pair<size_t,size_t> Index2;
 	typedef std::pair<Index2,Index2> Index4;
@@ -192,7 +192,7 @@ TEST(Scene,test_fixed_actor){
 	objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
 
 	typedef m::vector< ADI, FixedActor > Actors;
-	typedef Scene<Actors,X1dim,uint32_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,uint32_t> Scene;
 
 	Scene scene(2);
 	scene.add_actor( 0, FixedActor(1.0));
@@ -230,7 +230,7 @@ TEST( Scene, serialization ){
 		objective::ObjectiveVisitor<ObjADIFixed,Config> visitor2(o2,c);
 
 		typedef m::vector< ADI, FixedActor > Actors;
-		typedef Scene<Actors,X1dim,uint32_t> Scene;
+		typedef Scene<impl::Conformation<Actors>,X1dim,uint32_t> Scene;
 
 		Scene scene(2);
 		scene.mutable_conformation_asym(0).add_actor(FixedActor(1.0));
@@ -252,7 +252,7 @@ TEST( Scene, serialization ){
 TEST( Scene, base_class_basic_operations ){
 
 		typedef m::vector< ADI, FixedActor > Actors;
-		typedef Scene<Actors,X1dim,uint32_t> Scene;
+		typedef Scene<impl::Conformation<Actors>,X1dim,uint32_t> Scene;
 
 		Scene scene(2);
 

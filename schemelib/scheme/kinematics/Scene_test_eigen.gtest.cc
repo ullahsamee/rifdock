@@ -128,7 +128,7 @@ TEST(Scene_eigen,relative_relations_preserved){
 	ObjFun score;
 
 	typedef m::vector< Xactor > Actors;
-	typedef Scene<Actors,Xform> Scene;
+	typedef Scene<impl::Conformation<Actors>,Xform> Scene;
 
 	Scene scene(2);
 	scene.set_position(0,Xform(Vec(10, 0, 0),2,UX));

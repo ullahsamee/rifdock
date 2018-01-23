@@ -184,7 +184,7 @@ public:
 		__gnu_parallel::for_each( xmap_ptr_->map_.begin(), xmap_ptr_->map_.end(), call_sort_rotamers<typename XMap::Map::value_type> );
 	}
 
-	void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const override { xmap_ptr_->super_print( out, rot_index_p  ); }
+	// void super_print( std::ostream & out, shared_ptr< RotamerIndex > rot_index_p ) const override { xmap_ptr_->super_print( out, rot_index_p  ); }
 	void print( std::ostream & out ) const override { out << (*xmap_ptr_) << std::endl; }
 	std::string value_name() const override { return XMap::Value::name(); }
 

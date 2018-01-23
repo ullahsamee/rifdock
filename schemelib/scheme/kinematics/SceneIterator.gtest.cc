@@ -22,7 +22,7 @@ using numeric::X1dim;
 	typedef actor::ActorConcept<X1dim,char> ADC;	
 	typedef m::vector< ADI, ADC > Actors;
 
-	typedef Scene<Actors,X1dim,size_t> Scene;
+	typedef Scene<impl::Conformation<Actors>,X1dim,size_t> Scene;
 	typedef size_t Index;
 	typedef std::pair<size_t,size_t> Index2;
 	typedef std::pair<Index2,Index2> Index4;
@@ -1031,7 +1031,7 @@ using numeric::X1dim;
 // 	typedef m::vector< ADI, ADC > Actors;
 // 	typedef m::vector< ADI, std::pair<ADI,ADC> > Interactions;
 
-// 	typedef Scene<Actors,X1dim,size_t> Scene;
+// 	typedef Scene<impl::Conformation<Actors>,X1dim,size_t> Scene;
 // 	typedef size_t Index;
 // 	typedef std::pair<size_t,size_t> Index2;
 // 	typedef std::pair<Index2,Index2> Index4;

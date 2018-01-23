@@ -2,6 +2,7 @@
 #define INCLUDED_kinematics_Director_meta.HH
 
 #include <scheme/util/meta/util.hh>
+#include <scheme/types.hh>
 
 
 namespace scheme {
