@@ -76,7 +76,6 @@
 
 
 // refactor
-	#include <riflib/rifdock_subroutines/meta.hh>
 	#include <riflib/rifdock_subroutines/util.hh>
 	
 	#include <riflib/rifdock_subroutines/hsearch_original.hh>	

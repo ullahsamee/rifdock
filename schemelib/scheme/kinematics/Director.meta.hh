@@ -33,5 +33,7 @@ using _DirectorBase = shared_ptr< ::scheme::kinematics::Director<_DirectorPositi
     _DirectorIndex<__Director>
      >>;
 
+template <class __Director>
+using _ScaffoldIndexFromDirector = typename _DirectorBigIndex<__Director>::type::second_type;
 
 #endif

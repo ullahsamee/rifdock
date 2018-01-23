@@ -9,8 +9,6 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
-#include <riflib/rifdock_subroutines/meta.hh>
-
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
