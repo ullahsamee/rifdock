@@ -19,6 +19,7 @@
 
 #include <riflib/rif/RifAccumulators.hh>
 
+
 #include <scheme/objective/hash/XformMap.hh>
 #include <scheme/objective/storage/RotamerScores.hh>
 
@@ -238,10 +239,39 @@ public:
     }
 
 
-    bool dump_rotamers_near_points( Eigen::Vector3f const & nbr_point, Eigen::Vector3f const & last_atom_point, 
-                                           Eigen::Vector3f const & n_point, Eigen::Vector3f const & ca_point, std::string const & name3,
-                                           float dump_dist, std::string const & file_name, float dump_frac,
-                                           shared_ptr<RotamerIndex> rot_index_p ) const override {
+    // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
+    bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
+                                        float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+        std::string name3 = res.name3();
+
+
+        std::pair<int, std::string> cb = ( name3 == "GLY" ? std::pair<int, std::string> {1, "CA"} : std::pair<int, std::string>{3, "CB"});
+        // rif-number, rosetta number
+        std::vector<std::pair<int, std::string>> align_pairs { 
+            {0, "N"},
+            {1, "CA"},
+            cb
+        };
+
+        // prepare listed atoms
+        std::vector<Eigen::Vector3f> scaff_atoms;
+        for ( int i = 0; i < align_pairs.size(); i++ ) {
+            std::pair<int, std::string> pair = align_pairs[i];
+            numeric::xyzVector<core::Real> xyz = res.xyz(pair.second);
+            Eigen::Vector3f vec;
+            vec[0] = xyz.x();
+            vec[1] = xyz.y();
+            vec[2] = xyz.z();
+            scaff_atoms.push_back(vec);
+        }
+        // prepare last atom
+        numeric::xyzVector<core::Real> xyz = res.xyz(res.natoms());
+        Eigen::Vector3f vec;
+        vec[0] = xyz.x();
+        vec[1] = xyz.y();
+        vec[2] = xyz.z();
+        scaff_atoms.push_back(vec);
 
     	std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
     	const RifBase * base = this;
@@ -259,60 +289,63 @@ public:
 
 		std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
 
-		// old
-		int progress0 = 0;
+
 		for( auto const & v : from->map_ ){
 			EigenXform x = from->hasher_.get_center( v.first );
 
-			float dist_sq = (x.translation() - nbr_point).squaredNorm();
+			float dist_sq = (x.translation() - scaff_atoms[2]).squaredNorm();
 
-			if (dist_sq < coarse_dist_sq) {
+            if (dist_sq > coarse_dist_sq) continue;
 
-				typename XMap::Value const & rotscores = from->operator[]( x );
-				static int const Nrots = XMap::Value::N;
-				for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-					if( rotscores.empty(i_rs) ) {
-						break;
-					}
+            typename XMap::Value const & rotscores = from->operator[]( x );
+            static int const Nrots = XMap::Value::N;
+            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                if( rotscores.empty(i_rs) ) {
+                    break;
+                }
 
-					int irot = rotscores.rotamer(i_rs);
-					if (irot >= index_bounds.first && irot < index_bounds.second ) {
+                int irot = rotscores.rotamer(i_rs);
+                if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
 
-
-						SchemeAtom ca = rot_index_p->rotamers_.at( irot ).atoms_[1];
-						Eigen::Vector3f ca_vector3f = x * ca.position();
-						dist_sq = (ca_vector3f - ca_point).squaredNorm();
-
-						if (dist_sq < dump_dist_sq) {
-
-							SchemeAtom n = rot_index_p->rotamers_.at( irot ).atoms_[0];
-							Eigen::Vector3f n_vector3f = x * n.position();
-							dist_sq = (n_vector3f - n_point).squaredNorm();
-
-							if (dist_sq < dump_dist_sq) {
-
-								SchemeAtom nbr = rot_index_p->rotamers_.at( irot ).atoms_[3];
-								Eigen::Vector3f nbr_vector3f = x * nbr.position();
-								dist_sq = (nbr_vector3f - nbr_point).squaredNorm();
+                // check listed atoms
+                bool all_good = true;
+                for ( int i = 0; i < align_pairs.size(); i++ ) {
+                    int rif_atom_no = align_pairs[i].first;
+                    Eigen::Vector3f scaff_vec = scaff_atoms[i];
 
 
-								if (dist_sq < dump_dist_sq) {
+                    SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_[rif_atom_no];
+                    Eigen::Vector3f atom_vec = x * atom.position();
+                    dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-									SchemeAtom last_atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
-									Eigen::Vector3f last_vector3f = x * last_atom.position();
+                    if (dist_sq > dump_dist_sq) {
+                        all_good = false;
+                        break;
+                    }
+                }
 
-									dist_sq = (last_vector3f - last_atom_point).squaredNorm();
-									if (dist_sq < dump_dist_sq) {
+                if ( ! all_good ) continue;
 
-										float score = rotscores.score(i_rs);
+                // check last atom
+                Eigen::Vector3f scaff_vec = scaff_atoms.back();
+                SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
+                Eigen::Vector3f atom_vec = x * atom.position();
+                dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-										to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(x, std::pair<int, float>(irot, score)));
-									}
-								}
-							}
-						}
-					}
-				}
+                if (dist_sq > dump_dist_sq) continue;
+                
+
+
+
+
+
+
+
+				float score = rotscores.score(i_rs);
+
+				to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(x, std::pair<int, float>(irot, score)));
+			
+			
 			}
 		}
 
