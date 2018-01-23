@@ -176,6 +176,19 @@ struct tmplSearchPointWithRots {
 };
 
 
+// Convenience templates for the above templated containers
+
+template <class __Director>
+using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
+
+template <class __Director>
+using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
+
+template <class __Director>
+using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;
+
+
+
 
 template<class DirectorBase, class ScaffoldProvider >
 struct RifDockData {

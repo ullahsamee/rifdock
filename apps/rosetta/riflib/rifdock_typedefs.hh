@@ -33,12 +33,16 @@ struct RIFAnchor {
 struct ScaffoldDataCache;
 
 
+// Typedefs that should never change
 
 typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
 
 typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
+
+
+// Typedefs related to the Hierarchical search
 
 typedef ::scheme::actor::Score_Voxel_vs_Atom<
         VoxelActor,
@@ -60,17 +64,23 @@ typedef ::scheme::kinematics::impl::Conformation<
 typedef shared_ptr<ParametricSceneConformation> ParametricSceneConformationOP;
 typedef shared_ptr<ParametricSceneConformation const > ParametricSceneConformationCOP;
 
-// template<typename _ScaffoldProvider>
-// using ScaffoldProviderParametricScene ::scheme::kinematics::ScaffoldProviderScene<
-//         _ScaffoldProvider,
-//         ParametricSceneConformation,
-//         EigenXform
-//     >;
+
 typedef ::scheme::kinematics::Scene<
         ParametricSceneConformation,
         EigenXform
     > ParametricScene;
     
+
+
+
+
+
+
+
+
+
+
+
 
 }
 }

@@ -52,11 +52,6 @@ struct ScaffoldProviderBase {
 
 };
 
-template<typename _Scaffold, typename _ScaffoldIndex, typename _ScaffoldIndexLimits>
-using ScaffoldProviderOP = shared_ptr<ScaffoldProviderBase< _Scaffold, _ScaffoldIndex, _ScaffoldIndexLimits > >;
-template<typename _Scaffold, typename _ScaffoldIndex, typename _ScaffoldIndexLimits>
-using ScaffoldProviderCOP = shared_ptr<ScaffoldProviderBase< _Scaffold, _ScaffoldIndex, _ScaffoldIndexLimits > const >;
-
 
 // Key Assumptions of this class:
 
@@ -123,11 +118,6 @@ protected:
 };
 
 
-
-template<typename _Scaffold>
-using TreeProviderOP = shared_ptr<TreeScaffoldProvider< _Scaffold> >;
-template<typename _Scaffold>
-using TreeProviderCOP = shared_ptr<TreeScaffoldProvider< _Scaffold> const >;
 
 inline
 uint64_t scaffold_index_default_value(uint64_t) {
