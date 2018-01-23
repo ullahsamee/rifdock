@@ -77,9 +77,9 @@ SingleFileScaffoldProvider::get_scaffold(::scheme::scaffold::TreeIndex i) {
 }
 
 
-uint64_t 
+::scheme::scaffold::TreeLimits 
 SingleFileScaffoldProvider::get_scaffold_index_limits() const {
-    return 1;
+    return ::scheme::scaffold::TreeLimits(1, 1);
 }
 
 

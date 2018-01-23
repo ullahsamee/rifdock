@@ -17,11 +17,10 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class DirectorBase, class ScaffoldProvider>
 void
 rosetta_rescore( 
-    std::vector< _SearchPointWithRots<DirectorBase> > & packed_results,
-    RifDockData<DirectorBase, ScaffoldProvider> & rdd,
+    std::vector< SearchPointWithRots > & packed_results,
+    RifDockData & rdd,
     int64_t total_search_effort, 
     double & time_ros 
     ) {
@@ -43,7 +42,6 @@ rosetta_rescore(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
-    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 

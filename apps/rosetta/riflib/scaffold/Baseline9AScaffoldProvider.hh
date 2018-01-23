@@ -34,7 +34,7 @@ namespace scheme {
 
 
 struct Baseline9AScaffoldProvider :
-    public ::scheme::scaffold::ScaffoldProviderBase<ParametricSceneConformation, ::scheme::scaffold::TreeIndex, uint64_t> {
+    public ::scheme::scaffold::TreeScaffoldProvider<ParametricSceneConformation> {
 
 
     Baseline9AScaffoldProvider( 
@@ -47,7 +47,7 @@ struct Baseline9AScaffoldProvider :
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;
 
-    uint64_t get_scaffold_index_limits() const override;
+    ::scheme::scaffold::TreeLimits get_scaffold_index_limits() const override;
 
     ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
 

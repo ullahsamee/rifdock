@@ -69,17 +69,14 @@
 
 /// Brian
 	#include <scheme/objective/hash/XformHash.hh>
-	#include <riflib/scaffold/SingleFileScaffoldProvider.hh>
-	#include <riflib/scaffold/MorphingScaffoldProvider.hh>
-	#include <riflib/scaffold/Baseline9AScaffoldProvider.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
+	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
 
 
 // refactor
 	#include <riflib/rifdock_subroutines/util.hh>
 	
-	#include <riflib/rifdock_subroutines/hsearch_original.hh>	
-	#include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
+	#include <riflib/rifdock_subroutines/HSearchFactory.hh>	
 
 	#include <riflib/rifdock_subroutines/hack_pack.hh>
 	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
@@ -93,14 +90,9 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
-template<class HSearchDirector, class ScaffoldProvider, class HsearchFunction >
-int old_main( RifDockOpt opt, HsearchFunction hsearch);
-
-
-
-
 
 int main(int argc, char *argv[]) {
+
 
 	register_options();
 	devel::init(argc,argv);
@@ -112,68 +104,6 @@ int main(int argc, char *argv[]) {
 	utility::file::create_directory_recursive( opt.outdir );
 
 
-	using NestOriTrans6D = ::scheme::nest::NEST< 6,
-								  devel::scheme::EigenXform,
-								  ::scheme::nest::pmap::OriTransMap,
-								  ::scheme::util::StoreNothing, // do not store a transform in the Nest
-								  uint64_t,
-								  float,
-								  false // do not inherit from NestBase
-								 >;
-
-	using DirectorOriTrans6D = ::scheme::kinematics::NestDirector< NestOriTrans6D >;
-
-	// typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
-
-	if (opt.scaff_search_mode == "default") {
-
-		typedef devel::scheme::SingleFileScaffoldProvider ScaffoldProvider;
-		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
-
-		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
-
-		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
-
-
-		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
-
-	} else if (opt.scaff_search_mode == "morph_dive_pop") {
-		typedef devel::scheme::MorphingScaffoldProvider ScaffoldProvider;
-		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
-
-		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
-
-		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
-
-		if (true) {
-			hsearch = &hsearch_morph_dive_pop<DirectorBase, ScaffoldProvider>;
-		}
-
-		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
-	} else if (opt.scaff_search_mode == "nineA_baseline") {
-		typedef devel::scheme::Baseline9AScaffoldProvider ScaffoldProvider;
-		typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ScaffoldProvider> DirectorScaffoldOriTrans6D;
-
-		typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
-
-		auto hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
-
-		if (true) {
-			hsearch = &hsearch_original<DirectorBase, ScaffoldProvider>;
-		}
-
-		return old_main<DirectorScaffoldOriTrans6D, ScaffoldProvider>( opt, hsearch );
-	} else {
-		return 0;
-	}
-
-
-}
-
-template<class _HSearchDirector, class ScaffoldProvider, class HsearchFunction>
-int old_main( RifDockOpt opt, HsearchFunction hsearch) {
-
-	typedef _HSearchDirector HSearchDirector;
 
 	#ifdef USE_OPENMP
 		omp_lock_t cout_lock, dump_lock;
@@ -201,13 +131,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 	typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
-		typedef _DirectorBase<HSearchDirector> DirectorBase;
 		typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
-
-		typedef _RifDockResult<HSearchDirector> RifDockResult;
-		typedef _SearchPoint<HSearchDirector> SearchPoint;
-		typedef _SearchPointWithRots<HSearchDirector> SearchPointWithRots;
-		typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
 		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
@@ -651,7 +575,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 
 
 
-			ScaffoldProviderOP scaffold_provider = make_shared<ScaffoldProvider>(
+			ScaffoldProviderOP scaffold_provider = get_scaffold_provider(
 				iscaff,
 				rot_index_p,
 				opt,
@@ -737,7 +661,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<HSearchDirector> director_concrete = make_shared<HSearchDirector>( scaffold_provider, rot_resl_deg0, lb, ub, nc, 1 );
+				shared_ptr<DirectorScaffoldOriTrans6D> director_concrete = make_shared<DirectorScaffoldOriTrans6D>( scaffold_provider, rot_resl_deg0, lb, ub, nc, 1 );
 				std::cout << "Director:" << endl << *director_concrete << endl;
 				director = director_concrete;
 				std::cout << "nest size0:    " << ::scheme::kinematics::bigindex_nest_part(director->size(0)) << std::endl;
@@ -769,7 +693,7 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
 
-			RifDockData<DirectorBase, ScaffoldProvider> rdd {
+			RifDockData rdd {
 						opt,
 						RESLS,
 						director,
@@ -808,12 +732,12 @@ int old_main( RifDockOpt opt, HsearchFunction hsearch) {
 			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
 
 				{
-					HsearchData<DirectorBase, ScaffoldProvider> data {
+					HSearchData data {
 						total_search_effort,
 						non0_space_size,
 					};
 
-					bool hsearch_success = (*hsearch)( rdd, data, hsearch_results_p );
+					bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
 					if ( ! hsearch_success ) continue;
 				}
 

@@ -17,32 +17,11 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
-template<class DirectorBase, class ScaffoldProvider>
-void
-dump_search_point(
-    RifDockData<DirectorBase, ScaffoldProvider> & rdd,
-    _SearchPoint<DirectorBase> const & search_point, 
-    std::string const & pdboutfile, 
-    int iresl,
-    bool quiet) {
 
-    typedef _RifDockResult<DirectorBase> RifDockResult;
-
-    RifDockResult result;
-    result.scene_index = search_point.index;
-
-    dump_rif_result( rdd, result, pdboutfile, iresl, quiet, "", "" );
-}
-
-
-
-
-
-template<class DirectorBase, class ScaffoldProvider>
 void
 dump_rif_result(
-    RifDockData<DirectorBase, ScaffoldProvider> & rdd,
-    _RifDockResult<DirectorBase> const & selected_result, 
+    RifDockData & rdd,
+    RifDockResult const & selected_result, 
     std::string const & pdboutfile, 
     int iresl,
     bool quiet = true,
@@ -250,12 +229,28 @@ dump_rif_result(
 } // end crappy pdb io
 
 
+void
+dump_search_point(
+    RifDockData & rdd,
+    SearchPoint const & search_point, 
+    std::string const & pdboutfile, 
+    int iresl,
+    bool quiet) {
 
-template<class DirectorBase,class ScaffoldProvider>
+
+    RifDockResult result;
+    result.scene_index = search_point.index;
+
+    dump_rif_result( rdd, result, pdboutfile, iresl, quiet, "", "" );
+}
+
+
+
+
 void
 output_results(
-    std::vector< _RifDockResult<DirectorBase> > & selected_results,
-    RifDockData<DirectorBase, ScaffoldProvider> & rdd,
+    std::vector< RifDockResult > & selected_results,
+    RifDockData & rdd,
     utility::io::ozstream & dokout,
     int64_t npack) {
 

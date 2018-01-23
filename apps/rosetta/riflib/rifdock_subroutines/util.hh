@@ -180,21 +180,25 @@ struct tmplSearchPointWithRots {
 
 template <class __Director>
 using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
+typedef _SearchPointWithRots<::devel::scheme::DirectorBase> SearchPointWithRots;
 
 template <class __Director>
 using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
+typedef _RifDockResult<::devel::scheme::DirectorBase> RifDockResult;
 
 template <class __Director>
 using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;
+typedef _SearchPoint<::devel::scheme::DirectorBase> SearchPoint;
 
 
 
 
-template<class DirectorBase, class ScaffoldProvider >
+
+
 struct RifDockData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
-    DirectorBase & director;
+    ::devel::scheme::DirectorBase & director;
     std::vector< devel::scheme::ScenePtr > & scene_pt;
     devel::scheme::ScenePtr & scene_minimal;
     std::vector<devel::scheme::SimpleAtom> & target_simple_atoms;
@@ -211,11 +215,8 @@ struct RifDockData {
     ::scheme::search::HackPackOpts & packopts;
     std::vector<shared_ptr<devel::scheme::RifBase> > & rif_ptrs;
 
-    shared_ptr<ScaffoldProvider> scaffold_provider;
+    ::devel::scheme::ScaffoldProviderOP scaffold_provider;
 };
-
-
-
 
 
 

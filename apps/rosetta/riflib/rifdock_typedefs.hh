@@ -18,6 +18,10 @@
 #include <scheme/actor/VoxelActor.hh>
 #include <scheme/actor/Atom.hh>
 #include <scheme/kinematics/Scene.hh>
+#include <scheme/scaffold/ScaffoldProviderBase.hh>
+#include <scheme/nest/NEST.hh>
+#include <scheme/nest/pmap/OriTransMap.hh>
+#include <scheme/kinematics/Director.hh>
 
 
 #include <boost/mpl/vector.hpp>
@@ -42,7 +46,7 @@ typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
 typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
 
 
-// Typedefs related to the Hierarchical search
+// Typedefs related to the Hierarchical Search Scene
 
 typedef ::scheme::actor::Score_Voxel_vs_Atom<
         VoxelActor,
@@ -71,10 +75,29 @@ typedef ::scheme::kinematics::Scene<
     > ParametricScene;
     
 
+// Typedefs related to the Hierarchical Search ScaffoldProvider
+
+typedef ::scheme::scaffold::TreeScaffoldProvider<ParametricSceneConformation> ScaffoldProvider;
+typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 
 
 
+// Typedefs related to the Hierarchical Search Director
 
+typedef ::scheme::nest::NEST< 6,
+              devel::scheme::EigenXform,
+              ::scheme::nest::pmap::OriTransMap,
+              ::scheme::util::StoreNothing, // do not store a transform in the Nest
+              uint64_t,
+              float,
+              false // do not inherit from NestBase
+             > NestOriTrans6D;
+
+
+typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
+typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ::devel::scheme::ScaffoldProvider> DirectorScaffoldOriTrans6D;
+
+typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
 
 
 

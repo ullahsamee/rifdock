@@ -17,12 +17,11 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
-template<class DirectorBase, class ScaffoldProvider >
 void
 hack_pack(
-    shared_ptr< std::vector< _SearchPointWithRots<DirectorBase> > > & hsearch_results_p,
-    std::vector< _SearchPointWithRots<DirectorBase> > & packed_results,
-    RifDockData<DirectorBase, ScaffoldProvider> & rdd,
+    shared_ptr< std::vector< SearchPointWithRots > > & hsearch_results_p,
+    std::vector< SearchPointWithRots > & packed_results,
+    RifDockData & rdd,
     int64_t total_search_effort, int64_t & npack) {
 
 
@@ -31,7 +30,6 @@ hack_pack(
     using std::endl;
 
 
-    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
 
     typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;

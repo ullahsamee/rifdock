@@ -73,9 +73,9 @@ Baseline9AScaffoldProvider::get_scaffold(::scheme::scaffold::TreeIndex i) {
 }
 
 
-uint64_t 
+::scheme::scaffold::TreeLimits 
 Baseline9AScaffoldProvider::get_scaffold_index_limits() const {
-    return 1;
+    return TreeLimits(1, 1);
 }
 
 

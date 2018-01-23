@@ -34,21 +34,20 @@ template<
     // class Scene,
     class ScenePtr,
     class ObjectivePtr,
-    class DirectorBase,
     class ScaffoldIndex
 >
 void
 awful_compile_output_helper(
     int64_t isamp,
     int resl,
-    std::vector< _SearchPointWithRots<DirectorBase> > const & packed_results,
+    std::vector< SearchPointWithRots > const & packed_results,
     std::vector< ScenePtr > & scene_pt,
-    DirectorBase director,
+    ::devel::scheme::DirectorBase director,
     float redundancy_filter_rg,
     float redundancy_filter_mag,
     Eigen::Vector3f scaffold_center,
-    std::vector< std::vector< _RifDockResult<DirectorBase> > > & allresults_pt,
-                 std::vector< _RifDockResult<DirectorBase> >   & selected_results,
+    std::vector< std::vector< RifDockResult > > & allresults_pt,
+                 std::vector< RifDockResult >   & selected_results,
     std::vector< tmplXRtriple<EigenXform, ScaffoldIndex> > & selected_xforms,
     int n_pdb_out,
     #ifdef USE_OPENMP
@@ -61,8 +60,6 @@ awful_compile_output_helper(
     EigenXform scaffold_perturb
 ) {
 
-    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
-    typedef _RifDockResult<DirectorBase> RifDockResult;
     typedef tmplXRtriple<EigenXform, ScaffoldIndex> XRtriple;
 
     SearchPointWithRots const & sp = packed_results[isamp];
@@ -202,12 +199,11 @@ awful_compile_output_helper(
 // };
 
 
-template<class DirectorBase, class ScaffoldProvider>
 void compile_and_filter_results( 
-        std::vector< _SearchPointWithRots<DirectorBase> > & packed_results,
-        std::vector< _RifDockResult<DirectorBase> > & selected_results, 
-        std::vector< _RifDockResult<DirectorBase> > & allresults,
-        RifDockData<DirectorBase, ScaffoldProvider> & rdd,
+        std::vector< SearchPointWithRots > & packed_results,
+        std::vector< RifDockResult > & selected_results, 
+        std::vector< RifDockResult > & allresults,
+        RifDockData & rdd,
         omp_lock_t & dump_lock ) {
 
 
@@ -226,7 +222,6 @@ void compile_and_filter_results(
     typedef ::scheme::util::SimpleArray<3,float> F3;
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
-    typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
     typedef _RifDockResult<DirectorBase> RifDockResult;
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
     typedef tmplXRtriple<EigenXform, ScaffoldIndex> XRtriple;
