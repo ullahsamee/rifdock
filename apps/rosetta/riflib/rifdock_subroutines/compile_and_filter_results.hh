@@ -14,6 +14,10 @@
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
+
+namespace devel {
+namespace scheme {
+
 typedef int32_t intRot;
 
 template<class EigenXform, class ScaffoldIndex>
@@ -42,7 +46,7 @@ awful_compile_output_helper(
     int resl,
     std::vector< SearchPointWithRots > const & packed_results,
     std::vector< ScenePtr > & scene_pt,
-    ::devel::scheme::DirectorBase director,
+    DirectorBase director,
     float redundancy_filter_rg,
     float redundancy_filter_mag,
     Eigen::Vector3f scaffold_center,
@@ -334,6 +338,6 @@ void compile_and_filter_results(
 
 }
 
-
+}}
 
 #endif

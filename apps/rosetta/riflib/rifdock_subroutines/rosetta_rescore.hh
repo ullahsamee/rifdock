@@ -17,6 +17,9 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
+namespace devel {
+namespace scheme {
+
 void
 rosetta_rescore( 
     std::vector< SearchPointWithRots > & packed_results,
@@ -510,6 +513,7 @@ rosetta_rescore(
 }
 
 
+}}
 
 
 #endif

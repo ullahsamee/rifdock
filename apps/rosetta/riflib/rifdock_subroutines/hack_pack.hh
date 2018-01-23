@@ -17,6 +17,10 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
+namespace devel {
+namespace scheme {
+
+
 void
 hack_pack(
     shared_ptr< std::vector< SearchPointWithRots > > & hsearch_results_p,
@@ -102,7 +106,7 @@ hack_pack(
 
 }
 
-
+}}
 
 
 #endif

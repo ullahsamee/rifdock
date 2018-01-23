@@ -28,6 +28,8 @@ using ::scheme::shared_ptr;
 
 typedef int32_t intRot;
 
+namespace devel {
+namespace scheme {
 
 inline
 Eigen::Vector3f
@@ -180,15 +182,15 @@ struct tmplSearchPointWithRots {
 
 template <class __Director>
 using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
-typedef _SearchPointWithRots<::devel::scheme::DirectorBase> SearchPointWithRots;
+typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
 
 template <class __Director>
 using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
-typedef _RifDockResult<::devel::scheme::DirectorBase> RifDockResult;
+typedef _RifDockResult<DirectorBase> RifDockResult;
 
 template <class __Director>
 using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;
-typedef _SearchPoint<::devel::scheme::DirectorBase> SearchPoint;
+typedef _SearchPoint<DirectorBase> SearchPoint;
 
 
 
@@ -198,30 +200,30 @@ typedef _SearchPoint<::devel::scheme::DirectorBase> SearchPoint;
 struct RifDockData {
     RifDockOpt & opt;
     std::vector<float> & RESLS;
-    ::devel::scheme::DirectorBase & director;
-    std::vector< devel::scheme::ScenePtr > & scene_pt;
-    devel::scheme::ScenePtr & scene_minimal;
-    std::vector<devel::scheme::SimpleAtom> & target_simple_atoms;
-    std::vector< devel::scheme::VoxelArrayPtr > & target_field_by_atype;
-    std::vector< std::vector< devel::scheme::VoxelArrayPtr > > const * target_bounding_by_atype;
+    DirectorBase & director;
+    std::vector< ScenePtr > & scene_pt;
+    ScenePtr & scene_minimal;
+    std::vector<SimpleAtom> & target_simple_atoms;
+    std::vector< VoxelArrayPtr > & target_field_by_atype;
+    std::vector< std::vector< VoxelArrayPtr > > const * target_bounding_by_atype;
     std::vector< ::scheme::chemical::HBondRay > * target_donors;
     std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
     float & target_redundancy_filter_rg;
     core::pose::Pose & target;
-    shared_ptr< devel::scheme::RotamerIndex > & rot_index_p;
-    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager;
-    std::vector< devel::scheme::ObjectivePtr > & objectives;
-    devel::scheme::ObjectivePtr & packing_objective;
+    shared_ptr< RotamerIndex > & rot_index_p;
+    RotamerRFTablesManager & rotrf_table_manager;
+    std::vector< ObjectivePtr > & objectives;
+    ObjectivePtr & packing_objective;
     ::scheme::search::HackPackOpts & packopts;
-    std::vector<shared_ptr<devel::scheme::RifBase> > & rif_ptrs;
+    std::vector<shared_ptr<RifBase> > & rif_ptrs;
 
-    ::devel::scheme::ScaffoldProviderOP scaffold_provider;
+    ScaffoldProviderOP scaffold_provider;
 };
 
 
 
 
-
+}}
 
 
 

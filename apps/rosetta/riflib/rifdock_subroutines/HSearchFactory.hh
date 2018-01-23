@@ -17,6 +17,8 @@
 #include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
 
 
+namespace devel {
+namespace scheme {
 
 
 bool
@@ -41,5 +43,6 @@ call_hsearch_protocol(
 
 }
 
+}}
 
 #endif

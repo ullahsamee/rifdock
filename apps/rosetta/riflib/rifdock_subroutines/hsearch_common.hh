@@ -16,6 +16,8 @@
 #include <riflib/rifdock_subroutines/output_results.hh>
 
 
+namespace devel {
+namespace scheme {
 
 
 struct HSearchData {
@@ -185,6 +187,7 @@ do_an_hsearch(uint64_t start_resl,
 
 }
 
+}}
 
 
 #endif

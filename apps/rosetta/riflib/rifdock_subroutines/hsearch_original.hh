@@ -17,6 +17,9 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
+namespace devel {
+namespace scheme {
+
 bool
 hsearch_original(
     RifDockData & rdd,
@@ -76,7 +79,7 @@ hsearch_original(
 
 }
 
-
+}}
 
 
 #endif

@@ -17,6 +17,8 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
+namespace devel {
+namespace scheme {
 
 void
 dump_rif_result(
@@ -323,7 +325,7 @@ output_results(
 
 
 
-
+}}
 
 
 

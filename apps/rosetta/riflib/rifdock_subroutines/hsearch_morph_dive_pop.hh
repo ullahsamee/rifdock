@@ -20,6 +20,9 @@ using ::scheme::shared_ptr;
 typedef int32_t intRot;
 
 
+namespace devel {
+namespace scheme {
+
 bool
 hsearch_morph_dive_pop(
     RifDockData & rdd,
@@ -244,6 +247,6 @@ using ::scheme::scaffold::TreeLimits;
 }
 
 
-
+}}
 
 #endif
