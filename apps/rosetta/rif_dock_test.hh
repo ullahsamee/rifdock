@@ -41,6 +41,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, align_output_to_scaffold )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
@@ -77,7 +78,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
-	OPT_1GRP_KEY(  Boolean     , rif_dock, all_rif_rots_as_models_not_chains )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rif_rots_as_chains )
 
 	OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
@@ -89,7 +90,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_loops )
 
-	OPT_1GRP_KEY(  Boolean    , rif_dock, full_scaffold_output )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dump_resfile )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pikaa )
 
@@ -196,6 +196,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
 			NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
+			NEW_OPT(  rif_dock::output_full_scaffold, "", false );
 			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
 
 			NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
@@ -235,11 +236,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
-			NEW_OPT(  rif_dock::all_rif_rots_as_models_not_chains, "dump rif rots as models instead of chains, loses resnum if false", true );
+			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
 
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", "");
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 5 );
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 0.001 );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -247,7 +248,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::dont_use_scaffold_loops, "", false );
 
-			NEW_OPT(  rif_dock::full_scaffold_output, "", false );
 			NEW_OPT(  rif_dock::dump_resfile, "", false );
 			NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
 
@@ -258,7 +258,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
 
 			NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
-			NEW_OPT(  rif_dock::require_n_rifres, "", 0 );
+			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
 
 			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 			NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
@@ -295,25 +295,25 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_only_best_stride, "When doing dump_only_best_frames, dump every Xth element of the best", 1 );
 			NEW_OPT(  rif_dock::dump_prefix, "Convince Brian to make this autocreate the folder", "hsearch" );
 
-			NEW_OPT(  rif_dock::scaff_search_mode, "Which scaffold mode and HSearch do you want?", "default");
-			NEW_OPT(  rif_dock::nineA_cluster_path, "", "" );
+			NEW_OPT(  rif_dock::scaff_search_mode, "Which scaffold mode and HSearch do you want? Options: default, morph_dive_pop, nineA_baseline", "default");
+			NEW_OPT(  rif_dock::nineA_cluster_path, "Path to cluster database for nineA_baseline.", "" );
 			NEW_OPT(  rif_dock::nineA_baseline_range, "format cdindex:low-high (python range style)", "");
 
-			NEW_OPT(  rif_dock::low_cut_site, "", 0 );
-			NEW_OPT(  rif_dock::high_cut_site, "", 0 );
-			NEW_OPT(  rif_dock::max_insertion, "", 0 );
-			NEW_OPT(  rif_dock::max_deletion, "", 0 );
-			NEW_OPT(  rif_dock::fragment_cluster_tolerance, "", 0.5 );
-			NEW_OPT(  rif_dock::fragment_max_rmsd , "", 10000 );
-			NEW_OPT(  rif_dock::max_structures , "", 10000000 );
-			NEW_OPT(  rif_dock::dive_resl , "", 5 );
-			NEW_OPT(  rif_dock::pop_resl , "", 4 );
-			NEW_OPT(  rif_dock::include_parent, "", false );
+			NEW_OPT(  rif_dock::low_cut_site, "The low cut point for fragment insertion, this res and the previous get minimized.", 0 );
+			NEW_OPT(  rif_dock::high_cut_site, "The high cut point for fragment insertion, this res and the next get minimized.", 0 );
+			NEW_OPT(  rif_dock::max_insertion, "Maximum number of residues to lengthen protein by.", 0 );
+			NEW_OPT(  rif_dock::max_deletion, "Maximum number of residues to shorten protein by.", 0 );
+			NEW_OPT(  rif_dock::fragment_cluster_tolerance, "RMSD cluster tolerance for fragments.", 0.5 );
+			NEW_OPT(  rif_dock::fragment_max_rmsd , "Max RMSD to starting fragment.", 10000 );
+			NEW_OPT(  rif_dock::max_structures , "Maximum number of fragments to find.", 10000000 );
+			NEW_OPT(  rif_dock::dive_resl , "Dive to this depth before diversifying", 5 );
+			NEW_OPT(  rif_dock::pop_resl , "Return to this depth after diversifying", 4 );
+			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 
-			NEW_OPT(  rif_dock::match_this_pdb, "for prelim exam", "" );
-			NEW_OPT(  rif_dock::match_this_rmsd, "", 7 );
-			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1/2-body energies for fragment insertions", false );
-			NEW_OPT(  rif_dock::max_beam_multiplier, "", 1 );
+			NEW_OPT(  rif_dock::match_this_pdb, "Like tether to input position but applied at diversification time.", "" );
+			NEW_OPT(  rif_dock::match_this_rmsd, "RMSD for match_this_pdb", 7 );
+			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
+			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
 
 		}
@@ -347,7 +347,7 @@ struct RifDockOpt
 	std::string dokfile_fname                        ;
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
-	bool        all_rif_rots_as_models_not_chains    ;
+	bool        rif_rots_as_chains                   ;
 	std::string dump_rifgen_near_pdb                 ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
@@ -368,8 +368,8 @@ struct RifDockOpt
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
 	bool        output_full_scaffold_only            ;
+	bool        output_full_scaffold                 ;
 	bool        pdb_info_pikaa                       ;
-	bool        full_scaffold_output                 ;
 	bool        dump_resfile                         ;
 	std::string target_res_fname                     ;
 	int         target_rf_oversample                 ;
@@ -491,7 +491,7 @@ struct RifDockOpt
 		dokfile_fname                          = outdir + "/" + option[rif_dock::dokfile             ]();
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
-		all_rif_rots_as_models_not_chains      = option[rif_dock::all_rif_rots_as_models_not_chains  ]();
+		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
 		dump_rifgen_near_pdb                   = option[rif_dock::dump_rifgen_near_pdb               ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
@@ -512,8 +512,8 @@ struct RifDockOpt
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
+		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
-		full_scaffold_output                   = option[rif_dock::full_scaffold_output                  ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();

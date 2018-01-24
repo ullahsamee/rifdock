@@ -52,7 +52,7 @@ dump_rif_result(
 
     core::pose::Pose pose_from_rif;
 
-    if ( rdd.opt.full_scaffold_output ) {        sdc->setup_both_full_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_full_pose.get_pose());
+    if ( rdd.opt.output_full_scaffold ) {        sdc->setup_both_full_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_full_pose.get_pose());
     } else if( rdd.opt.output_scaffold_only ) {                                         pose_from_rif = *(sdc->scaffold_centered_p);
     } else if( rdd.opt.output_full_scaffold_only ) {                                    pose_from_rif = *(sdc->scaffold_full_centered_p);
     } else {                                        sdc->setup_both_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_pose.get_pose());
@@ -106,16 +106,16 @@ dump_rif_result(
                 float const sc = p.first + onebody;
                 float const rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
                 if( sc < 0 || rescore + onebody < 0 ){
-                    if (rdd.opt.all_rif_rots_as_models_not_chains) {
+                    if ( ! rdd.opt.rif_rots_as_chains) {
                         allout << "MODEL" << endl;
                     }
                     BOOST_FOREACH( SchemeAtom a, rdd.rot_index_p->rotamers_.at( irot ).atoms_ ){
                         a.set_position( xalignout * bba.position() * a.position() ); // is copy
-                        a.nonconst_data().resnum = rdd.opt.all_rif_rots_as_models_not_chains ? ires : res_num;
-                        a.nonconst_data().chain = rdd.opt.all_rif_rots_as_models_not_chains ? 'A' : chains.at( chain_no % 52 );
+                        a.nonconst_data().resnum = rdd.opt.rif_rots_as_chains ? res_num : ires;
+                        a.nonconst_data().chain = rdd.opt.rif_rots_as_chains ? chains.at( chain_no % 52 ) : 'A';
                         ::scheme::actor::write_pdb( allout, a, nullptr );
                     }
-                    if (rdd.opt.all_rif_rots_as_models_not_chains) {
+                    if (! rdd.opt.rif_rots_as_chains) {
                         allout << "ENDMDL" << endl;
                     } else {
                         allout << "TER" << endl;
@@ -209,7 +209,7 @@ dump_rif_result(
     out1 << expdb.str() << std::endl;
     pose_to_dump.dump_pdb(out1);
     if ( rdd.opt.dump_all_rif_rots_into_output ) {
-        if ( ! rdd.opt.all_rif_rots_as_models_not_chains ) out1 << "TER" << endl;
+        if ( rdd.opt.rif_rots_as_chains ) out1 << "TER" << endl;
         out1 << allout.str();
     }
     out1.close();
