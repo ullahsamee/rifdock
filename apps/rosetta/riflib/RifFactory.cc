@@ -450,6 +450,7 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector<bool> is_satisfied_;
 		std::vector<bool> has_rifrot_;
 		// sat group vector goes here
+		//std::vector<float> is_satisfied_score_;
 	};
 
 	template< class BBActor, class RIF, class VoxelArrayPtr >
@@ -544,6 +545,8 @@ std::string get_rif_type_from_file( std::string fname )
 			if( n_sat_groups_ > 0 ){
 				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
 				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
+				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
 			}
 			scratch.has_rifrot_.resize(rotamer_energies_1b_->size(), false);
 			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
@@ -573,47 +576,33 @@ std::string get_rif_type_from_file( std::string fname )
 			float bestsc = 0.0;
 			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
 				if( rotscores.empty(i_rs) ) {
-////////////////////////////////////////////////////////////////////
-					// Eigen::Matrix<float,3,1> to_CB = (bb.position().rotation() * 
-					// 	Eigen::Matrix<float,3,1>( -1.952799123558066, -0.2200069625712990, 1.524857 )).normalized();
-					// std::cout << "Found " << i_rs << " rif rots at pos " << ires << "   " << bb.position().translation().transpose() 
-					// << "   " << to_CB.transpose()  << std::endl;
-////////////////////////////////////////////////////////////////////
 					break;
 				}
 				int irot = rotscores.rotamer(i_rs);
 				float const rot1be = std::max((float)(*rotamer_energies_1b_).at(ires).at(irot), 0.0f);
 				float score_rot_v_target = rotscores.score(i_rs);
-                                float sum_score = score_rot_v_target + rot1be;
-                                if (sum_score < -2.5) {
-                                    sum_score = -3;
-                                } else if (sum_score < 0) {
-                                    sum_score = sum_score / 10.0;
-                                } else {
-                                    sum_score = 0;
-                                }
-                                //sum_score = -std::min(4.0f, std::log(-std::min(-0.1f, sum_score)) + 4*std::log(-std::min(-0.1f, sum_score+1.5)));                                
-//sum_score = std::abs(sum_score) * sum_score;
-///////////////////////////////////////////////////////////////////
-				// std::cout << score_rot_v_target << std::endl;
-////////////////////////////////////////////////////////////////////
+
+				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+
+
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
-					bool special_rotamers = rotscores.do_i_satisfy_anything(i_rs);
-					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || special_rotamers){
-	
+
+					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
+						
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
 						score_rot_v_target = recalc_rot_v_tgt;
 				
-						if (( sum_score < packopts_.rotamer_inclusion_threshold &&
-						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || special_rotamers){
+						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
+						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
+
 							float sat_bonus = 0;
-							if (rotscores.do_i_satisfy_anything(i_rs)) {
+							if (rotamer_satisfies) {
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 								            packopts_.user_rotamer_bonus_constant;
 								// std::cout << "ires " << ires << " cdirot " << irot << std::endl;
 								// std::cout << "Sat bonus: " << sat_bonus << " Score: " << score_rot_v_target + rot1be << std::endl;
 							}
-							scratch.hackpack_->add_tmp_rot( ires, irot, sum_score + sat_bonus );
+							scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
 						}
 					}
 					if( packopts_.use_extra_rotamers ){
@@ -629,15 +618,19 @@ std::string get_rif_type_from_file( std::string fname )
 						}
 					}
 				}
-				float const score_rot_tot = sum_score;
-				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
+
+				float const score_rot_tot = score_rot_v_target + rot1be;
+				//TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
+				if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}
-				if ( score_rot_tot < 0.0 ) {
-					// std::cout << "Adding " << ires << std::endl;
-					scratch.has_rifrot_[ires] = true;
-				}
+                if ( score_rot_tot < 0.0 ) {
+                    // std::cout << "Adding " << ires << std::endl;
+                    scratch.has_rifrot_[ires] = true;
+                }
+
 				bestsc = std::min( score_rot_tot , bestsc );
+				//}
 			}
 			// // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
@@ -677,7 +670,7 @@ std::string get_rif_type_from_file( std::string fname )
 				::scheme::search::HackPack & packer( *scratch.hackpack_ );
 				result.val_ = packer.pack( result.rotamers_ );
 				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-				// std::vector< std::pair<intRot,intRot> > selected_rotamers;
+				//std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
 					int sat1=-1, sat2=-1;
@@ -698,10 +691,26 @@ std::string get_rif_type_from_file( std::string fname )
 
 			if( n_sat_groups_ > 0 && !packing_ ){
 				int nsat = 0;
+				
 				for( int i = 0; i < n_sat_groups_; ++i ){
+					
 					nsat += scratch.is_satisfied_[i];
+					//result.val_ += scratch.is_satisfied_score_[i];
 				}
-				runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
+				// if (nsat >= 4 ){
+				// 	#pragma omp critical
+				// 	{
+				// 	std::cout << config << "     ";
+					
+				// 	for (int i = 0; i < 10; ++i){
+				// 		std::cout << " "<< scratch.is_satisfied_[i];
+
+				// 	}
+				// 	std::cout << " " << std::endl;
+				// 	}
+				// }
+				// std::cout << "here: " << nsat << std::endl;
+				// runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 
 				if( nsat - require_satisfaction_ < 0 ){
 					result.val_ = 9e9;
@@ -825,12 +834,14 @@ struct RifFactoryImpl :
 				// std::cout << '*'; std::cout.flush();
 			// }
 			EigenXform x = from->hasher_.get_center( v.first );
+
 			uint64_t k = to->hasher_.get_key(x);
 			typename XMap::Map::iterator iter = to->map_.find(k);
 			if( iter == to->map_.end() ){
 				to->map_.insert( std::make_pair(k,v.second) );
 			} else {
 				iter->second.merge( v.second );
+
 			}
 		}
 		// // std::cout << std::endl;
@@ -1009,7 +1020,7 @@ create_rif_factory( RifFactoryConfig const & config )
 	}
 	else if( config.rif_type == "RotScoreSat" )
 	{
-		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4> crfRotScore;
 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
 		typedef ::scheme::objective::hash::XformMap<
@@ -1042,91 +1053,6 @@ create_rif_factory( RifFactoryConfig const & config )
 		utility_exit_with_message( "create_rif_factory_inner: unknown rif type "+config.rif_type );
 	}
 }
-
-
-
-
-// template<_ScaffoldProvider>
-// shared_ptr<RifFactory>
-// create_rif_factory( RifFactoryConfig const & config )
-// {
-// 	if( config.rif_type == "RotScore" )
-// 	{
-// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
-// 		typedef ::scheme::objective::storage::RotamerScores< 12, crfRotScore > crfXMapValue;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 24 );
-// 		typedef ::scheme::objective::hash::XformMap<
-// 				EigenXform,
-// 				crfXMapValue,
-// 				::scheme::objective::hash::XformHash_bt24_BCC6
-// 			> crfXMap;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 32 );
-
-// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
-// 	}
-// 	else if( config.rif_type == "RotScore64" )
-// 	{
-// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
-// 		typedef ::scheme::objective::storage::RotamerScores< 28, crfRotScore > crfXMapValue;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
-// 		typedef ::scheme::objective::hash::XformMap<
-// 				EigenXform,
-// 				crfXMapValue,
-// 				::scheme::objective::hash::XformHash_bt24_BCC6
-// 			> crfXMap;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
-
-// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
-// 	}
-// 	else if( config.rif_type == "RotScore128" )
-// 	{
-// 		typedef ::scheme::objective::storage::RotamerScore<> crfRotScore;
-// 		typedef ::scheme::objective::storage::RotamerScores< 60, crfRotScore > crfXMapValue;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 120 );
-// 		typedef ::scheme::objective::hash::XformMap<
-// 				EigenXform,
-// 				crfXMapValue,
-// 				::scheme::objective::hash::XformHash_bt24_BCC6
-// 			> crfXMap;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
-
-// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
-// 	}
-// 	else if( config.rif_type == "RotScoreSat" )
-// 	{
-// 		typedef ::scheme::objective::storage::RotamerScoreSat<> crfRotScore;
-// 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
-// 		typedef ::scheme::objective::hash::XformMap<
-// 				EigenXform,
-// 				crfXMapValue,
-// 				::scheme::objective::hash::XformHash_bt24_BCC6
-// 			> crfXMap;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
-
-// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
-// 	}
-// 	else if( config.rif_type == "RotScoreSat_1x16" )
-// 	{
-// 		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
-// 		typedef ::scheme::objective::storage::RotamerScoreSat<
-// 					uint16_t, 9, -13, SatDatum, 1> crfRotScore;
-// 		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
-// 		typedef ::scheme::objective::hash::XformMap<
-// 				EigenXform,
-// 				crfXMapValue,
-// 				::scheme::objective::hash::XformHash_bt24_BCC6
-// 			> crfXMap;
-// 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
-
-// 		return make_shared< RifFactoryImpl<crfXMap,_ScaffoldProvider> >( config );
-
-// 	} else
-// 	{
-// 		utility_exit_with_message( "create_rif_factory_inner: unknown rif type "+config.rif_type );
-// 	}
-// }
 
 
 

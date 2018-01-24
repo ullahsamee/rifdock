@@ -148,8 +148,8 @@ int main(int argc, char *argv[]) {
 		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
 		packopts.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
-		packopts.rotamer_inclusion_threshold = -0.5;
-		packopts.rotamer_onebody_inclusion_threshold = 5.0;
+		packopts.rotamer_inclusion_threshold = -0.5;//-0.5
+		packopts.rotamer_onebody_inclusion_threshold = 5;//5
 		packopts.init_with_best_1be_rots = true;
 		packopts.user_rotamer_bonus_constant=opt.user_rotamer_bonus_constant;
 		packopts.user_rotamer_bonus_per_chi=opt.user_rotamer_bonus_per_chi;
@@ -177,6 +177,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "opt.rosetta_min_targetbb: " << opt.rosetta_min_targetbb << std::endl;
 		std::cout << "opt.rosetta_min_allbb: " << opt.rosetta_min_allbb << std::endl;
 		std::cout << "opt.rosetta_score_cut: " << opt.rosetta_score_cut << std::endl;
+		std::cout << "opt.require_satisfaction: " << opt.require_satisfaction << std::endl;
 
 		std::cout << "//////////////////////////// end options /////////////////////////////////" << std::endl;
 
@@ -240,9 +241,12 @@ int main(int argc, char *argv[]) {
 
 
 	print_header( "create rotamer index" );
-		shared_ptr< RotamerIndex > rot_index_p = make_shared< RotamerIndex >();
+		
+		std::cout << "start testing ..........." << std::endl;
+		std::string rot_index_spec_file = opt.rot_spec_fname;
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file );
 		RotamerIndex & rot_index( *rot_index_p );
-		::devel::scheme::get_rotamer_index( rot_index, opt.extra_rotamers, opt.extra_rif_rotamers );
+
 
 		// {
 		// 	utility::io::ozstream out("test.rotidx.gz",std::ios_base::binary);
@@ -598,6 +602,7 @@ int main(int argc, char *argv[]) {
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
 
+			
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
 			ObjectivePtr packing_objective;
@@ -706,7 +711,7 @@ int main(int argc, char *argv[]) {
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				
+
 			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
 
 				{
@@ -714,6 +719,7 @@ int main(int argc, char *argv[]) {
 						total_search_effort,
 						non0_space_size,
 					};
+
 
 					bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
 					if ( ! hsearch_success ) continue;
@@ -735,6 +741,7 @@ int main(int argc, char *argv[]) {
 		        } else {
 		        	packed_results = *hsearch_results_p;
 		        }
+
 
 				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
 				time_pck += elapsed_seconds_pack.count();

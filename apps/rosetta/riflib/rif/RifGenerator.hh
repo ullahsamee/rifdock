@@ -19,6 +19,12 @@
 #include <utility/vector1.hh>
 #include <string>
 
+namespace scheme {
+namespace chemical {
+	struct RotamerIndexSpec;
+}
+}
+
 namespace devel {
 namespace scheme {
 namespace rif {
@@ -44,12 +50,14 @@ struct RifGenParams {
 	std::string                    target_tag;
 	std::string                    output_prefix="./default_";
 	utility::vector1<int>          target_res;
-	shared_ptr<RotamerIndex const> rot_index_p = nullptr;
+	//shared_ptr<RotamerIndex const> rot_index_p = nullptr;
+	shared_ptr<RotamerIndex> rot_index_p = nullptr;
 	std::vector<std::string>       cache_data_path;
 	std::vector< VoxelArray* >     field_by_atype;
 	HBRayOpts                      hbopt;
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;
+
 
 struct RifGenerator {
 	virtual ~RifGenerator(){}
@@ -57,6 +65,7 @@ struct RifGenerator {
 		RifAccumulatorP accumulator,
 		RifGenParamsP params
 	) = 0;
+	virtual void modify_rotamer_spec(::scheme::chemical::RotamerIndexSpec& rot_spec){}
 };
 
 

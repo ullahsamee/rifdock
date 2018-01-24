@@ -133,6 +133,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 
     OPT_1GRP_KEY(  Real        , rif_dock, resl0 )
+
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_x_frames_per_resl )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_only_best_frames )
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_only_best_stride )
@@ -142,7 +143,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      , rif_dock, nineA_cluster_path )
     OPT_1GRP_KEY(  String      , rif_dock, nineA_baseline_range )
 
-// These are all rather temporary
     OPT_1GRP_KEY(  Integer     , rif_dock, low_cut_site )
     OPT_1GRP_KEY(  Integer     , rif_dock, high_cut_site )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_insertion )
@@ -158,6 +158,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
     OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
+
+    OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
+
 
 
 
@@ -315,6 +318,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
 			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
+			NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","-rif_dock::rot_spec_fname must be SPECIFIED");
 
 		}
 	#endif
@@ -456,7 +460,10 @@ struct RifDockOpt
     bool        use_parent_body_energies             ;
     float       max_beam_multiplier                  ;
 
+    std::string rot_spec_fname                       ;
+
     void init_from_cli();
+
 
 };
 
@@ -594,6 +601,7 @@ struct RifDockOpt
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
         max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                   ]();
 
+		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
 
 
 

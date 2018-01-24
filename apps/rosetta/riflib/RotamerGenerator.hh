@@ -85,14 +85,21 @@ get_rosetta_rot_set(
 	core::pose::Pose & pose,
 	core::Size ir
  );
-
-
 void
-get_rotamer_index(
-	RotamerIndex & rot_index,
+get_rotamer_spec_default(
+	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
-	bool extra_primary_rotamers,
-	std::string cachefile=""
+	bool extra_primary_rotamers	
+);
+//new get_rotamer_index for rot_spec
+std::shared_ptr<RotamerIndex>
+get_rotamer_index(
+	::scheme::chemical::RotamerIndexSpec const & rot_index
+);
+
+std::shared_ptr<RotamerIndex>
+get_rotamer_index(
+	std::string cachefile
 );
 
 

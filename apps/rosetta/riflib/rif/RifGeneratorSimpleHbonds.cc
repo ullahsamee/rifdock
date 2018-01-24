@@ -225,6 +225,7 @@ struct HBJob {
 		// build up a joblist for hbond rif gen
 		std::vector<HBJob> hb_jobs;
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+
 		for(int ires = 1; ires <= target_res.size(); ++ires){
 			int const ir = target_res[ires];
 			std::string resn = target.residue(ir).name();
@@ -243,7 +244,8 @@ struct HBJob {
 				j.don_or_acc = "DON_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
 				j.nrots = b.second-b.first;
-				if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
+				//if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
+				if( target.residue(ir).has("H") ) hb_jobs.push_back( j );
 				if( std::find(donresn_std.begin(),donresn_std.end(),resn)!=donresn_std.end() ){ // is donor
 					j.don = resn;
 					hb_jobs.push_back( j );
@@ -261,7 +263,8 @@ struct HBJob {
 				j.don_or_acc = "ACC_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
 				j.nrots = b.second-b.first;
-				if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
+				//if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
+				if( target.residue(ir).has("O") ) hb_jobs.push_back( j );
 				if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
 					j.acc = resn;
 					hb_jobs.push_back( j );
@@ -812,8 +815,11 @@ struct HBJob {
 		omp_destroy_lock( & pose_lock );
 		omp_destroy_lock( & hbond_geoms_cache_lock );
 
+		//change me back to exit if want cactually check simple hbonds
 		if( accumulator->n_motifs_found() == 0 ){
 			utility_exit_with_message("no hbonds found, something is wrong");
+			//change me back to exit if want cactually check simple hbonds
+			
 		}
 	}
 
