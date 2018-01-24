@@ -49,7 +49,7 @@ get_rot_score(
 ){
 	core::pack::rotamers::SingleResidueRotamerLibraryCOP rotlib =
 		core::pack::rotamers::SingleResidueRotamerLibraryFactory::get_instance()->get( pose.residue(ir).type() );
-	return rotlib->rotamer_energy( pose.residue(ir), *scratch );
+	return rotlib->rotamer_energy( pose.residue(ir), pose, *scratch );
 }
 
 void dump_pdb_atom(

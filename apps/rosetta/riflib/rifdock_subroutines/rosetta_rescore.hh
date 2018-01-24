@@ -69,7 +69,7 @@ rosetta_rescore(
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         std::vector<core::kinematics::MoveMapOP> movemap_pt(omp_max_threads());
-        std::vector<protocols::simple_moves::MinMoverOP> minmover_pt(omp_max_threads());
+        std::vector<protocols::minimization_packing::MinMoverOP> minmover_pt(omp_max_threads());
         std::vector<core::scoring::ScoreFunctionOP> scorefunc_pt(omp_max_threads());
         // std::vector<core::pose::Pose> both_full_per_thread(omp_max_threads());
         // std::vector<core::pose::Pose> both_per_thread     (omp_max_threads());
@@ -127,8 +127,8 @@ rosetta_rescore(
             // scorefunc_pt[i]->set_energy_method_options( opts );
             core::kinematics::MoveMapOP movemap = core::kinematics::MoveMapOP( new core::kinematics::MoveMap() );
             movemap_pt[i] = movemap;
-            minmover_pt[i] = protocols::simple_moves::MinMoverOP(
-                new protocols::simple_moves::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
+            minmover_pt[i] = protocols::minimization_packing::MinMoverOP(
+                new protocols::minimization_packing::MinMover( movemap, scorefunc_pt[i], "dfpmin_armijo_nonmonotone", 0.001, true ) );
         }
 
         std::chrono::time_point<std::chrono::high_resolution_clock> startall = std::chrono::high_resolution_clock::now();

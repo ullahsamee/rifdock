@@ -12,6 +12,8 @@
 #include <ObjexxFCL/format.hh>
 #include <core/id/AtomID.hh>
 #include <core/id/AtomID_Map.hh>
+#include <core/chemical/ChemicalManager.hh>
+#include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/Residue.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>

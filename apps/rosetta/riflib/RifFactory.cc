@@ -33,6 +33,7 @@
 #include <scheme/search/HackPack.hh>
 
 #include <riflib/scaffold/ScaffoldDataCache.hh>
+#include <complex>
 
 
 namespace devel {
@@ -581,8 +582,18 @@ std::string get_rif_type_from_file( std::string fname )
 					break;
 				}
 				int irot = rotscores.rotamer(i_rs);
-				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
+				float const rot1be = std::max((float)(*rotamer_energies_1b_).at(ires).at(irot), 0.0f);
 				float score_rot_v_target = rotscores.score(i_rs);
+                                float sum_score = score_rot_v_target + rot1be;
+                                if (sum_score < -2.5) {
+                                    sum_score = -3;
+                                } else if (sum_score < 0) {
+                                    sum_score = sum_score / 10.0;
+                                } else {
+                                    sum_score = 0;
+                                }
+                                //sum_score = -std::min(4.0f, std::log(-std::min(-0.1f, sum_score)) + 4*std::log(-std::min(-0.1f, sum_score+1.5)));                                
+//sum_score = std::abs(sum_score) * sum_score;
 ///////////////////////////////////////////////////////////////////
 				// std::cout << score_rot_v_target << std::endl;
 ////////////////////////////////////////////////////////////////////
@@ -593,7 +604,7 @@ std::string get_rif_type_from_file( std::string fname )
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
 						score_rot_v_target = recalc_rot_v_tgt;
 				
-						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
+						if (( sum_score < packopts_.rotamer_inclusion_threshold &&
 						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || special_rotamers){
 							float sat_bonus = 0;
 							if (rotscores.do_i_satisfy_anything(i_rs)) {
@@ -602,7 +613,7 @@ std::string get_rif_type_from_file( std::string fname )
 								// std::cout << "ires " << ires << " cdirot " << irot << std::endl;
 								// std::cout << "Sat bonus: " << sat_bonus << " Score: " << score_rot_v_target + rot1be << std::endl;
 							}
-							scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
+							scratch.hackpack_->add_tmp_rot( ires, irot, sum_score + sat_bonus );
 						}
 					}
 					if( packopts_.use_extra_rotamers ){
@@ -618,7 +629,7 @@ std::string get_rif_type_from_file( std::string fname )
 						}
 					}
 				}
-				float const score_rot_tot = score_rot_v_target + rot1be;
+				float const score_rot_tot = sum_score;
 				if( n_sat_groups_ > 0 && score_rot_tot < 0.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}

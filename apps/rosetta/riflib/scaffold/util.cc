@@ -20,9 +20,9 @@
 #include <core/pack/task/operation/OperateOnResidueSubset.hh>
 #include <core/select/residue_selector/NotResidueSelector.hh>
 #include <protocols/residue_selectors/StoredResidueSubsetSelector.hh>
-#include <protocols/simple_moves/PackRotamersMover.hh>
-#include <protocols/simple_moves/TaskAwareMinMover.hh>
-#include <protocols/simple_moves/MinMover.hh>
+#include <protocols/minimization_packing/PackRotamersMover.hh>
+#include <protocols/minimization_packing/TaskAwareMinMover.hh>
+#include <protocols/minimization_packing/MinMover.hh>
 #include <core/scoring/ScoreFunction.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
@@ -229,7 +229,7 @@ apply_direct_segment_lookup_mover(
     to_ala_tf->push_back( only_lookup_segment );
     to_ala_tf->push_back( ala_only );
 
-    protocols::simple_moves::PackRotamersMover to_ala;
+    protocols::minimization_packing::PackRotamersMover to_ala;
     to_ala.score_function(scorefxn);
     to_ala.task_factory( to_ala_tf );
 
@@ -237,13 +237,13 @@ apply_direct_segment_lookup_mover(
     core::pack::task::TaskFactoryOP hardmin_bb_tf( new core::pack::task::TaskFactory() );
     hardmin_bb_tf->push_back( only_lookup_segment );
 
-    protocols::simple_moves::MinMoverOP min_mover( new protocols::simple_moves::MinMover() );
+    protocols::minimization_packing::MinMoverOP min_mover( new protocols::minimization_packing::MinMover() );
     min_mover->tolerance( 0.0001 );
     min_mover->min_type( "lbfgs_armijo_nonmonotone" );
     min_mover->cartesian( true );
     min_mover->score_function( scorefxn );
 
-    protocols::simple_moves::TaskAwareMinMover hardmin_bb( min_mover, hardmin_bb_tf );
+    protocols::minimization_packing::TaskAwareMinMover hardmin_bb( min_mover, hardmin_bb_tf );
     hardmin_bb.chi( true );
     hardmin_bb.bb( true );
 

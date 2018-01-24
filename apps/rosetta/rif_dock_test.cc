@@ -17,6 +17,8 @@
 
 	#include <core/id/AtomID.hh>
 	#include <core/import_pose/import_pose.hh>
+        #include <core/chemical/ChemicalManager.hh>
+        #include <core/chemical/ResidueTypeSet.hh>
 	#include <core/pose/Pose.hh>
 	#include <core/pose/PDBInfo.hh>
 	#include <core/pose/util.hh>
@@ -26,9 +28,9 @@
 	#include <core/scoring/hbonds/HBondOptions.hh>
 	#include <core/scoring/methods/EnergyMethodOptions.hh>
 	#include <core/conformation/ResidueFactory.hh>
-	#include <protocols/simple_moves/MinMover.hh>
 	#include <core/kinematics/MoveMap.hh>
 	#include <core/scoring/Energies.hh>
+        #include <protocols/minimization_packing/MinMover.hh>
 
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
