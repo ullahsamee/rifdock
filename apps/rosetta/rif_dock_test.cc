@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 	typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
-		typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
+		typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
 
 		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
@@ -654,7 +654,7 @@ int main(int argc, char *argv[]) {
 			{
 				EigenXform x(EigenXform::Identity());
 				x.translation() = rep_scaffold_center;
-				director->set_scene( DirectorIndex(0, rep_si), 0, *scene_minimal);
+				director->set_scene( DirectorBigIndex(0, rep_si), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);

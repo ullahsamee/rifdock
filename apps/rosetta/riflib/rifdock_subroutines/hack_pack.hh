@@ -35,7 +35,7 @@ hack_pack(
 
 
 
-    typedef _DirectorBigIndex<DirectorBase> DirectorIndex;
+    typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 
@@ -77,7 +77,7 @@ hack_pack(
         if( exception ) continue;
         try {
             if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
-            DirectorIndex const isamp = hsearch_results[ipack].index;
+            DirectorBigIndex const isamp = hsearch_results[ipack].index;
             if( hsearch_results[ipack].score > rdd.opt.global_score_cut ) continue;
             packed_results[ ipack ].index = isamp;
             packed_results[ ipack ].prepack_rank = ipack;

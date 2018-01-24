@@ -113,7 +113,7 @@ std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
 }
 
 template<class _Nest, class _ScaffoldProvider>
-using _ScaffoldNestDirectorIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
+using _ScaffoldNestDirectorBigIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
 
 
 
@@ -124,9 +124,9 @@ template<
 struct ScaffoldNestDirector
  :  public Director<
 		typename _Nest::Value,
-		_ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider>
+		_ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>
 	> {
-	typedef Director< typename _Nest::Value, _ScaffoldNestDirectorIndex<_Nest, _ScaffoldProvider>> Base;
+	typedef Director< typename _Nest::Value, _ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>> Base;
 	typedef _Nest Nest;
 	typedef _ScaffoldProvider ScaffoldProvider;
 	typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;

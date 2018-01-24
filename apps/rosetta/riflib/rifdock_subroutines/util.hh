@@ -109,13 +109,13 @@ void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::
 
 
 
-template<class _DirectorIndex>
+template<class _DirectorBigIndex>
 struct tmplRifDockResult {
-    typedef _DirectorIndex DirectorIndex;
-    typedef tmplRifDockResult<DirectorIndex> This;
+    typedef _DirectorBigIndex DirectorBigIndex;
+    typedef tmplRifDockResult<DirectorBigIndex> This;
     float dist0, packscore, nopackscore, rifscore, stericscore;
     uint64_t isamp;
-    DirectorIndex scene_index;
+    DirectorBigIndex scene_index;
     uint32_t prepack_rank;
     float cluster_score;
     bool operator< ( This const & o ) const { return packscore < o.packscore; }
@@ -129,16 +129,16 @@ struct tmplRifDockResult {
 
 
 #pragma pack (push, 4) // allows size to be 12 rather than 16
-template<class _DirectorIndex>
+template<class _DirectorBigIndex>
 struct tmplSearchPoint {
-    typedef _DirectorIndex DirectorIndex;
-    typedef tmplSearchPoint<DirectorIndex> This;
+    typedef _DirectorBigIndex DirectorBigIndex;
+    typedef tmplSearchPoint<DirectorBigIndex> This;
     float score;
-    DirectorIndex index;
+    DirectorBigIndex index;
     tmplSearchPoint() : score(9e9) {
         index = ::scheme::kinematics::director_index_default_value(index);
     }
-    tmplSearchPoint(DirectorIndex i) : score(9e9), index(i) {}
+    tmplSearchPoint(DirectorBigIndex i) : score(9e9), index(i) {}
     bool operator < (This const & o) const {
         return score < o.score;
     }
@@ -147,19 +147,19 @@ struct tmplSearchPoint {
 
 
 
-template<class _DirectorIndex>
+template<class _DirectorBigIndex>
 struct tmplSearchPointWithRots {
-    typedef _DirectorIndex DirectorIndex;
-    typedef tmplSearchPointWithRots<DirectorIndex> This;
+    typedef _DirectorBigIndex DirectorBigIndex;
+    typedef tmplSearchPointWithRots<DirectorBigIndex> This;
     float score;
     uint32_t prepack_rank;
-    DirectorIndex index;
+    DirectorBigIndex index;
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
     tmplSearchPointWithRots() : score(9e9), prepack_rank(0), rotamers_(nullptr) {
         index = ::scheme::kinematics::director_index_default_value(index);
     }
-    tmplSearchPointWithRots(DirectorIndex i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
+    tmplSearchPointWithRots(DirectorBigIndex i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
     // ~SearchPointWithRots() { delete rotamers_; }
     void checkinit() { if( rotamers_==nullptr ) rotamers_ = make_shared< std::vector< std::pair<intRot,intRot> > > ();  }
     std::vector< std::pair<intRot,intRot> > & rotamers() { checkinit(); return *rotamers_; }
