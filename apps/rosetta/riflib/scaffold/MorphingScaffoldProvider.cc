@@ -39,6 +39,12 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     make2bopts(make2bopts_in),
     rotrf_table_manager(rotrf_table_manager_in) {
 
+#ifdef USEHDF5
+
+#else
+    utility_exit_with_message("You must run cmake with the -DUSEHDF5=1 flag to use fragment insertions!!!");
+#endif
+
 
     std::string scafftag;
     core::pose::Pose scaffold;
@@ -73,6 +79,8 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
 void
 MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     using ObjexxFCL::format::I;
+
+#ifdef USEHDF5
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover dsl_mover;
 
     uint64_t removed_length = opt.high_cut_site - opt.low_cut_site - 1;
@@ -100,8 +108,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             opt.max_structures,
             opt.fragment_max_rmsd );
 
-
-    std::string scafftag;
+        std::string scafftag;
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
@@ -165,6 +172,12 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
         add_morph_member( mmember );
     }
+#else
+    utility_exit_with_message("You must run cmake with the -DUSEHDF5=1 flag to use fragment insertions!!!");
+#endif
+
+
+
 }
 
 

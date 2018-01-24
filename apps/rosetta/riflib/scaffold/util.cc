@@ -27,7 +27,10 @@
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
 #include <basic/options/option.hh>
+
+#ifdef USEHDF5
 #include <basic/options/keys/indexed_structure_store.OptionKeys.gen.hh>
+#endif
 
 #include <string>
 #include <vector>
@@ -164,6 +167,7 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
 
 }
 
+#ifdef USEHDF5
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
@@ -293,6 +297,8 @@ apply_direct_segment_lookup_mover(
 
     return results;
 }
+#endif
+
 
 void
 add_pdbinfo_if_missing( core::pose::Pose & pose ) {

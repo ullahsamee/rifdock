@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
+#include <boost/format.hpp>
 #include <unordered_map>
 
 

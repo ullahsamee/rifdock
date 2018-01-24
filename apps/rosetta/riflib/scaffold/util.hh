@@ -16,10 +16,15 @@
 
 #include <core/pose/Pose.hh>
 #include <core/scoring/Energies.hh>
-#include <protocols/indexed_structure_store/movers/DirectSegmentLookupMover.hh>
 
 #include <string>
 #include <vector>
+
+
+#ifdef USEHDF5
+#include <protocols/indexed_structure_store/movers/DirectSegmentLookupMover.hh>
+#else
+#endif
 
 
 
@@ -42,7 +47,7 @@ get_info_for_iscaff(
 ParametricSceneConformationCOP
 make_conformation_from_data_cache(shared_ptr<ScaffoldDataCache> cache, bool fa = false) ;
 
-
+#ifdef USEHDF5
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
     protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover,
@@ -52,6 +57,7 @@ apply_direct_segment_lookup_mover(
     uint64_t minimum_loop_length,
     uint64_t max_structures,
     uint64_t max_rmsd  );
+#endif
 
 void
 get_default_scaffold_res( core::pose::Pose const & pose,

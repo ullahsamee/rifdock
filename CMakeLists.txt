@@ -39,7 +39,7 @@ endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
 if( ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG )
 
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -ggdb" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og" )
     # set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR}_omp_debug )
     set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR}_debug )
     if (NOT $ENV{CMAKE_FINAL_ROSETTA_PATH} STREQUAL "")
@@ -106,6 +106,12 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 # # remove sublime text turds
 # message( "removing ._* turds from " ${CMAKE_SOURCE_DIR} )
 # execute_process( COMMAND find ${CMAKE_SOURCE_DIR} -regex .*[.]_.* -exec rm {} \; )
+
+
+if ( ${USEHDF5} )
+    add_definitions("-DUSEHDF5")
+endif()
+
 
 
 add_subdirectory(schemelib)

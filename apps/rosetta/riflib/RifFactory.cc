@@ -16,6 +16,7 @@
 #include <utility/io/ozstream.hh>
 #include <utility/file/file_sys_util.hh>
 #include <ObjexxFCL/format.hh>
+#include <boost/format.hpp>
 
 #include <riflib/rif/RifAccumulators.hh>
 

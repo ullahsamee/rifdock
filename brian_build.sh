@@ -2,5 +2,5 @@
 
 #rm -r build/*
 cd build
-CXX=g++-6 CC=gcc-6 CMAKE_ROSETTA_PATH=/Users/brian/Documents/baker/rifdock/main CMAKE_FINAL_ROSETTA_PATH=/Users/brian/Documents/baker/rifdock/main/source/cmake/build_cxx11_omp_hdf5 cmake .. -DCMAKE_BUILD_TYPE=Release
+CXX=g++-6 CC=gcc-6 CMAKE_ROSETTA_PATH=/Users/brian/Documents/baker/rifdock/main CMAKE_FINAL_ROSETTA_PATH=/Users/brian/Documents/baker/rifdock/main/source/cmake/build_cxx11_omp_hdf5 cmake .. -DCMAKE_BUILD_TYPE=Release -DUSEHDF5=1
 make -j3 rif_dock_test rifgen 
