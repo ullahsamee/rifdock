@@ -185,6 +185,17 @@ namespace rif {
     	float const degrees_bound = this->opts.hotspot_sample_angle_bound;
     	float const radians_bound = degrees_bound * M_PI/180.0;
 
+
+		std::ofstream hotspot_dump_file;
+		std::ostringstream os;
+		os << "hotspots.pdb";
+		std::string s = os.str();
+		if (opts.dump_hotspot_samples>=NSAMP){		
+			hotspot_dump_file.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+			core::pose::Pose target_pose(*params->target);
+			target_pose.dump_pdb(hotspot_dump_file);
+		}
+
     	// std::ostream & out( std::cout );
     	// std::ofstream out;
     	// out.open("rifgen.txt");
@@ -236,7 +247,6 @@ namespace rif {
 
 				// for each irot that is the right restype (can be had from rot_intex_p)
 				int irot_begin = 0, irot_end = params -> rot_index_p -> size();
-				bool dump_target = true;
 				for( int irot = irot_begin; irot < irot_end; ++irot ){
 
 					::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms matrix
@@ -361,11 +371,6 @@ namespace rif {
 									//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
 
 
-									std::ofstream myfile;
-									std::ostringstream os;
-									os << "hotspots.pdb";
-									std::string s = os.str();
-									myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 									//target_pose.dump_pdb(s);
 									//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
 									//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
@@ -373,41 +378,31 @@ namespace rif {
 									//std::cout << positioned_rotamer_score << std::endl;
 									//accumulator->insert( x_position, positioned_rotamer_score-100, irot, i_hotspot_group, -1 );
 									
-									//OMG fix me !!!!
-									//Need an option for brain's insertion type
-									if (!this -> opts.single_file_hotspots_insertion){
-										accumulator->insert( x_position, positioned_rotamer_score-4, irot, i_hotspot_group, -1 );
-									}
-									else if (this -> opts.single_file_hotspots_insertion){
+
 										//std::cout << "new :                  " << std::endl;
-										auto atom_N = x_position * rotamer_atoms[0].position();
-										auto atom_CA = x_position * rotamer_atoms[1].position();
-										auto atom_C = x_position * rotamer_atoms[2].position(); 
+									auto atom_N = x_position * rotamer_atoms[0].position();
+									auto atom_CA = x_position * rotamer_atoms[1].position();
+									auto atom_C = x_position * rotamer_atoms[2].position(); 
 
-										BBActor bbact( atom_N, atom_CA, atom_C);
-										EigenXform new_x_position = bbact.position();
+									BBActor bbact( atom_N, atom_CA, atom_C);
+									EigenXform new_x_position = bbact.position();
 
-										accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, i_hspot_res, -1 );
+									accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, 
+										this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group,
+										 -1 );
 
-									}
 								 	if (opts.dump_hotspot_samples>=NSAMP){
-								 		myfile <<"MODEL        "<<irot<<a<<"                                                                  \n";
+								 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";
 										for( auto a : rotamer_atoms ){
 										 	a.set_position( x_position * a.position() );
-										 	::scheme::actor::write_pdb(myfile, a, params->rot_index_p->chem_index_ );
+										 	::scheme::actor::write_pdb(hotspot_dump_file, a, params->rot_index_p->chem_index_ );
 										}
-										myfile <<"ENDMDL                                                                          \n";							
+										hotspot_dump_file <<"ENDMDL                                                                          \n";							
 									} //end dumping hotspot atoms
 
-									
-									
-									if (dump_target && opts.dump_hotspot_samples>=NSAMP){
-										core::pose::Pose target_pose(*params->target);
-										target_pose.dump_pdb(myfile);
-										dump_target = false;
-									} //end stupid dump target structure							
+														
 
-									myfile.close();
+									// myfile.close();
 								} // end rotamer insertion score cutoff					
 							
 							} // end NSAMP
@@ -422,6 +417,10 @@ namespace rif {
 			} // end loop over hotspot group residue (with in one input pdb)
 		
 		}// end loop over all hotspot input files
+
+		if (opts.dump_hotspot_samples>=NSAMP){
+			hotspot_dump_file.close();
+		}
 		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
