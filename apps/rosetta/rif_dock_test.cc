@@ -85,6 +85,8 @@
 	#include <riflib/rifdock_subroutines/compile_and_filter_results.hh>
 	#include <riflib/rifdock_subroutines/output_results.hh>
 
+	#include <riflib/HSearchConstraints.hh>
+
 
 
 using ::scheme::make_shared;

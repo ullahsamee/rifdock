@@ -14,6 +14,7 @@
 #include <scheme/numeric/rand_xform.hh>
 #include <core/import_pose/import_pose.hh>
 #include <utility/file/file_sys_util.hh>
+#include <riflib/HSearchConstraints.hh>
 
 #include <string>
 #include <vector>
@@ -44,8 +45,9 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     core::pose::Pose scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
+    std::vector<CstBaseOP> csts;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts);
 
     ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -53,7 +55,8 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
         scafftag,
         scaffold_perturb,
         rot_index_p,
-        opt);
+        opt,
+        csts);
 
     conformation_ = make_conformation_from_data_cache(temp_data_cache, false);
 

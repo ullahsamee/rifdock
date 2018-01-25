@@ -79,10 +79,11 @@ using ::scheme::scaffold::TreeLimits;
 
 
 
-
-
+    d.scaffold_constraints_map[TreeIndex(0, 0)] = sdc->csts;
 
     bool success = do_an_hsearch( 0, samples, rdd, d, rdd.opt.dump_prefix + "_" + sdc->scafftag + "_dp0" );
+
+    d.scaffold_constraints_map.clear();
 
     if ( ! success ) return false;
 
@@ -184,6 +185,9 @@ using ::scheme::scaffold::TreeLimits;
         if ( ! sdc->local_onebody_p ) {
             sdc->setup_onebody_tables( rdd.rot_index_p, rdd.opt);
         }
+
+        d.scaffold_constraints_map[ti] = sdc->csts;
+
     }
 
 

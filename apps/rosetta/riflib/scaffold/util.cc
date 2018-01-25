@@ -56,7 +56,8 @@ get_info_for_iscaff(
     std::string & scafftag,
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
-    EigenXform & scaffold_perturb
+    EigenXform & scaffold_perturb,
+    std::vector<CstBaseOP> & csts
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -98,6 +99,21 @@ get_info_for_iscaff(
     } else {
         get_default_scaffold_res( scaffold, scaffold_res );
     }
+
+
+    if( opt.cst_fnames.size() ){
+        std::string cst_fname = "";
+        if( opt.cst_fnames.size() == opt.scaffold_fnames.size() ){
+            cst_fname = opt.cst_fnames.at(iscaff);
+        } else if( opt.cst_fnames.size() == 1 ){
+            cst_fname = opt.cst_fnames.front();
+        } else {
+            utility_exit_with_message( "-cst_files list not same length as -scaffolds list" );
+        }
+        runtime_assert_msg(parse_constrains_file(cst_fname, csts), "Faild to parse the constrain file!!!");
+    }
+
+
 
 }
 

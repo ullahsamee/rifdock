@@ -12,6 +12,7 @@
 #include <riflib/scaffold/MorphingScaffoldProvider.hh>
 #include <riflib/scaffold/util.hh>
 #include <ObjexxFCL/format.hh>
+#include <riflib/HSearchConstraints.hh>
 
 #include <string>
 #include <vector>
@@ -50,8 +51,9 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     core::pose::Pose scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
+    std::vector<CstBaseOP> csts;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts);
 
     ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -59,7 +61,8 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
         scafftag,
         scaffold_perturb,
         rot_index_p,
-        opt);
+        opt,
+        csts);
 
     ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
@@ -112,8 +115,9 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
+    std::vector<CstBaseOP> csts;
 
-    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb);
+    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, csts);
 
     int count = 0;
     for ( core::pose::PoseOP pose : poses ) {
@@ -125,7 +129,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             scafftag + boost::str(boost::format("%03i") % count),
             scaffold_perturb,
             rot_index_p,
-            opt);
+            opt,
+            csts);
 
         temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 

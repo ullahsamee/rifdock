@@ -15,6 +15,7 @@
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/output_results.hh>
 
+#include <unordered_map>
 
 namespace devel {
 namespace scheme {
@@ -23,6 +24,8 @@ namespace scheme {
 struct HSearchData {
     int64_t & total_search_effort;
     int64_t & non0_space_size;
+    // these must be the owning points from ScaffoldDataCache. No clones!
+    std::unordered_map<typename ScaffoldProvider::ScaffoldIndex, std::vector<CstBaseOP>> scaffold_constraints_map;
 };
 
 
@@ -63,6 +66,13 @@ do_an_hsearch(uint64_t start_resl,
         for( int this_stage = 0; this_stage < samples.size(); ++this_stage )
         {
             int iresl = this_stage + start_resl;
+
+            bool using_csts = false;
+            for ( std::pair<ScaffoldIndex, std::vector<CstBaseOP>> const & pair : d.scaffold_constraints_map ) {
+                ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(pair.first);
+                using_csts |= sdc->prepare_contraints( rdd.target, rdd.RESLS[iresl] );
+            }
+
             cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,rdd.RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[this_stage].size()) << " samples: ";
             int64_t const out_interval = samples[this_stage].size()/50;
             std::exception_ptr exception = nullptr;
@@ -94,6 +104,26 @@ do_an_hsearch(uint64_t start_resl,
                             samples[this_stage][i].score = 9e9;
                             continue;
                         } 
+                    }
+
+                    /////////////////////////////////////////////////////
+                    /////// Longxing' code  ////////////////////////////
+                    ////////////////////////////////////////////////////
+                    if (using_csts) {
+                        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(isamp);
+                        EigenXform x = tscene->position(1);
+                        bool pass_all = true;
+                        std::vector<CstBaseOP> const & csts = d.scaffold_constraints_map[si];
+                        for(CstBaseOP p : csts) {
+                            if (!p->apply( x )) {
+                                pass_all = false;
+                                break;
+                            }
+                        }
+                        if (!pass_all) {
+                            samples[this_stage][i].score = 9e9;
+                            continue;
+                        }
                     }
 
                     // the real rif score!!!!!!

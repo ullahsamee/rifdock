@@ -25,6 +25,7 @@
 #include <riflib/rotamer_energy_tables.hh>
 #include <riflib/scaffold/MultithreadPoseCloner.hh>
 #include <riflib/scaffold/util.hh>
+#include <riflib/HSearchConstraints.hh>
 
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
@@ -84,7 +85,7 @@ struct ScaffoldDataCache {
     MultithreadPoseCloner mpc_both_pose;                                       // scaffold_centered_p + target
     MultithreadPoseCloner mpc_both_full_pose;                                  // scaffold_full_centered_p + target
 
-
+    std::vector<CstBaseOP> csts;
 
 
 // Conformation state
@@ -98,7 +99,8 @@ struct ScaffoldDataCache {
         std::string const &scafftag_in,
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
-        RifDockOpt const & opt) {
+        RifDockOpt const & opt,
+        std::vector<CstBaseOP> const & csts_in ) {
 
         debug_sanity = 1337;
 
@@ -216,7 +218,28 @@ struct ScaffoldDataCache {
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
+
+
+        for(CstBaseOP cst_in : csts_in ) { 
+            CstBaseOP cst = cst_in->clone(); // make a copy
+            cst->reset();   // clear previous scaffold related data
+            csts.push_back(cst);
+        }
+
     }
+
+    // returns true if there are more than 0 constraints
+    bool
+    prepare_contraints( core::pose::Pose const & target, double resl ) {
+        bool any_csts = false;
+        for(CstBaseOP cst : csts ) { 
+            cst->set_coordinates(target, *scaffold_centered_p);
+            cst->init(target, *scaffold_centered_p, resl);
+            any_csts = true;
+        }
+        return any_csts;
+    }
+
 
     void
     setup_fake_onebody_tables(

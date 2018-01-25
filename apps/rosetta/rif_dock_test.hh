@@ -160,7 +160,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
 
     OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
-
+    // constrain file
+	OPT_1GRP_KEY(  StringVector, rif_dock, cst_files )
 
 
 
@@ -319,6 +320,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
 			NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","NOT SPECIFIED");
+	        // constrain file names
+			NEW_OPT(  rif_dock::cst_files, "" , utility::vector1<std::string>() );
 
 		}
 	#endif
@@ -461,6 +464,9 @@ struct RifDockOpt
     float       max_beam_multiplier                  ;
 
     std::string rot_spec_fname                       ;
+    // constrain file names
+	std::vector<std::string> cst_fnames              ;
+
 
     void init_from_cli();
 
@@ -669,6 +675,8 @@ struct RifDockOpt
         	dont_center_scaffold = true;
         }
 
+        // constrain file names
+		for( std::string s : option[rif_dock::cst_files  ]() ) cst_fnames.push_back(s);
 
 
 	}

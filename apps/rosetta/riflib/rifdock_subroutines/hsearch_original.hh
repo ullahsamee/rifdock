@@ -35,8 +35,8 @@ hsearch_original(
 
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
-
-    ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(scaffold_index_default_value( ScaffoldIndex()));
+    ScaffoldIndex si = scaffold_index_default_value( ScaffoldIndex());
+    ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
@@ -49,6 +49,7 @@ hsearch_original(
     samples[0].resize( ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)) );
     for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorBigIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
 
+    d.scaffold_constraints_map[si] = sdc->csts;
 
     bool search_failed = !do_an_hsearch(0, samples, rdd, d, dump_prefix);
 

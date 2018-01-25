@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <rif_dock_test.hh>
+#include <riflib/HSearchConstraints.hh>
 
 #include <core/pose/Pose.hh>
 #include <core/scoring/Energies.hh>
@@ -40,7 +41,8 @@ get_info_for_iscaff(
     std::string & scafftag,
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
-    EigenXform & scaffold_perturb
+    EigenXform & scaffold_perturb,
+    std::vector<CstBaseOP> & csts
     );
 
 // historically, non_fa was used during HSearch and fa was used during hack pack
