@@ -774,6 +774,11 @@ get_rotamer_index(
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	//load rotamer spec from cache file
 	utility::io::izstream infile(cachefile);
+	if ( ! infile ) {
+		utility_exit_with_message("Rotamer index spec file: " + cachefile +
+			" could not be loaded.\nIf you\'re on the digs and you\'re using an old rifgen, add this line to your flags:\n" 
+			+ "-rif_dock:rot_spec_fname /home/bcov/sc/random/old_rif_rotamer_index_spec.txt");
+	}
 	rot_index_spec.load(infile);
 	rot_index_spec.fill_rotamer_index(*rot_index);
 	return rot_index;
