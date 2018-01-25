@@ -579,7 +579,7 @@ std::string get_rif_type_from_file( std::string fname )
 					break;
 				}
 				int irot = rotscores.rotamer(i_rs);
-				float const rot1be = std::max((float)(*rotamer_energies_1b_).at(ires).at(irot), 0.0f);
+				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);

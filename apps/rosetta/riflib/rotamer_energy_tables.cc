@@ -184,7 +184,7 @@ compute_onebody_rotamer_energies(
 				for( int k = 0; k < rot_index.nchi(jr); ++k ){
 					work_pose.set_chi( k+1, ir, rot_index.chi( jr, k ) );
 				}
-				onebody_rotamer_energies[ir-1][jr] = score_func->score( work_pose ) - base_score;
+				onebody_rotamer_energies[ir-1][jr] = std::max(0.0f, (float)(score_func->score( work_pose ) - base_score));
 				// std::cout << "fa_dun " << ir << " " << jr << " "<< work_pose.energies().residue_total_energies(ir)[core::scoring::fa_dun] << std::endl;
 				work_pose.replace_residue( ir, *ala, true );
 				// if( jr > 2	 ) break;
