@@ -76,14 +76,12 @@ using ::scheme::scaffold::TreeLimits;
     }
     
 
-
-
-
-    d.scaffold_constraints_map[TreeIndex(0, 0)] = sdc->csts;
+    d.unique_scaffolds.resize(1);
+    d.unique_scaffolds[0] = TreeIndex(0, 0);
 
     bool success = do_an_hsearch( 0, samples, rdd, d, rdd.opt.dump_prefix + "_" + sdc->scafftag + "_dp0" );
 
-    d.scaffold_constraints_map.clear();
+    d.unique_scaffolds.resize(0);
 
     if ( ! success ) return false;
 
@@ -186,7 +184,7 @@ using ::scheme::scaffold::TreeLimits;
             sdc->setup_onebody_tables( rdd.rot_index_p, rdd.opt);
         }
 
-        d.scaffold_constraints_map[ti] = sdc->csts;
+        d.unique_scaffolds.push_back(ti);
 
     }
 

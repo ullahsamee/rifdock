@@ -49,7 +49,8 @@ hsearch_original(
     samples[0].resize( ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)) );
     for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorBigIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
 
-    d.scaffold_constraints_map[si] = sdc->csts;
+    d.unique_scaffolds.resize(1);
+    d.unique_scaffolds.front() = si;
 
     bool search_failed = !do_an_hsearch(0, samples, rdd, d, dump_prefix);
 

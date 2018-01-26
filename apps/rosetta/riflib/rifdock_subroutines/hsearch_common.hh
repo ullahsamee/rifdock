@@ -24,14 +24,13 @@ namespace scheme {
 struct HSearchData {
     int64_t & total_search_effort;
     int64_t & non0_space_size;
-    // these must be the owning points from ScaffoldDataCache. No clones!
-    std::unordered_map<typename ScaffoldProvider::ScaffoldIndex, std::vector<CstBaseOP>> scaffold_constraints_map;
+    std::vector< typename ScaffoldProvider::ScaffoldIndex > unique_scaffolds;
 };
 
 
 bool
 do_an_hsearch(uint64_t start_resl, 
-    std::vector< std::vector< SearchPoint > > & samples, 
+    std::vector< std::vector< SearchPoint > > & samples,
     RifDockData & rdd,
     HSearchData & d,
     std::string const & dump_prefix,
@@ -51,12 +50,6 @@ do_an_hsearch(uint64_t start_resl,
 
 
 
-    using ::scheme::scaffold::BOGUS_INDEX;
-    using ::scheme::scaffold::TreeIndex;
-    using ::scheme::scaffold::TreeLimits;
-
-
-
 
 
 
@@ -68,10 +61,13 @@ do_an_hsearch(uint64_t start_resl,
             int iresl = this_stage + start_resl;
 
             bool using_csts = false;
-            for ( std::pair<ScaffoldIndex, std::vector<CstBaseOP>> const & pair : d.scaffold_constraints_map ) {
-                ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(pair.first);
+            for ( ScaffoldIndex si : d.unique_scaffolds ) {
+                ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
                 using_csts |= sdc->prepare_contraints( rdd.target, rdd.RESLS[iresl] );
             }
+
+            bool need_sdc = using_csts || rdd.opt.tether_to_input_position != 0;
+
 
             cout << "HSearsh stage " << iresl+1 << " resl " << F(5,2,rdd.RESLS[iresl]) << " begin threaded sampling, " << KMGT(samples[this_stage].size()) << " samples: ";
             int64_t const out_interval = samples[this_stage].size()/50;
@@ -92,37 +88,38 @@ do_an_hsearch(uint64_t start_resl,
                     ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
                     rdd.director->set_scene( isamp, iresl, *tscene );
 
-                    if( rdd.opt.tether_to_input_position ){
+                    if ( need_sdc ) {
                         ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(isamp);
                         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
-                        float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 
-                        EigenXform x = tscene->position(1);
-                        x.translation() -= sdc->scaffold_center;
-                        float xmag =  xform_magnitude( x, redundancy_filter_rg );
-                        if( xmag > rdd.opt.tether_to_input_position_cut + rdd.RESLS[iresl] ){
-                            samples[this_stage][i].score = 9e9;
-                            continue;
-                        } 
-                    }
+                        if( rdd.opt.tether_to_input_position ){
+                            float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 
-                    /////////////////////////////////////////////////////
-                    /////// Longxing' code  ////////////////////////////
-                    ////////////////////////////////////////////////////
-                    if (using_csts) {
-                        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(isamp);
-                        EigenXform x = tscene->position(1);
-                        bool pass_all = true;
-                        std::vector<CstBaseOP> const & csts = d.scaffold_constraints_map[si];
-                        for(CstBaseOP p : csts) {
-                            if (!p->apply( x )) {
-                                pass_all = false;
-                                break;
-                            }
+                            EigenXform x = tscene->position(1);
+                            x.translation() -= sdc->scaffold_center;
+                            float xmag =  xform_magnitude( x, redundancy_filter_rg );
+                            if( xmag > rdd.opt.tether_to_input_position_cut + rdd.RESLS[iresl] ){
+                                samples[this_stage][i].score = 9e9;
+                                continue;
+                            } 
                         }
-                        if (!pass_all) {
-                            samples[this_stage][i].score = 9e9;
-                            continue;
+
+                        /////////////////////////////////////////////////////
+                        /////// Longxing' code  ////////////////////////////
+                        ////////////////////////////////////////////////////
+                        if (using_csts) {
+                            EigenXform x = tscene->position(1);
+                            bool pass_all = true;
+                            for(CstBaseOP p : sdc->csts) {
+                                if (!p->apply( x )) {
+                                    pass_all = false;
+                                    break;
+                                }
+                            }
+                            if (!pass_all) {
+                                samples[this_stage][i].score = 9e9;
+                                continue;
+                            }
                         }
                     }
 
