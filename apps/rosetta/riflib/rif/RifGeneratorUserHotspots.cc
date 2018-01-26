@@ -201,19 +201,22 @@ namespace rif {
     	// out.open("rifgen.txt");
 
 		// loop over files (one file is one hotspot group)
+
+		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
 			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
-			std::cout << hotspot_file << std::endl;
+			std::cout << "Hotspot group: " << i_hotspot_group << " - " << hotspot_file << std::endl;
 			
 			// read hotspot file into pose
 			core::pose::Pose pose;
 			core::import_pose::pose_from_file(pose,hotspot_file);
       		
+      		std::cout << "Processing hotspots... " << std::flush; // No endl here!!!!
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
 
-				std::cout << "Hotspot: " << i_hspot_res << std::endl;
+				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
 
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
 				
@@ -417,6 +420,8 @@ namespace rif {
 			} // end loop over hotspot group residue (with in one input pdb)
 		
 		}// end loop over all hotspot input files
+
+		std::cout << std::endl; // This ends the "progress bar"
 
 		if (opts.dump_hotspot_samples>=NSAMP){
 			hotspot_dump_file.close();

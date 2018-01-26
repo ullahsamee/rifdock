@@ -528,7 +528,7 @@ int main(int argc, char *argv[]) {
 
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
-	std::cout << "start testing ..........." << std::endl;
+	std::cout << "Preparing rotamer index spec..." << std::endl;
 	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers]());
 
 	for( int igen = 0; igen < generators.size(); ++igen )
