@@ -17,6 +17,7 @@ This section needs work, but the gist is:
 Optain a copy of gcc with version >= 4.9 (I have no idea if this is the minimum version)
 
 Build a Rosetta cxx11_omp build with:  
+cd rosetta/main/source  
 CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -remake  
 
 Clone this repository and perform:
