@@ -20,7 +20,7 @@ Build a Rosetta cxx11_omp build with:
 cd rosetta/main/source  
 CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -remake  
 
-Clone this repository and perform:
+Clone this repository and perform:  
 cd scheme  
 mkdir build  
 cd build  
