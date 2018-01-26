@@ -129,7 +129,7 @@ TEST( RosettaField, test_btn ){
 
 	// some simple spot checks... not vetted... checks for changes only
 	ASSERT_NEAR( rf.compute_rosetta_energy( 0,   0, 0, 5 ), 0.0f , 0.001 );
-	ASSERT_NEAR( rf.compute_rosetta_energy( 0, -10, 4, 5 ), 266.95834f , 0.001 );
+	ASSERT_NEAR( rf.compute_rosetta_energy( 0, -10, 4, 5 ), 193.23449f , 0.001 );
 	ASSERT_NEAR( rf.compute_rosetta_energy( 0, -16, 7, 4 ), -0.034172565f , 0.001 );
 
 	F3 lb(9e9,9e9,9e9),ub(-9e9,-9e9,-9e9);
