@@ -150,14 +150,16 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_deletion )
     OPT_1GRP_KEY(  Real        , rif_dock, fragment_cluster_tolerance )
     OPT_1GRP_KEY(  Real        , rif_dock, fragment_max_rmsd )
-    OPT_1GRP_KEY(  Integer     , rif_dock, max_structures )
+    OPT_1GRP_KEY(  Integer     , rif_dock, max_fragments )
+    OPT_1GRP_KEY(  StringVector, rif_dock, morph_rules_files )
+
+    OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
+
     OPT_1GRP_KEY(  Integer     , rif_dock, dive_resl )
     OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
-    OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
-
     OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
-    OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
     OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
 
     OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
@@ -311,14 +313,16 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_deletion, "Maximum number of residues to shorten protein by.", 0 );
 			NEW_OPT(  rif_dock::fragment_cluster_tolerance, "RMSD cluster tolerance for fragments.", 0.5 );
 			NEW_OPT(  rif_dock::fragment_max_rmsd , "Max RMSD to starting fragment.", 10000 );
-			NEW_OPT(  rif_dock::max_structures , "Maximum number of fragments to find.", 10000000 );
+			NEW_OPT(  rif_dock::max_fragments, "Maximum number of fragments to find.", 10000000 );
+			NEW_OPT(  rif_dock::morph_rules_files, "List of files for each scaffold to specify morph regions", utility::vector1<std::string>() );
+
+			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
+			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
+
 			NEW_OPT(  rif_dock::dive_resl , "Dive to this depth before diversifying", 5 );
 			NEW_OPT(  rif_dock::pop_resl , "Return to this depth after diversifying", 4 );
-			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
-
 			NEW_OPT(  rif_dock::match_this_pdb, "Like tether to input position but applied at diversification time.", "" );
 			NEW_OPT(  rif_dock::match_this_rmsd, "RMSD for match_this_pdb", 7 );
-			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
 			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
 			NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","NOT SPECIFIED");
@@ -456,14 +460,16 @@ struct RifDockOpt
     int         max_deletion                         ;
     float       fragment_cluster_tolerance           ;
     float       fragment_max_rmsd                    ;
-    int         max_structures                       ;
+    int         max_fragments                        ;
+    std::vector<std::string> morph_rules_fnames      ;
+
+    bool        include_parent                       ;
+    bool        use_parent_body_energies             ;
+
     int         dive_resl                            ;
     int         pop_resl                             ;
-    bool        include_parent                       ;
-
     std::string match_this_pdb                       ;
     float       match_this_rmsd                      ;
-    bool        use_parent_body_energies             ;
     float       max_beam_multiplier                  ;
 
     std::string rot_spec_fname                       ;
@@ -601,14 +607,15 @@ struct RifDockOpt
 		max_deletion                           = option[rif_dock::max_deletion                          ]();
 		fragment_cluster_tolerance             = option[rif_dock::fragment_cluster_tolerance            ]();
         fragment_max_rmsd                      = option[rif_dock::fragment_max_rmsd                     ]();
-        max_structures                         = option[rif_dock::max_structures                        ]();
+        max_fragments                          = option[rif_dock::max_fragments                         ]();
+
+        include_parent                         = option[rif_dock::include_parent                        ]();
+        use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
+
         dive_resl                              = option[rif_dock::dive_resl                             ]();
         pop_resl                               = option[rif_dock::pop_resl                              ]();
-        include_parent                         = option[rif_dock::include_parent                        ]();
-
         match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
         match_this_rmsd                        = option[rif_dock::match_this_rmsd                       ]();
-        use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
         max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                   ]();
 
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
@@ -679,8 +686,11 @@ struct RifDockOpt
         	dont_center_scaffold = true;
         }
 
+        for( std::string s : option[rif_dock::morph_rules_files ]() ) morph_rules_fnames.push_back(s);
+
         // constrain file names
 		for( std::string s : option[rif_dock::cst_files  ]() ) cst_fnames.push_back(s);
+
 
 
 	}

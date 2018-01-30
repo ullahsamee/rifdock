@@ -46,8 +46,9 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
     std::vector<CstBaseOP> csts;
+    MorphRules morph_rules;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
 
     ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
         scaffold,

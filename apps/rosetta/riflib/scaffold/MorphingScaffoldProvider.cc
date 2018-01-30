@@ -52,8 +52,9 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
     std::vector<CstBaseOP> csts;
+    MorphRules morph_rules;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
 
     ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -84,86 +85,110 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     using ObjexxFCL::format::I;
 
 #ifdef USEHDF5
-    protocols::indexed_structure_store::movers::DirectSegmentLookupMover dsl_mover;
 
-    uint64_t removed_length = opt.high_cut_site - opt.low_cut_site - 1;
-
-    protocols::indexed_structure_store::DirectSegmentLookupConfig config;
-    config.rmsd_tolerance = 0.3;
-    config.segment_cluster_tolerance = opt.fragment_cluster_tolerance;
-    config.max_insertion_length = removed_length + opt.max_insertion;
-    dsl_mover.lookup_config( config );
-
-    dsl_mover.from_chain( 1 );
-    dsl_mover.to_chain( 2 );
-
-    ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
-
-    core::pose::PoseCOP scaffold = data_cache->scaffold_full_centered_p;
-
-
-    std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
-            dsl_mover, 
-            *scaffold, 
-            opt.low_cut_site,
-            opt.high_cut_site,
-            removed_length + opt.max_insertion,
-            opt.max_structures,
-            opt.fragment_max_rmsd );
-
-        std::string scafftag;
+    std::string scafftag;
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
     std::vector<CstBaseOP> csts;
+    MorphRules morph_rules;
 
-    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, csts);
 
-    int count = 0;
-    for ( core::pose::PoseOP pose : poses ) {
-        count++;
+    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
 
-        ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
-            *pose,
-            scaffold_res,
-            scafftag + boost::str(boost::format("%03i") % count),
-            scaffold_perturb,
-            rot_index_p,
-            opt,
-            csts);
+    for ( uint64_t rulei = 0; rulei < morph_rules.size(); rulei++ ) {
 
-        temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+        MorphRule const & rule = morph_rules[rulei];
 
-        if ( opt.use_parent_body_energies ) {
-            std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
-            if ( ! data_cache->local_onebody_p ) {
-                data_cache->setup_onebody_tables( rot_index_p, opt );
+        std::cout << "Looking for fragment insertions using these rules: " << std::endl;
+        std::cout << "              low_cut_site: " << rule.low_cut_site << std::endl;
+        std::cout << "             high_cut_site: " << rule.high_cut_site << std::endl;
+        std::cout << "              max_deletion: " << rule.max_deletion << std::endl;
+        std::cout << "             max_insertion: " << rule.max_insertion << std::endl;
+        std::cout << "             max_fragments: " << rule.max_fragments << std::endl;
+        std::cout << "fragment_cluster_tolerance: " << rule.fragment_cluster_tolerance << std::endl;
+        std::cout << "         fragment_max_rmsd: " << rule.fragment_max_rmsd << std::endl;
+
+        protocols::indexed_structure_store::movers::DirectSegmentLookupMover dsl_mover;
+
+        uint64_t removed_length = rule.high_cut_site - rule.low_cut_site - 1;
+
+        protocols::indexed_structure_store::DirectSegmentLookupConfig config;
+        config.rmsd_tolerance = 0.3;
+        config.segment_cluster_tolerance = rule.fragment_cluster_tolerance;
+        config.max_insertion_length = removed_length + rule.max_insertion;
+        dsl_mover.lookup_config( config );
+
+        dsl_mover.from_chain( 1 );
+        dsl_mover.to_chain( 2 );
+
+        ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
+
+        core::pose::PoseCOP scaffold = data_cache->scaffold_full_centered_p;
+
+
+        std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
+                dsl_mover, 
+                *scaffold, 
+                rule.low_cut_site,
+                rule.high_cut_site,
+                removed_length + rule.max_insertion,
+                rule.max_fragments,
+                rule.fragment_max_rmsd );
+
+
+
+
+
+        int count = 0;
+        for ( core::pose::PoseOP pose : poses ) {
+            count++;
+
+
+
+            ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
+                *pose,
+                scaffold_res,
+                scafftag + boost::str(boost::format("%03ir%03i") % rulei % count),
+                scaffold_perturb,
+                rot_index_p,
+                opt,
+                csts);
+
+            temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+
+            if ( opt.use_parent_body_energies ) {
+                std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
+                if ( ! data_cache->local_onebody_p ) {
+                    data_cache->setup_onebody_tables( rot_index_p, opt );
+                }
+                if ( ! data_cache->local_twobody_p ) {
+                    data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+                }
+                // one-body
+                temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
+                temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
+                // two-body
+                temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
+                temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
             }
-            if ( ! data_cache->local_twobody_p ) {
-                data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
-            }
-            // one-body
-            temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
-            temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
-            // two-body
-            temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
-            temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+
+            ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
+
+            MorphMember mmember;
+            mmember.conformation = conformation;
+
+            mmember.tree_relation.depth = 1;
+            mmember.tree_relation.parent_member = 0;
+            mmember.tree_relation.first_child = BOGUS_INDEX;
+            mmember.tree_relation.last_child = BOGUS_INDEX;
+
+            pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
+
+            add_morph_member( mmember );
         }
-
-        ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
-
-        MorphMember mmember;
-        mmember.conformation = conformation;
-
-        mmember.tree_relation.depth = 1;
-        mmember.tree_relation.parent_member = 0;
-        mmember.tree_relation.first_child = BOGUS_INDEX;
-        mmember.tree_relation.last_child = BOGUS_INDEX;
-
-        pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
-
-        add_morph_member( mmember );
     }
+
 
     if ( opt.include_parent ) {
         MorphMember const & parent_mm = get_morph_member( ti );
@@ -257,6 +282,81 @@ void
 MorphingScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) {
     get_data_cache_slow( i )->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
 }
+
+
+// MorphRule
+// morph_rule_from_options(RifDockOpt const & opt) {
+//     MorphRule r;
+
+//     r.low_cut_site = opt.low_cut_site;
+//     r.high_cut_site = opt.high_cut_site;
+//     r.max_deletion = opt.max_deletion;
+//     r.max_insertion = opt.max_insertion;
+//     r.num_fragments = opt.max_structures;
+//     r.fragment_cluster_tolerance = opt.fragment_cluster_tolerance;
+//     r.fragment_max_rmsd = opt.fragment_max_rmsd;
+
+//     return r;
+// }
+
+
+
+// // S entry
+// // low_cut high_cut max_deletion max_insertion num_structures cluster_tolerance max_rmsd
+
+// bool
+// parse_morph_rules_files(std::string fname, MorphRules & rules, RifDockOptions const & opt) {
+
+//     runtime_assert_msg(utility::file::file_exists( fname ), "morph_rules file does not exist: " + fname );
+//     std::ifstream in;
+//     in.open(fname, std::ios::in);
+//     // utility::io::izstream in(fname);
+//     std::string s;
+//     while (std::getline(in, s)) {
+//         std::string save_s = s;
+//         if (s.empty()) continue;
+
+//         utility::replace_in( s, ":", " ");
+//         utility::replace_in( s, "#", " #");
+//         utility::vector1<std::string> comment_splt = utility::string_split_simple(s, ' ');
+//         utility::vector1<std::string> splt;
+//         for ( std::string item : comment_splt ) {
+//             item = utility::strip(item, " \t\n");
+//             if (item.empty()) continue;
+//             if (item[0] == '#') break;
+//             splt.push_back(item);
+//         }
+//         if (splt.size() == 0) continue;
+
+//         std::cout << "Parsing morph rules: " + save_s << std::endl; 
+//         if ( "S" == splt[1]) {
+//             MorphRule r;
+//             if (split.size() < 5) {
+//                 std::cout << "Bad line format: " << save_s << std::endl;
+//                 return false;
+//             }
+//             r.low_cut_site = utility::string2int(splt[2]);
+//             r.high_cut_site = utility::string2int(splt[3]);
+//             r.max_deletion = utility::string2int(splt[4]);
+//             r.max_insertion = utility::string2int(splt[5]);
+//             r.num_fragments = splt.length() >= 6 ? utility::string2int(splt[6]) : opt.max_structures;
+//             r.fragment_cluster_tolerance = splt.length() >= 7 ? utility::string2float(splt[7]) : opt.fragment_cluster_tolerance;
+//             r.fragment_max_rmsd = splt.length() >= 8 ? utility::string2float(splt[8]) : opt.fragment_max_rmsd;
+
+//             csts.push_back(make_shared<AtomPairCst>(splt[2], utility::string2int(splt[3]), splt[4], utility::string2int(splt[5]), utility::string2float(splt[6]) ));
+//         }else{
+//             std::cout << "Error parsing line: " << save_s << std::endl;
+//             return false;
+//         }
+//     }
+
+//     if (rules.size() == 0) {
+//         std::cout << "Error, no morph rules in: " << fname << std::endl;
+//         return false;
+//     }
+    
+//     return true;
+// }
 
 
 

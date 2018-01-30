@@ -174,6 +174,11 @@ using ::scheme::scaffold::TreeLimits;
     morph_provider->test_make_children( TreeIndex(0, 0) );
 
     TreeLimits limits = morph_provider->get_scaffold_index_limits();
+    if (limits.size() == 1) {
+        std::cout << "No scaffolds generated for morph_rules selection" << std::endl;
+        return false;
+    }
+
     uint64_t num_scaffolds = limits[1];
 
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {

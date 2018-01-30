@@ -57,7 +57,8 @@ get_info_for_iscaff(
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
     EigenXform & scaffold_perturb,
-    std::vector<CstBaseOP> & csts
+    std::vector<CstBaseOP> & csts,
+    MorphRules & morph_rules
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -113,7 +114,20 @@ get_info_for_iscaff(
         runtime_assert_msg(parse_constrains_file(cst_fname, csts), "Faild to parse the constrain file!!!");
     }
 
-
+    if( opt.morph_rules_fnames.size() ){
+        std::string morph_rules_fname = "";
+        if( opt.morph_rules_fnames.size() == opt.scaffold_fnames.size() ){
+            morph_rules_fname = opt.morph_rules_fnames.at(iscaff);
+        } else if( opt.morph_rules_fnames.size() == 1 ){
+            morph_rules_fname = opt.morph_rules_fnames.front();
+        } else {
+            utility_exit_with_message( "-morph_rules_files list not same length as -scaffolds list" );
+        }
+        runtime_assert_msg(parse_morph_rules_file(morph_rules_fname, morph_rules, opt), "Faild to parse the morph_rules file!!!");
+    } else {
+        std::cout << "Morph rules file not specified, using command-line options" << std::endl;
+        morph_rules.push_back(morph_rule_from_options(opt));
+    }
 
 }
 
@@ -308,7 +322,6 @@ apply_direct_segment_lookup_mover(
 
         results.push_back( result );
     } while ( results.size() < max_structures && ( result = dsl_mover.get_additional_output() ) );
-
 
 
     return results;
