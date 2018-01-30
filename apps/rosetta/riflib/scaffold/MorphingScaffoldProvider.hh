@@ -12,6 +12,7 @@
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/scaffold/morph_util.hh>
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 
@@ -30,35 +31,6 @@
 
 namespace devel {
 namespace scheme {
-
-
-
-struct MorphAction {
-    core::Size first_seq_pos;
-    core::Size last_seq_pos;
-    core::Size frag_length;
-    std::string frag_id;
-};
-
-
-
-
-struct MorphRule {
-    ::scheme::Bounds<core::Size> morph_range;
-    ::scheme::Bounds<core::Size> fragment_length_range;
-};
-
-
-
-typedef std::vector<MorphRule> MorphRules;
-
-
-struct MorphMember {
-    ParametricSceneConformationCOP conformation;
-    MorphRules morph_rules;
-    std::vector<MorphAction> morph_history;
-    ::scheme::scaffold::TreeRelation tree_relation;
-};
 
 
 
@@ -111,7 +83,6 @@ private:
     ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager ;
 
 };
-
 
 
 }}

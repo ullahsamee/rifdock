@@ -14,6 +14,7 @@
 #include <riflib/rifdock_typedefs.hh>
 #include <rif_dock_test.hh>
 #include <riflib/HSearchConstraints.hh>
+#include <riflib/scaffold/morph_util.hh>
 
 #include <core/pose/Pose.hh>
 #include <core/scoring/Energies.hh>
@@ -42,7 +43,8 @@ get_info_for_iscaff(
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
     EigenXform & scaffold_perturb,
-    std::vector<CstBaseOP> & csts
+    std::vector<CstBaseOP> & csts,
+    MorphRules & morph_rules
     );
 
 // historically, non_fa was used during HSearch and fa was used during hack pack
@@ -76,6 +78,8 @@ internal_comparative_clash_check( core::scoring::Energies const & original_energ
     core::Real max_fa_rep_delta,
     core::Size low_position,
     core::Size high_position );
+
+
 
 
 

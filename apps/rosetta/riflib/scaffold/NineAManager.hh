@@ -16,6 +16,7 @@
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/scaffold/nineA_util.hh>
 #include <riflib/HSearchConstraints.hh>
+#include <riflib/scaffold/MorphingScaffoldProvider.hh>
 
 #include <numeric/xyzVector.hh>
 #include <numeric/xyzMatrix.hh>
