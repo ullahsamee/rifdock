@@ -55,7 +55,8 @@ void get_onebody_rotamer_energies(
 	std::vector<std::vector<float> > & scaffold_onebody_rotamer_energies,
 	std::vector<std::string> const & cachepath,
 	std::string const & cachefile,
-	bool replace_with_ala
+	bool replace_with_ala,
+	float favorable_1be_multiplier
 ){
 	utility::io::izstream in;
 	std::string cachefile_found = devel::scheme::open_for_read_on_path( cachepath, cachefile, in );
@@ -105,14 +106,15 @@ void get_onebody_rotamer_energies(
 			out.close();
 		}
 	}
-	// for(int j = 0; j < scaffold_onebody_rotamer_energies[0].size(); ++j){
-	// 	std::string n = rot_index.resname(j);
-	// 	if( n == "TRP" || n == "PHE" || n == "MET" ){
-	// 		for(int i = 0; i < scaffold_onebody_rotamer_energies.size(); ++i){
-	// 			scaffold_onebody_rotamer_energies[i][j] = 9e9;
-	// 		}
-	// 	}
-	// }
+
+	for( int ir = 1; ir <= scaffold_onebody_rotamer_energies.size(); ++ir ){
+		for( int jr = 0; jr < scaffold_onebody_rotamer_energies[ir-1].size(); ++jr ){
+			float _1be = scaffold_onebody_rotamer_energies[ir-1][jr];
+			if (_1be < 0) {
+				scaffold_onebody_rotamer_energies[ir-1][jr] = favorable_1be_multiplier * _1be;
+			}
+		}
+	}
 }
 
 void
@@ -184,7 +186,7 @@ compute_onebody_rotamer_energies(
 				for( int k = 0; k < rot_index.nchi(jr); ++k ){
 					work_pose.set_chi( k+1, ir, rot_index.chi( jr, k ) );
 				}
-				onebody_rotamer_energies[ir-1][jr] = std::max(0.0f, (float)(score_func->score( work_pose ) - base_score));
+				onebody_rotamer_energies[ir-1][jr] = score_func->score( work_pose ) - base_score;
 				// std::cout << "fa_dun " << ir << " " << jr << " "<< work_pose.energies().residue_total_energies(ir)[core::scoring::fa_dun] << std::endl;
 				work_pose.replace_residue( ir, *ala, true );
 				// if( jr > 2	 ) break;
