@@ -26,7 +26,8 @@ void get_onebody_rotamer_energies(
 	std::vector<std::vector<float> > & scaffold_onebody_rotamer_energies,
 	std::vector<std::string> const & cachepath,
 	std::string const & cachefile,
-	bool replace_with_ala = true
+	bool replace_with_ala = true,
+	float favorable_1be_multiplier = 1
 );
 
 void

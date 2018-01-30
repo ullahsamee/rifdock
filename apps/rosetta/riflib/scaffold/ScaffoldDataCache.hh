@@ -301,7 +301,8 @@ struct ScaffoldDataCache {
                 *scaffold_onebody_glob0_p,
                 opt.data_cache_path,
                 cachefile_1be,
-                opt.replace_all_with_ala_1bre
+                opt.replace_all_with_ala_1bre,
+                opt.favorable_1body_multiplier
             );
 
         if( opt.restrict_to_native_scaffold_res ){

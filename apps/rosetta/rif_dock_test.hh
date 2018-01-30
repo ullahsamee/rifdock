@@ -47,6 +47,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, downscale_atr_by_hierarchy )
+	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
 	OPT_1GRP_KEY(  Real        , rif_dock, rotrf_resl )
@@ -190,6 +191,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_rf_resl, ""       , 0.25 );
 			NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
 			NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
+			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 
@@ -383,6 +385,7 @@ struct RifDockOpt
 	float       max_rf_bounding_ratio                ;
 	std::string target_rf_cache                      ;
 	bool        downscale_atr_by_hierarchy           ;
+	float       favorable_1body_multiplier           ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_center_scaffold				 ;
 	bool        dont_use_scaffold_loops              ;
@@ -533,6 +536,7 @@ struct RifDockOpt
 		max_rf_bounding_ratio                  = option[rif_dock::max_rf_bounding_ratio                 ]();
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
+		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_center_scaffold				   = option[rif_dock::dont_center_scaffold					]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
