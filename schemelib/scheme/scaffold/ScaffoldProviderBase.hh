@@ -18,6 +18,7 @@
 #include <boost/any.hpp>
 #include <boost/functional/hash.hpp>
 
+#include <core/pose/Pose.hh>
 
 
 namespace scheme {
@@ -49,6 +50,8 @@ struct ScaffoldProviderBase {
     virtual ScaffoldIndex get_representative_scaffold_index() = 0;
 
     virtual void setup_twobody_tables( ScaffoldIndex i ) = 0;
+
+    virtual void modify_pose_for_output( ScaffoldIndex i, core::pose::Pose & pose ) {}
 
 };
 

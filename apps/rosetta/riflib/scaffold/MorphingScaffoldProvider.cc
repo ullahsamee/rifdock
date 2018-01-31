@@ -182,6 +182,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             mmember.tree_relation.parent_member = 0;
             mmember.tree_relation.first_child = BOGUS_INDEX;
             mmember.tree_relation.last_child = BOGUS_INDEX;
+            mmember.morph_history.push_back(rule);
 
             pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
 
@@ -284,79 +285,33 @@ MorphingScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex i 
 }
 
 
-// MorphRule
-// morph_rule_from_options(RifDockOpt const & opt) {
-//     MorphRule r;
+void 
+MorphingScaffoldProvider::modify_pose_for_output( ::scheme::scaffold::TreeIndex i, core::pose::Pose & pose ) {
+    MorphMember & mm = get_morph_member( i );
 
-//     r.low_cut_site = opt.low_cut_site;
-//     r.high_cut_site = opt.high_cut_site;
-//     r.max_deletion = opt.max_deletion;
-//     r.max_insertion = opt.max_insertion;
-//     r.num_fragments = opt.max_structures;
-//     r.fragment_cluster_tolerance = opt.fragment_cluster_tolerance;
-//     r.fragment_max_rmsd = opt.fragment_max_rmsd;
+    core::pose::PDBInfoOP pdb_info = pose.pdb_info();
 
-//     return r;
-// }
+    for ( uint64_t i = 0; i < mm.morph_history.size(); i++) {
+        MorphRule const & rule = mm.morph_history[i];
+        core::Size low_add = rule.low_cut_site - 1;
+        core::Size high_add = rule.high_cut_site + 1;
+
+        for ( core::Size seq_pos = low_add; seq_pos <= high_add; seq_pos++ ) {
+            if ( ! pdb_info->res_haslabel(seq_pos, "FRAGMENT")) {
+                pdb_info->add_reslabel(seq_pos, "FRAGMENT");
+            }
+            pdb_info->add_reslabel(seq_pos, boost::str(boost::format("FRAGMENT%03i")%i));
+        } 
+    }
+}
 
 
 
-// // S entry
-// // low_cut high_cut max_deletion max_insertion num_structures cluster_tolerance max_rmsd
 
-// bool
-// parse_morph_rules_files(std::string fname, MorphRules & rules, RifDockOptions const & opt) {
 
-//     runtime_assert_msg(utility::file::file_exists( fname ), "morph_rules file does not exist: " + fname );
-//     std::ifstream in;
-//     in.open(fname, std::ios::in);
-//     // utility::io::izstream in(fname);
-//     std::string s;
-//     while (std::getline(in, s)) {
-//         std::string save_s = s;
-//         if (s.empty()) continue;
 
-//         utility::replace_in( s, ":", " ");
-//         utility::replace_in( s, "#", " #");
-//         utility::vector1<std::string> comment_splt = utility::string_split_simple(s, ' ');
-//         utility::vector1<std::string> splt;
-//         for ( std::string item : comment_splt ) {
-//             item = utility::strip(item, " \t\n");
-//             if (item.empty()) continue;
-//             if (item[0] == '#') break;
-//             splt.push_back(item);
-//         }
-//         if (splt.size() == 0) continue;
 
-//         std::cout << "Parsing morph rules: " + save_s << std::endl; 
-//         if ( "S" == splt[1]) {
-//             MorphRule r;
-//             if (split.size() < 5) {
-//                 std::cout << "Bad line format: " << save_s << std::endl;
-//                 return false;
-//             }
-//             r.low_cut_site = utility::string2int(splt[2]);
-//             r.high_cut_site = utility::string2int(splt[3]);
-//             r.max_deletion = utility::string2int(splt[4]);
-//             r.max_insertion = utility::string2int(splt[5]);
-//             r.num_fragments = splt.length() >= 6 ? utility::string2int(splt[6]) : opt.max_structures;
-//             r.fragment_cluster_tolerance = splt.length() >= 7 ? utility::string2float(splt[7]) : opt.fragment_cluster_tolerance;
-//             r.fragment_max_rmsd = splt.length() >= 8 ? utility::string2float(splt[8]) : opt.fragment_max_rmsd;
 
-//             csts.push_back(make_shared<AtomPairCst>(splt[2], utility::string2int(splt[3]), splt[4], utility::string2int(splt[5]), utility::string2float(splt[6]) ));
-//         }else{
-//             std::cout << "Error parsing line: " << save_s << std::endl;
-//             return false;
-//         }
-//     }
-
-//     if (rules.size() == 0) {
-//         std::cout << "Error, no morph rules in: " << fname << std::endl;
-//         return false;
-//     }
-    
-//     return true;
-// }
 
 
 

@@ -203,6 +203,8 @@ dump_rif_result(
         pose_to_dump.pdb_info()->add_reslabel(p.first, p.second);
     }
 
+    rdd.scaffold_provider->modify_pose_for_output(si, pose_to_dump);
+
 
     // Dump the main output
     utility::io::ozstream out1( pdboutfile );
