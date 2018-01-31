@@ -60,6 +60,7 @@ struct MorphingScaffoldProvider :
 
     void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
 
+    void modify_pose_for_output( ::scheme::scaffold::TreeIndex i, core::pose::Pose & pose ) override;
 
     void test_make_children(::scheme::scaffold::TreeIndex ti);
 

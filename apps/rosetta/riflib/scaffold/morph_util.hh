@@ -53,7 +53,7 @@ typedef std::vector<MorphRule> MorphRules;
 struct MorphMember {
     ParametricSceneConformationCOP conformation;
     MorphRules morph_rules;
-    std::vector<MorphAction> morph_history;
+    std::vector<MorphRule> morph_history;
     ::scheme::scaffold::TreeRelation tree_relation;
 };
 
