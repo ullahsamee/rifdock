@@ -137,7 +137,7 @@ awful_compile_output_helper(
                     if( redundancy_filter_mag > 0.0001 ) {
                         selected_xforms.push_back( XRtriple {
                             xposition1, 
-                            ::scheme::kinematics::bigindex_scaffold_index(sp.index),
+                            sp.index.scaffold_index,
                             (int64_t)selected_results.size()
                         } );
                     }
@@ -248,7 +248,7 @@ void compile_and_filter_results(
     std::unordered_map< ScaffoldIndex, int > nclose_map; // default value here needs to be 0
 
     for ( uint64_t isamp = 0; isamp < Nout; isamp++ ) {
-        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(packed_results[isamp].index);
+        ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
         if ( selected_xforms_map.count(si) == 0 ) {
             selected_xforms_map[ si ].reserve(65536); // init big to reduce liklihood of resizes
             nclose_map[ si ] = 0;
@@ -270,7 +270,7 @@ void compile_and_filter_results(
     for( int64_t isamp = 0; isamp < Nout_singlethread; ++isamp ){
         if( isamp%out_interval==0 ){ cout << '*'; cout.flush(); }
 
-        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(packed_results[isamp].index);
+        ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
         std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( si );
         int & nclose = nclose_map.at( si );
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
@@ -302,7 +302,7 @@ void compile_and_filter_results(
         try{
             if( isamp%out_interval==0 ){ cout << '*'; cout.flush(); }
 
-            ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(packed_results[isamp].index);
+            ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
             std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( si );
             int & nclose = nclose_map.at( si );
             ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);

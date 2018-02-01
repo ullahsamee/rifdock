@@ -42,7 +42,7 @@ dump_rif_result(
 
     typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
-    ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(selected_result.scene_index);
+    ScaffoldIndex si = selected_result.scene_index.scaffold_index;
     ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
     std::vector<int> const & scaffres_g2l = *(sdc->scaffres_g2l_p);
     std::vector<int> const & scaffres_l2g = *(sdc->scaffres_l2g_p);
@@ -283,7 +283,7 @@ output_results(
         RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
 // Brian Injection
-        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(selected_results[i_selected_result].scene_index);
+        ScaffoldIndex si = selected_results[i_selected_result].scene_index.scaffold_index;
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
 
 

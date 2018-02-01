@@ -112,21 +112,22 @@ std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
 	return out;
 }
 
-template<class _Nest, class _ScaffoldProvider>
-using _ScaffoldNestDirectorBigIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
-
+// template<class _Nest, class _ScaffoldProvider>
+// using _ScaffoldNestDirectorBigIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
+// using _ScaffoldNestDirectorBigIndex
 
 
 template< 
 	class _Nest,
-	class _ScaffoldProvider
+	class _ScaffoldProvider,
+	class _RifDockIndex
 >
 struct ScaffoldNestDirector
  :  public Director<
 		typename _Nest::Value,
-		_ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>
+		_RifDockIndex
 	> {
-	typedef Director< typename _Nest::Value, _ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>> Base;
+	typedef Director< typename _Nest::Value, _RifDockIndex> Base;
 	typedef _Nest Nest;
 	typedef _ScaffoldProvider ScaffoldProvider;
 	typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
@@ -165,8 +166,8 @@ struct ScaffoldNestDirector
 	) const override {
 		assert( scaffold_provider_ );
 
-		NestBigIndex ni = i.first;
-		ScaffoldIndex si = i.second;
+		NestBigIndex ni = i.nest_index;
+		ScaffoldIndex si = i.scaffold_index;
 
 		Position p;
 		bool success = nest_.get_state( ni, resl, p );
@@ -185,48 +186,48 @@ struct ScaffoldNestDirector
 
 };
 
-template< class Nest, class ScaffoldProvider >
-std::ostream & operator << ( std::ostream & out, ScaffoldNestDirector<Nest,ScaffoldProvider> const & d ){
+template< class Nest, class ScaffoldProvider, class RifDockIndex >
+std::ostream & operator << ( std::ostream & out, ScaffoldNestDirector<Nest,ScaffoldProvider,RifDockIndex> const & d ){
 	out << "ScaffoldNestDirector " << d.nest();
 	return out;
 }
 
 
+// inline
+// uint64_t
+// bigindex_nest_part(uint64_t size) {
+// 	return size;
+// }
+
+// template< class ScaffoldIndex >
+// uint64_t
+// bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
+// 	return size.first;
+// }
+
+
+
+// template< class ScaffoldIndex >
+// ScaffoldIndex
+// bigindex_scaffold_index(std::pair<uint64_t, ScaffoldIndex> size) {
+// 	return size.second;
+// }
+
+
 inline
 uint64_t
-bigindex_nest_part(uint64_t size) {
-	return size;
-}
-
-template< class ScaffoldIndex >
-uint64_t
-bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
-	return size.first;
-}
-
-
-
-template< class ScaffoldIndex >
-ScaffoldIndex
-bigindex_scaffold_index(std::pair<uint64_t, ScaffoldIndex> size) {
-	return size.second;
-}
-
-
-inline
-uint64_t
-director_index_default_value(uint64_t) {
+director_index_default_value() {
 	return 0;
 }
 
 
-template<class ScaffoldIndex>
-std::pair<uint64_t,ScaffoldIndex>
-director_index_default_value(std::pair<uint64_t,ScaffoldIndex>) {
-	ScaffoldIndex i;
-	uint64_t j;
-	return std::pair<uint64_t,ScaffoldIndex>( director_index_default_value(j), scheme::scaffold::scaffold_index_default_value(i) );
-}
+// template<class ScaffoldIndex>
+// std::pair<uint64_t,ScaffoldIndex>
+// director_index_default_value(std::pair<uint64_t,ScaffoldIndex>) {
+// 	ScaffoldIndex i;
+// 	uint64_t j;
+// 	return std::pair<uint64_t,ScaffoldIndex>( director_index_default_value(j), scheme::scaffold::scaffold_index_default_value(i) );
+// }
 
 
 

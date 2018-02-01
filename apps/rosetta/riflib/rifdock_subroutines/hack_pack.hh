@@ -35,11 +35,6 @@ hack_pack(
 
 
 
-    typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
-
-
     std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
 
 
@@ -61,7 +56,7 @@ hack_pack(
 
     std::cout << "Building twobody tables before hack-pack" << std::endl;
     for( int ipack = 0; ipack < npack; ++ipack ) {
-        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(hsearch_results[ipack].index);
+        ScaffoldIndex si = hsearch_results[ipack].index.scaffold_index;
         rdd.scaffold_provider->setup_twobody_tables( si );
     }
 
@@ -77,7 +72,7 @@ hack_pack(
         if( exception ) continue;
         try {
             if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
-            DirectorBigIndex const isamp = hsearch_results[ipack].index;
+            RifDockIndex isamp = hsearch_results[ipack].index;
             if( hsearch_results[ipack].score > rdd.opt.global_score_cut ) continue;
             packed_results[ ipack ].index = isamp;
             packed_results[ ipack ].prepack_rank = ipack;

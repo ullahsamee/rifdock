@@ -135,9 +135,7 @@ struct tmplSearchPoint {
     typedef tmplSearchPoint<DirectorBigIndex> This;
     float score;
     DirectorBigIndex index;
-    tmplSearchPoint() : score(9e9) {
-        index = ::scheme::kinematics::director_index_default_value(index);
-    }
+    tmplSearchPoint() : score(9e9) {}
     tmplSearchPoint(DirectorBigIndex i) : score(9e9), index(i) {}
     bool operator < (This const & o) const {
         return score < o.score;
@@ -156,9 +154,7 @@ struct tmplSearchPointWithRots {
     DirectorBigIndex index;
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
-    tmplSearchPointWithRots() : score(9e9), prepack_rank(0), rotamers_(nullptr) {
-        index = ::scheme::kinematics::director_index_default_value(index);
-    }
+    tmplSearchPointWithRots() : score(9e9), prepack_rank(0), rotamers_(nullptr) {}
     tmplSearchPointWithRots(DirectorBigIndex i, uint32_t orank) : score(9e9), prepack_rank(orank), index(i), rotamers_(nullptr) {}
     // ~SearchPointWithRots() { delete rotamers_; }
     void checkinit() { if( rotamers_==nullptr ) rotamers_ = make_shared< std::vector< std::pair<intRot,intRot> > > ();  }
