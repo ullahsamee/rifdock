@@ -16,6 +16,10 @@
 #include <riflib/HSearchConstraints.hh>
 #include <riflib/scaffold/morph_util.hh>
 
+#include <protocols/minimization_packing/TaskAwareMinMover.hh>
+#include <protocols/minimization_packing/PackRotamersMover.hh>
+#include <core/scoring/ScoreFunction.hh>
+
 #include <core/pose/Pose.hh>
 #include <core/scoring/Energies.hh>
 
@@ -51,6 +55,14 @@ get_info_for_iscaff(
 ParametricSceneConformationCOP
 make_conformation_from_data_cache(shared_ptr<ScaffoldDataCache> cache, bool fa = false) ;
 
+
+struct ApplyDSLMScratch {
+    std::vector<core::scoring::ScoreFunctionOP> scorefxn_pt;
+    std::vector<protocols::minimization_packing::PackRotamersMoverOP> to_ala_pt;
+    std::vector<protocols::minimization_packing::TaskAwareMinMoverOP> hardmin_bb_pt;
+    std::vector<core::scoring::ScoreFunctionOP> rep_scorefxn_pt;
+};
+
 #ifdef USEHDF5
 std::vector<core::pose::PoseOP>
 apply_direct_segment_lookup_mover( 
@@ -60,7 +72,8 @@ apply_direct_segment_lookup_mover(
     uint64_t high_cut_site,
     uint64_t minimum_loop_length,
     uint64_t max_structures,
-    uint64_t max_rmsd  );
+    uint64_t max_rmsd,
+    ApplyDSLMScratch & scratch   );
 #endif
 
 void

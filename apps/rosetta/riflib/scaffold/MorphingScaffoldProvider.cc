@@ -86,6 +86,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
 #ifdef USEHDF5
 
+    ApplyDSLMScratch dslm_scratch;
+
     std::string scafftag;
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
@@ -134,7 +136,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 rule.high_cut_site,
                 removed_length + rule.max_insertion,
                 rule.max_fragments,
-                rule.fragment_max_rmsd );
+                rule.fragment_max_rmsd,
+                dslm_scratch );
 
 
 
@@ -300,7 +303,7 @@ MorphingScaffoldProvider::modify_pose_for_output( ::scheme::scaffold::TreeIndex 
             if ( ! pdb_info->res_haslabel(seq_pos, "FRAGMENT")) {
                 pdb_info->add_reslabel(seq_pos, "FRAGMENT");
             }
-            pdb_info->add_reslabel(seq_pos, boost::str(boost::format("FRAGMENT%03i")%i));
+            pdb_info->add_reslabel(seq_pos, boost::str(boost::format("FRAGMENT%03ir")%i));
         } 
     }
 }

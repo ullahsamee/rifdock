@@ -20,10 +20,7 @@
 #include <core/pack/task/operation/OperateOnResidueSubset.hh>
 #include <core/select/residue_selector/NotResidueSelector.hh>
 #include <protocols/residue_selectors/StoredResidueSubsetSelector.hh>
-#include <protocols/minimization_packing/PackRotamersMover.hh>
-#include <protocols/minimization_packing/TaskAwareMinMover.hh>
 #include <protocols/minimization_packing/MinMover.hh>
-#include <core/scoring/ScoreFunction.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
 #include <basic/options/option.hh>
@@ -206,7 +203,8 @@ apply_direct_segment_lookup_mover(
     uint64_t high_cut_site,
     uint64_t minimum_loop_length,
     uint64_t max_structures,
-    uint64_t max_rmsd ) {
+    uint64_t max_rmsd,
+    ApplyDSLMScratch & scratch ) {
 
     using namespace core::pack::task::operation;
     using namespace core::select::residue_selector;
@@ -234,94 +232,221 @@ apply_direct_segment_lookup_mover(
     dsl_mover.stored_subset_name( stored_subset_name );
     dsl_mover.structure_store_path( basic::options::option[basic::options::OptionKeys::indexed_structure_store::fragment_store]() );
 
-    //<SCOREFXNS>
 
-    core::scoring::ScoreFunctionOP scorefxn = make_shared<core::scoring::ScoreFunction>();
-    scorefxn->set_weight(core::scoring::coordinate_constraint, 2);
-    scorefxn->set_weight(core::scoring::cart_bonded, 2);
-    scorefxn->set_weight(core::scoring::pro_close, 0);
+    if (scratch.scorefxn_pt.size() == 0) {
+        scratch.scorefxn_pt.resize(omp_max_threads());
+        scratch.to_ala_pt.resize(omp_max_threads());
+        scratch.hardmin_bb_pt.resize(omp_max_threads());
+        scratch.rep_scorefxn_pt.resize(omp_max_threads());
 
-    //<TASKOPERATIONS>
+        std::cout << "Generating per-thread scaffold relaxers" << std::endl;
 
-    RestrictAbsentCanonicalAASOP ala_only( new RestrictAbsentCanonicalAAS() );
-    ala_only->include_residue( 0 );
-    ala_only->keep_aas( "A" );
+        for ( int i = 0; i < omp_max_threads(); i++ ) {
 
-    ResidueSelectorCOP stored_residue_subset( new StoredResidueSubsetSelector( stored_subset_name ) );
+            //<SCOREFXNS>
 
-    ResLvlTaskOperationOP prevent_repacking_rlt( new PreventRepackingRLT() );
-    OperateOnResidueSubsetOP only_lookup_segment( new OperateOnResidueSubset( prevent_repacking_rlt, stored_residue_subset, true ) );
+            core::scoring::ScoreFunctionOP scorefxn = make_shared<core::scoring::ScoreFunction>();
+            // core::scoring::ScoreFunctionOP scorefxn = core::scoring::ScoreFunctionFactory::create_score_function("beta_soft");
+            scorefxn->set_weight(core::scoring::coordinate_constraint, 2);
+            scorefxn->set_weight(core::scoring::cart_bonded, 2);
+            scorefxn->set_weight(core::scoring::pro_close, 0);
 
+            //<TASKOPERATIONS>
 
-    // <MOVERS>
+            RestrictAbsentCanonicalAASOP ala_only( new RestrictAbsentCanonicalAAS() );
+            ala_only->include_residue( 0 );
+            ala_only->keep_aas( "A" );
 
-    core::pack::task::TaskFactoryOP to_ala_tf( new core::pack::task::TaskFactory() );
-    to_ala_tf->push_back( only_lookup_segment );
-    to_ala_tf->push_back( ala_only );
+            ResidueSelectorCOP stored_residue_subset( new StoredResidueSubsetSelector( stored_subset_name ) );
 
-    protocols::minimization_packing::PackRotamersMover to_ala;
-    to_ala.score_function(scorefxn);
-    to_ala.task_factory( to_ala_tf );
-
-
-    core::pack::task::TaskFactoryOP hardmin_bb_tf( new core::pack::task::TaskFactory() );
-    hardmin_bb_tf->push_back( only_lookup_segment );
-
-    protocols::minimization_packing::MinMoverOP min_mover( new protocols::minimization_packing::MinMover() );
-    min_mover->tolerance( 0.0001 );
-    min_mover->min_type( "lbfgs_armijo_nonmonotone" );
-    min_mover->cartesian( true );
-    min_mover->score_function( scorefxn );
-
-    protocols::minimization_packing::TaskAwareMinMover hardmin_bb( min_mover, hardmin_bb_tf );
-    hardmin_bb.chi( true );
-    hardmin_bb.bb( true );
+            ResLvlTaskOperationOP prevent_repacking_rlt( new PreventRepackingRLT() );
+            OperateOnResidueSubsetOP only_lookup_segment( new OperateOnResidueSubset( prevent_repacking_rlt, stored_residue_subset, true ) );
 
 
-    //<PROTOCOLS>
+            // <MOVERS>
+
+            core::pack::task::TaskFactoryOP to_ala_tf( new core::pack::task::TaskFactory() );
+            to_ala_tf->push_back( only_lookup_segment );
+            to_ala_tf->push_back( ala_only );
+
+            protocols::minimization_packing::PackRotamersMoverOP to_ala ( new protocols::minimization_packing::PackRotamersMover() );
+            to_ala->score_function(scorefxn);
+            to_ala->task_factory( to_ala_tf );
+
+
+            core::pack::task::TaskFactoryOP hardmin_bb_tf( new core::pack::task::TaskFactory() );
+            hardmin_bb_tf->push_back( only_lookup_segment );
+
+            protocols::minimization_packing::MinMoverOP min_mover( new protocols::minimization_packing::MinMover() );
+            min_mover->tolerance( 0.0001 );
+            min_mover->min_type( "lbfgs_armijo_nonmonotone" );
+            min_mover->cartesian( true );
+            min_mover->score_function( scorefxn );
+
+            protocols::minimization_packing::TaskAwareMinMoverOP hardmin_bb( new protocols::minimization_packing::TaskAwareMinMover( min_mover, hardmin_bb_tf ));
+            hardmin_bb->chi( true );
+            hardmin_bb->bb( true );
+
+
+            //<PROTOCOLS>
+
+
+            core::scoring::ScoreFunctionOP rep_scorefxn = make_shared<core::scoring::ScoreFunction>();
+            rep_scorefxn->set_weight(core::scoring::fa_rep, 1);
+
+            scratch.scorefxn_pt[i] = scorefxn;
+            scratch.to_ala_pt[i] = to_ala;
+            scratch.hardmin_bb_pt[i] = hardmin_bb;
+            scratch.rep_scorefxn_pt[i] = rep_scorefxn;
+
+        }
+    }
 
     core::pose::Pose clash_check_reference = pose;
     ::devel::scheme::pose_to_ala( clash_check_reference );
 
-    core::scoring::ScoreFunctionOP rep_scorefxn = make_shared<core::scoring::ScoreFunction>();
-    rep_scorefxn->set_weight(core::scoring::fa_rep, 1);
-
-    (*rep_scorefxn)(clash_check_reference);
+    (*(scratch.rep_scorefxn_pt.front()))(clash_check_reference);
     core::scoring::Energies const & clash_check_reference_energies = clash_check_reference.energies();
+
+    std::vector<core::scoring::EnergiesOP> clash_check_reference_energies_pt(omp_max_threads());
+    std::vector<core::pose::PoseOP> in_pose_pt(omp_max_threads());
+    for ( int i = 0; i < omp_max_threads(); i++ ) {
+        clash_check_reference_energies_pt[i] = clash_check_reference_energies.clone();
+        in_pose_pt[i] = in_pose.clone();
+    }
+
+    core::Size pose_size = pose.size();
 
     core::pose::PoseOP result = pose.clone();
     dsl_mover.apply( *result );
 
-    std::vector<core::pose::PoseOP> results;
+    std::vector<core::pose::PoseOP> pre_results;
+
+    std::cout << "Grabbing pre-results" << std::endl;
+
     do {
-        if ( result->num_chains() > 1 ) {
-            std::cout << "Broken pose" << std::endl;
-            continue;
-        }
-        if ( result->size() - pose.size() < minimum_loop_length ) {
-            std::cout << "Loop too short" << std::endl;
-            continue;
-        }
-        to_ala.apply( *result );
-        hardmin_bb.apply( *result );
+        core::pose::PoseOP to_insert = make_shared<core::pose::Pose>();
+        to_insert->detached_copy( *result );
+        pre_results.push_back(to_insert);
+    } while ( result = dsl_mover.get_additional_output() );
 
-        if ( internal_comparative_clash_check( clash_check_reference_energies, *result, rep_scorefxn,
-                8, low_cut_site - 1, high_cut_site + 1 ) ) {
-            std::cout << "Internal Clash!!" << std::endl;
-            continue;
+    int pre_results_size = pre_results.size();
+
+    std::cout << "Found " << pre_results_size << " fragment insertions" << std::endl;
+
+
+    std::vector<core::pose::PoseOP> mid_results(pre_results_size);
+    std::exception_ptr exception = nullptr;
+    uint64_t found_results = 0;
+
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+    for( int ipre = 0; ipre < pre_results_size; ++ipre )
+    {
+        if (found_results >= max_structures) continue;  // burn out the loop when we're done
+        try {
+
+            int const ithread = omp_get_thread_num();
+
+            core::pose::PoseOP iresult = pre_results[ipre];
+
+            core::scoring::ScoreFunctionOP iscorefxn = scratch.scorefxn_pt[ithread];
+            protocols::minimization_packing::PackRotamersMoverOP ito_ala = scratch.to_ala_pt[ithread];
+            protocols::minimization_packing::TaskAwareMinMoverOP ihardmin_bb = scratch.hardmin_bb_pt[ithread];
+            core::scoring::ScoreFunctionOP irep_scorefxn = scratch.rep_scorefxn_pt[ithread];
+            core::scoring::EnergiesOP iclash_check_reference_energies = clash_check_reference_energies_pt[ithread];
+            core::pose::PoseOP iin_pose = in_pose_pt[ithread];
+
+            runtime_assert(iresult);
+            runtime_assert(ito_ala);
+            runtime_assert(ihardmin_bb);
+            runtime_assert(irep_scorefxn);
+            runtime_assert(iclash_check_reference_energies);
+            runtime_assert(iin_pose);
+            // runtime_assert();
+            // runtime_assert();
+
+            if ( iresult->num_chains() > 1 ) {
+                std::cout << "Broken pose" << std::endl;
+                continue;
+            }
+            if ( iresult->size() - pose_size < minimum_loop_length ) {
+                std::cout << "Loop too short" << std::endl;
+                continue;
+            }
+            ito_ala->apply( *iresult );
+            ihardmin_bb->apply( *iresult );
+
+            // if ( internal_comparative_clash_check( *iclash_check_reference_energies, *iresult, irep_scorefxn,
+            //         8, low_cut_site - 1, high_cut_site + 1 ) ) {
+            //     std::cout << "Internal Clash!!" << std::endl;
+            //     continue;
+            // }
+
+    // this doesn't handle insertions or deletion!!!!!!!!
+            // core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
+            // std::cout << "RMSD: " << rmsd << std::endl;
+            // // std::cout << rmsd_region << std::endl;
+            // if ( rmsd > max_rmsd ) {
+            //     std::cout << "RMSD too high" << std::endl;
+            //     continue;
+            // }
+
+
+            mid_results[ipre] = iresult;
+
+            #pragma omp critical
+            found_results ++;
+
+            } catch(...) {
+            #pragma omp critical
+            exception = std::current_exception();
         }
 
-// this doesn't handle insertions or deletion!!!!!!!!
-        core::Real rmsd = subset_CA_rmsd(*result, in_pose, rmsd_region, false );
-        std::cout << "RMSD: " << rmsd << std::endl;
-        std::cout << rmsd_region << std::endl;
-        if ( rmsd > max_rmsd ) {
-            std::cout << "RMSD too high" << std::endl;
-            continue;
-        }
+    } // end of OMP loop
+    if( exception ) std::rethrow_exception(exception);
 
-        results.push_back( result );
-    } while ( results.size() < max_structures && ( result = dsl_mover.get_additional_output() ) );
+
+    // by doing it this way, we make sure we keep the correct ordering of the results
+    std::vector<core::pose::PoseOP> results;
+    for ( int i = 0; i < mid_results.size(); i++ ) {
+        if ( mid_results[i] ) {
+            results.push_back(mid_results[i]);
+        }
+        if (results.size() >= max_structures) break;
+    }
+
+
+//     do {
+//         if ( result->num_chains() > 1 ) {
+//             std::cout << "Broken pose" << std::endl;
+//             continue;
+//         }
+//         if ( result->size() - pose.size() < minimum_loop_length ) {
+//             std::cout << "Loop too short" << std::endl;
+//             continue;
+//         }
+//         to_ala.apply( *result );
+//         hardmin_bb.apply( *result );
+
+//         if ( internal_comparative_clash_check( clash_check_reference_energies, *result, rep_scorefxn,
+//                 8, low_cut_site - 1, high_cut_site + 1 ) ) {
+//             std::cout << "Internal Clash!!" << std::endl;
+//             continue;
+//         }
+
+// // this doesn't handle insertions or deletion!!!!!!!!
+//         core::Real rmsd = subset_CA_rmsd(*result, in_pose, rmsd_region, false );
+//         std::cout << "RMSD: " << rmsd << std::endl;
+//         std::cout << rmsd_region << std::endl;
+//         if ( rmsd > max_rmsd ) {
+//             std::cout << "RMSD too high" << std::endl;
+//             continue;
+//         }
+
+//         results.push_back( result );
+//     } while ( results.size() < max_structures && ( result = dsl_mover.get_additional_output() ) );
 
 
     return results;
