@@ -330,92 +330,115 @@ apply_direct_segment_lookup_mover(
     dsl_mover.apply( *result );
 
     std::vector<core::pose::PoseOP> pre_results;
+    pre_results.push_back(result);
 
-    std::cout << "Grabbing pre-results" << std::endl;
-
-    do {
-        core::pose::PoseOP to_insert = make_shared<core::pose::Pose>();
-        to_insert->detached_copy( *result );
-        pre_results.push_back(to_insert);
-    } while ( result = dsl_mover.get_additional_output() );
-
-    int pre_results_size = pre_results.size();
-
-    std::cout << "Found " << pre_results_size << " fragment insertions" << std::endl;
-
-
-    std::vector<core::pose::PoseOP> mid_results(pre_results_size);
-    std::exception_ptr exception = nullptr;
+    // int fetch_size = std::min((uint64_t)(omp_max_threads() * 2), max_structures * 3 / 2);
+    int fetch_size = 4;
+    int next_fetch = 0;
+    bool out_of_results = false;
+    std::vector<core::pose::PoseOP> mid_results(fetch_size);
     uint64_t found_results = 0;
+    uint64_t seen_pre_results = 0;
 
-    #ifdef USE_OPENMP
-    #pragma omp parallel for schedule(dynamic,1)
-    #endif
-    for( int ipre = 0; ipre < pre_results_size; ++ipre )
-    {
-        if (found_results >= max_structures) continue;  // burn out the loop when we're done
-        try {
+    while ( ! out_of_results && found_results < max_structures ) {
 
-            int const ithread = omp_get_thread_num();
+        std::cout << "Grabbing pre-results" << std::endl;
 
-            core::pose::PoseOP iresult = pre_results[ipre];
-
-            core::scoring::ScoreFunctionOP iscorefxn = scratch.scorefxn_pt[ithread];
-            protocols::simple_moves::MutateResidueOP ito_ala = scratch.to_ala_pt[ithread];
-            protocols::minimization_packing::TaskAwareMinMoverOP ihardmin_bb = scratch.hardmin_bb_pt[ithread];
-            core::scoring::ScoreFunctionOP irep_scorefxn = scratch.rep_scorefxn_pt[ithread];
-            core::scoring::EnergiesOP iclash_check_reference_energies = clash_check_reference_energies_pt[ithread];
-            core::pose::PoseOP iin_pose = in_pose_pt[ithread];
-
-            runtime_assert(iresult);
-            runtime_assert(ito_ala);
-            runtime_assert(ihardmin_bb);
-            runtime_assert(irep_scorefxn);
-            runtime_assert(iclash_check_reference_energies);
-            runtime_assert(iin_pose);
-            // runtime_assert();
-            // runtime_assert();
-
-            if ( iresult->num_chains() > 1 ) {
-                std::cout << "Broken pose" << std::endl;
-                continue;
+        next_fetch += fetch_size;
+        while (pre_results.size() < next_fetch) {
+            result = dsl_mover.get_additional_output();
+            if (! result) {
+                out_of_results = true;
+                break;
             }
-            if ( iresult->size() - pose_size < minimum_loop_length ) {
-                std::cout << "Loop too short" << std::endl;
-                continue;
-            }
-            ito_ala->apply( *iresult );
-            ihardmin_bb->apply( *iresult );
+            core::pose::PoseOP to_insert = make_shared<core::pose::Pose>();
+            to_insert->detached_copy( *result );
+            pre_results.push_back(to_insert);
+        } 
 
-            if ( internal_comparative_clash_check( *iclash_check_reference_energies, *iresult, irep_scorefxn,
-                    8, low_cut_site - 1, high_cut_site + 1 ) ) {
-                std::cout << "Internal Clash!!" << std::endl;
-                continue;
-            }
+        int pre_results_size = pre_results.size();
 
-    // this doesn't handle insertions or deletion!!!!!!!!
-            core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
-            std::cout << "RMSD: " << rmsd << std::endl;
-            // std::cout << rmsd_region << std::endl;
-            if ( rmsd > max_rmsd ) {
-                std::cout << "RMSD too high" << std::endl;
-                continue;
-            }
-
-
-            mid_results[ipre] = iresult;
-
-            #pragma omp critical
-            found_results ++;
-
-            } catch(...) {
-            #pragma omp critical
-            exception = std::current_exception();
+        if (pre_results.size() > max_structures) {
+            std::cout << "Found more fragments than max_fragments: " << max_structures << "+" << std::endl;
+        } else {
+            std::cout << "Only found " << pre_results_size << " fragment insertions" << std::endl;
         }
 
-    } // end of OMP loop
-    if( exception ) std::rethrow_exception(exception);
 
+        mid_results.resize(pre_results.size()); // this should always be growing it
+        std::exception_ptr exception = nullptr;
+
+        #ifdef USE_OPENMP
+        #pragma omp parallel for schedule(dynamic,1)
+        #endif
+        for( int ipre = seen_pre_results; ipre < pre_results_size; ++ipre )
+        {
+            if (found_results >= max_structures) continue;  // burn out the loop when we're done
+            try {
+
+                int const ithread = omp_get_thread_num();
+
+                core::pose::PoseOP iresult = pre_results[ipre];
+
+                core::scoring::ScoreFunctionOP iscorefxn = scratch.scorefxn_pt[ithread];
+                protocols::simple_moves::MutateResidueOP ito_ala = scratch.to_ala_pt[ithread];
+                protocols::minimization_packing::TaskAwareMinMoverOP ihardmin_bb = scratch.hardmin_bb_pt[ithread];
+                core::scoring::ScoreFunctionOP irep_scorefxn = scratch.rep_scorefxn_pt[ithread];
+                core::scoring::EnergiesOP iclash_check_reference_energies = clash_check_reference_energies_pt[ithread];
+                core::pose::PoseOP iin_pose = in_pose_pt[ithread];
+
+                runtime_assert(iresult);
+                runtime_assert(ito_ala);
+                runtime_assert(ihardmin_bb);
+                runtime_assert(irep_scorefxn);
+                runtime_assert(iclash_check_reference_energies);
+                runtime_assert(iin_pose);
+                // runtime_assert();
+                // runtime_assert();
+
+                if ( iresult->num_chains() > 1 ) {
+                    std::cout << "Broken pose" << std::endl;
+                    continue;
+                }
+                if ( iresult->size() - pose_size < minimum_loop_length ) {
+                    std::cout << "Loop too short" << std::endl;
+                    continue;
+                }
+                ito_ala->apply( *iresult );
+                ihardmin_bb->apply( *iresult );
+
+                if ( internal_comparative_clash_check( *iclash_check_reference_energies, *iresult, irep_scorefxn,
+                        8, low_cut_site - 1, high_cut_site + 1 ) ) {
+                    std::cout << "Internal Clash!!" << std::endl;
+                    continue;
+                }
+
+        // this doesn't handle insertions or deletion!!!!!!!!
+                core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
+                std::cout << "RMSD: " << rmsd << std::endl;
+                // std::cout << rmsd_region << std::endl;
+                if ( rmsd > max_rmsd ) {
+                    std::cout << "RMSD too high" << std::endl;
+                    continue;
+                }
+
+
+                mid_results[ipre] = iresult;
+
+                #pragma omp critical
+                found_results ++;
+
+                } catch(...) {
+                #pragma omp critical
+                exception = std::current_exception();
+            }
+
+        } // end of OMP loop
+        if( exception ) std::rethrow_exception(exception);
+
+        seen_pre_results = pre_results.size();
+
+    }
 
     // by doing it this way, we make sure we keep the correct ordering of the results
     std::vector<core::pose::PoseOP> results;
