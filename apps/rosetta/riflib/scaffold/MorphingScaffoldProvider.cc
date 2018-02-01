@@ -86,6 +86,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
 #ifdef USEHDF5
 
+    ApplyDSLMScratch dslm_scratch;
+
     std::string scafftag;
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
@@ -93,6 +95,10 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     std::vector<CstBaseOP> csts;
     MorphRules morph_rules;
 
+    // This mess is to get around 2 bugs in the dsl mover
+    // 1. The database handle is dropped when you the mover is destroyed
+    // 2. The mover stops working if you use it too many times in a row
+    protocols::indexed_structure_store::movers::DirectSegmentLookupMoverOP dont_drop_that_database;
 
     get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
 
@@ -109,7 +115,12 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
         std::cout << "fragment_cluster_tolerance: " << rule.fragment_cluster_tolerance << std::endl;
         std::cout << "         fragment_max_rmsd: " << rule.fragment_max_rmsd << std::endl;
 
-        protocols::indexed_structure_store::movers::DirectSegmentLookupMover dsl_mover;
+        protocols::indexed_structure_store::movers::DirectSegmentLookupMoverOP dsl_mover_op( 
+            new protocols::indexed_structure_store::movers::DirectSegmentLookupMover());
+        protocols::indexed_structure_store::movers::DirectSegmentLookupMover & dsl_mover = *dsl_mover_op;
+        if (!dont_drop_that_database) {
+            dont_drop_that_database = dsl_mover_op;
+        }
 
         uint64_t removed_length = rule.high_cut_site - rule.low_cut_site - 1;
 
@@ -134,7 +145,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 rule.high_cut_site,
                 removed_length + rule.max_insertion,
                 rule.max_fragments,
-                rule.fragment_max_rmsd );
+                rule.fragment_max_rmsd,
+                dslm_scratch );
 
 
 
@@ -300,7 +312,7 @@ MorphingScaffoldProvider::modify_pose_for_output( ::scheme::scaffold::TreeIndex 
             if ( ! pdb_info->res_haslabel(seq_pos, "FRAGMENT")) {
                 pdb_info->add_reslabel(seq_pos, "FRAGMENT");
             }
-            pdb_info->add_reslabel(seq_pos, boost::str(boost::format("FRAGMENT%03i")%i));
+            pdb_info->add_reslabel(seq_pos, boost::str(boost::format("FRAGMENT%03ir")%i));
         } 
     }
 }
