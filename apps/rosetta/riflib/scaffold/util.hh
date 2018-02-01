@@ -17,7 +17,7 @@
 #include <riflib/scaffold/morph_util.hh>
 
 #include <protocols/minimization_packing/TaskAwareMinMover.hh>
-#include <protocols/minimization_packing/PackRotamersMover.hh>
+#include <protocols/simple_moves/MutateResidue.hh>
 #include <core/scoring/ScoreFunction.hh>
 
 #include <core/pose/Pose.hh>
@@ -58,7 +58,7 @@ make_conformation_from_data_cache(shared_ptr<ScaffoldDataCache> cache, bool fa =
 
 struct ApplyDSLMScratch {
     std::vector<core::scoring::ScoreFunctionOP> scorefxn_pt;
-    std::vector<protocols::minimization_packing::PackRotamersMoverOP> to_ala_pt;
+    std::vector<protocols::simple_moves::MutateResidueOP> to_ala_pt;
     std::vector<protocols::minimization_packing::TaskAwareMinMoverOP> hardmin_bb_pt;
     std::vector<core::scoring::ScoreFunctionOP> rep_scorefxn_pt;
 };

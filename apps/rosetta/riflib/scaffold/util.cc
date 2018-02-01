@@ -253,9 +253,9 @@ apply_direct_segment_lookup_mover(
 
             //<TASKOPERATIONS>
 
-            RestrictAbsentCanonicalAASOP ala_only( new RestrictAbsentCanonicalAAS() );
-            ala_only->include_residue( 0 );
-            ala_only->keep_aas( "A" );
+            // RestrictAbsentCanonicalAASOP ala_only( new RestrictAbsentCanonicalAAS() );
+            // ala_only->include_residue( 0 );
+            // ala_only->keep_aas( "A" );
 
             ResidueSelectorCOP stored_residue_subset( new StoredResidueSubsetSelector( stored_subset_name ) );
 
@@ -263,15 +263,24 @@ apply_direct_segment_lookup_mover(
             OperateOnResidueSubsetOP only_lookup_segment( new OperateOnResidueSubset( prevent_repacking_rlt, stored_residue_subset, true ) );
 
 
+            protocols::simple_moves::MutateResidueOP to_ala( new protocols::simple_moves::MutateResidue() );
+            to_ala->set_res_name(core::chemical::AA::aa_ala);
+            to_ala->set_selector(stored_residue_subset);
+
+            // a = protocols.simple_moves.MutateResidue()
+
+            // a.set_res_name(core.chemical.AA.aa_ala)
+
+
             // <MOVERS>
 
-            core::pack::task::TaskFactoryOP to_ala_tf( new core::pack::task::TaskFactory() );
-            to_ala_tf->push_back( only_lookup_segment );
-            to_ala_tf->push_back( ala_only );
+            // core::pack::task::TaskFactoryOP to_ala_tf( new core::pack::task::TaskFactory() );
+            // to_ala_tf->push_back( only_lookup_segment );
+            // to_ala_tf->push_back( ala_only );
 
-            protocols::minimization_packing::PackRotamersMoverOP to_ala ( new protocols::minimization_packing::PackRotamersMover() );
-            to_ala->score_function(scorefxn);
-            to_ala->task_factory( to_ala_tf );
+            // protocols::minimization_packing::PackRotamersMoverOP to_ala ( new protocols::minimization_packing::PackRotamersMover() );
+            // to_ala->score_function(scorefxn);
+            // to_ala->task_factory( to_ala_tf );
 
 
             core::pack::task::TaskFactoryOP hardmin_bb_tf( new core::pack::task::TaskFactory() );
@@ -352,7 +361,7 @@ apply_direct_segment_lookup_mover(
             core::pose::PoseOP iresult = pre_results[ipre];
 
             core::scoring::ScoreFunctionOP iscorefxn = scratch.scorefxn_pt[ithread];
-            protocols::minimization_packing::PackRotamersMoverOP ito_ala = scratch.to_ala_pt[ithread];
+            protocols::simple_moves::MutateResidueOP ito_ala = scratch.to_ala_pt[ithread];
             protocols::minimization_packing::TaskAwareMinMoverOP ihardmin_bb = scratch.hardmin_bb_pt[ithread];
             core::scoring::ScoreFunctionOP irep_scorefxn = scratch.rep_scorefxn_pt[ithread];
             core::scoring::EnergiesOP iclash_check_reference_energies = clash_check_reference_energies_pt[ithread];
@@ -378,20 +387,20 @@ apply_direct_segment_lookup_mover(
             ito_ala->apply( *iresult );
             ihardmin_bb->apply( *iresult );
 
-            // if ( internal_comparative_clash_check( *iclash_check_reference_energies, *iresult, irep_scorefxn,
-            //         8, low_cut_site - 1, high_cut_site + 1 ) ) {
-            //     std::cout << "Internal Clash!!" << std::endl;
-            //     continue;
-            // }
+            if ( internal_comparative_clash_check( *iclash_check_reference_energies, *iresult, irep_scorefxn,
+                    8, low_cut_site - 1, high_cut_site + 1 ) ) {
+                std::cout << "Internal Clash!!" << std::endl;
+                continue;
+            }
 
     // this doesn't handle insertions or deletion!!!!!!!!
-            // core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
-            // std::cout << "RMSD: " << rmsd << std::endl;
-            // // std::cout << rmsd_region << std::endl;
-            // if ( rmsd > max_rmsd ) {
-            //     std::cout << "RMSD too high" << std::endl;
-            //     continue;
-            // }
+            core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
+            std::cout << "RMSD: " << rmsd << std::endl;
+            // std::cout << rmsd_region << std::endl;
+            if ( rmsd > max_rmsd ) {
+                std::cout << "RMSD too high" << std::endl;
+                continue;
+            }
 
 
             mid_results[ipre] = iresult;
