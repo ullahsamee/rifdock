@@ -332,8 +332,7 @@ apply_direct_segment_lookup_mover(
     std::vector<core::pose::PoseOP> pre_results;
     pre_results.push_back(result);
 
-    // int fetch_size = std::min((uint64_t)(omp_max_threads() * 2), max_structures * 3 / 2);
-    int fetch_size = 4;
+    int fetch_size = std::min((uint64_t)(omp_max_threads() * 2), max_structures * 3 / 2);
     int next_fetch = 0;
     bool out_of_results = false;
     std::vector<core::pose::PoseOP> mid_results(fetch_size);
