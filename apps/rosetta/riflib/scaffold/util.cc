@@ -24,6 +24,7 @@
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
 #include <basic/options/option.hh>
+#include <protocols/moves/MoverStatus.hh>
 
 #ifdef USEHDF5
 #include <basic/options/keys/indexed_structure_store.OptionKeys.gen.hh>
@@ -334,7 +335,7 @@ apply_direct_segment_lookup_mover(
 
     int fetch_size = std::min((uint64_t)(omp_max_threads() * 2), max_structures * 3 / 2);
     int next_fetch = 0;
-    bool out_of_results = false;
+    bool out_of_results = dsl_mover.get_last_move_status() == protocols::moves::MS_FAIL_DO_NOT_RETRY;
     std::vector<core::pose::PoseOP> mid_results(fetch_size);
     uint64_t found_results = 0;
     uint64_t seen_pre_results = 0;
