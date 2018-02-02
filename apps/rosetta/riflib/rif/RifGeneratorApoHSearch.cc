@@ -165,7 +165,7 @@ namespace rif {
 										  false // do not inherit from NestBase
 										 > Nest;
 
-		typedef ::scheme::kinematics::NestDirector< Nest > Director;
+		typedef ::scheme::kinematics::NestDirector< Nest, uint64_t > Director;
 
 
 		typedef SimpleAtom SceneAtom;

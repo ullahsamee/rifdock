@@ -51,23 +51,50 @@ struct Director
 		Scene & scene
 	) const = 0;
 
-	virtual BigIndex size(int resl) const = 0;
+	virtual BigIndex size(int resl, BigIndex sizes) const = 0;
 
 };
 
+inline
+void
+set_nest_size(uint64_t set, uint64_t & sizes) {
+	sizes = set;
+}
 
-template< class _Nest >
+template<class RifDockIndex>
+void
+set_nest_size(uint64_t set, RifDockIndex & sizes) {
+	sizes.nest_index = set;
+}
+
+inline
+uint64_t
+get_nest_index(uint64_t index) {
+	return index;
+}
+
+template<class RifDockIndex>
+uint64_t
+get_nest_index(RifDockIndex index) {
+	return index.nest_index;
+}
+
+
+// This class is dumb, if used in a CompositeDirector, it must be first
+template< class _Nest, class _BigIndex >
 struct NestDirector
  :  public Director<
 		typename _Nest::Value,
-		typename _Nest::Index
+		_BigIndex
 		// typename _Nest::Index // brian - This is related to nbodies. Should not be same as _Nest::Index
 	> {
 	typedef _Nest Nest;
 	typedef typename Nest::Value Position;
-	typedef typename Nest::Index BigIndex;
+	typedef _BigIndex BigIndex;
 	typedef typename Nest::Index Index;
 	typedef SceneBase<Position,Index> Scene;
+
+	typedef typename Nest::Index NestIndex;
 
 	Index ibody_;
 	Nest nest_;
@@ -93,41 +120,92 @@ struct NestDirector
 		Scene & scene
 	) const {
 		Position p;
-		bool success = nest_.get_state( i, resl, p );
+
+		NestIndex ni = get_nest_index(i);
+		bool success = nest_.get_state( ni, resl, p );
 		if( !success ) return false;
 		scene.set_position( ibody_, p );
 		return true;
 	}
 
-	virtual BigIndex size(int resl) const {
-		return nest_.size(resl);
+	virtual BigIndex size(int resl, BigIndex sizes) const {
+		set_nest_size(nest_.size(resl), sizes);
+		return sizes;
 	}
 
 
 };
 
-template< class Nest >
-std::ostream & operator << ( std::ostream & out, NestDirector<Nest> const & d ){
+template< class Nest, class BigIndex >
+std::ostream & operator << ( std::ostream & out, NestDirector<Nest,BigIndex> const & d ){
 	out << "NestDirector " << d.nest();
 	return out;
 }
 
-template<class _Nest, class _ScaffoldProvider>
-using _ScaffoldNestDirectorBigIndex = std::pair<typename _Nest::Index, typename _ScaffoldProvider::ScaffoldIndex>;
 
 
 
-template< 
-	class _Nest,
-	class _ScaffoldProvider
+template<
+	class _Position,
+	class _RifDockIndex
 >
-struct ScaffoldNestDirector
+struct CompositeDirector
+ : 	public Director<
+ 		_Position,
+ 		_RifDockIndex
+ 	> {
+
+ 	typedef Director< _Position, _RifDockIndex> Base;
+	typedef typename Base::Position Position;
+	typedef typename Base::BigIndex BigIndex;
+	typedef typename Base::Index Index;
+	typedef typename Base::Scene Scene;
+
+	std::vector<shared_ptr<Base>> directors_;
+
+	CompositeDirector( std::vector<shared_ptr<Base>> director_list ) :
+		directors_( director_list ) {}
+
+	virtual
+	bool
+	set_scene(
+		BigIndex const & i,
+		int resl,
+		Scene & scene
+	) const override {
+
+		for ( shared_ptr<Base> director : directors_ ) {
+			bool success = director->set_scene( i, resl, scene );
+			if ( !success ) return false;
+		}
+
+		return true;
+	}
+
+	virtual BigIndex size(int resl, BigIndex sizes) const override {
+		for ( shared_ptr<Base> director : directors_ ) {
+			sizes = director->size(resl, sizes);
+		}
+		return sizes;
+	}
+
+
+
+};
+
+
+// This must be used as part of a CompositeDirector
+template< 
+	class _Position,
+	class _ScaffoldProvider,
+	class _RifDockIndex
+>
+struct ScaffoldDirector
  :  public Director<
-		typename _Nest::Value,
-		_ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>
+		_Position,
+		_RifDockIndex
 	> {
-	typedef Director< typename _Nest::Value, _ScaffoldNestDirectorBigIndex<_Nest, _ScaffoldProvider>> Base;
-	typedef _Nest Nest;
+	typedef Director< _Position, _RifDockIndex> Base;
 	typedef _ScaffoldProvider ScaffoldProvider;
 	typedef shared_ptr<ScaffoldProvider> ScaffoldProviderOP;
 	typedef typename Base::Position Position;
@@ -137,24 +215,12 @@ struct ScaffoldNestDirector
 
 	typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
-	typedef typename Nest::Index NestBigIndex;
-
 	Index ibody_;
-	Nest nest_;
 	ScaffoldProviderOP scaffold_provider_;
 
-	ScaffoldNestDirector(ScaffoldProviderOP sp) : ibody_(0),nest_(),scaffold_provider_(sp) {}
-	ScaffoldNestDirector(ScaffoldProviderOP sp, Index ibody ) : ibody_(ibody),nest_() {}
-	template<class A>
-	ScaffoldNestDirector(ScaffoldProviderOP sp, A const & a, Index ibody ) : ibody_(ibody),nest_(a),scaffold_provider_(sp) {}
-	template<class A, class B>
-	ScaffoldNestDirector(ScaffoldProviderOP sp, A const & a, B const & b, Index ibody ) : ibody_(ibody),nest_(a,b),scaffold_provider_(sp) {}
-	template<class A, class B, class C>
-	ScaffoldNestDirector(ScaffoldProviderOP sp, A const & a, B const & b, C const & c, Index ibody ) : ibody_(ibody),nest_(a,b,c),scaffold_provider_(sp) {}
-	template<class A, class B, class C, class D>
-	ScaffoldNestDirector(ScaffoldProviderOP sp, A const & a, B const & b, C const & c, D const & d, Index ibody ) : ibody_(ibody),nest_(a,b,c,d),scaffold_provider_(sp) {}
+	ScaffoldDirector(ScaffoldProviderOP sp) : ibody_(0),scaffold_provider_(sp) {}
+	ScaffoldDirector(ScaffoldProviderOP sp, Index ibody ) : ibody_(ibody),scaffold_provider_(sp) {}
 
-	Nest const & nest() const { return nest_; }
 
 	virtual
 	bool
@@ -163,79 +229,37 @@ struct ScaffoldNestDirector
 		int resl,
 		Scene & scene
 	) const override {
-		assert( scaffold_provider_ );
+		runtime_assert( scaffold_provider_ );
 
-		NestBigIndex ni = i.first;
-		ScaffoldIndex si = i.second;
+		ScaffoldIndex si = i.scaffold_index;
 
-		Position p;
-		bool success = nest_.get_state( ni, resl, p );
-		if( !success ) return false;
-		// boost::any a = scaffold_provider_->get_scaffold( si );
 		scene.replace_body( ibody_, scaffold_provider_->get_scaffold( si ) );
-		scene.set_position( ibody_, p );
+
 		return true;
 	}
 
-	virtual BigIndex size(int resl) const override {
-		return BigIndex( nest_.size(resl), scaffold::scaffold_index_default_value(ScaffoldIndex()));
+	// This doesn't actually work, the format of ScaffoldProvider.size() can't be returned in this format
+	virtual BigIndex size(int resl, BigIndex sizes) const override {
+		sizes.scaffold_index = scaffold::scaffold_index_default_value(ScaffoldIndex());
+		return sizes;
 	}
 
 
 
 };
 
-template< class Nest, class ScaffoldProvider >
-std::ostream & operator << ( std::ostream & out, ScaffoldNestDirector<Nest,ScaffoldProvider> const & d ){
-	out << "ScaffoldNestDirector " << d.nest();
+template< class Position, class ScaffoldProvider, class RifDockIndex >
+std::ostream & operator << ( std::ostream & out, ScaffoldDirector<Position,ScaffoldProvider,RifDockIndex> const & d ){
+	out << "ScaffoldNestDirector ";
 	return out;
 }
 
 
 inline
 uint64_t
-bigindex_nest_part(uint64_t size) {
-	return size;
-}
-
-template< class ScaffoldIndex >
-uint64_t
-bigindex_nest_part(std::pair<uint64_t, ScaffoldIndex> size) {
-	return size.first;
-}
-
-
-
-template< class ScaffoldIndex >
-ScaffoldIndex
-bigindex_scaffold_index(std::pair<uint64_t, ScaffoldIndex> size) {
-	return size.second;
-}
-
-
-inline
-uint64_t
-director_index_default_value(uint64_t) {
+director_index_default_value() {
 	return 0;
 }
-
-
-template<class ScaffoldIndex>
-std::pair<uint64_t,ScaffoldIndex>
-director_index_default_value(std::pair<uint64_t,ScaffoldIndex>) {
-	ScaffoldIndex i;
-	uint64_t j;
-	return std::pair<uint64_t,ScaffoldIndex>( director_index_default_value(j), scheme::scaffold::scaffold_index_default_value(i) );
-}
-
-
-
-
-
-
-
-
-
 
 
 
@@ -395,7 +419,10 @@ struct TreeDirector : public Director<_Position,_BigIndex,_Index> {
 		return true;
 	}
 
-	virtual BigIndex size(int resl) const { return multinest_.size(resl); }
+	virtual void size(int resl, BigIndex & sizes) const { 
+		sizes = multinest_.size(resl);
+		return sizes;
+	}
 
 
 private:

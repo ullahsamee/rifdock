@@ -135,10 +135,6 @@ int main(int argc, char *argv[]) {
 	typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
-		typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
-
-		typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
 
 		::scheme::search::HackPackOpts packopts;
 		packopts.pack_n_iters         = opt.pack_n_iters;
@@ -646,11 +642,18 @@ int main(int argc, char *argv[]) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<DirectorScaffoldOriTrans6D> director_concrete = make_shared<DirectorScaffoldOriTrans6D>( scaffold_provider, rot_resl_deg0, lb, ub, nc, 1 );
-				std::cout << "Director:" << endl << *director_concrete << endl;
-				director = director_concrete;
-				std::cout << "nest size0:    " << ::scheme::kinematics::bigindex_nest_part(director->size(0)) << std::endl;
-				std::cout << "size of search space: ~" << float(::scheme::kinematics::bigindex_nest_part(director->size(0)))*1024.0*1024.0*1024.0 << " grid points" << std::endl;
+				shared_ptr<RifDockNestDirector> nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
+				std::cout << "NestDirector:" << endl << *nest_director << endl;
+				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
+				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
+
+				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 );
+
+				std::vector<DirectorBase> director_list;
+				director_list.push_back( nest_director );  // Nest director must come first!!!!
+				director_list.push_back( scaff_director );
+
+				director = make_shared<RifDockDirector>(director_list);
 			}
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -663,7 +666,7 @@ int main(int argc, char *argv[]) {
 			{
 				EigenXform x(EigenXform::Identity());
 				x.translation() = rep_scaffold_center;
-				director->set_scene( DirectorBigIndex(0, rep_si), 0, *scene_minimal);
+				director->set_scene( RifDockIndex(0, rep_si), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);

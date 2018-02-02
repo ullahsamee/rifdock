@@ -162,7 +162,7 @@ rosetta_rescore(
         std::unordered_map<ScaffoldIndex,bool> unique_scaffolds_dict;
 
         for ( int imin = 0; imin < n_scormin; ++imin ) {
-            ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(packed_results[imin].index);
+            ScaffoldIndex si = packed_results[imin].index.scaffold_index;
             if ( unique_scaffolds_dict.count( si ) == 0) {
                 unique_scaffolds_dict[ si ] = true;
             }
@@ -223,7 +223,7 @@ rosetta_rescore(
                 // copy out scaffres_l2g
                 // copy out scaffuseres
 
-                ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(packed_results[imin].index);
+                ScaffoldIndex si = packed_results[imin].index.scaffold_index;
                 ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
 
                 core::pose::Pose & pose_to_min( work_pose_pt[ithread] );

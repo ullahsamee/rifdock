@@ -31,9 +31,6 @@ hsearch_original(
     using std::endl;
     using namespace devel::scheme;
 
-    typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
-
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
     ScaffoldIndex si = scaffold_index_default_value( ScaffoldIndex());
     ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
@@ -46,8 +43,9 @@ hsearch_original(
 
 
     std::vector< std::vector< SearchPoint > > samples( rdd.RESLS.size() );
-    samples[0].resize( ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)) );
-    for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)); ++i ) samples[0][i] = SearchPoint( DirectorBigIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
+    samples[0].resize( rdd.director->size(0, RifDockIndex()).nest_index );
+    for( uint64_t i = 0; i < rdd.director->size(0, RifDockIndex()).nest_index; ++i ) samples[0][i] 
+        = SearchPoint( RifDockIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
 
     d.unique_scaffolds.resize(1);
     d.unique_scaffolds.front() = si;

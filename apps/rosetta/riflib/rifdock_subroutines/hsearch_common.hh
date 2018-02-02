@@ -44,10 +44,6 @@ do_an_hsearch(uint64_t start_resl,
     using ObjexxFCL::format::I;
 
 
-    typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
-
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
 
 
 
@@ -83,13 +79,13 @@ do_an_hsearch(uint64_t start_resl,
                 if( exception ) continue;
                 try {
                     if( i%out_interval==0 ){ cout << '*'; cout.flush(); }
-                    DirectorBigIndex const isamp = samples[this_stage][i].index;
+                    RifDockIndex const isamp = samples[this_stage][i].index;
 
                     ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
                     rdd.director->set_scene( isamp, iresl, *tscene );
 
                     if ( need_sdc ) {
-                        ScaffoldIndex si = ::scheme::kinematics::bigindex_scaffold_index(isamp);
+                        ScaffoldIndex si = isamp.scaffold_index;
                         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
 
                         if( rdd.opt.tether_to_input_position ){
@@ -173,13 +169,13 @@ do_an_hsearch(uint64_t start_resl,
             }
 
             for( int64_t i = 0; i < len; ++i ){
-                uint64_t isamp0 = ::scheme::kinematics::bigindex_nest_part(samples[this_stage][i].index);
+                uint64_t isamp0 = samples[this_stage][i].index.nest_index;
                 if( samples[this_stage][i].score >= rdd.opt.global_score_cut ) continue;
                 if ( ! extra_for_dump ) {
                     if( iresl == 0 ) ++d.non0_space_size;
                     for( uint64_t j = 0; j < rdd.opt.DIMPOW2; ++j ){
                         uint64_t isamp = isamp0 * rdd.opt.DIMPOW2 + j;
-                        samples[this_stage+1].push_back( SearchPoint(DirectorBigIndex(isamp, ::scheme::kinematics::bigindex_scaffold_index(samples[this_stage][i].index))) );
+                        samples[this_stage+1].push_back( SearchPoint(RifDockIndex(isamp, samples[this_stage][i].index.scaffold_index)) );
                     }
                 }
 

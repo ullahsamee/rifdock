@@ -47,10 +47,6 @@ hsearch_morph_dive_pop(
     typedef ::scheme::util::SimpleArray<3,int> I3;
 
 
-    typedef _DirectorBigIndex<DirectorBase> DirectorBigIndex;
-
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
 
 using ::scheme::scaffold::BOGUS_INDEX;
 using ::scheme::scaffold::TreeIndex;
@@ -68,11 +64,11 @@ using ::scheme::scaffold::TreeLimits;
 
     runtime_assert( rdd.opt.dive_resl <= rdd.RESLS.size() );
     std::vector< std::vector< SearchPoint > > samples( rdd.opt.dive_resl );
-    samples[0].resize( ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)) );
+    samples[0].resize( rdd.director->size(0, RifDockIndex()).nest_index );
 
     uint64_t index_count = 0;
-    for( uint64_t i = 0; i < ::scheme::kinematics::bigindex_nest_part(rdd.director->size(0)); ++i ) {
-        samples[0][index_count++] = SearchPoint( DirectorBigIndex( i, TreeIndex(0, 0)) );
+    for( uint64_t i = 0; i < rdd.director->size(0, RifDockIndex()).nest_index; ++i ) {
+        samples[0][index_count++] = SearchPoint( RifDockIndex( i, TreeIndex(0, 0)) );
     }
     
 
@@ -93,7 +89,7 @@ using ::scheme::scaffold::TreeLimits;
     std::unordered_map<uint64_t, bool> uniq_positions;
 
     for ( SearchPoint sp : samples.back() ) {
-        uniq_positions[::scheme::kinematics::bigindex_nest_part(sp.index) >> shift_factor] = true;
+        uniq_positions[sp.index.nest_index >> shift_factor] = true;
     }
 
     std::vector<uint64_t> usable_positions;
@@ -151,7 +147,7 @@ using ::scheme::scaffold::TreeLimits;
         for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
 
 
-            rdd.director->set_scene( DirectorBigIndex( pair.first, TreeIndex(0, 0)), rdd.opt.pop_resl-1, *rdd.scene_minimal );
+            rdd.director->set_scene( RifDockIndex( pair.first, TreeIndex(0, 0)), rdd.opt.pop_resl-1, *rdd.scene_minimal );
             EigenXform x = rdd.scene_minimal->position(1);
             EigenXform xdiff = scaff2match.inverse() * x;
             float xmag =  xform_magnitude( xdiff, redundancy_filter_rg );
@@ -205,7 +201,7 @@ using ::scheme::scaffold::TreeLimits;
     uint64_t index_count2 = 0;
     for ( uint64_t scaffno = 0; scaffno < num_scaffolds; scaffno++ ) {
         for( uint64_t position : usable_positions ) {
-            samples2[0][index_count2++] = SearchPoint( DirectorBigIndex( position, TreeIndex(1, scaffno)) );
+            samples2[0][index_count2++] = SearchPoint( RifDockIndex( position, TreeIndex(1, scaffno)) );
         }
     }
 
