@@ -354,7 +354,7 @@ public:
 
         if (to_dump.size() == 0) {
             std::cout << "No rotamers found!!!!" << std::endl;
-            return;
+            return false;
         }
 
 		uint64_t num_dump = to_dump.size() * dump_frac;
@@ -394,6 +394,7 @@ public:
 		out.close();
 
 
+        return true;
 
     }
 
