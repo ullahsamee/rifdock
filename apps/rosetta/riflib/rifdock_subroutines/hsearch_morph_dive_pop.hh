@@ -64,10 +64,10 @@ using ::scheme::scaffold::TreeLimits;
 
     runtime_assert( rdd.opt.dive_resl <= rdd.RESLS.size() );
     std::vector< std::vector< SearchPoint > > samples( rdd.opt.dive_resl );
-    samples[0].resize( rdd.director->size(0).nest_index );
+    samples[0].resize( rdd.director->size(0, RifDockIndex()).nest_index );
 
     uint64_t index_count = 0;
-    for( uint64_t i = 0; i < rdd.director->size(0).nest_index; ++i ) {
+    for( uint64_t i = 0; i < rdd.director->size(0, RifDockIndex()).nest_index; ++i ) {
         samples[0][index_count++] = SearchPoint( RifDockIndex( i, TreeIndex(0, 0)) );
     }
     

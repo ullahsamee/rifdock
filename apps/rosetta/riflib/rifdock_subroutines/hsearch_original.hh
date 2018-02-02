@@ -43,8 +43,8 @@ hsearch_original(
 
 
     std::vector< std::vector< SearchPoint > > samples( rdd.RESLS.size() );
-    samples[0].resize( rdd.director->size(0).nest_index );
-    for( uint64_t i = 0; i < rdd.director->size(0).nest_index; ++i ) samples[0][i] 
+    samples[0].resize( rdd.director->size(0, RifDockIndex()).nest_index );
+    for( uint64_t i = 0; i < rdd.director->size(0, RifDockIndex()).nest_index; ++i ) samples[0][i] 
         = SearchPoint( RifDockIndex( i, scaffold_index_default_value( ScaffoldIndex())) );
 
     d.unique_scaffolds.resize(1);

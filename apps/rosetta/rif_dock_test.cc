@@ -642,11 +642,18 @@ int main(int argc, char *argv[]) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<DirectorScaffoldOriTrans6D> director_concrete = make_shared<DirectorScaffoldOriTrans6D>( scaffold_provider, rot_resl_deg0, lb, ub, nc, 1 );
-				std::cout << "Director:" << endl << *director_concrete << endl;
-				director = director_concrete;
-				std::cout << "nest size0:    " << director->size(0).nest_index << std::endl;
-				std::cout << "size of search space: ~" << float(director->size(0).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
+				shared_ptr<RifDockNestDirector> nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
+				std::cout << "NestDirector:" << endl << *nest_director << endl;
+				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
+				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
+
+				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider );
+
+				std::vector<DirectorBase> director_list;
+				director_list.push_back( nest_director );  // Nest director must come first!!!!
+				director_list.push_back( scaff_director );
+
+				director = make_shared<RifDockDirector>(director_list);
 			}
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

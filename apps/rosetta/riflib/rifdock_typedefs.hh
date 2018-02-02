@@ -123,10 +123,14 @@ typedef ::scheme::nest::NEST< 6,
              > NestOriTrans6D;
 
 
-typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
-typedef ::scheme::kinematics::ScaffoldNestDirector< NestOriTrans6D, ::devel::scheme::ScaffoldProvider, RifDockIndex> DirectorScaffoldOriTrans6D;
+// typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
+typedef ::scheme::kinematics::NestDirector< NestOriTrans6D, RifDockIndex> RifDockNestDirector;
 
-typedef _DirectorBase<DirectorScaffoldOriTrans6D> DirectorBase;
+typedef ::scheme::kinematics::ScaffoldDirector< EigenXform, ScaffoldProvider, RifDockIndex > RifDockScaffoldDirector;
+
+typedef ::scheme::kinematics::CompositeDirector< EigenXform, RifDockIndex > RifDockDirector;
+
+typedef shared_ptr<::scheme::kinematics::Director<EigenXform, RifDockIndex>> DirectorBase;
 
 
 
