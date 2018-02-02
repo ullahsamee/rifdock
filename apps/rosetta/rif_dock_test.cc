@@ -647,7 +647,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
 				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 
-				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider );
+				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 );
 
 				std::vector<DirectorBase> director_list;
 				director_list.push_back( nest_director );  // Nest director must come first!!!!

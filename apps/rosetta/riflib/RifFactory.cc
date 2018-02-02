@@ -352,6 +352,11 @@ public:
 		}
 
 
+        if (to_dump.size() == 0) {
+            std::cout << "No rotamers found!!!!" << std::endl;
+            return;
+        }
+
 		uint64_t num_dump = to_dump.size() * dump_frac;
 		uint64_t dump_every = to_dump.size() / num_dump;
 
@@ -537,6 +542,7 @@ std::string get_rif_type_from_file( std::string fname )
 
 			// Added by brian ////////////////////////
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
+            runtime_assert( data_cache );
 			rotamer_energies_1b_ = data_cache->local_onebody_p.get();
 			//////////////////////////////////////////
 

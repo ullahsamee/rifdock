@@ -219,7 +219,7 @@ struct ScaffoldDirector
 	ScaffoldProviderOP scaffold_provider_;
 
 	ScaffoldDirector(ScaffoldProviderOP sp) : ibody_(0),scaffold_provider_(sp) {}
-	ScaffoldDirector(ScaffoldProviderOP sp, Index ibody ) : ibody_(ibody) {}
+	ScaffoldDirector(ScaffoldProviderOP sp, Index ibody ) : ibody_(ibody),scaffold_provider_(sp) {}
 
 
 	virtual
@@ -229,7 +229,7 @@ struct ScaffoldDirector
 		int resl,
 		Scene & scene
 	) const override {
-		assert( scaffold_provider_ );
+		runtime_assert( scaffold_provider_ );
 
 		ScaffoldIndex si = i.scaffold_index;
 
