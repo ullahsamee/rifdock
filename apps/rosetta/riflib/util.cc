@@ -141,8 +141,9 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	std::vector<float> sc2bb_energy(pose.size(),false);
 	for(core::Size ihb = 1; ihb <= hbset.nhbonds(); ++ihb){
 		core::scoring::hbonds::HBond const & hb(hbset.hbond(ihb));
-		if(  hb.don_hatm_is_protein_backbone() && !hb.acc_atm_is_protein_backbone() ) sc2bb_energy[hb.acc_res()-1] += hb.energy();
-		if( !hb.don_hatm_is_protein_backbone() &&  hb.acc_atm_is_protein_backbone() ) sc2bb_energy[hb.don_res()-1] += hb.energy();
+		// noly donot design capping residues???
+		if(  hb.don_hatm_is_protein_backbone() && !hb.acc_atm_is_protein_backbone() && pose.secstruct( hb.acc_res() ) == 'L' ) sc2bb_energy[hb.acc_res()-1] += hb.energy();
+		if( !hb.don_hatm_is_protein_backbone() &&  hb.acc_atm_is_protein_backbone() && pose.secstruct( hb.don_res() ) == 'L' ) sc2bb_energy[hb.don_res()-1] += hb.energy();
 	}
 
 	utility::vector1<core::Size> res;
@@ -163,7 +164,8 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 
 		bool is_exposed = scsasa_per_atom > 5.5;
 		is_exposed |= scsasa > 18.0;
-		bool has_bbsc = sc2bb_energy[ir-1] < -0.2;
+		// Longxing changed the cut off value below to -0.6, as most of the real capping Hbond score is lower than -1.0.
+		bool has_bbsc = sc2bb_energy[ir-1] < -0.6;
 		// if(pose.residue(ir).nchi()==4) has_bbsc = false;
 
 		float datr =    pose.energies().residue_total_energies(ir)[core::scoring::fa_atr]
