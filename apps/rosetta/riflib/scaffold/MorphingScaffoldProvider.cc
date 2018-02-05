@@ -143,7 +143,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 *scaffold, 
                 rule.low_cut_site,
                 rule.high_cut_site,
-                removed_length + rule.max_insertion,
+                removed_length - rule.max_deletion,
                 rule.max_fragments,
                 rule.fragment_max_rmsd,
                 dslm_scratch );

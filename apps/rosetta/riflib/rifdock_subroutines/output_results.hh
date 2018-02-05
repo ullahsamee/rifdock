@@ -105,7 +105,7 @@ dump_rif_result(
                 float const onebody = scaffold_onebody_glob0.at( ires ).at( irot );
                 float const sc = p.first + onebody;
                 float const rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
-                if( sc < 0 || rescore + onebody < 0 ){
+                if( sc < 0 || rescore + onebody < 0  || p.first + onebody < 0){
                     if ( ! rdd.opt.rif_rots_as_chains) {
                         allout << "MODEL" << endl;
                     }
