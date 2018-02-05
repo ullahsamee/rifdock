@@ -201,9 +201,18 @@ dump_rif_result(
         needs_RIFRES.push_back(ires+1);
     }
 
+// More brian debug code
     if (only_bad) {
         std::cout << "Terrible dock!!!!" << std::endl;
+
+
+        SearchPointWithRots temp;
+
+        ScenePtr tscene( rdd.scene_pt.front() );
+        rdd.director->set_scene( selected_result.scene_index, iresl, *tscene );
+        rdd.packing_objective->score_with_rotamers( *tscene, temp.rotamers() );
     }
+////////////////////////////////////////
 
     // Add PDBInfo labels if they are applicable
     bool using_rosetta_model = selected_result.pose_ != nullptr;
