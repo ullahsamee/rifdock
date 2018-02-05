@@ -167,10 +167,30 @@ dump_rif_result(
     resfile << "start" << std::endl;
     expdb << "rif_residues ";
 
+    bool only_bad = true;
+
     std::vector<int> needs_RIFRES;
     for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
         int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
         int irot =                  selected_result.rotamers().at(ipr).second;
+
+/// Temporary debug code by brian, probably should remove
+
+        BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,selected_result.rotamers().at(ipr).first);
+
+        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+        if (rescore >= 0) {
+            std::cout << "Bad rif-residue:";
+            std::cout << " seq_pos: " << ires + 1;
+            std::cout << " rescore: " << rescore;
+            std::cout << std::endl;
+        } else {
+            only_bad = false;
+        }
+
+
+//////////////////////////////////////////////////////////
+
         core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
         pose_from_rif.replace_residue( ires+1, *newrsd, true );
         resfile << ires+1 << " A NATRO" << std::endl;
@@ -179,6 +199,10 @@ dump_rif_result(
             pose_from_rif.set_chi( ichi+1, ires+1, rdd.rot_index_p->chi( irot, ichi ) );
         }
         needs_RIFRES.push_back(ires+1);
+    }
+
+    if (only_bad) {
+        std::cout << "Terrible dock!!!!" << std::endl;
     }
 
     // Add PDBInfo labels if they are applicable
