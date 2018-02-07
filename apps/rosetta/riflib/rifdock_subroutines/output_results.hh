@@ -167,6 +167,9 @@ dump_rif_result(
     resfile << "start" << std::endl;
     expdb << "rif_residues ";
 
+
+    sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front());
+
     bool only_bad = true;
 
     std::vector<int> needs_RIFRES;
@@ -202,16 +205,30 @@ dump_rif_result(
     }
 
 // More brian debug code
-    if (only_bad) {
-        std::cout << "Terrible dock!!!!" << std::endl;
+    // if (only_bad) {
+        // std::cout << "Terrible dock!!!!" << std::endl;
+
+        for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
+            int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
+            int irot =                  selected_result.rotamers().at(ipr).second;
+            std::cout << "ires: " << ires << " irot: " << irot << std::endl;
+        }
 
 
+        std::cout << "Pack" << std::endl;
         SearchPointWithRots temp;
 
         ScenePtr tscene( rdd.scene_pt.front() );
-        rdd.director->set_scene( selected_result.scene_index, iresl, *tscene );
+        rdd.director->set_scene( selected_result.scene_index, rdd.RESLS.size()-1, *tscene );
         rdd.packing_objective->score_with_rotamers( *tscene, temp.rotamers() );
-    }
+
+        for( int ipr = 0; ipr < temp.numrots(); ++ipr ){
+            int ires = scaffres_l2g.at( temp.rotamers().at(ipr).first );
+            int irot =                  temp.rotamers().at(ipr).second;
+            std::cout << "ires: " << ires << " irot: " << irot << std::endl;
+        }
+
+    // }
 ////////////////////////////////////////
 
     // Add PDBInfo labels if they are applicable

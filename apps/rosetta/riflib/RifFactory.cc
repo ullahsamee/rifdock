@@ -455,6 +455,8 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr< ::scheme::search::HackPack> hackpack_;
 		std::vector<bool> is_satisfied_;
 		std::vector<bool> has_rifrot_;
+        std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
+        std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 	};
@@ -474,8 +476,6 @@ std::string get_rif_type_from_file( std::string fname )
 	private:
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
-		mutable std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
-		mutable std::vector< std::pair<int,int> > const * scaffold_rotamers_;
 		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
 		devel::scheme::ScoreRotamerVsTarget<
 				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -544,26 +544,26 @@ std::string get_rif_type_from_file( std::string fname )
 			// Added by brian ////////////////////////
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
             runtime_assert( data_cache );
-			rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
 			//////////////////////////////////////////
 
 			runtime_assert( rif_ );
-			runtime_assert( rotamer_energies_1b_ );
+			runtime_assert( scratch.rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 ){
 				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
 				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
 				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
 				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
 			}
-			scratch.has_rifrot_.resize(rotamer_energies_1b_->size(), false);
+			scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
 			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
 			if( !packing_ ) return;
 
 			// Added by brian ////////////////////////
-			scaffold_rotamers_ = data_cache->local_rotamers_p.get();
+			scratch.scaffold_rotamers_ = data_cache->local_rotamers_p.get();
 			//////////////////////////////////////////
 
-			runtime_assert( scaffold_rotamers_ );
+			runtime_assert( scratch.scaffold_rotamers_ );
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
 			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
@@ -586,7 +586,7 @@ std::string get_rif_type_from_file( std::string fname )
 					break;
 				}
 				int irot = rotscores.rotamer(i_rs);
-				float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
+				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
@@ -615,7 +615,7 @@ std::string get_rif_type_from_file( std::string fname )
 					if( packopts_.use_extra_rotamers ){
 						auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
 						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
-							float const crot1be = (*rotamer_energies_1b_).at(ires).at(crot);
+							float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
 							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 							float const recalc_crot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), 10.0, 4 );
 							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
@@ -641,9 +641,9 @@ std::string get_rif_type_from_file( std::string fname )
 			}
 			// // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
-				for( int irot = scaffold_rotamers_->at(ires).first; irot < scaffold_rotamers_->at(ires).second; ++irot ){
+				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
 					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
-						float const rot1be = (*rotamer_energies_1b_).at(ires).at(irot);
+						float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
 						float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
 						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
@@ -654,7 +654,7 @@ std::string get_rif_type_from_file( std::string fname )
 			}
 			if( packing_ ){
 				for( int irot : always_available_rotamers_ ){
-					float const irot1be = (*rotamer_energies_1b_).at(ires).at(irot);
+					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 					if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 					int sat1=-1, sat2=-1;
 					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
