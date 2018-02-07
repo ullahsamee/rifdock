@@ -43,9 +43,9 @@ struct MultithreadPoseCloner {
 
     std::mutex vector_mutex_;
 
-    MultithreadPoseCloner() {}
+    MultithreadPoseCloner() : need_more_poses_(0) {}
 
-    MultithreadPoseCloner(core::pose::PoseCOP pose) {
+    MultithreadPoseCloner(core::pose::PoseCOP pose) : need_more_poses_(0) {
         add_pose( pose );
     }
 
@@ -135,7 +135,7 @@ struct MultithreadPoseCloner {
 private:
 
     std::mutex lock_need_more_poses_;
-    bool need_more_poses_;
+    int need_more_poses_;
 };
 
 

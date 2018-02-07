@@ -106,6 +106,13 @@ struct RifDockIndex {
         nest_index( nest_index_in ),
         scaffold_index( scaffold_index_in ) {}
 
+    bool operator==(RifDockIndex const & o) {
+      return (
+        nest_index == o.nest_index &&
+        scaffold_index == o.scaffold_index
+        );
+    }
+
 };
 
 

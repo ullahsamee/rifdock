@@ -289,6 +289,7 @@ int main(int argc, char *argv[]) {
 		make2bopts.onebody_threshold = 30.0;
 		make2bopts.distance_cut = 15.0;
 		make2bopts.hbond_weight = packopts.hbond_weight;
+		make2bopts.favorable_2body_multiplier = opt.favorable_2body_multiplier;
 
 
 
@@ -680,7 +681,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
-			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
+			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();
 
 			RifDockData rdd {
 						opt,
@@ -701,6 +702,8 @@ int main(int argc, char *argv[]) {
  						packing_objective,
  						packopts,
  						rif_ptrs,
+ 						rso_config,
+ 						rif_factory,
  						scaffold_provider
 			};
 

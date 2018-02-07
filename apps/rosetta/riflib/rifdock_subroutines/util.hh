@@ -16,6 +16,8 @@
 #include <numeric/xyzVector.hh>
 #include <utility/vector1.hh>
 #include <scheme/kinematics/Director.hh>
+#include <scheme/search/HackPack.hh>
+#include <riflib/util.hh>
 
 #include <rif_dock_test.hh>
 #include <riflib/rotamer_energy_tables.hh>
@@ -164,13 +166,6 @@ struct tmplSearchPointWithRots {
     bool operator < (This const & o) const {
         return score < o.score;
     }
-    friend void swap(This & a, This & b){
-        std::swap( a.score, b.score );
-        std::swap( a.prepack_rank, b.prepack_rank );
-        std::swap( a.index, b.index );
-        std::swap( a.rotamers_, b.rotamers_ );
-        std::swap( a.pose_, b.pose_ );
-    }
 };
 
 
@@ -212,10 +207,104 @@ struct RifDockData {
     ObjectivePtr & packing_objective;
     ::scheme::search::HackPackOpts & packopts;
     std::vector<shared_ptr<RifBase> > & rif_ptrs;
+    RifSceneObjectiveConfig & rso_config;
+    shared_ptr<RifFactory> & rif_factory;
 
     ScaffoldProviderOP scaffold_provider;
 };
 
+
+inline
+void
+sanity_check_rots(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene,
+    bool original ) {
+
+    devel::scheme::ScoreRotamerVsTarget<
+        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+    > rot_tgt_scorer;
+    rot_tgt_scorer.rot_index_p_ = rdd.rot_index_p;
+    rot_tgt_scorer.target_field_by_atype_ = rdd.target_field_by_atype;
+    rot_tgt_scorer.target_donors_ = *rdd.target_donors;
+    rot_tgt_scorer.target_acceptors_ = *rdd.target_acceptors;
+    rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
+    rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
+    rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+
+
+    bool only_bad = true;
+    bool all_missing = true;
+    bool all_ala = true;
+
+    for( int ipr = 0; ipr < rotamers->size(); ++ipr ){
+        int irot = rotamers->at(ipr).second;
+
+        BBActor bba = scene->template get_actor<BBActor>(1,rotamers->at(ipr).first);
+
+        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+        if (rescore >= 0) {
+        } else {
+        }
+
+        std::vector< std::pair< float, int > > rotscores;
+        rdd.rif_ptrs.back()->get_rotamers_for_xform( bba.position(), rotscores );
+
+        bool exists = false;
+        for ( std::pair<float,int> const & p : rotscores ) {
+            if (p.second == irot) {
+                exists = true;
+                break;
+            } else {
+            }
+        }
+        if (irot == 0) {
+        } else {
+            if (exists) {
+                all_missing=false;
+            } else {
+                if (original) {
+                    std::cout << "ZMISSING ROT";
+                } else {
+                    std::cout << "RECALCMISSING ROT";
+                }
+            }
+            all_ala = false;
+        }
+
+
+    }
+
+}
+
+
+
+inline
+void 
+sanity_check_hackpack(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene ) {
+
+    bool success = rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    if ( ! success ) {
+        std::cout << "Bad index" << std::endl;
+        return;
+    }
+    sanity_check_rots(rdd, i, rotamers, scene, true);
+
+    rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    SearchPointWithRots temp;
+
+    rdd.packing_objective->score_with_rotamers( *scene, temp.rotamers() );
+
+    sanity_check_rots(rdd, i, temp.rotamers_, scene, false);
+
+
+}
 
 
 
