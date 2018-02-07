@@ -161,10 +161,12 @@ struct MakeTwobodyOpts {
 	float onebody_threshold;
 	float distance_cut;
 	float hbond_weight;
+	float favorable_2body_multiplier;
 	MakeTwobodyOpts()
 		: onebody_threshold(2.0)
 		, distance_cut(15.0)
 		, hbond_weight(2.0)
+		, favorable_2body_multiplier(1)
 	{}
 };
 

@@ -166,19 +166,6 @@ struct tmplSearchPointWithRots {
     bool operator < (This const & o) const {
         return score < o.score;
     }
-    // friend void swap(This & a, This & b){
-    //     std::swap( a.score, b.score );
-    //     std::swap( a.prepack_rank, b.prepack_rank );
-    //     DirectorBigIndex tmp = a.index;
-    //     a.index = b.index;
-    //     b.index = tmp;
-    //     shared_ptr< std::vector< std::pair<intRot,intRot> > > temp = a.rotamers_;
-    //     a.rotamers_ = b.rotamers_;
-    //     b.rotamers_ = temp;
-    //     // std::swap( a.index, b.index );
-    //     // std::swap( a.rotamers_, b.rotamers_ );
-    //     std::swap( a.pose_, b.pose_ );
-    // }
 };
 
 
@@ -220,8 +207,6 @@ struct RifDockData {
     ObjectivePtr & packing_objective;
     ::scheme::search::HackPackOpts & packopts;
     std::vector<shared_ptr<RifBase> > & rif_ptrs;
-
-    // Remove these!!!!!!!
     RifSceneObjectiveConfig & rso_config;
     shared_ptr<RifFactory> & rif_factory;
 
@@ -304,7 +289,11 @@ sanity_check_hackpack(
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene ) {
 
-    rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    bool success = rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    if ( ! success ) {
+        std::cout << "Bad index" << std::endl;
+        return;
+    }
     sanity_check_rots(rdd, i, rotamers, scene, true);
 
     rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );

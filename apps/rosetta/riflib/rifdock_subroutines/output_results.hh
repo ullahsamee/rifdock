@@ -170,29 +170,10 @@ dump_rif_result(
 
     sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front());
 
-    bool only_bad = true;
-
     std::vector<int> needs_RIFRES;
     for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
         int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
         int irot =                  selected_result.rotamers().at(ipr).second;
-
-/// Temporary debug code by brian, probably should remove
-
-        BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,selected_result.rotamers().at(ipr).first);
-
-        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
-        if (rescore >= 0) {
-            std::cout << "Bad rif-residue:";
-            std::cout << " seq_pos: " << ires + 1;
-            std::cout << " rescore: " << rescore;
-            std::cout << std::endl;
-        } else {
-            only_bad = false;
-        }
-
-
-//////////////////////////////////////////////////////////
 
         core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
         pose_from_rif.replace_residue( ires+1, *newrsd, true );
@@ -203,33 +184,6 @@ dump_rif_result(
         }
         needs_RIFRES.push_back(ires+1);
     }
-
-// More brian debug code
-    // if (only_bad) {
-        // std::cout << "Terrible dock!!!!" << std::endl;
-
-        for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
-            int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
-            int irot =                  selected_result.rotamers().at(ipr).second;
-            std::cout << "ires: " << ires << " irot: " << irot << std::endl;
-        }
-
-
-        std::cout << "Pack" << std::endl;
-        SearchPointWithRots temp;
-
-        ScenePtr tscene( rdd.scene_pt.front() );
-        rdd.director->set_scene( selected_result.scene_index, rdd.RESLS.size()-1, *tscene );
-        rdd.packing_objective->score_with_rotamers( *tscene, temp.rotamers() );
-
-        for( int ipr = 0; ipr < temp.numrots(); ++ipr ){
-            int ires = scaffres_l2g.at( temp.rotamers().at(ipr).first );
-            int irot =                  temp.rotamers().at(ipr).second;
-            std::cout << "ires: " << ires << " irot: " << irot << std::endl;
-        }
-
-    // }
-////////////////////////////////////////
 
     // Add PDBInfo labels if they are applicable
     bool using_rosetta_model = selected_result.pose_ != nullptr;

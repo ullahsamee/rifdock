@@ -82,7 +82,11 @@ do_an_hsearch(uint64_t start_resl,
                     RifDockIndex const isamp = samples[this_stage][i].index;
 
                     ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-                    rdd.director->set_scene( isamp, iresl, *tscene );
+                    bool director_success = rdd.director->set_scene( isamp, iresl, *tscene );
+                    if ( ! director_success ) {
+                        samples[this_stage][i].score = 9e9;
+                        continue;
+                    }
 
                     if ( need_sdc ) {
                         ScaffoldIndex si = isamp.scaffold_index;

@@ -10,8 +10,6 @@
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
 
-#include <unistd.h>
-
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
 
@@ -61,19 +59,6 @@ hack_pack(
         rdd.scaffold_provider->setup_twobody_tables( si );
     }
 
-
-    std::vector<ObjectivePtr> packing_objectives_pt(omp_max_threads());
-    for ( int i = 0; i < packing_objectives_pt.size(); i++ ) {
-
-        std::vector< ObjectivePtr > objectives;
-        rdd.rif_factory->create_objectives( rdd.rso_config, objectives, packing_objectives_pt[i] );
-    }
-
-    // holy crap delete this
-    RifDockIndex random_index = hsearch_results[10].index;
-
-    ScenePtr savage_scene = rdd.scene_minimal->clone_deep();
-
     std::cout << "packing options: " << rdd.packopts << std::endl;
     std::cout << "packing w/rif rofts ";
     int64_t const out_interval = std::max<int64_t>(1,npack/100);
@@ -85,51 +70,22 @@ hack_pack(
         if( exception ) continue;
         try {
 
-        ObjectivePtr packing_objective_local;
-        std::vector< ObjectivePtr > objectives;
-        rdd.rif_factory->create_objectives( rdd.rso_config, objectives, packing_objective_local );
-
-
             if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
             RifDockIndex isamp = hsearch_results[ipack].index;
             if( hsearch_results[ipack].score > rdd.opt.global_score_cut ) continue;
             packed_results[ ipack ].index = isamp;
             packed_results[ ipack ].prepack_rank = ipack;
             ScenePtr tscene = ( rdd.scene_pt[omp_get_thread_num()] );
-            
+            bool director_success = rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
 
-            // tscene->set_position(1, EigenXform::Identity()); // bugfix, multi-thread related somewhere in scene
-            // ScenePtr tscene = rdd.scene_minimal->clone_deep(); // also works
-            // ScenePtr tscene = ( rdd.scene_pt[omp_get_thread_num()] )->clone_deep();
+            if ( ! director_success ) {
+                packed_results[ ipack ].rotamers(); // this initializes it to blank
+                packed_results[ ipack ].score = 9e9;
+                continue;
+            }
 
-            rdd.director->set_scene( random_index, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            packed_results[ ipack ].score = packing_objective_local->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+            packed_results[ ipack ].score = rdd.packing_objective->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
 
-            // if (omp_get_thread_num() == 0) {
-            //     usleep(1000000);
-            // }
-            rdd.director->set_scene( random_index, rdd.RESLS.size()-1, *tscene );
-
-            sanity_check_hackpack( rdd, isamp, packed_results[ ipack ].rotamers_, tscene);
         } catch( std::exception const & ex ) {
             #ifdef USE_OPENMP
             #pragma omp critical
@@ -145,11 +101,12 @@ hack_pack(
     __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 
 
-        std::cout << "Check 1000 after hackpack" << std::endl;
-    for ( int i = 0; i < packed_results.size(); i++ ) {
+    int to_check = std::min(1000, (int)packed_results.size());
+    std::cout << "Check " << to_check << " results after hackpack" << std::endl;
+    for ( int i = 0; i < to_check; i++ ) {
         SearchPointWithRots const & packed_result = packed_results[i];
+        if (packed_result.rotamers().size() == 0) continue;
         ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-        rdd.director->set_scene( packed_result.index, rdd.RESLS.size()-1, *tscene );
         sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene);
     }
 
