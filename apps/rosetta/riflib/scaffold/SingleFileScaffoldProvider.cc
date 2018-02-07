@@ -98,7 +98,7 @@ SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
 
 ::scheme::scaffold::TreeIndex 
 SingleFileScaffoldProvider::get_representative_scaffold_index() {
-    scaffold_index_default_value( ScaffoldIndex());
+    return scaffold_index_default_value( ScaffoldIndex());
 }
 
 

@@ -221,6 +221,10 @@ struct RifDockData {
     ::scheme::search::HackPackOpts & packopts;
     std::vector<shared_ptr<RifBase> > & rif_ptrs;
 
+    // Remove these!!!!!!!
+    RifSceneObjectiveConfig & rso_config;
+    shared_ptr<RifFactory> & rif_factory;
+
     ScaffoldProviderOP scaffold_provider;
 };
 
@@ -308,7 +312,7 @@ sanity_check_hackpack(
 
     rdd.packing_objective->score_with_rotamers( *scene, temp.rotamers() );
 
-    sanity_check_rots(rdd, i, rotamers, scene, false);
+    sanity_check_rots(rdd, i, temp.rotamers_, scene, false);
 
 
 }

@@ -679,7 +679,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
-			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
+			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();///scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
 
 			RifDockData rdd {
 						opt,
@@ -700,6 +700,8 @@ int main(int argc, char *argv[]) {
  						packing_objective,
  						packopts,
  						rif_ptrs,
+ 						rso_config,
+ 						rif_factory,
  						scaffold_provider
 			};
 

@@ -10,6 +10,7 @@
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
 
+#include <unistd.h>
 
 using ::scheme::make_shared;
 using ::scheme::shared_ptr;
@@ -61,6 +62,18 @@ hack_pack(
     }
 
 
+    std::vector<ObjectivePtr> packing_objectives_pt(omp_max_threads());
+    for ( int i = 0; i < packing_objectives_pt.size(); i++ ) {
+
+        std::vector< ObjectivePtr > objectives;
+        rdd.rif_factory->create_objectives( rdd.rso_config, objectives, packing_objectives_pt[i] );
+    }
+
+    // holy crap delete this
+    RifDockIndex random_index = hsearch_results[10].index;
+
+    ScenePtr savage_scene = rdd.scene_minimal->clone_deep();
+
     std::cout << "packing options: " << rdd.packopts << std::endl;
     std::cout << "packing w/rif rofts ";
     int64_t const out_interval = std::max<int64_t>(1,npack/100);
@@ -71,14 +84,50 @@ hack_pack(
     for( int ipack = 0; ipack < npack; ++ipack ){
         if( exception ) continue;
         try {
+
+        ObjectivePtr packing_objective_local;
+        std::vector< ObjectivePtr > objectives;
+        rdd.rif_factory->create_objectives( rdd.rso_config, objectives, packing_objective_local );
+
+
             if( ipack%out_interval==0 ){ cout << '*'; cout.flush(); }
             RifDockIndex isamp = hsearch_results[ipack].index;
             if( hsearch_results[ipack].score > rdd.opt.global_score_cut ) continue;
             packed_results[ ipack ].index = isamp;
             packed_results[ ipack ].prepack_rank = ipack;
-            ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
+            ScenePtr tscene = ( rdd.scene_pt[omp_get_thread_num()] );
+            
+
+            // tscene->set_position(1, EigenXform::Identity()); // bugfix, multi-thread related somewhere in scene
+            // ScenePtr tscene = rdd.scene_minimal->clone_deep(); // also works
+            // ScenePtr tscene = ( rdd.scene_pt[omp_get_thread_num()] )->clone_deep();
+
+            rdd.director->set_scene( random_index, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            // rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
             rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
-            packed_results[ ipack ].score = rdd.packing_objective->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+            rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            packed_results[ ipack ].score = packing_objective_local->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+
+            // if (omp_get_thread_num() == 0) {
+            //     usleep(1000000);
+            // }
+            rdd.director->set_scene( random_index, rdd.RESLS.size()-1, *tscene );
 
             sanity_check_hackpack( rdd, isamp, packed_results[ ipack ].rotamers_, tscene);
         } catch( std::exception const & ex ) {
@@ -91,127 +140,26 @@ hack_pack(
     if( exception ) std::rethrow_exception(exception);
     end = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Check after hackpack111" << std::endl;
-    for (SearchPointWithRots const & packed_result : packed_results) {
+    std::cout << std::endl;
+    std::cout << "full sort of packed samples" << std::endl;
+    __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
+
+
+        std::cout << "Check 1000 after hackpack" << std::endl;
+    for ( int i = 0; i < packed_results.size(); i++ ) {
+        SearchPointWithRots const & packed_result = packed_results[i];
         ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
         rdd.director->set_scene( packed_result.index, rdd.RESLS.size()-1, *tscene );
         sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene);
     }
 
-
-
-    // std::vector< RifDockIndex > rdis(packed_results.size());
-    // std::vector< std::vector< std::pair<intRot,intRot> >> rotamerss(packed_results.size());
-    // for (int i = 0; i < packed_results.size(); i++) {
-    //     rdis[i] = packed_results[i].index;
-    //     rotamerss[i] = *(packed_results[i].rotamers_);
-    //     // old_copies[i].rotamers_ = make_shared<std::vector< std::pair<intRot,intRot> >>(*old_copies[i].rotamers_);
-    // }
-
-
-
-
-
-
-    // std::vector< SearchPointWithRots > old_copies(packed_results.size());
-    // for (int i = 0; i < old_copies.size(); i++) {
-    //     old_copies[i] = packed_results[i];
-    //     old_copies[i].rotamers_ = make_shared<std::vector< std::pair<intRot,intRot> >>(*old_copies[i].rotamers_);
-    // }
-
-
-
     std::cout << std::endl;
     std::cout << "full sort of packed samples" << std::endl;
-    // __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
-
-
-    
-    // std::sort( packed_results.begin(), packed_results.end() );
-
-
-
-    // for ( uint64_t i = 0; i < packed_results.size() - 10000; i++ ) {
-    //     // packed_results[i] = packed_results[i+1];
-    //     swap(packed_results[i], packed_results[i+10000]);
-    // }
-
-    // std::cout << "Checking old copies" << std::endl;
-    // for (int i = 0; i < old_copies.size(); i++) {
-    //     if (i%100 == 0) {
-    //         std::cout << i << std::endl;
-    //     }
-    //     RifDockIndex index = old_copies[i].index;
-
-    //     bool found_it = false;
-    //     for (SearchPointWithRots const & sp : packed_results) {
-    //         if (!(index == sp.index)) {
-    //             found_it = true;
-    //             if (*(sp.rotamers_) != *(old_copies[i].rotamers_)) {
-    //                 std::cout << "DIFF " << std::endl;
-    //             }
-    //         }
-    //     }
-    //     if (!found_it) {
-    //         std::cout << "NOTFOUND " << std::endl;
-    //     }
-    // }
-
-
-
-
-
-
-
-    //     std::cout << "Checking old copies" << std::endl;
-    // for (int i = 0; i < rdis.size(); i++) {
-    //     if (i%100 == 0) {
-    //         std::cout << i << std::endl;
-    //     }
-    //     RifDockIndex index = rdis[i];
-
-    //     bool found_it = false;
-    //     for (SearchPointWithRots const & sp : packed_results) {
-    //         if ((index == sp.index)) {
-    //             found_it = true;
-    //             if (*(sp.rotamers_) != rotamerss[i]) {
-    //                 std::cout << "DIFF " << std::endl;
-    //             }
-    //         }
-    //     }
-    //     if (!found_it) {
-    //         std::cout << "NOTFOUND " << std::endl;
-    //     }
-    // }
-
-
-
-
-
-
-
-
-
-
+    __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 
     std::chrono::duration<double> elapsed_seconds_pack = end-start;
     std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
     std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
-
-
-
-    //         std::cout << "Check after hackpack" << std::endl;
-    // for (int i = 0; i < packed_results.size(); i++) {
-    //     if (i%100 == 0) {
-    //         std::cout << i << std::endl;
-    //     }
-    //     RifDockIndex rdi = rdis[i];
-    //     shared_ptr<std::vector< std::pair<intRot,intRot> >> rotamers = make_shared<std::vector< std::pair<intRot,intRot> >>(rotamerss[i]);
-
-    //     ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-    //     rdd.director->set_scene( rdi, rdd.RESLS.size()-1, *tscene );
-    //     sanity_check_hackpack( rdd, rdi, rotamers, tscene);
-    // }
 
 
 }

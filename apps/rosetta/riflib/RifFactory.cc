@@ -481,6 +481,7 @@ std::string get_rif_type_from_file( std::string fname )
 				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
 			> rot_tgt_scorer_;
 		std::vector<int> always_available_rotamers_;
+        ::scheme::search::HackPackOpts hackpackopts_;
 
 		ScoreBBActorVsRIF() {}
 
@@ -502,6 +503,7 @@ std::string get_rif_type_from_file( std::string fname )
 			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
+            hackpackopts_ = hackpackopts;
 			packing_ = true;
 			packperthread_.clear();
 			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
@@ -566,7 +568,7 @@ std::string get_rif_type_from_file( std::string fname )
 			runtime_assert( scratch.scaffold_rotamers_ );
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
-			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
+			scratch.hackpack_ = make_shared< ::scheme::search::HackPack>(hackpackopts_,0,0);//packperthread_.at( ::devel::scheme::omp_thread_num() );
 			scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
 		}
 
