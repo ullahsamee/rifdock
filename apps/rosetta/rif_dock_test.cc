@@ -604,8 +604,8 @@ int main(int argc, char *argv[]) {
 			
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
-			ObjectivePtr packing_objective;
-			runtime_assert( rif_factory->create_objectives( rso_config, objectives, packing_objective ) );
+			std::vector< ObjectivePtr > packing_objectives;
+			runtime_assert( rif_factory->create_objectives( rso_config, objectives, packing_objectives ) );
 			scene_prototype = rif_factory->create_scene();
 			runtime_assert_msg( objectives.front()->is_compatible( *scene_prototype ), "objective and scene types not compatible!" );
 
@@ -699,7 +699,7 @@ int main(int argc, char *argv[]) {
  						rot_index_p,
  						rotrf_table_manager,
  						objectives,
- 						packing_objective,
+ 						packing_objectives,
  						packopts,
  						rif_ptrs,
  						rso_config,
@@ -746,7 +746,7 @@ int main(int argc, char *argv[]) {
 
 				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
 		        if (opt.hack_pack) {
-		        	hack_pack( hsearch_results_p, packed_results, rdd, total_search_effort, npack );
+		        	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
 		        } else {
 		        	packed_results = *hsearch_results_p;
 		        }

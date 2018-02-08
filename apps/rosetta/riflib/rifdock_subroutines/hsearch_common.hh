@@ -163,14 +163,16 @@ do_an_hsearch(uint64_t start_resl,
                     hackpack_inputs[ipack].index = samples[this_stage][ipack].index;
                 }
 
-                hack_pack( hackpack_inputs_p, *packed_results, rdd, 9e100, npack );
+                hack_pack( hackpack_inputs_p, *packed_results, rdd, iresl, 9e100, npack );
+
+                samples[this_stage].resize(packed_results->size());
 
                 #ifdef USE_OPENMP
                 #pragma omp parallel for schedule(dynamic,1024)
                 #endif
-                for( int ipack = 0; ipack < hackpack_inputs.size(); ++ipack ){
-                    samples[this_stage][ipack].score = hackpack_inputs[ipack].score;
-                    samples[this_stage][ipack].index = hackpack_inputs[ipack].index;
+                for( int ipack = 0; ipack < packed_results->size(); ++ipack ){
+                    samples[this_stage][ipack].score = (*packed_results)[ipack].score;
+                    samples[this_stage][ipack].index = (*packed_results)[ipack].index;
                 }
 
             } 
