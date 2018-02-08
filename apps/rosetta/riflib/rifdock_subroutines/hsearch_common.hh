@@ -13,6 +13,7 @@
 
 #include <scheme/types.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/rifdock_subroutines/hack_pack.hh>
 #include <riflib/rifdock_subroutines/output_results.hh>
 
 #include <unordered_map>
@@ -139,6 +140,40 @@ do_an_hsearch(uint64_t start_resl,
             std::chrono::duration<double> elapsed_seconds_rif = end-start;
             float rate = (double)samples[this_stage].size()/ elapsed_seconds_rif.count()/omp_max_threads();
             cout << endl;// << "done threaded sampling, partitioning data..." << endl;
+
+
+            shared_ptr<std::vector< SearchPointWithRots > > packed_results;
+            if (rdd.opt.hack_pack_during_hsearch) {
+                int64_t npack = 0;
+
+                shared_ptr<std::vector< SearchPointWithRots > > hackpack_inputs_p;
+
+                hackpack_inputs_p = make_shared<std::vector< SearchPointWithRots >>();
+                std::vector< SearchPointWithRots > & hackpack_inputs = *hackpack_inputs_p;
+
+
+                hackpack_inputs.resize( samples.back().size() );
+                #ifdef USE_OPENMP
+                #pragma omp parallel for schedule(dynamic,1024)
+                #endif
+                for( int ipack = 0; ipack < hackpack_inputs.size(); ++ipack ){
+                    hackpack_inputs[ipack].score = samples[this_stage][ipack].score;
+                    hackpack_inputs[ipack].index = samples[this_stage][ipack].index;
+                }
+
+                hack_pack( hackpack_inputs_p, *packed_results, rdd, d.total_search_effort, npack );
+
+                #ifdef USE_OPENMP
+                #pragma omp parallel for schedule(dynamic,1024)
+                #endif
+                for( int ipack = 0; ipack < hackpack_inputs.size(); ++ipack ){
+                    samples[this_stage][ipack].score = hackpack_inputs[ipack].score;
+                    samples[this_stage][ipack].index = hackpack_inputs[ipack].index;
+                }
+
+            } 
+            // std::vector< SearchPointWithRots > * final_results =  ( bool )( packed_results) ? &packed_results : &samples.at(this_stage);
+
 
             SearchPoint max_pt, min_pt;
             int64_t len = samples[this_stage].size();
