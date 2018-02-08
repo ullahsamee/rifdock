@@ -559,7 +559,7 @@ struct RifDockOpt
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
-		hack_pack_during_hsearch               = option[rif_dock::hack_pack                             ]();
+		hack_pack_during_hsearch               = option[rif_dock::hack_pack_during_hsearch              ]();
 
 		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
