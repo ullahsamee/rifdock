@@ -16,6 +16,7 @@
 #include <core/pose/PDBInfo.hh>
 
 // includes to emulate minimize_segment.xml
+#include <core/io/silent/SilentFileData.hh>
 #include <core/pack/task/operation/TaskOperations.hh>
 #include <core/pack/task/operation/OperateOnResidueSubset.hh>
 #include <core/select/residue_selector/NotResidueSelector.hh>
@@ -522,6 +523,30 @@ internal_comparative_clash_check( core::scoring::Energies const & original_energ
     return false;
 
 }
+
+
+std::vector<core::pose::PoseOP>
+extract_poses_from_silent_file( std::string const & filename ) {
+
+    std::cout << "Reading poses from silent file: " << filename << std::endl;
+
+    std::vector<core::pose::PoseOP> poses;
+
+    core::io::silent::SilentFileOptions options;
+    core::io::silent::SilentFileData sfd( options );
+    sfd.read_file( filename );
+    for ( std::string const & tag : sfd.tags() ){
+        core::io::silent::SilentStruct const & ss = sfd.get_structure(tag);
+        core::pose::PoseOP pose ( new core::pose::Pose() );
+        ss.fill_pose( *pose );
+        add_pdbinfo_if_missing( *pose );
+        pose->pdb_info()->name( tag );
+        poses.push_back( pose );
+    }
+
+    return poses;
+}
+
 
 
 
