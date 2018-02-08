@@ -142,9 +142,11 @@ do_an_hsearch(uint64_t start_resl,
             cout << endl;// << "done threaded sampling, partitioning data..." << endl;
 
 
-            shared_ptr<std::vector< SearchPointWithRots > > packed_results;
             if (rdd.opt.hack_pack_during_hsearch) {
                 int64_t npack = 0;
+                shared_ptr<std::vector< SearchPointWithRots > > packed_results = make_shared<std::vector< SearchPointWithRots >>();
+
+                __gnu_parallel::sort( samples[this_stage].begin(), samples[this_stage].end() );
 
                 shared_ptr<std::vector< SearchPointWithRots > > hackpack_inputs_p;
 
@@ -152,7 +154,7 @@ do_an_hsearch(uint64_t start_resl,
                 std::vector< SearchPointWithRots > & hackpack_inputs = *hackpack_inputs_p;
 
 
-                hackpack_inputs.resize( samples.back().size() );
+                hackpack_inputs.resize( samples[this_stage].size() );
                 #ifdef USE_OPENMP
                 #pragma omp parallel for schedule(dynamic,1024)
                 #endif
@@ -161,7 +163,7 @@ do_an_hsearch(uint64_t start_resl,
                     hackpack_inputs[ipack].index = samples[this_stage][ipack].index;
                 }
 
-                hack_pack( hackpack_inputs_p, *packed_results, rdd, d.total_search_effort, npack );
+                hack_pack( hackpack_inputs_p, *packed_results, rdd, 9e100, npack );
 
                 #ifdef USE_OPENMP
                 #pragma omp parallel for schedule(dynamic,1024)
