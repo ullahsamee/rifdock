@@ -596,7 +596,10 @@ std::string get_rif_type_from_file( std::string fname )
 
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
 						
-						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
+						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+                                                        rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 ) :
+                                                        score_rot_v_target;
+
 						score_rot_v_target = recalc_rot_v_tgt;
 				
 						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
@@ -617,7 +620,10 @@ std::string get_rif_type_from_file( std::string fname )
 						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
 							float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
 							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
-							float const recalc_crot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), 10.0, 4 );
+							float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+                                                                rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), 10.0, 4 ) :
+                                                                score_rot_v_target; // this is certainly the wrong score
+
 							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
 							    recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
 								scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
@@ -639,6 +645,9 @@ std::string get_rif_type_from_file( std::string fname )
 				bestsc = std::min( score_rot_tot , bestsc );
 				//}
 			}
+
+            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
 			// // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
 				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
@@ -652,6 +661,9 @@ std::string get_rif_type_from_file( std::string fname )
 					}
 				}
 			}
+
+            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
 			if( packing_ ){
 				for( int irot : always_available_rotamers_ ){
 					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
@@ -912,7 +924,7 @@ struct RifFactoryImpl :
 	create_objectives(
 		RifSceneObjectiveConfig const & config,
 		std::vector<ObjectivePtr> & objectives,
-		ObjectivePtr & packing_objective
+		std::vector<ObjectivePtr> & packing_objectives
 	) const {
 
 		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
@@ -935,16 +947,18 @@ struct RifFactoryImpl :
 		// objective->config = config.rif_ptrs.size()-1;
 		// objectives.push_back( objective );
 
-		packing_objective = make_shared<MySceneObjectiveRIF>();
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs.back() );
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = config.rif_ptrs.size()-1;
-		if( config.require_satisfaction > 0 ){
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-				get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
-		}
-
+        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+    		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
+    		if( config.require_satisfaction > 0 ){
+    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+    				get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
+    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+    				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
+    		}
+            packing_objectives.push_back( packing_objective );
+        }
 
 		for( auto op : objectives ){
 			// dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
@@ -961,16 +975,26 @@ struct RifFactoryImpl :
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
 
 		// use 4.0A vdw grid for CH3 atoms as proximity test
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
-							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
-		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
-			// *config.local_twobody,
-			config.rot_index_p,
-			*config.target_field_by_atype,
-			*config.target_donors,
-			*config.target_acceptors,
-			*config.packopts
-		);
+
+        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+
+            shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
+
+            ::scheme::search::HackPackOpts local_packopts = *config.packopts;
+            // Only rescore on the full resolution
+            local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
+
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
+    							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
+    			// *config.local_twobody,
+    			config.rot_index_p,
+    			*config.target_field_by_atype,
+    			*config.target_donors,
+    			*config.target_acceptors,
+    			local_packopts
+    		);
+        }
 
 		return true;
 

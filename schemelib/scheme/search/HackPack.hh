@@ -49,6 +49,7 @@ struct HackPackOpts
 	bool  init_with_best_1be_rots = true;
 	float user_rotamer_bonus_constant = -2; //-2
 	float user_rotamer_bonus_per_chi = -2; // 2
+	bool  rescore_rots_before_insertion = true;		// this isn't a real flag, gets used in MyScoreBBActorVsRif
 };
 inline
 std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
@@ -66,6 +67,7 @@ std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 		<< "\n  init_with_best_1be_rots " << hpo.init_with_best_1be_rots
 		<< "\n  user_rotamer_bonus_constant " << hpo.user_rotamer_bonus_constant 
 		<< "\n  user_rotamer_bonus_per_chi" << hpo.user_rotamer_bonus_per_chi
+		<< "\n  rescore_rots_before_insertion " << hpo.rescore_rots_before_insertion
 
 
 	    << std::endl;

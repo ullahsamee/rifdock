@@ -204,7 +204,7 @@ struct RifDockData {
     shared_ptr< RotamerIndex > & rot_index_p;
     RotamerRFTablesManager & rotrf_table_manager;
     std::vector< ObjectivePtr > & objectives;
-    ObjectivePtr & packing_objective;
+    std::vector< ObjectivePtr > & packing_objectives;
     ::scheme::search::HackPackOpts & packopts;
     std::vector<shared_ptr<RifBase> > & rif_ptrs;
     RifSceneObjectiveConfig & rso_config;
@@ -221,7 +221,8 @@ sanity_check_rots(
     RifDockIndex i,
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene,
-    bool original ) {
+    bool original,
+    int resl ) {
 
     devel::scheme::ScoreRotamerVsTarget<
         VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -250,7 +251,7 @@ sanity_check_rots(
         }
 
         std::vector< std::pair< float, int > > rotscores;
-        rdd.rif_ptrs.back()->get_rotamers_for_xform( bba.position(), rotscores );
+        rdd.rif_ptrs[resl]->get_rotamers_for_xform( bba.position(), rotscores );
 
         bool exists = false;
         for ( std::pair<float,int> const & p : rotscores ) {
@@ -287,21 +288,22 @@ sanity_check_hackpack(
     RifDockData & rdd, 
     RifDockIndex i,
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
-    ScenePtr scene ) {
+    ScenePtr scene,
+    int resl ) {
 
-    bool success = rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    bool success = rdd.director->set_scene( i, resl, *scene );
     if ( ! success ) {
         std::cout << "Bad index" << std::endl;
         return;
     }
-    sanity_check_rots(rdd, i, rotamers, scene, true);
+    sanity_check_rots(rdd, i, rotamers, scene, true, resl);
 
-    rdd.director->set_scene( i, rdd.RESLS.size()-1, *scene );
+    rdd.director->set_scene( i, resl, *scene );
     SearchPointWithRots temp;
 
-    rdd.packing_objective->score_with_rotamers( *scene, temp.rotamers() );
+    rdd.packing_objectives[resl]->score_with_rotamers( *scene, temp.rotamers() );
 
-    sanity_check_rots(rdd, i, temp.rotamers_, scene, false);
+    sanity_check_rots(rdd, i, temp.rotamers_, scene, false, resl);
 
 
 }

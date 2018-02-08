@@ -65,7 +65,7 @@ struct RifFactory
 	create_objectives(
 		RifSceneObjectiveConfig const & config,
 		std::vector<ObjectivePtr> & objectives,
-		ObjectivePtr & packing_objective
+		std::vector<ObjectivePtr> & packing_objectives
 	) const = 0;
 
 	virtual	shared_ptr<rif::RifAccumulator>

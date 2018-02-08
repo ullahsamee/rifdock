@@ -25,6 +25,7 @@ hack_pack(
     shared_ptr< std::vector< SearchPointWithRots > > & hsearch_results_p,
     std::vector< SearchPointWithRots > & packed_results,
     RifDockData & rdd,
+    int resl,
     int64_t total_search_effort, int64_t & npack) {
 
 
@@ -44,7 +45,7 @@ hack_pack(
     for( n_packsamp; n_packsamp < hsearch_results.size(); ++n_packsamp ){
         if( hsearch_results[n_packsamp].score > 0 ) break;
     }
-    int const config = rdd.RESLS.size()-1;
+    
     npack = std::min( n_packsamp, (size_t)(total_search_effort *
         ( rdd.opt.hack_pack_frac / (rdd.packopts.pack_n_iters*rdd.packopts.pack_iter_mult)) ) );
 
@@ -76,7 +77,7 @@ hack_pack(
             packed_results[ ipack ].index = isamp;
             packed_results[ ipack ].prepack_rank = ipack;
             ScenePtr tscene = ( rdd.scene_pt[omp_get_thread_num()] );
-            bool director_success = rdd.director->set_scene( isamp, rdd.RESLS.size()-1, *tscene );
+            bool director_success = rdd.director->set_scene( isamp, resl, *tscene );
 
             if ( ! director_success ) {
                 packed_results[ ipack ].rotamers(); // this initializes it to blank
@@ -84,7 +85,7 @@ hack_pack(
                 continue;
             }
 
-            packed_results[ ipack ].score = rdd.packing_objective->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+            packed_results[ ipack ].score = rdd.packing_objectives[resl]->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
 
         } catch( std::exception const & ex ) {
             #ifdef USE_OPENMP
@@ -107,7 +108,7 @@ hack_pack(
         SearchPointWithRots const & packed_result = packed_results[i];
         if (packed_result.rotamers().size() == 0) continue;
         ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-        sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene);
+        sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene, resl);
     }
 
     std::cout << std::endl;

@@ -57,6 +57,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, rotrf_cache_dir )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, hack_pack )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, hack_pack_during_hsearch )
 	OPT_1GRP_KEY(  Real        , rif_dock, hack_pack_frac )
 	OPT_1GRP_KEY(  Real        , rif_dock, pack_iter_mult )
 	OPT_1GRP_KEY(  Integer     , rif_dock, pack_n_iters )
@@ -220,6 +221,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rotrf_cache_dir, "" , "./" );
 
 			NEW_OPT(  rif_dock::hack_pack, "" , true );
+			NEW_OPT(  rif_dock::hack_pack_during_hsearch, "hackpack during hsearch", false );
 			NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 			NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
 			NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
@@ -401,6 +403,7 @@ struct RifDockOpt
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
 	bool        hack_pack                            ;
+	bool        hack_pack_during_hsearch             ;
 	int         rf_oversample                        ;
 
 	int         rotrf_oversample                     ;
@@ -556,6 +559,8 @@ struct RifDockOpt
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
+		hack_pack_during_hsearch               = option[rif_dock::hack_pack_during_hsearch              ]();
+
 		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		rotrf_oversample                       = option[rif_dock::rotrf_oversample                      ]();
