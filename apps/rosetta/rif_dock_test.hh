@@ -153,6 +153,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, fragment_max_rmsd )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_fragments )
     OPT_1GRP_KEY(  StringVector, rif_dock, morph_rules_files )
+    OPT_1GRP_KEY(  String      , rif_dock, morph_silent_file )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
@@ -317,6 +318,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::fragment_max_rmsd , "Max RMSD to starting fragment.", 10000 );
 			NEW_OPT(  rif_dock::max_fragments, "Maximum number of fragments to find.", 10000000 );
 			NEW_OPT(  rif_dock::morph_rules_files, "List of files for each scaffold to specify morph regions", utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::morph_silent_file, "Silent file containing pre-morphed structures. Overrides other options", "" );
 
 			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
@@ -465,6 +467,7 @@ struct RifDockOpt
     float       fragment_max_rmsd                    ;
     int         max_fragments                        ;
     std::vector<std::string> morph_rules_fnames      ;
+    std::string morph_silent_file                    ;
 
     bool        include_parent                       ;
     bool        use_parent_body_energies             ;
@@ -612,6 +615,7 @@ struct RifDockOpt
 		fragment_cluster_tolerance             = option[rif_dock::fragment_cluster_tolerance            ]();
         fragment_max_rmsd                      = option[rif_dock::fragment_max_rmsd                     ]();
         max_fragments                          = option[rif_dock::max_fragments                         ]();
+        morph_silent_file                      = option[rif_dock::morph_silent_file                     ]();
 
         include_parent                         = option[rif_dock::include_parent                        ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
