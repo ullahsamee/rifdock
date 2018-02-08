@@ -167,8 +167,9 @@ dump_rif_result(
     resfile << "start" << std::endl;
     expdb << "rif_residues ";
 
-
-    sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+    if ( selected_result.rotamers_ ) {
+        sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+    }
 
     std::vector<int> needs_RIFRES;
     for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
