@@ -67,7 +67,7 @@ std::ostream & operator<<( std::ostream & out, HackPackOpts const & hpo ){
 		<< "\n  init_with_best_1be_rots " << hpo.init_with_best_1be_rots
 		<< "\n  user_rotamer_bonus_constant " << hpo.user_rotamer_bonus_constant 
 		<< "\n  user_rotamer_bonus_per_chi" << hpo.user_rotamer_bonus_per_chi
-		<< "\n  rescore_rots_before_insertion" << hpo.rescore_rots_before_insertion
+		<< "\n  rescore_rots_before_insertion " << hpo.rescore_rots_before_insertion
 
 
 	    << std::endl;
