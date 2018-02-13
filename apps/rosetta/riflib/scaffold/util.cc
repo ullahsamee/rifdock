@@ -550,7 +550,7 @@ extract_poses_from_silent_file( std::string const & filename ) {
     #ifdef USE_OPENMP
     #pragma omp parallel for schedule(dynamic,1)
     #endif
-    for ( uint64_t i = 0; i <= silent_structs.size(); i++ ) {
+    for ( uint64_t i = 0; i < silent_structs.size(); i++ ) {
         if (exception) continue;
         try {
             core::io::silent::SilentStruct const & ss = silent_structs[i];
