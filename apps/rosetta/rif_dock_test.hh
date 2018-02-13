@@ -32,6 +32,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, data_cache_dir )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, beam_size_M )
+	OPT_1GRP_KEY(  Real        , rif_dock, max_beam_size_after_hsearch_M )
 	OPT_1GRP_KEY(  Real        , rif_dock, search_diameter )
 	OPT_1GRP_KEY(  Real        , rif_dock, hsearch_scale_factor )
 
@@ -202,6 +203,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
 			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
+			NEW_OPT(  rif_dock::max_beam_size_after_hsearch_M, "max search points to keep after hsearch in M", 100.00000);
 			NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
 			NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 			NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
@@ -355,6 +357,7 @@ struct RifDockOpt
 	int64_t     DIM                                  ;
 	int64_t     DIMPOW2                              ;
 	int64_t     beam_size                            ;
+	int64_t     max_beam_size_after_hsearch          ;
 	bool        replace_all_with_ala_1bre            ;
 	bool        lowres_sterics_cbonly                ;
 	float       tether_to_input_position_cut         ;
@@ -510,6 +513,7 @@ struct RifDockOpt
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;
+		max_beam_size_after_hsearch            = int64_t( option[rif_dock::max_beam_size_after_hsearch_M]() * 1000000.0 );
 		replace_all_with_ala_1bre              = option[rif_dock::replace_all_with_ala_1bre          ]();
 
 		target_pdb                             = option[rif_dock::target_pdb                         ]();

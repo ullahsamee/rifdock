@@ -24,7 +24,7 @@
 namespace scheme {
 namespace scaffold {
 
-const uint64_t BOGUS_INDEX = std::numeric_limits<uint64_t>::max();
+const uint16_t BOGUS_INDEX = std::numeric_limits<uint16_t>::max();
 
 template<
     class _Scaffold,
@@ -60,10 +60,10 @@ struct ScaffoldProviderBase {
 
 
 struct TreeIndex {
-    uint64_t depth;
-    uint64_t member;
+    uint16_t depth;
+    uint16_t member;
     TreeIndex() : depth(BOGUS_INDEX), member(BOGUS_INDEX) {};
-    TreeIndex(uint64_t _depth, uint64_t _member) : depth(_depth), member(_member) {};
+    TreeIndex(uint16_t _depth, uint16_t _member) : depth(_depth), member(_member) {};
 
     bool operator==(const TreeIndex &other) const { 
         return (depth == other.depth
