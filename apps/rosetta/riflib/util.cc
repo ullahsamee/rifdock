@@ -459,6 +459,9 @@ find_xfrom_from_identical_pose_to_pose(
     Eigen::Vector3f match_center = pose_center(match_this,scaffold_res);
 
 
+   	// prepare all test point now
+
+    // Test original residue 1
     utility::vector1<core::Size> target_res {1};
     std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > to_move_atoms;
     std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > match_atoms;
@@ -466,22 +469,8 @@ find_xfrom_from_identical_pose_to_pose(
     devel::scheme::get_scheme_atoms( to_move, target_res, to_move_atoms, true );
     devel::scheme::get_scheme_atoms( match_this, target_res, match_atoms, true );
 
-    EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
-                                                                match_atoms[0].position(),
-                                                                match_atoms[1].position(),
-                                                                match_atoms[2].position());
-    EigenXform to_move_x = ::scheme::chemical::make_stub<EigenXform>(
-                                                                to_move_atoms[0].position(),
-                                                                to_move_atoms[1].position(),
-                                                                to_move_atoms[2].position());
 
-    EigenXform to_move_2_match = match_x * to_move_x.inverse();
-    to_move_2_match.translation() = match_center - to_move_center;
-
-    double error = (to_move_2_match * to_move_atoms[0].position() - match_atoms[0].position()).norm();
-	std::cout << "Alignment error :" << error << std::endl;
-    runtime_assert( error < align_error );
-
+    // Test original midpoint
     core::Size test_res = to_move.size() / 2;
 
     utility::vector1<core::Size> test_target_res {test_res};
@@ -492,8 +481,46 @@ find_xfrom_from_identical_pose_to_pose(
     devel::scheme::get_scheme_atoms( match_this, test_target_res, test_match_atoms, true );
 
 
+    // Test centered residue 1
+
+    EigenXform to_move_2_center = EigenXform::Identity();
+    to_move_2_center.translation() = -to_move_center;
+    apply_xform_to_pose( to_move, to_move_2_center );
+
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > to_move_centered_atoms;
+    devel::scheme::get_scheme_atoms( to_move, target_res, to_move_centered_atoms, true );
+
+
+    // done making test points
+
+
+
+
+    EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                match_atoms[0].position(),
+                                                                match_atoms[1].position(),
+                                                                match_atoms[2].position());
+    EigenXform to_move_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                to_move_centered_atoms[0].position(),
+                                                                to_move_centered_atoms[1].position(),
+                                                                to_move_centered_atoms[2].position());
+
+    EigenXform to_move_centered_2_match = match_x * to_move_x.inverse();
+    to_move_centered_2_match.translation() = match_center - to_move_center;
+
+    double centered_error = (to_move_centered_2_match * to_move_centered_atoms[0].position() - match_atoms[0].position()).norm();
+	std::cout << "Centered res1 Alignment error :" << centered_error << std::endl;
+    runtime_assert( centered_error < align_error );
+
+    EigenXform to_move_2_match = to_move_centered_2_match * to_move_2_center;
+
+    double error = (to_move_2_match * to_move_atoms[0].position() - match_atoms[0].position()).norm();
+	std::cout << "res1 Alignment error :" << error << std::endl;
+    runtime_assert( error < align_error );
+
+
     double test_error = (to_move_2_match * test_to_move_atoms[0].position() - test_match_atoms[0].position()).norm();
-    std::cout << "Test Alignment error :" << error << std::endl;
+    std::cout << "Test res" << test_res << " Alignment error :" << error << std::endl;
     runtime_assert( test_error < align_error );
 
     return to_move_2_match;
