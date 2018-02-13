@@ -52,6 +52,7 @@ struct ScaffoldDataCache {
     float scaff_radius;
     EigenXform scaffold_perturb;
 
+    core::pose::PoseCOP scaffold_unmodified_p;                                     // original pose passed to this function
     core::pose::PoseCOP scaffold_centered_p;                                   // centered scaffold, some ALA mutations based on scaff2ala/scaff2alaselonly
     core::pose::PoseCOP scaffold_full_centered_p;                              // centered scaffold, identical to input       
 
@@ -129,6 +130,8 @@ struct ScaffoldDataCache {
         // This is setting scaff_redundancy_filter_rg and scaff_radius
         get_rg_radius( pose, scaff_redundancy_filter_rg, scaff_radius, *scaffold_res_p, false ); 
 
+        // Setup scaffold_unmodified_p
+        scaffold_unmodified_p = make_shared<core::pose::Pose const>( pose );
 
         // Setup scaffold_centered_p and scaffold_full_centered_p
         scaffold_centered_p = make_shared<core::pose::Pose const>( pose );

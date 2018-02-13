@@ -99,7 +99,7 @@ using ::scheme::scaffold::TreeLimits;
         }
     } else {
         core::pose::Pose match_this = *core::import_pose::pose_from_file( rdd.opt.match_this_pdb );
-        EigenXform scaff2match = find_xfrom_from_identical_pose_to_pose( *(sdc->scaffold_centered_p ), match_this, 1 );
+        EigenXform scaff2match = find_xform_from_identical_pose_to_pose( *(sdc->scaffold_centered_p ), match_this, 1 );
 
         float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 

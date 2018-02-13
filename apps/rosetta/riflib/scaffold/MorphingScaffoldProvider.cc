@@ -137,7 +137,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
             ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
 
-            core::pose::PoseCOP scaffold = data_cache->scaffold_full_centered_p;
+            core::pose::PoseCOP scaffold = data_cache->scaffold_unmodified_p;
 
 
             std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
@@ -220,7 +220,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
         if ( opt.morph_silent_archetype != "" ) {
             core::pose::Pose archetype = *core::import_pose::pose_from_file( opt.morph_silent_archetype );
-            archetype_to_input = find_xfrom_from_identical_pose_to_pose( archetype, *data_cache->scaffold_centered_p, 1 );
+            archetype_to_input = find_xform_from_identical_pose_to_pose( archetype, *data_cache->scaffold_unmodified_p, 1 );
         }
 
         for ( core::pose::PoseOP const & pose : poses ) {

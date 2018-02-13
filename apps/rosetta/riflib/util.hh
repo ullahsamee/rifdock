@@ -449,7 +449,7 @@ subset_CA_rmsd(
 
 /// Your poses must be identical. Very important
 EigenXform
-find_xfrom_from_identical_pose_to_pose( 
+find_xform_from_identical_pose_to_pose( 
 	core::pose::Pose const & pose1,
 	core::pose::Pose const & pose2,
 	float align_error = 0.2 );
