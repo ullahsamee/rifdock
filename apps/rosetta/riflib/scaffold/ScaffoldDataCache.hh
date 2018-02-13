@@ -100,7 +100,8 @@ struct ScaffoldDataCache {
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
-        std::vector<CstBaseOP> const & csts_in ) {
+        std::vector<CstBaseOP> const & csts_in,
+        bool center_scaffold ) {
 
         debug_sanity = 1337;
 
@@ -142,7 +143,7 @@ struct ScaffoldDataCache {
 
         // Setup scaffold_center
         scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
-        if ( opt.dont_center_scaffold ) {
+        if ( ! center_scaffold ) {
             scaffold_center = Eigen::Vector3f( 0, 0, 0 );
         }
 

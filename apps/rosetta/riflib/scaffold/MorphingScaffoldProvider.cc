@@ -13,6 +13,7 @@
 #include <riflib/scaffold/util.hh>
 #include <ObjexxFCL/format.hh>
 #include <riflib/HSearchConstraints.hh>
+#include <core/import_pose/import_pose.hh>
 
 #include <string>
 #include <vector>
@@ -57,7 +58,8 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
         scaffold_perturb,
         rot_index_p,
         opt,
-        csts);
+        csts,
+        true);
 
     ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
@@ -157,8 +159,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             for ( core::pose::PoseOP pose : poses ) {
                 count++;
 
-
-
                 ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
                     *pose,
                     scaffold_res,
@@ -166,7 +166,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     scaffold_perturb,
                     rot_index_p,
                     opt,
-                    csts);
+                    csts,
+                    false);
 
                 temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 
@@ -216,48 +217,59 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
         ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
 
+        EigenXform archetype_to_input = EigenXform::Identity();
+
+        if ( opt.morph_silent_archetype != "" ) {
+            core::pose::Pose archetype = *core::import_pose::pose_from_file( opt.morph_silent_archetype );
+            archetype_to_input = find_xfrom_from_identical_pose_to_pose( archetype, *data_cache->scaffold_centered_p, 1 );
+        }
+
         for ( core::pose::PoseOP const & pose : poses ) {
 
-                ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
-                    *pose,
-                    scaffold_res,
-                    pose->pdb_info()->name(),
-                    scaffold_perturb,
-                    rot_index_p,
-                    opt,
-                    csts);
+            apply_xform_to_pose( *pose, archetype_to_input );
+            pose->dump_pdb(pose->pdb_info()->name() + ".pdb");
 
-                temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+            ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
+                *pose,
+                scaffold_res,
+                pose->pdb_info()->name(),
+                scaffold_perturb,
+                rot_index_p,
+                opt,
+                csts,
+                false);
 
-                if ( opt.use_parent_body_energies ) {
-                    std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
-                    if ( ! data_cache->local_onebody_p ) {
-                        data_cache->setup_onebody_tables( rot_index_p, opt );
-                    }
-                    if ( ! data_cache->local_twobody_p ) {
-                        data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
-                    }
-                    // one-body
-                    temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
-                    temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
-                    // two-body
-                    temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
-                    temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+            temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+
+            if ( opt.use_parent_body_energies ) {
+                std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
+                if ( ! data_cache->local_onebody_p ) {
+                    data_cache->setup_onebody_tables( rot_index_p, opt );
                 }
+                if ( ! data_cache->local_twobody_p ) {
+                    data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+                }
+                // one-body
+                temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
+                temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
+                // two-body
+                temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
+                temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+            }
 
-                ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
+            ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
-                MorphMember mmember;
-                mmember.conformation = conformation;
+            MorphMember mmember;
+            mmember.conformation = conformation;
 
-                mmember.tree_relation.depth = 1;
-                mmember.tree_relation.parent_member = 0;
-                mmember.tree_relation.first_child = BOGUS_INDEX;
-                mmember.tree_relation.last_child = BOGUS_INDEX;
+            mmember.tree_relation.depth = 1;
+            mmember.tree_relation.parent_member = 0;
+            mmember.tree_relation.first_child = BOGUS_INDEX;
+            mmember.tree_relation.last_child = BOGUS_INDEX;
 
-                // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
+            // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
 
-                add_morph_member( mmember );
+            add_morph_member( mmember );
         }
     } 
 

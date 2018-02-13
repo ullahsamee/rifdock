@@ -9,6 +9,11 @@
 
 
 #include <riflib/util.hh>
+#include <riflib/scaffold/util.hh>
+#include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rosetta_field.hh>
+
+
 #include <ObjexxFCL/format.hh>
 #include <core/id/AtomID.hh>
 #include <core/id/AtomID_Map.hh>
@@ -431,6 +436,79 @@ subset_CA_rmsd(
     } else {
         return core::scoring::rms_at_corresponding_atoms_no_super( pose1, pose2, atom_map, calc_rms_res );
     }
+}
+
+
+/// Your poses must be identical. Very important
+EigenXform
+find_xfrom_from_identical_pose_to_pose( 
+	core::pose::Pose const & pose1,
+	core::pose::Pose const & pose2,
+	float align_error /* = 0.2 */ ) {
+
+	// we can use anything here because they're the same
+	utility::vector1<core::Size> scaffold_res;
+	get_default_scaffold_res( pose1, scaffold_res );
+
+	core::pose::Pose to_move = pose1;
+    ::devel::scheme::pose_to_ala( to_move );
+    Eigen::Vector3f to_move_center = pose_center(to_move, scaffold_res);
+
+    core::pose::Pose match_this = pose2;
+    ::devel::scheme::pose_to_ala( match_this );
+    Eigen::Vector3f match_center = pose_center(match_this,scaffold_res);
+
+
+    utility::vector1<core::Size> target_res {1};
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > to_move_atoms;
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > match_atoms;
+    
+    devel::scheme::get_scheme_atoms( to_move, target_res, to_move_atoms, true );
+    devel::scheme::get_scheme_atoms( match_this, target_res, match_atoms, true );
+
+    EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                match_atoms[0].position(),
+                                                                match_atoms[1].position(),
+                                                                match_atoms[2].position());
+    EigenXform to_move_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                to_move_atoms[0].position(),
+                                                                to_move_atoms[1].position(),
+                                                                to_move_atoms[2].position());
+
+    EigenXform to_move_2_match = match_x * to_move_x.inverse();
+    to_move_2_match.translation() = match_center - to_move_center;
+
+    double error = (to_move_2_match * to_move_atoms[0].position() - match_atoms[0].position()).norm();
+	std::cout << "Alignment error :" << error << std::endl;
+    runtime_assert( error < align_error );
+
+    core::Size test_res = to_move.size() / 2;
+
+    utility::vector1<core::Size> test_target_res {test_res};
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_to_move_atoms;
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_match_atoms;
+
+    devel::scheme::get_scheme_atoms( to_move, test_target_res, test_to_move_atoms, true );
+    devel::scheme::get_scheme_atoms( match_this, test_target_res, test_match_atoms, true );
+
+
+    double test_error = (to_move_2_match * test_to_move_atoms[0].position() - test_match_atoms[0].position()).norm();
+    std::cout << "Test Alignment error :" << error << std::endl;
+    runtime_assert( test_error < align_error );
+
+    return to_move_2_match;
+	
+}
+
+
+
+void
+apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform) {
+
+	numeric::xyzTransform<float> transform = eigen2xyz( xform );
+	pose.apply_transform_Rx_plus_v( transform.R, transform.t );
+
+
 }
 
 

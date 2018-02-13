@@ -99,64 +99,16 @@ using ::scheme::scaffold::TreeLimits;
         }
     } else {
         core::pose::Pose match_this = *core::import_pose::pose_from_file( rdd.opt.match_this_pdb );
-        ::devel::scheme::pose_to_ala( match_this );
-        Eigen::Vector3f match_center = pose_center(match_this,*(sdc->scaffold_res_p));
-
-
-        utility::vector1<core::Size> target_res {1};
-        std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > match_atoms;
-        std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > scaff_atoms;
-        
-        devel::scheme::get_scheme_atoms( match_this, target_res, match_atoms, true );
-        devel::scheme::get_scheme_atoms( *(sdc->scaffold_centered_p), target_res, scaff_atoms, true );
-
-        EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
-                                                                    match_atoms[0].position(),
-                                                                    match_atoms[1].position(),
-                                                                    match_atoms[2].position());
-        EigenXform scaff_x = ::scheme::chemical::make_stub<EigenXform>(
-                                                                    scaff_atoms[0].position(),
-                                                                    scaff_atoms[1].position(),
-                                                                    scaff_atoms[2].position());
-
-        EigenXform scaff2match = match_x * scaff_x.inverse();
-        scaff2match.translation() = match_center;// - sdc->scaffold_center; // scaffold by definition is at the origin
-
-        double error = (scaff2match * scaff_atoms[0].position() - match_atoms[0].position()).norm();
-	std::cout << "Alignment error :" << error << std::endl;
-        runtime_assert( error < 1 );
-
-////////// test
-        utility::vector1<core::Size> test_target_res {10};
-        std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_match_atoms;
-        std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_scaff_atoms;
-
-        devel::scheme::get_scheme_atoms( match_this, test_target_res, test_match_atoms, true );
-        devel::scheme::get_scheme_atoms( *(sdc->scaffold_centered_p), test_target_res, test_scaff_atoms, true );
-
-
-        double test_error = (scaff2match * test_scaff_atoms[0].position() - test_match_atoms[0].position()).norm();
-        std::cout << "Test Alignment error :" << error << std::endl;
-        runtime_assert( test_error < 1 );
-////////////////////////
-
+        EigenXform scaff2match = find_xfrom_from_identical_pose_to_pose( *(sdc->scaffold_centered_p ), match_this, 1 );
 
         float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 
-	int count = 0;
+	    int count = 0;
         for( std::pair<uint64_t, bool> const & pair : uniq_positions ) {
-
-
             rdd.director->set_scene( RifDockIndex( pair.first, TreeIndex(0, 0)), rdd.opt.pop_resl-1, *rdd.scene_minimal );
             EigenXform x = rdd.scene_minimal->position(1);
             EigenXform xdiff = scaff2match.inverse() * x;
             float xmag =  xform_magnitude( xdiff, redundancy_filter_rg );
-            // if (count++ < 10000) {
-            // std::cout << xmag << " " << "  Trans: " 
-            //   << F(7, 1, xdiff.translation()[0]) 
-            //   << F(7, 1, xdiff.translation()[1]) 
-            //   << F(7, 1, xdiff.translation()[2]) << std::endl; 
-            // }
             if ( xmag < rdd.opt.match_this_rmsd ) {
                 usable_positions.push_back( pair.first );
             }
