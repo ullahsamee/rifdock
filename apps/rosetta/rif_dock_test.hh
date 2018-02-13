@@ -20,7 +20,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
-	OPT_1GRP_KEY(  Boolean     , rif_dock, dont_center_scaffold )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
 	OPT_1GRP_KEY(  String      , rif_dock, target_pdb )
@@ -188,7 +187,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
 			NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 			NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
-			NEW_OPT(  rif_dock::dont_center_scaffold, "don't use this", false );
 
 			NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::target_pdb, "" , "" );
@@ -400,7 +398,6 @@ struct RifDockOpt
 	float       favorable_1body_multiplier           ;
 	float       favorable_2body_multiplier           ;
 	bool        random_perturb_scaffold              ;
-	bool        dont_center_scaffold				 ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
@@ -557,7 +554,6 @@ struct RifDockOpt
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
-		dont_center_scaffold				   = option[rif_dock::dont_center_scaffold					]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
@@ -700,7 +696,6 @@ struct RifDockOpt
         	runtime_assert( num_scaffolds > 0 );
         	scaffold_fnames.resize(num_scaffolds);
 
-        	dont_center_scaffold = true;
         }
 
         for( std::string s : option[rif_dock::morph_rules_files ]() ) morph_rules_fnames.push_back(s);

@@ -58,8 +58,7 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
         scaffold_perturb,
         rot_index_p,
         opt,
-        csts,
-        true);
+        csts);
 
     ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
@@ -167,9 +166,9 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     rot_index_p,
                     opt,
                     csts,
-                    false);
+                    data_cache->scaffold_center);
 
-                temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+                // temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 
                 if ( opt.use_parent_body_energies ) {
                     std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
@@ -237,7 +236,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 rot_index_p,
                 opt,
                 csts,
-                false);
+                data_cache->scaffold_center);
 
             temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 

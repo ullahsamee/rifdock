@@ -101,7 +101,7 @@ struct ScaffoldDataCache {
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
         std::vector<CstBaseOP> const & csts_in,
-        bool center_scaffold ) {
+        Eigen::Vector3f force_scaffold_center = Eigen::Vector3f {std::numeric_limits<double>::quiet_NaN(), 0, 0} ) {
 
         debug_sanity = 1337;
 
@@ -142,9 +142,11 @@ struct ScaffoldDataCache {
         else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold_centered, *scaffold_res_p );
 
         // Setup scaffold_center
-        scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
-        if ( ! center_scaffold ) {
-            scaffold_center = Eigen::Vector3f( 0, 0, 0 );
+        if ( std::isnan( scaffold_center[0] ) || std::isnan( scaffold_center[1] )
+            || std::isnan( scaffold_center[2] )) {
+            scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
+        } else {
+            scaffold_center = force_scaffold_center;
         }
 
         // Move scaffold_centered_p and scaffold_full_centered_p to origin
@@ -215,7 +217,7 @@ struct ScaffoldDataCache {
             }
         }
 
-
+        scaffold_centered_p->dump_pdb("centered_" + scafftag + ".pdb");
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;

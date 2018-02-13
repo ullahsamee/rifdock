@@ -293,8 +293,7 @@ struct NineAManager : public utility::pointer::ReferenceCount {
             scaffold_perturb,
             rot_index_p,
             opt,
-            csts,
-            false);
+            csts);
 
         nine.conformation = make_conformation_from_data_cache(temp_data_cache, false);
 
