@@ -554,11 +554,7 @@ extract_poses_from_silent_file( std::string const & filename ) {
         if (exception) continue;
         try {
             core::io::silent::SilentStruct const & ss = silent_structs[i];
-            core::pose::PoseOP pose;
-            for ( int bad_idea = 0; bad_idea < 10000; bad_idea++) {
-                pose = core::pose::PoseOP(new core::pose::Pose());
-                if (pose) break;
-            } 
+            core::pose::PoseOP pose( new core::pose::Pose() );
             ss.fill_pose( *pose );
             add_pdbinfo_if_missing( *pose );
             pose->pdb_info()->name( tags[i] );
