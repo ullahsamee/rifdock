@@ -225,7 +225,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
         for ( core::pose::PoseOP const & pose : poses ) {
 
             apply_xform_to_pose( *pose, archetype_to_input );
-            pose->dump_pdb(pose->pdb_info()->name() + ".pdb");
 
             ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
                 *pose,

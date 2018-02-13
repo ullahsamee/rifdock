@@ -220,7 +220,6 @@ struct ScaffoldDataCache {
             }
         }
 
-        scaffold_centered_p->dump_pdb("centered_" + scafftag + ".pdb");
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
