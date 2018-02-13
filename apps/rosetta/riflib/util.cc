@@ -506,7 +506,7 @@ find_xfrom_from_identical_pose_to_pose(
                                                                 to_move_centered_atoms[2].position());
 
     EigenXform to_move_centered_2_match = match_x * to_move_x.inverse();
-    to_move_centered_2_match.translation() = match_center - to_move_center;
+    to_move_centered_2_match.translation() = match_center;
 
     double centered_error = (to_move_centered_2_match * to_move_centered_atoms[0].position() - match_atoms[0].position()).norm();
 	std::cout << "Centered res1 Alignment error :" << centered_error << std::endl;
