@@ -213,6 +213,11 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     if ( opt.morph_silent_file != "" ) {
         std::vector<core::pose::PoseOP> poses = extract_poses_from_silent_file( opt.morph_silent_file );
 
+        if ( poses.size() > opt.morph_silent_max_structures ) {
+            std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
+            poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+        }
+
         ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
 
         EigenXform archetype_to_input = EigenXform::Identity();

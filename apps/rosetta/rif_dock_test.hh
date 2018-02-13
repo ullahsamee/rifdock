@@ -156,6 +156,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  StringVector, rif_dock, morph_rules_files )
     OPT_1GRP_KEY(  String      , rif_dock, morph_silent_file )
     OPT_1GRP_KEY(  String      , rif_dock, morph_silent_archetype )
+    OPT_1GRP_KEY(  Real        , rif_dock, morph_silent_max_structures )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
@@ -323,6 +324,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::morph_rules_files, "List of files for each scaffold to specify morph regions", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::morph_silent_file, "Silent file containing pre-morphed structures. Overrides other options", "" );
 			NEW_OPT(  rif_dock::morph_silent_archetype, "PDB to calculate transform difference between input position and silent file", "" );
+			NEW_OPT(  rif_dock::morph_silent_max_structures, "Cluster silent file into this many cluster centers", 1000000000 );
 
 			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
@@ -474,6 +476,7 @@ struct RifDockOpt
     std::vector<std::string> morph_rules_fnames      ;
     std::string morph_silent_file                    ;
     std::string morph_silent_archetype               ;
+    int         morph_silent_max_structures          ;
 
     bool        include_parent                       ;
     bool        use_parent_body_energies             ;
@@ -625,6 +628,7 @@ struct RifDockOpt
         max_fragments                          = option[rif_dock::max_fragments                         ]();
         morph_silent_file                      = option[rif_dock::morph_silent_file                     ]();
         morph_silent_archetype                 = option[rif_dock::morph_silent_archetype                ]();
+        morph_silent_max_structures            = option[rif_dock::morph_silent_max_structures           ]();
 
         include_parent                         = option[rif_dock::include_parent                        ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();

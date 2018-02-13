@@ -12,6 +12,8 @@
 #include <riflib/scaffold/util.hh>
 #include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/rosetta_field.hh>
+#include <riflib/scaffold/MultithreadPoseCloner.hh>
+#include <numeric/agglomerative_hierarchical_clustering.hh>
 
 
 #include <ObjexxFCL/format.hh>
@@ -536,6 +538,119 @@ apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform) {
 	pose.apply_transform_Rx_plus_v( transform.R, transform.t );
 
 
+}
+
+
+utility::vector1<utility::vector1<core::Real>>
+all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses ) {
+	
+
+	utility::vector1<utility::vector1<core::Real>> table( poses.size() );
+
+	for ( core::Size i = 1; i <= table.size(); i++ ) {
+		table[i].resize(poses.size(), 0);	// initialize the diagonal to 0
+	}
+
+	// Make it threadsafe
+	utility::vector1<shared_ptr<MultithreadPoseCloner>> mpcs;
+	for ( core::pose::PoseOP const & pose : poses ) {
+		mpcs.push_back(make_shared<MultithreadPoseCloner>(pose));
+	}
+
+	std::exception_ptr exception = nullptr;
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+	for ( core::Size i = 1; i <= mpcs.size(); i++ ) {
+
+		try {
+			core::pose::PoseCOP outer_pose = mpcs[i]->get_pose();
+
+			for ( core::Size j = i + 1; j <= mpcs.size(); j++) {
+				core::pose::PoseCOP inner_pose = mpcs[j]->get_pose();
+
+				core::Real rmsd = core::scoring::CA_rmsd(*outer_pose, *inner_pose);
+
+				runtime_assert( table[i][j] == 0 );
+				runtime_assert( table[j][i] == 0 );
+
+				table[i][j] = rmsd;
+				table[j][i] = rmsd;
+			}
+
+		} catch(...) {
+            #pragma omp critical
+            exception = std::current_exception();
+        }
+
+	} // end of OMP loop
+    if( exception ) std::rethrow_exception(exception);
+
+	return table;
+
+}
+
+std::vector<std::vector<core::pose::PoseOP>>
+cluster_poses_into_n_bins( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
+
+	runtime_assert( poses.size() >= n );
+
+	utility::vector1<utility::vector1<core::Real>> rmsds = all_by_all_rmsd( poses );
+
+	numeric::AverageLinkClusterer alc;
+	utility::vector1<numeric::ClusteringTreeNodeOP> roots = alc.cluster(rmsds, n);
+
+	utility::vector1<uint64_t> input_indices( poses.size() );
+	for ( core::Size i = 1; i <= poses.size(); i++ ) {
+		input_indices[i] = i - 1;
+	}
+
+	std::vector<bool> pose_got_used(poses.size(), false);
+
+	std::vector<std::vector<core::pose::PoseOP>> bins;
+
+	for ( core::Size i = 1; i <= roots.size(); i++ ) {
+		std::vector<core::pose::PoseOP> this_bin;
+
+		utility::vector1<uint64_t> this_bin_indices;
+		numeric::get_cluster_data( input_indices, roots[i], this_bin_indices );
+
+		runtime_assert( this_bin_indices.size() > 0 );
+
+		for ( uint64_t index : this_bin_indices ) {
+			runtime_assert( ! pose_got_used[index] );
+			pose_got_used[index] = true;
+			this_bin.push_back( poses[index] );
+		}
+
+		bins.push_back( this_bin );
+	}
+
+	for ( uint64_t i = 0; i < pose_got_used.size(); i++ ) {
+		runtime_assert(pose_got_used[i]);
+	}
+
+	return bins;
+}
+
+std::vector<core::pose::PoseOP>
+cluster_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
+
+	if ( n <= poses.size() ) return poses;
+
+	std::vector<std::vector<core::pose::PoseOP>> bins = cluster_poses_into_n_bins( poses, n );
+
+	std::vector<core::pose::PoseOP> output_poses;
+
+	for (std::vector<core::pose::PoseOP> const & bin : bins) {
+		output_poses.push_back(bin.front());
+	}
+
+	return output_poses;
 }
 
 
