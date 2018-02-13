@@ -142,8 +142,8 @@ struct ScaffoldDataCache {
         else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold_centered, *scaffold_res_p );
 
         // Setup scaffold_center
-        if ( std::isnan( scaffold_center[0] ) || std::isnan( scaffold_center[1] )
-            || std::isnan( scaffold_center[2] )) {
+        if ( std::isnan( force_scaffold_center[0] ) || std::isnan( force_scaffold_center[1] )
+            || std::isnan( force_scaffold_center[2] )) {
             scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
         } else {
             scaffold_center = force_scaffold_center;
