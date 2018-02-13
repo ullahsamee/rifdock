@@ -168,7 +168,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     csts,
                     data_cache->scaffold_center);
 
-                // temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 
                 if ( opt.use_parent_body_energies ) {
                     std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
@@ -238,7 +237,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 csts,
                 data_cache->scaffold_center);
 
-            temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 
             if ( opt.use_parent_body_energies ) {
                 std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
