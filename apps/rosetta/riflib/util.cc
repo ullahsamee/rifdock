@@ -562,7 +562,7 @@ all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses ) {
     #pragma omp parallel for schedule(dynamic,1)
     #endif
 	for ( core::Size i = 1; i <= mpcs.size(); i++ ) {
-
+		if (exception) continue;
 		try {
 			core::pose::PoseCOP outer_pose = mpcs[i]->get_pose();
 
