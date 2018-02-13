@@ -640,7 +640,7 @@ cluster_poses_leaving_n(
 	std::vector<core::pose::PoseOP> const & poses,
 	uint64_t n ) {
 
-	if ( n <= poses.size() ) return poses;
+	if ( n >= poses.size() ) return poses;
 
 	std::vector<std::vector<core::pose::PoseOP>> bins = cluster_poses_into_n_bins( poses, n );
 
