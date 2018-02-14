@@ -52,7 +52,8 @@ struct RosettaRotamerGenerator {
 		std::vector<std::pair<SchemeAtom,SchemeAtom> > & hbonders, // TODO: depricate this?
 		int & nheavyatoms,
 		std::vector<HBondRay> & donors,
-		std::vector<HBondRay> & acceptors
+		std::vector<HBondRay> & acceptors,
+		std::map<std::string, std::string> const & d_l_map
 	);
 
 };
@@ -89,7 +90,8 @@ void
 get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
-	bool extra_primary_rotamers	
+	bool extra_primary_rotamers,
+	bool use_d_aa
 );
 //new get_rotamer_index for rot_spec
 std::shared_ptr<RotamerIndex>

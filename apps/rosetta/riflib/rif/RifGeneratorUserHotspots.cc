@@ -122,6 +122,7 @@ namespace rif {
 		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 		typedef ::Eigen::Matrix<float,3,1> Pos;
+
 	
 		// some sanity checks
 		int const n_hspot_groups = this->opts.hotspot_files.size();
@@ -205,6 +206,8 @@ namespace rif {
 		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
+			
+
 			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
 			std::cout << "Hotspot group: " << i_hotspot_group << " - " << hotspot_file << std::endl;
 			
@@ -215,6 +218,22 @@ namespace rif {
       		std::cout << "Processing hotspots... " << std::flush; // No endl here!!!!
 			// read in pdb files # i_hotspot_group
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
+
+			    std::string d_name = " ";
+			    // try to find matching d version if use_d_aa
+                if (this->opts.use_d_aa) { 
+                    for (auto it : params -> rot_index_p -> d_l_map_) {
+                    	if (it.second == pose.residue(i_hspot_res).name3()) {
+                    		d_name = it.first;
+                    	}
+                    }
+            	}
+            	if (this->opts.use_d_aa && d_name == " ") {
+               		std::cout << pose.residue(i_hspot_res).name3() << std::endl;
+               		utility_exit_with_message("can't find d version");
+            	} else {
+            		std::cout << d_name << std::endl;
+            	}
 
 				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
 
@@ -251,7 +270,6 @@ namespace rif {
 				// for each irot that is the right restype (can be had from rot_intex_p)
 				int irot_begin = 0, irot_end = params -> rot_index_p -> size();
 				for( int irot = irot_begin; irot < irot_end; ++irot ){
-
 					::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms matrix
 						
 					// assign rif_res position by column
@@ -263,7 +281,8 @@ namespace rif {
                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
                     );
 
-					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3())
+
+					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3() || params -> rot_index_p -> resname(irot) == d_name)
 					{
 						
 						EigenXform impose; //transform for mapping the Rot to Rif
@@ -315,7 +334,7 @@ namespace rif {
 						int passes = 1;
 						EigenXform O_2_orig = EigenXform::Identity();
          				EigenXform tyr_thing = EigenXform::Identity();	
-						if (pose.residue(i_hspot_res).name3() == "TYR") {
+						if (pose.residue(i_hspot_res).name3() == "TYR" || d_name == "DTY") {
 
 							Pos the_axis = (hot_atom1 - hot_atom2).normalized();
 							O_2_orig.translation() = -hot_atom1;	
@@ -323,7 +342,7 @@ namespace rif {
 
 							passes = 2;
 
-						} else if (pose.residue(i_hspot_res).name3() == "PHE") {
+						} else if (pose.residue(i_hspot_res).name3() == "PHE" || d_name == "DPH") {
 							
 							Pos atom6;
 							atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
@@ -390,6 +409,10 @@ namespace rif {
 									BBActor bbact( atom_N, atom_CA, atom_C);
 									EigenXform new_x_position = bbact.position();
 
+									//std::cout << "adding: " << params -> rot_index_p -> resname(irot) << std::endl;
+									if (params -> rot_index_p -> resname(irot) == "LYS" || params -> rot_index_p -> resname(irot) == "HIS" || params -> rot_index_p -> resname(irot) == "HIS_D") {
+										utility_exit_with_message("something is wrong");
+									}
 									accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, 
 										this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group,
 										 -1 );

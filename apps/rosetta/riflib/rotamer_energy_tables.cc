@@ -15,6 +15,7 @@
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/Residue.hh>
 #include <core/pose/Pose.hh>
+#include <core/pose/util.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/scoring/hbonds/HBondOptions.hh>
 #include <core/scoring/methods/EnergyMethodOptions.hh>
@@ -181,7 +182,30 @@ compute_onebody_rotamer_energies(
 			#endif
 			std::cout << (100.0*ir)/work_pose.size() << "% "; std::cout.flush();
 			for( int jr = 0; jr < rot_index.size(); ++jr ){
-				core::conformation::ResidueOP rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
+				std::string rot_name;
+				core::conformation::ResidueOP rot;
+				auto dl_map_it = rot_index.d_l_map_.find(rot_index.resname(jr));
+				// d case
+				if (dl_map_it != rot_index.d_l_map_.end()) {
+					rot_name = rot_index.d_l_map_.at(rot_index.resname(jr));
+					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+					core::chemical::ResidueType const & rtype = rts.lock()->name_map( rot_name );
+					core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+					core::pose::Pose tmp_pose;
+					tmp_pose.append_residue_by_jump(*resop,1);
+					core::chemical::ResidueTypeSetCOP pose_rts = tmp_pose.residue_type_set_for_pose();
+        			core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(tmp_pose, rot_name);
+        			core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+        			rot = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+				} else {
+				//rot_index.d_l_map_reverse(rot_index.resname(jr), d_name);
+				// if (rot_index.resname(jr) == d_name) {
+					rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
+				}
+				// } else {
+
+				// 	core::conformation::ResidueOP rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
+				// }
 				work_pose.replace_residue( ir, *rot, true );
 				for( int k = 0; k < rot_index.nchi(jr); ++k ){
 					work_pose.set_chi( k+1, ir, rot_index.chi( jr, k ) );

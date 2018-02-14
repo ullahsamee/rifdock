@@ -87,7 +87,8 @@ dump_rif_result(
     std::vector< std::pair< int, std::string > > brians_infolabels;
 
     std::ostringstream packout, allout;
-    std::map< int, std::string > pikaa;
+    // TYU change to vector of strings instead of string
+    std::map< int, std::vector<std::string> > pikaa;
     int chain_no = pose_from_rif.num_chains();   
     int res_num = pose_from_rif.size() + 1;
     const std::string chains = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -122,9 +123,10 @@ dump_rif_result(
                         res_num++;
                         chain_no++;
                     }
-                    char oneletter = rdd.rot_index_p->oneletter(irot);
+                    // TYU change to std::string for expanded oneletter map
+                    std::string oneletter = rdd.rot_index_p->oneletter(irot);
                     if( std::find( pikaa[ires+1].begin(), pikaa[ires+1].end(), oneletter ) == pikaa[ires+1].end() ){
-                        pikaa[ires+1] += oneletter;
+                        pikaa[ires+1].push_back(oneletter);
                     }
 
 
@@ -189,7 +191,14 @@ dump_rif_result(
             for( auto p : pikaa ){
                 std::sort( p.second.begin(), p.second.end() );
                 pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
-                pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
+                // TYU create output string for reslabel
+                std::string out_string;
+                for (auto i : p.second) {
+                    out_string += i;
+                    out_string += ",";
+                }
+                pose_to_dump.pdb_info()->add_reslabel(p.first, out_string );
+                //pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
             }
         } else {
             std::sort(needs_RIFRES.begin(), needs_RIFRES.end());

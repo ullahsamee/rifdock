@@ -30,6 +30,7 @@ struct RifGeneratorUserHotspotsOpts {
 	float upweight_multi_hbond = 0.0;
     int  dump_hotspot_samples = 0;
     bool single_file_hotspots_insertion = false;
+    bool use_d_aa = false;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
 };

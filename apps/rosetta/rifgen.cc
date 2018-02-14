@@ -112,7 +112,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
-    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion) // added options
+    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -120,6 +121,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_ang_resls         )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_radii      )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_bounds     )
+
 
 
 	void register_options() {
@@ -172,6 +174,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+        NEW_OPT(  rifgen::use_d_aa							, "" , false);
 
 
 
@@ -369,6 +372,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
             hspot_opts.hotspot_score_thresh = option[ rifgen::hotspot_score_thresh]();
             hspot_opts.dump_hotspot_samples = option[ rifgen::dump_hotspot_samples]();
+            hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
@@ -529,8 +533,12 @@ int main(int argc, char *argv[]) {
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	std::cout << "Preparing rotamer index spec..." << std::endl;
-	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers]());
-
+	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa]());
+	// 	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
+	// 	utility::io::ozstream spec_out(rot_spec_fname);
+	// 	rot_index_spec.save(spec_out);
+	// 	spec_out.close();
+	// utility_exit_with_message("exit check");
 	for( int igen = 0; igen < generators.size(); ++igen )
 	{
 		//cache the input 

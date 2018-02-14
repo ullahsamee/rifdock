@@ -19,6 +19,7 @@
 #include <core/chemical/orbitals/OrbitalType.hh>
 #include <core/conformation/Residue.hh>
 #include <core/pose/Pose.hh>
+#include <core/pose/util.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/scoring/hbonds/HBondOptions.hh>
@@ -41,6 +42,7 @@
 
 #include <ObjexxFCL/format.hh>
 #include <utility/io/ozstream.hh>
+
 
 namespace devel {
 namespace scheme {
@@ -114,17 +116,55 @@ struct RichardsonRotData {
 		std::vector<std::pair<SchemeAtom,SchemeAtom> > & hbonders,
 		int & nheavyatoms,
 		std::vector<HBondRay> & donors,
-		std::vector<HBondRay> & acceptors
+		std::vector<HBondRay> & acceptors,
+		std::map<std::string, std::string> const & d_l_map
 	){
-
+		// std::map<std::string,std::string> d_l_map;
 		std::vector<int> atypemap = get_rif_atype_map();
-
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+		// am I D or L
+		auto it = d_l_map.find(resname);
+		//std::cout << "input: " << resname << std::endl;
+		// D residue
+		if (it != d_l_map.end()) {
+			resname = it -> second;
+		}
+		//std::cout << "output: " << resname << std::endl;
 		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
 		core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
 		core::pose::Pose pose;
 		pose.append_residue_by_jump(*resop,1);
 		runtime_assert( chi.size() == resop->nchi() );
+		// flip if D
+		if (it != d_l_map.end()) {
+			core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+        	core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);
+        	core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+        	resop = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+	    	resname = resop -> name3();
+	    	pose.clear();
+	    	pose.append_residue_by_jump(*resop,1);   
+	    	runtime_assert( chi.size() == resop->nchi() );
+		}
+
+		// // I am D
+		// 	resname = it -> second;
+		// 	rtype = rts.lock()->name_map( resname );
+		// 	resop = core::conformation::ResidueFactory::create_residue( rtype );
+		// 	pose.append_residue_by_jump(*resop,1);
+		// 	core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+  //       	core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);// -> get_l_equivalent(pose_rt);
+  //       	core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+  //       	resop = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+	 //    	resname = d_resop -> name3();
+	 //    	pose.clear();
+	 //    	pose.append_residue_by_jump(*d_resop,1);   
+	 //    	runtime_assert( chi.size() == d_resop->nchi() ); 
+		// }
+		// std::cout << resname << std::endl;
+		// std::cout << "_______________________________" << std::endl;    	
+
+
 		for(int i = 0; i < chi.size(); ++i){
 			pose.set_chi( i+1, 1, chi[i] );
 		}
@@ -739,7 +779,8 @@ void
 get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
-	bool extra_primary_rotamers
+	bool extra_primary_rotamers,
+	bool use_d_aa
 );
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
@@ -762,6 +803,7 @@ get_rotamer_index(
 	//infile.close();
 	
 	std::cout << "finish builidng rotamer_index now try fill rotamer index ... " << std::endl;
+
 	rot_index_spec.fill_rotamer_index(*rot_index);
 	return rot_index;
 }
@@ -789,7 +831,8 @@ void
 get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
-	bool extra_primary_rotamers	
+	bool extra_primary_rotamers,
+	bool use_d_aa	
 ){
 	std::cout << "get_rotamer_index" << std::endl;
 
@@ -802,7 +845,7 @@ get_rotamer_spec_default(
 		resnames.push_back("PHE");
 		resnames.push_back("GLY");
 		resnames.push_back("HIS");
-		resnames.push_back("HIS_D");
+		//resnames.push_back("HIS_D");
 		resnames.push_back("ILE");
 		resnames.push_back("LYS");
 		resnames.push_back("LEU");
@@ -817,11 +860,38 @@ get_rotamer_spec_default(
 		resnames.push_back("TRP");
 		resnames.push_back("TYR");
 
+
 	std::vector<std::string> use_rosetta_rots;
 		use_rosetta_rots.push_back("SER");
 		use_rosetta_rots.push_back("THR");
 		use_rosetta_rots.push_back("CYS");
 		use_rosetta_rots.push_back("PRO");
+
+
+	std::vector<std::string> use_d_rosetta_rots;
+		use_d_rosetta_rots.push_back("ALA");
+		use_d_rosetta_rots.push_back("CYS");
+		use_d_rosetta_rots.push_back("ASP");
+		use_d_rosetta_rots.push_back("GLU");
+		use_d_rosetta_rots.push_back("PHE");
+		use_d_rosetta_rots.push_back("HIS");
+		//use_d_rosetta_rots.push_back("HIS_D");
+		use_d_rosetta_rots.push_back("ILE");
+		use_d_rosetta_rots.push_back("LYS");
+		
+		use_d_rosetta_rots.push_back("LEU");
+		use_d_rosetta_rots.push_back("MET");
+		use_d_rosetta_rots.push_back("ASN");
+		use_d_rosetta_rots.push_back("PRO");
+		use_d_rosetta_rots.push_back("GLN");
+		// use_d_rosetta_rots.push_back("ARG");
+		// use_d_rosetta_rots.push_back("SER");
+		// use_d_rosetta_rots.push_back("THR");
+		// use_d_rosetta_rots.push_back("VAL");
+		// use_d_rosetta_rots.push_back("TRP");
+		use_d_rosetta_rots.push_back("TYR");
+
+
 
 
 	std::map<std::string,std::vector<RichardsonRotData> > rrdata;
@@ -832,7 +902,7 @@ get_rotamer_spec_default(
 	rot_index.add_rotamer( "GLY", std::vector<float>(), 0 );
 
 	for( auto resname : resnames ){
-
+		//std::vector<std::string> temp_track = {"GLY"};
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
 		size_t n_proton_chi = rtype.n_proton_chi();
@@ -903,7 +973,6 @@ get_rotamer_spec_default(
 				// }
 				rot_index.add_rotamer( resname, chi, n_proton_chi );
 			}
-
 		} else {
 
 			for( auto const & rrd : rrdata[resname] ){
@@ -912,8 +981,92 @@ get_rotamer_spec_default(
 			}
 
 		}
+		// add d_aa if use_d_aa == true
+		if (std::count( use_d_rosetta_rots.begin(), use_d_rosetta_rots.end(), resname ) && use_d_aa) {
+			core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+			core::pose::Pose pose;
+			pose.append_residue_by_jump( *resop, 1 );
+			core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+            core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);// -> get_l_equivalent(pose_rt);
+            core::chemical::ResidueTypeCOP m_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+            
+            core::pose::Pose d_pose;         
 
+            if (m_pose_rt) {
+            	core::conformation::ResidueOP d_resop = core::conformation::ResidueFactory::create_residue( *m_pose_rt );
+            	resname = d_resop -> name3();
+            	d_pose.append_residue_by_jump(*d_resop,1);
+            	//std::cout << resname << std::endl;
+            	// if (std::find(std::begin(temp_track),std::end(temp_track),resname) == std::end(temp_track)) {
+            	// 	std::string filename;
+            	// 	filename = resname + ".pdb";
+            	// 	std::cout << filename << std::endl;
+            	// 	d_pose.dump_pdb(filename);
+            	// 	temp_track.push_back(resname);
+            	// }
+            	//d_pose.append_residue_by_jump(*d_resop,1);
 
+            } else {
+            	utility_exit_with_message("cannot create the d vesrion");
+            	break;
+            }
+
+            //core::chemical::ResidueTypeCOP mirror_pose_rt = pose_rts -> get_mirrored_type(pose_rt);
+            //core::conformation::ResidueOP D_resop = core::conformation::ResidueFactory::create_residue( *m_pose_rt );
+            core::pack::rotamer_set::RotamerSetOP rotset = get_rosetta_rot_set( d_pose, 1 );
+			int nex = 1, nchi = rotset->rotamer(1)->nchi();
+			using namespace basic::options::OptionKeys::packing;
+			using namespace basic::options;
+
+				// NO_EXTRA_CHI_SAMPLES          0          original dihedral only; same as using no flag at all
+				// EX_ONE_STDDEV                 1 Default  +/- one standard deviation (sd); 3 samples
+				// EX_ONE_HALF_STEP_STDDEV       2          +/- 0.5 sd; 3 samples
+				// EX_TWO_FULL_STEP_STDDEVS      3          +/- 1 & 2 sd; 5 samples
+				// EX_TWO_HALF_STEP_STDDEVS      4          +/- 0.5 & 1 sd; 5 samples
+				// EX_FOUR_HALF_STEP_STDDEVS     5          +/- 0.5, 1, 1.5 & 2 sd; 9 samples
+				// EX_THREE_THIRD_STEP_STDDEVS   6          +/- 0.33, 0.67, 1 sd; 7 samples
+				// EX_SIX_QUARTER_STEP_STDDEVS   7          +/- 0.25, 0.5, 0.75, 1, 1.25 & 1.5 sd; 13 samples",
+
+			if( 1 <= nchi-n_proton_chi && option[ex1::ex1]() && option[ex1::level]()==1 ) nex *= 3;
+
+			if( 2 <= nchi-n_proton_chi && option[ex2::ex2]() && option[ex2::level]()==1 ) nex *= 3;
+
+			if( 3 <= nchi-n_proton_chi && option[ex3::ex3]() && option[ex3::level]()==1 ) nex *= 3;
+
+			if( 4 <= nchi-n_proton_chi && option[ex4::ex4]() && option[ex4::level]()==1 ) nex *= 3;
+
+			// protol chi
+			if( resname=="DSE" ) nex *= 18;
+			if( resname=="DTY" ) nex *=  2;
+			if( resname=="DTH" ) nex *= 18;
+			if( resname=="DCS" ) nex *=  3;
+
+			// std::cerr << option[ex1::ex1]() << " " << option[ex1::level]() << std::endl;
+			// std::cerr << option[ex2::ex2]() << " " << option[ex2::level]() << std::endl;
+			// std::cerr << option[ex3::ex3]() << " " << option[ex3::level]() << std::endl;
+			// std::cerr << option[ex4::ex4]() << " " << option[ex4::level]() << std::endl;
+			// std::cerr << nex << std::endl;
+
+			size_t prev_parent_key = -1;
+			for(int irot = 1; irot <= rotset->num_rotamers(); ++irot){
+				// bool is_primary = (irot-1)%(nex) == 0;
+				std::vector<float> chi;
+				// if( is_primary ) std::cerr << "PRIMARY ";
+				// else             std::cerr << "        ";
+				// std::cerr << irot-1 << " " << resname;
+				for(int ichi = 1; ichi <= rotset->rotamer(irot)->nchi(); ++ichi){
+					chi.push_back( rotset->rotamer(irot)->chi(ichi) );
+					// std::cerr << " " << rotset->rotamer(irot)->chi(ichi);
+				}
+				// std::cerr << " " << prev_parent_key << std::endl;
+				// if( is_primary ){
+					// prev_parent_key = rot_index.add_rotamer( resname, chi, n_proton_chi );
+				// } else {
+					// rot_index.add_rotamer( resname, chi, n_proton_chi, prev_parent_key );
+				// }
+				rot_index.add_rotamer( resname, chi, n_proton_chi );
+			}
+		}// end adding d_aa
 	}
 
 	if( extra_rotamers ){
