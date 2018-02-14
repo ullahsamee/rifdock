@@ -214,8 +214,15 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
         std::vector<core::pose::PoseOP> poses = extract_poses_from_silent_file( opt.morph_silent_file );
 
         if ( poses.size() > opt.morph_silent_max_structures ) {
-            std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
-            poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+            // std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
+
+            if ( opt.morph_silent_random_selection ) {
+                std::cout << "Randomly selecting " << opt.morph_silent_max_structures << " from silent file" << std::endl;
+                poses = random_selection_poses_leaving_n( poses, opt.morph_silent_max_structures );
+            } else {
+                std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
+                poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+            }
         }
 
         ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );

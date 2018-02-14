@@ -471,6 +471,10 @@ cluster_poses_leaving_n(
 	std::vector<core::pose::PoseOP> const & poses,
 	uint64_t n );
 
+std::vector<core::pose::PoseOP>
+random_selection_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n );
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

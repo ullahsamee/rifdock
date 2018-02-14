@@ -653,7 +653,28 @@ cluster_poses_leaving_n(
 	return output_poses;
 }
 
+std::vector<core::pose::PoseOP>
+random_selection_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
 
+	if ( n >= poses.size() ) return poses;
+
+	std::vector<uint64_t> indexes( poses.size());
+	for ( uint64_t i = 0; i < indexes.size(); i++ ) {
+		indexes[i] = i;
+	}
+
+	std::random_shuffle(indexes.begin(), indexes.end());
+
+	std::vector<core::pose::PoseOP> output_poses(n);
+
+	for ( uint64_t i = 0; i < n; i++ ) {
+		output_poses[i] = poses[indexes[i]];
+	}
+
+	return output_poses;
+}
 
 }
 }
