@@ -192,6 +192,85 @@ struct CompositeDirector
 
 
 };
+    
+    
+// This must be used as part of a CompositeDirector
+template<
+    class _Position,
+    class _SeedingPositions,
+    class _RifDockIndex
+>
+struct SeedingDirector
+:  public Director<
+    _Position,
+    _RifDockIndex
+> {
+    typedef Director< _Position, _RifDockIndex> Base;
+    typedef _SeedingPositions SeedingPositions;
+    typedef shared_ptr<SeedingPositions> SeedingPositionsOP;
+    typedef typename Base::Position Position;
+    typedef typename Base::BigIndex BigIndex;
+    typedef typename Base::Index Index;
+    typedef typename Base::Scene Scene;
+        
+        
+    Index ibody_;
+    SeedingPositionsOP seeding_positions_;
+    double maximum_allowed_rotation_ang_;
+    
+    //TODO: maximum allowed translation distance ??
+    
+    // negative number means that don't check the rotation angle, this would speed up a little bit if there are many seeding positions.
+    SeedingDirector(SeedingPositionsOP sp) : ibody_(1),seeding_positions_(sp), maximum_allowed_rotation_ang_ ( -1.0 ) {}
+    // constructor to set the maximum rotation angle.
+    SeedingDirector(SeedingPositionsOP sp, Index ibody, double max_ang_degree ) : ibody_(ibody),seeding_positions_(sp), maximum_allowed_rotation_ang_ ( max_ang_degree / 180 * 3.14)  {}
+        
+        
+    virtual
+    bool
+    set_scene(
+        BigIndex const & i,
+        int resl,
+        Scene & scene
+    ) const override {
+        runtime_assert( seeding_positions_ );
+            
+        uint64_t si = i.seeding_index;
+            
+        Position ori_pos = scene.position(1);
+            
+        if ( maximum_allowed_rotation_ang_ > 0 && std::abs (Eigen::AngleAxisf( ori_pos.rotation() ).angle() ) > maximum_allowed_rotation_ang_ ) {
+            return false;
+        }
+            
+        Position new_pos(Position::Identity());
+        new_pos.rotate( ori_pos.rotation() * seeding_positions_->at(si).rotation() );
+            
+        new_pos.translation() = ori_pos.translation() + seeding_positions_->at(si).translation();
+            
+            
+        scene.set_position(1, new_pos);
+            
+            
+        return true;
+    }
+        
+    // change the BigIndex Struct.
+    virtual BigIndex size(int resl, BigIndex sizes) const override {
+        sizes.seeding_index = seeding_positions_->size();
+        return sizes;
+    }
+        
+    
+        
+};
+    
+template< class Position, class SeedingPositions, class RifDockIndex >
+std::ostream & operator << ( std::ostream & out, SeedingDirector<Position,SeedingPositions,RifDockIndex> const & d ){
+    out << "ScaffoldSeedingDirector ";
+    return out;
+}
+
 
 
 // This must be used as part of a CompositeDirector
