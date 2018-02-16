@@ -91,20 +91,32 @@ typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 struct RifDockIndex {
     uint64_t nest_index;
+    uint64_t seeding_index;
     ScaffoldIndex scaffold_index;
 
     RifDockIndex() :
       nest_index(::scheme::kinematics::director_index_default_value()) 
       {
+          seeding_index = 0;
           scaffold_index = ::scheme::scaffold::scaffold_index_default_value(scaffold_index);
       }
 
     RifDockIndex( 
         uint64_t nest_index_in,
+        uint64_t seeding_index_in,
         ScaffoldIndex scaffold_index_in
         ) : 
         nest_index( nest_index_in ),
+        seeding_index( seeding_index_in ),
         scaffold_index( scaffold_index_in ) {}
+
+    bool operator==(RifDockIndex const & o) {
+      return (
+        nest_index == o.nest_index &&
+        seeding_index == o.seeding_index &&
+        scaffold_index == o.scaffold_index
+        );
+    }
 
 };
 
@@ -127,6 +139,8 @@ typedef ::scheme::nest::NEST< 6,
 typedef ::scheme::kinematics::NestDirector< NestOriTrans6D, RifDockIndex> RifDockNestDirector;
 
 typedef ::scheme::kinematics::ScaffoldDirector< EigenXform, ScaffoldProvider, RifDockIndex > RifDockScaffoldDirector;
+    
+typedef ::scheme::kinematics::SeedingDirector< EigenXform, std::vector<EigenXform>, RifDockIndex > RifDockSeedingDirector;
 
 typedef ::scheme::kinematics::CompositeDirector< EigenXform, RifDockIndex > RifDockDirector;
 
@@ -153,6 +167,8 @@ namespace std {
 
             boost::hash<int> hasher;
             hash_combine(seed, hasher(rdi.nest_index));
+            boost::hash<int> seeding_index_hasher;
+            hash_combine(seed, seeding_index_hasher(rdi.seeding_index));
             std::hash<devel::scheme::ScaffoldIndex> scaffold_index_hasher;
             hash_combine(seed, scaffold_index_hasher(rdi.scaffold_index));
 

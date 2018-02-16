@@ -48,6 +48,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, downscale_atr_by_hierarchy )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier )
+	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
 	OPT_1GRP_KEY(  Real        , rif_dock, rotrf_resl )
@@ -56,6 +57,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, rotrf_cache_dir )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, hack_pack )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, hack_pack_during_hsearch )
 	OPT_1GRP_KEY(  Real        , rif_dock, hack_pack_frac )
 	OPT_1GRP_KEY(  Real        , rif_dock, pack_iter_mult )
 	OPT_1GRP_KEY(  Integer     , rif_dock, pack_n_iters )
@@ -152,6 +154,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, fragment_max_rmsd )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_fragments )
     OPT_1GRP_KEY(  StringVector, rif_dock, morph_rules_files )
+    OPT_1GRP_KEY(  String      , rif_dock, morph_silent_file )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
@@ -194,6 +197,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
 			NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
 			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than 0 gets multiplied by this", 1 );
+			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 
@@ -217,6 +221,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rotrf_cache_dir, "" , "./" );
 
 			NEW_OPT(  rif_dock::hack_pack, "" , true );
+			NEW_OPT(  rif_dock::hack_pack_during_hsearch, "hackpack during hsearch", false );
 			NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 			NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
 			NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
@@ -315,6 +320,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::fragment_max_rmsd , "Max RMSD to starting fragment.", 10000 );
 			NEW_OPT(  rif_dock::max_fragments, "Maximum number of fragments to find.", 10000000 );
 			NEW_OPT(  rif_dock::morph_rules_files, "List of files for each scaffold to specify morph regions", utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::morph_silent_file, "Silent file containing pre-morphed structures. Overrides other options", "" );
 
 			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
@@ -390,12 +396,14 @@ struct RifDockOpt
 	std::string target_rf_cache                      ;
 	bool        downscale_atr_by_hierarchy           ;
 	float       favorable_1body_multiplier           ;
+	float       favorable_2body_multiplier           ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_center_scaffold				 ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
 	bool        hack_pack                            ;
+	bool        hack_pack_during_hsearch             ;
 	int         rf_oversample                        ;
 
 	int         rotrf_oversample                     ;
@@ -462,6 +470,7 @@ struct RifDockOpt
     float       fragment_max_rmsd                    ;
     int         max_fragments                        ;
     std::vector<std::string> morph_rules_fnames      ;
+    std::string morph_silent_file                    ;
 
     bool        include_parent                       ;
     bool        use_parent_body_energies             ;
@@ -543,12 +552,15 @@ struct RifDockOpt
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
+		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_center_scaffold				   = option[rif_dock::dont_center_scaffold					]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
+		hack_pack_during_hsearch               = option[rif_dock::hack_pack_during_hsearch              ]();
+
 		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		rotrf_oversample                       = option[rif_dock::rotrf_oversample                      ]();
@@ -608,6 +620,7 @@ struct RifDockOpt
 		fragment_cluster_tolerance             = option[rif_dock::fragment_cluster_tolerance            ]();
         fragment_max_rmsd                      = option[rif_dock::fragment_max_rmsd                     ]();
         max_fragments                          = option[rif_dock::max_fragments                         ]();
+        morph_silent_file                      = option[rif_dock::morph_silent_file                     ]();
 
         include_parent                         = option[rif_dock::include_parent                        ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();

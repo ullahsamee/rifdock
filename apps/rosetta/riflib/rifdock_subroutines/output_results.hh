@@ -106,7 +106,7 @@ dump_rif_result(
                 float const onebody = scaffold_onebody_glob0.at( ires ).at( irot );
                 float const sc = p.first + onebody;
                 float const rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
-                if( sc < 0 || rescore + onebody < 0 ){
+                if( sc < 0 || rescore + onebody < 0  || p.first + onebody < 0){
                     if ( ! rdd.opt.rif_rots_as_chains) {
                         allout << "MODEL" << endl;
                     }
@@ -169,10 +169,15 @@ dump_rif_result(
     resfile << "start" << std::endl;
     expdb << "rif_residues ";
 
+    if ( selected_result.rotamers_ ) {
+        sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+    }
+
     std::vector<int> needs_RIFRES;
     for( int ipr = 0; ipr < selected_result.numrots(); ++ipr ){
         int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
         int irot =                  selected_result.rotamers().at(ipr).second;
+
         core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
         pose_from_rif.replace_residue( ires+1, *newrsd, true );
         resfile << ires+1 << " A NATRO" << std::endl;

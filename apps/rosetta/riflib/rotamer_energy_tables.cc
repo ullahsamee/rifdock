@@ -657,6 +657,24 @@ get_twobody_tables(
 		twob.save( out, description );
 		out.close();
 	}
+
+
+	if ( opts.favorable_2body_multiplier != 1 ) {
+		for ( uint64_t i = 0; i < twob.twobody_.size(); i++ ) {
+			for ( uint64_t j = 0; j < twob.twobody_[i].size(); j++ ) {
+				for ( uint64_t k = 0; k < twob.twobody_[i][j].size(); k++ ) {
+					for ( uint64_t l = 0; l < twob.twobody_[i][j][k].size(); l++ ) {
+						float val = twob.twobody_[i][j][k][l];
+						if ( val < 0 ) {
+							twob.twobody_[i][j][k][l] = val * opts.favorable_2body_multiplier;
+						}
+					}
+				}
+			}
+		}
+	}
+
+
 }
 
 

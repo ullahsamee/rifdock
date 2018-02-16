@@ -93,7 +93,8 @@ internal_comparative_clash_check( core::scoring::Energies const & original_energ
     core::Size high_position );
 
 
-
+std::vector<core::pose::PoseOP>
+extract_poses_from_silent_file( std::string const & filename );
 
 
 

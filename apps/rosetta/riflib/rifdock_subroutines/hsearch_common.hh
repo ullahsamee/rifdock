@@ -13,6 +13,7 @@
 
 #include <scheme/types.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/rifdock_subroutines/hack_pack.hh>
 #include <riflib/rifdock_subroutines/output_results.hh>
 
 #include <unordered_map>
@@ -82,7 +83,11 @@ do_an_hsearch(uint64_t start_resl,
                     RifDockIndex const isamp = samples[this_stage][i].index;
 
                     ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-                    rdd.director->set_scene( isamp, iresl, *tscene );
+                    bool director_success = rdd.director->set_scene( isamp, iresl, *tscene );
+                    if ( ! director_success ) {
+                        samples[this_stage][i].score = 9e9;
+                        continue;
+                    }
 
                     if ( need_sdc ) {
                         ScaffoldIndex si = isamp.scaffold_index;
@@ -136,6 +141,44 @@ do_an_hsearch(uint64_t start_resl,
             float rate = (double)samples[this_stage].size()/ elapsed_seconds_rif.count()/omp_max_threads();
             cout << endl;// << "done threaded sampling, partitioning data..." << endl;
 
+
+            if (rdd.opt.hack_pack_during_hsearch) {
+                int64_t npack = 0;
+                shared_ptr<std::vector< SearchPointWithRots > > packed_results = make_shared<std::vector< SearchPointWithRots >>();
+
+                __gnu_parallel::sort( samples[this_stage].begin(), samples[this_stage].end() );
+
+                shared_ptr<std::vector< SearchPointWithRots > > hackpack_inputs_p;
+
+                hackpack_inputs_p = make_shared<std::vector< SearchPointWithRots >>();
+                std::vector< SearchPointWithRots > & hackpack_inputs = *hackpack_inputs_p;
+
+
+                hackpack_inputs.resize( samples[this_stage].size() );
+                #ifdef USE_OPENMP
+                #pragma omp parallel for schedule(dynamic,1024)
+                #endif
+                for( int ipack = 0; ipack < hackpack_inputs.size(); ++ipack ){
+                    hackpack_inputs[ipack].score = samples[this_stage][ipack].score;
+                    hackpack_inputs[ipack].index = samples[this_stage][ipack].index;
+                }
+
+                hack_pack( hackpack_inputs_p, *packed_results, rdd, iresl, 9e100, npack );
+
+                samples[this_stage].resize(packed_results->size());
+
+                #ifdef USE_OPENMP
+                #pragma omp parallel for schedule(dynamic,1024)
+                #endif
+                for( int ipack = 0; ipack < packed_results->size(); ++ipack ){
+                    samples[this_stage][ipack].score = (*packed_results)[ipack].score;
+                    samples[this_stage][ipack].index = (*packed_results)[ipack].index;
+                }
+
+            } 
+            // std::vector< SearchPointWithRots > * final_results =  ( bool )( packed_results) ? &packed_results : &samples.at(this_stage);
+
+
             SearchPoint max_pt, min_pt;
             int64_t len = samples[this_stage].size();
             if( samples[this_stage].size() > rdd.opt.beam_size/rdd.opt.DIMPOW2 * beam_multiplier ){
@@ -175,7 +218,7 @@ do_an_hsearch(uint64_t start_resl,
                     if( iresl == 0 ) ++d.non0_space_size;
                     for( uint64_t j = 0; j < rdd.opt.DIMPOW2; ++j ){
                         uint64_t isamp = isamp0 * rdd.opt.DIMPOW2 + j;
-                        samples[this_stage+1].push_back( SearchPoint(RifDockIndex(isamp, samples[this_stage][i].index.scaffold_index)) );
+                        samples[this_stage+1].push_back( SearchPoint(RifDockIndex(isamp, 0, samples[this_stage][i].index.scaffold_index)) );
                     }
                 }
 

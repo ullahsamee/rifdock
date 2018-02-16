@@ -289,6 +289,7 @@ int main(int argc, char *argv[]) {
 		make2bopts.onebody_threshold = 30.0;
 		make2bopts.distance_cut = 15.0;
 		make2bopts.hbond_weight = packopts.hbond_weight;
+		make2bopts.favorable_2body_multiplier = opt.favorable_2body_multiplier;
 
 
 
@@ -603,8 +604,8 @@ int main(int argc, char *argv[]) {
 			
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
-			ObjectivePtr packing_objective;
-			runtime_assert( rif_factory->create_objectives( rso_config, objectives, packing_objective ) );
+			std::vector< ObjectivePtr > packing_objectives;
+			runtime_assert( rif_factory->create_objectives( rso_config, objectives, packing_objectives ) );
 			scene_prototype = rif_factory->create_scene();
 			runtime_assert_msg( objectives.front()->is_compatible( *scene_prototype ), "objective and scene types not compatible!" );
 
@@ -667,7 +668,7 @@ int main(int argc, char *argv[]) {
 			{
 				EigenXform x(EigenXform::Identity());
 				x.translation() = rep_scaffold_center;
-				director->set_scene( RifDockIndex(0, rep_si), 0, *scene_minimal);
+				director->set_scene( RifDockIndex(0, 0 /* default seeding index */,rep_si), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
@@ -680,7 +681,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
-			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_specific_deep(std::vector<uint64_t> {1});
+			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();
 
 			RifDockData rdd {
 						opt,
@@ -698,9 +699,11 @@ int main(int argc, char *argv[]) {
  						rot_index_p,
  						rotrf_table_manager,
  						objectives,
- 						packing_objective,
+ 						packing_objectives,
  						packopts,
  						rif_ptrs,
+ 						rso_config,
+ 						rif_factory,
  						scaffold_provider
 			};
 
@@ -743,7 +746,7 @@ int main(int argc, char *argv[]) {
 
 				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
 		        if (opt.hack_pack) {
-		        	hack_pack( hsearch_results_p, packed_results, rdd, total_search_effort, npack );
+		        	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
 		        } else {
 		        	packed_results = *hsearch_results_p;
 		        }
