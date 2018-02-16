@@ -122,6 +122,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_scaffold_weight )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_soft_score )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_hard_score )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_before )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_filter_n_per_scaffold )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_filter_redundancy_mag )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
@@ -293,6 +296,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
 			NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
 			NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
+			NEW_OPT(  rif_dock::rosetta_filter_before, "redundancy filter results before rosetta score", false );
+			NEW_OPT(  rif_dock::rosetta_filter_n_per_scaffold, "use with rosetta_filter_before, num to save per scaffold", 300);
+			NEW_OPT(  rif_dock::rosetta_filter_redundancy_mag, "use with rosetta_filter_before, redundancy mag on the clustering", 0.5);
 
 			NEW_OPT(  rif_dock::extra_rotamers, "", true );
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
@@ -452,6 +458,9 @@ struct RifDockOpt
 	bool        rosetta_beta                         ;
 	std::string rosetta_soft_score                   ;
 	std::string rosetta_hard_score                   ;
+	bool        rosetta_filter_before                ;
+	int         rosetta_filter_n_per_scaffold        ;
+	float       rosetta_filter_redundancy_mag        ;
 
     int         nfold_symmetry                       ;
     std::vector<float> symmetry_axis                 ;
@@ -610,6 +619,9 @@ struct RifDockOpt
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  					]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score 				    ]();
 		rosetta_beta                           = option[corrections::beta 								]();
+		rosetta_filter_before                  = option[rif_dock::rosetta_filter_before                 ]();
+		rosetta_filter_n_per_scaffold          = option[rif_dock::rosetta_filter_n_per_scaffold         ]();
+		rosetta_filter_redundancy_mag          = option[rif_dock::rosetta_filter_redundancy_mag         ]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
 
