@@ -339,7 +339,7 @@ MorphingScaffoldProvider::get_scaffold(TreeIndex i) {
 
 MorphMember & 
 MorphingScaffoldProvider::get_morph_member(TreeIndex i) {
-    assert( is_valid_index( i ) );
+    runtime_assert( is_valid_index( i ) );
 
     return map_[ i.depth ][ i.member ];
 }

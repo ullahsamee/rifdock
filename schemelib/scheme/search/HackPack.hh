@@ -94,7 +94,7 @@ struct HackPack
 		int seed_offset = 0 // mainly for threads
 	)
 		: nres_(0)
-		, rng( 0)//time(0)+seed_offset )
+		, rng( time(0)+seed_offset )
 		// , twob_( twob )
 		, opts_(opts)
 		, default_rot_num_( default_rot_num )
