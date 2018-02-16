@@ -59,6 +59,7 @@ rosetta_rescore(
     // for(int designable : rdd.scaffold_res){
     //     is_scaffold_fixed_res[designable] = false;
     // }
+    size_t valid_points_after_score = 0;
 
     for( int minimizing = 0; minimizing < do_min; ++minimizing ){
 
@@ -139,6 +140,7 @@ rosetta_rescore(
             // min take ~10x score time, so do on 1/10th of the scored
             n_scormin = n_score_calculations * rdd.opt.rosetta_min_fraction;
             n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
+            n_scormin = std::min( n_scormin, valid_points_after_score );
         } else {
 
             if (rdd.opt.rosetta_filter_before) {
@@ -514,6 +516,7 @@ rosetta_rescore(
             }
             packed_results.resize(n_scormin);
         }
+        valid_points_after_score = packed_results.size();
 
         std::chrono::time_point<std::chrono::high_resolution_clock> stopall = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elap_sec = stopall - startall;
