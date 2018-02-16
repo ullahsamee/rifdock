@@ -319,8 +319,8 @@ MorphingScaffoldProvider::add_morph_member( MorphMember mmember ) {
     map_[depth].push_back( mmember );
 
     // Tree indexes are 16 bit so be careful
-    assert(depth < BOGUS_INDEX);
-    assert(depth < map_[depth].size());
+    runtime_assert(depth < BOGUS_INDEX);
+    runtime_assert(map_[depth].size() < BOGUS_INDEX);
     return TreeIndex(depth, map_[depth].size());
 }
 
