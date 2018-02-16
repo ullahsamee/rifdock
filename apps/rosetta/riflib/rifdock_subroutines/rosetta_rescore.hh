@@ -194,6 +194,8 @@ rosetta_rescore(
         std::vector<ScaffoldIndex> uniq_scaffolds;
         for ( std::pair<ScaffoldIndex,bool> pair : unique_scaffolds_dict ) uniq_scaffolds.push_back(pair.first);
 
+        MultithreadPoseCloner target_cloner( rdd.target.clone() );
+
         int n_uniq = uniq_scaffolds.size();
         std::cout << "Building " << n_uniq << " scaffold+target poses" << std::endl;
         #ifdef USE_OPENMP
@@ -203,9 +205,9 @@ rosetta_rescore(
             ScaffoldIndex si = uniq_scaffolds[iuniq];
             ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
             if( rdd.opt.replace_orig_scaffold_res ){
-                sdc->setup_both_full_pose(*(rdd.target.clone()));
+                sdc->setup_both_full_pose(*(target_cloner.get_pose()));
             } else {
-                sdc->setup_both_pose(*(rdd.target.clone()));
+                sdc->setup_both_pose(*(target_cloner.get_pose()));
             }
         }
 /////////
