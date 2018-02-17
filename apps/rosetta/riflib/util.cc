@@ -9,6 +9,13 @@
 
 
 #include <riflib/util.hh>
+#include <riflib/scaffold/util.hh>
+#include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rosetta_field.hh>
+#include <riflib/scaffold/MultithreadPoseCloner.hh>
+#include <numeric/agglomerative_hierarchical_clustering.hh>
+
+
 #include <ObjexxFCL/format.hh>
 #include <core/id/AtomID.hh>
 #include <core/id/AtomID_Map.hh>
@@ -434,6 +441,240 @@ subset_CA_rmsd(
 }
 
 
+/// Your poses must be identical. Very important
+EigenXform
+find_xform_from_identical_pose_to_pose( 
+	core::pose::Pose const & pose1,
+	core::pose::Pose const & pose2,
+	float align_error /* = 0.2 */ ) {
+
+	// we can use anything here because they're the same
+	utility::vector1<core::Size> scaffold_res;
+	get_default_scaffold_res( pose1, scaffold_res );
+
+	core::pose::Pose to_move = pose1;
+    ::devel::scheme::pose_to_ala( to_move );
+    Eigen::Vector3f to_move_center = pose_center(to_move, scaffold_res);
+
+    core::pose::Pose match_this = pose2;
+    ::devel::scheme::pose_to_ala( match_this );
+    Eigen::Vector3f match_center = pose_center(match_this,scaffold_res);
+
+
+   	// prepare all test point now
+
+    // Test original residue 1
+    utility::vector1<core::Size> target_res {1};
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > to_move_atoms;
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > match_atoms;
+    
+    devel::scheme::get_scheme_atoms( to_move, target_res, to_move_atoms, true );
+    devel::scheme::get_scheme_atoms( match_this, target_res, match_atoms, true );
+
+
+    // Test original midpoint
+    core::Size test_res = to_move.size() / 2;
+
+    utility::vector1<core::Size> test_target_res {test_res};
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_to_move_atoms;
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > test_match_atoms;
+
+    devel::scheme::get_scheme_atoms( to_move, test_target_res, test_to_move_atoms, true );
+    devel::scheme::get_scheme_atoms( match_this, test_target_res, test_match_atoms, true );
+
+
+    // Test centered residue 1
+
+    EigenXform to_move_2_center = EigenXform::Identity();
+    to_move_2_center.translation() = -to_move_center;
+    apply_xform_to_pose( to_move, to_move_2_center );
+
+    std::vector< ::scheme::actor::Atom< Eigen::Vector3f > > to_move_centered_atoms;
+    devel::scheme::get_scheme_atoms( to_move, target_res, to_move_centered_atoms, true );
+
+
+    // done making test points
+
+
+
+
+    EigenXform match_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                match_atoms[0].position(),
+                                                                match_atoms[1].position(),
+                                                                match_atoms[2].position());
+    EigenXform to_move_x = ::scheme::chemical::make_stub<EigenXform>(
+                                                                to_move_centered_atoms[0].position(),
+                                                                to_move_centered_atoms[1].position(),
+                                                                to_move_centered_atoms[2].position());
+
+    EigenXform to_move_centered_2_match = match_x * to_move_x.inverse();
+    to_move_centered_2_match.translation() = match_center;
+
+    double centered_error = (to_move_centered_2_match * to_move_centered_atoms[0].position() - match_atoms[0].position()).norm();
+	std::cout << "Centered res1 Alignment error :" << centered_error << std::endl;
+    runtime_assert( centered_error < align_error );
+
+    EigenXform to_move_2_match = to_move_centered_2_match * to_move_2_center;
+
+    double error = (to_move_2_match * to_move_atoms[0].position() - match_atoms[0].position()).norm();
+	std::cout << "res1 Alignment error :" << error << std::endl;
+    runtime_assert( error < align_error );
+
+
+    double test_error = (to_move_2_match * test_to_move_atoms[0].position() - test_match_atoms[0].position()).norm();
+    std::cout << "Test res" << test_res << " Alignment error :" << error << std::endl;
+    runtime_assert( test_error < align_error );
+
+    return to_move_2_match;
+	
+}
+
+
+
+void
+apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform) {
+
+	numeric::xyzTransform<float> transform = eigen2xyz( xform );
+	pose.apply_transform_Rx_plus_v( transform.R, transform.t );
+
+
+}
+
+
+utility::vector1<utility::vector1<core::Real>>
+all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses ) {
+	
+
+	utility::vector1<utility::vector1<core::Real>> table( poses.size() );
+
+	for ( core::Size i = 1; i <= table.size(); i++ ) {
+		table[i].resize(poses.size(), 0);	// initialize the diagonal to 0
+	}
+
+	// Make it threadsafe
+	utility::vector1<shared_ptr<MultithreadPoseCloner>> mpcs;
+	for ( core::pose::PoseOP const & pose : poses ) {
+		mpcs.push_back(make_shared<MultithreadPoseCloner>(pose));
+	}
+
+	std::exception_ptr exception = nullptr;
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+	for ( core::Size i = 1; i <= mpcs.size(); i++ ) {
+		if (exception) continue;
+		try {
+			core::pose::PoseCOP outer_pose = mpcs[i]->get_pose();
+
+			for ( core::Size j = i + 1; j <= mpcs.size(); j++) {
+				core::pose::PoseCOP inner_pose = mpcs[j]->get_pose();
+
+				core::Real rmsd = core::scoring::CA_rmsd(*outer_pose, *inner_pose);
+
+				runtime_assert( table[i][j] == 0 );
+				runtime_assert( table[j][i] == 0 );
+
+				table[i][j] = rmsd;
+				table[j][i] = rmsd;
+			}
+
+		} catch(...) {
+            #pragma omp critical
+            exception = std::current_exception();
+        }
+
+	} // end of OMP loop
+    if( exception ) std::rethrow_exception(exception);
+
+	return table;
+
+}
+
+std::vector<std::vector<core::pose::PoseOP>>
+cluster_poses_into_n_bins( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
+
+	runtime_assert( poses.size() >= n );
+
+	utility::vector1<utility::vector1<core::Real>> rmsds = all_by_all_rmsd( poses );
+
+	numeric::AverageLinkClusterer alc;
+	utility::vector1<numeric::ClusteringTreeNodeOP> roots = alc.cluster(rmsds, n);
+
+	utility::vector1<uint64_t> input_indices( poses.size() );
+	for ( core::Size i = 1; i <= poses.size(); i++ ) {
+		input_indices[i] = i - 1;
+	}
+
+	std::vector<bool> pose_got_used(poses.size(), false);
+
+	std::vector<std::vector<core::pose::PoseOP>> bins;
+
+	for ( core::Size i = 1; i <= roots.size(); i++ ) {
+		std::vector<core::pose::PoseOP> this_bin;
+
+		utility::vector1<uint64_t> this_bin_indices;
+		numeric::get_cluster_data( input_indices, roots[i], this_bin_indices );
+
+		runtime_assert( this_bin_indices.size() > 0 );
+
+		for ( uint64_t index : this_bin_indices ) {
+			runtime_assert( ! pose_got_used[index] );
+			pose_got_used[index] = true;
+			this_bin.push_back( poses[index] );
+		}
+
+		bins.push_back( this_bin );
+	}
+
+	for ( uint64_t i = 0; i < pose_got_used.size(); i++ ) {
+		runtime_assert(pose_got_used[i]);
+	}
+
+	return bins;
+}
+
+std::vector<core::pose::PoseOP>
+cluster_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
+
+	if ( n >= poses.size() ) return poses;
+
+	std::vector<std::vector<core::pose::PoseOP>> bins = cluster_poses_into_n_bins( poses, n );
+
+	std::vector<core::pose::PoseOP> output_poses;
+
+	for (std::vector<core::pose::PoseOP> const & bin : bins) {
+		output_poses.push_back(bin.front());
+	}
+
+	return output_poses;
+}
+
+std::vector<core::pose::PoseOP>
+random_selection_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n ) {
+
+	if ( n >= poses.size() ) return poses;
+
+	std::vector<uint64_t> indexes( poses.size());
+	for ( uint64_t i = 0; i < indexes.size(); i++ ) {
+		indexes[i] = i;
+	}
+
+	std::random_shuffle(indexes.begin(), indexes.end());
+
+	std::vector<core::pose::PoseOP> output_poses(n);
+
+	for ( uint64_t i = 0; i < n; i++ ) {
+		output_poses[i] = poses[indexes[i]];
+	}
+
+	return output_poses;
+}
 
 }
 }

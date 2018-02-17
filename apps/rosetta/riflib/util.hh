@@ -447,7 +447,34 @@ subset_CA_rmsd(
     bool superimpose);
 
 
+/// Your poses must be identical. Very important
+EigenXform
+find_xform_from_identical_pose_to_pose( 
+	core::pose::Pose const & pose1,
+	core::pose::Pose const & pose2,
+	float align_error = 0.2 );
 
+
+void
+apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform);
+
+utility::vector1<utility::vector1<core::Real>>
+all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses );
+
+std::vector<std::vector<core::pose::PoseOP>>
+cluster_poses_into_n_bins( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n );
+
+std::vector<core::pose::PoseOP>
+cluster_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n );
+
+std::vector<core::pose::PoseOP>
+random_selection_poses_leaving_n( 
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n );
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

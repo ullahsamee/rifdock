@@ -211,6 +211,7 @@ do_an_hsearch(uint64_t start_resl,
                 }
             }
 
+            samples[this_stage+1].reserve( rdd.opt.DIMPOW2 * len );
             for( int64_t i = 0; i < len; ++i ){
                 uint64_t isamp0 = samples[this_stage][i].index.nest_index;
                 if( samples[this_stage][i].score >= rdd.opt.global_score_cut ) continue;

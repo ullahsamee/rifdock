@@ -9,6 +9,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 #include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/rifdock_subroutines/compile_and_filter_results.hh>
 
 #include <unordered_map>
 
@@ -58,6 +59,7 @@ rosetta_rescore(
     // for(int designable : rdd.scaffold_res){
     //     is_scaffold_fixed_res[designable] = false;
     // }
+    size_t valid_points_after_score = 0;
 
     for( int minimizing = 0; minimizing < do_min; ++minimizing ){
 
@@ -138,17 +140,41 @@ rosetta_rescore(
             // min take ~10x score time, so do on 1/10th of the scored
             n_scormin = n_score_calculations * rdd.opt.rosetta_min_fraction;
             n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
+            n_scormin = std::min( n_scormin, valid_points_after_score );
         } else {
-            // for scoring, use user cut
-            n_scormin = rdd.opt.rosetta_score_fraction/40.0 * total_search_effort;
-            if( rdd.opt.rosetta_score_then_min_below_thresh > -9e8 ){
-                for( n_scormin=0; n_scormin < packed_results.size(); ++n_scormin ){
-                    if( packed_results[n_scormin].score > rdd.opt.rosetta_score_then_min_below_thresh )
-                        break;
+
+            if (rdd.opt.rosetta_filter_before) {
+
+                int n_per_scaffold = rdd.opt.rosetta_filter_n_per_scaffold;
+                float magnitude = rdd.opt.rosetta_filter_redundancy_mag;
+                std::vector< RifDockResult > selected_results, allresults;
+                compile_and_filter_results( packed_results, selected_results, allresults, rdd, n_per_scaffold, magnitude );
+
+                packed_results.resize(0);
+
+                for (RifDockResult const & rdr : selected_results) {
+                    SearchPointWithRots pr;
+                    pr.prepack_rank = rdr.prepack_rank;
+                    pr.index = rdr.scene_index;
+                    pr.score = rdr.packscore;
+                    pr.rotamers_ = rdr.rotamers_;
+                    packed_results.push_back(pr);
                 }
+                n_scormin = packed_results.size();
+            } else {
+
+                // for scoring, use user cut
+                n_scormin = rdd.opt.rosetta_score_fraction/40.0 * total_search_effort;
+                if( rdd.opt.rosetta_score_then_min_below_thresh > -9e8 ){
+                    for( n_scormin=0; n_scormin < packed_results.size(); ++n_scormin ){
+                        if( packed_results[n_scormin].score > rdd.opt.rosetta_score_then_min_below_thresh )
+                            break;
+                    }
+                }
+                n_scormin = std::min<int>( std::max<int>( n_scormin, rdd.opt.rosetta_score_at_least ), rdd.opt.rosetta_score_at_most );
+                n_scormin = std::min<int>( n_scormin, packed_results.size() );
+
             }
-            n_scormin = std::min<int>( std::max<int>( n_scormin, rdd.opt.rosetta_score_at_least ), rdd.opt.rosetta_score_at_most );
-            n_scormin = std::min<int>( n_scormin, packed_results.size() );
             n_score_calculations = n_scormin;
         }
         packed_results.resize(n_scormin);
@@ -170,6 +196,8 @@ rosetta_rescore(
         std::vector<ScaffoldIndex> uniq_scaffolds;
         for ( std::pair<ScaffoldIndex,bool> pair : unique_scaffolds_dict ) uniq_scaffolds.push_back(pair.first);
 
+        MultithreadPoseCloner target_cloner( rdd.target.clone() );
+
         int n_uniq = uniq_scaffolds.size();
         std::cout << "Building " << n_uniq << " scaffold+target poses" << std::endl;
         #ifdef USE_OPENMP
@@ -179,9 +207,9 @@ rosetta_rescore(
             ScaffoldIndex si = uniq_scaffolds[iuniq];
             ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
             if( rdd.opt.replace_orig_scaffold_res ){
-                sdc->setup_both_full_pose(*(rdd.target.clone()));
+                sdc->setup_both_full_pose(*(target_cloner.get_pose()));
             } else {
-                sdc->setup_both_pose(*(rdd.target.clone()));
+                sdc->setup_both_pose(*(target_cloner.get_pose()));
             }
         }
 /////////
@@ -488,6 +516,7 @@ rosetta_rescore(
             }
             packed_results.resize(n_scormin);
         }
+        valid_points_after_score = packed_results.size();
 
         std::chrono::time_point<std::chrono::high_resolution_clock> stopall = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elap_sec = stopall - startall;

@@ -52,6 +52,7 @@ struct ScaffoldDataCache {
     float scaff_radius;
     EigenXform scaffold_perturb;
 
+    core::pose::PoseCOP scaffold_unmodified_p;                                     // original pose passed to this function
     core::pose::PoseCOP scaffold_centered_p;                                   // centered scaffold, some ALA mutations based on scaff2ala/scaff2alaselonly
     core::pose::PoseCOP scaffold_full_centered_p;                              // centered scaffold, identical to input       
 
@@ -100,7 +101,8 @@ struct ScaffoldDataCache {
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
-        std::vector<CstBaseOP> const & csts_in ) {
+        std::vector<CstBaseOP> const & csts_in,
+        Eigen::Vector3f force_scaffold_center = Eigen::Vector3f {std::numeric_limits<double>::quiet_NaN(), 0, 0} ) {
 
         debug_sanity = 1337;
 
@@ -128,6 +130,8 @@ struct ScaffoldDataCache {
         // This is setting scaff_redundancy_filter_rg and scaff_radius
         get_rg_radius( pose, scaff_redundancy_filter_rg, scaff_radius, *scaffold_res_p, false ); 
 
+        // Setup scaffold_unmodified_p
+        scaffold_unmodified_p = make_shared<core::pose::Pose const>( pose );
 
         // Setup scaffold_centered_p and scaffold_full_centered_p
         scaffold_centered_p = make_shared<core::pose::Pose const>( pose );
@@ -141,9 +145,11 @@ struct ScaffoldDataCache {
         else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold_centered, *scaffold_res_p );
 
         // Setup scaffold_center
-        scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
-        if ( opt.dont_center_scaffold ) {
-            scaffold_center = Eigen::Vector3f( 0, 0, 0 );
+        if ( std::isnan( force_scaffold_center[0] ) || std::isnan( force_scaffold_center[1] )
+            || std::isnan( force_scaffold_center[2] )) {
+            scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
+        } else {
+            scaffold_center = force_scaffold_center;
         }
 
         // Move scaffold_centered_p and scaffold_full_centered_p to origin
@@ -213,7 +219,6 @@ struct ScaffoldDataCache {
                 }
             }
         }
-
 
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;

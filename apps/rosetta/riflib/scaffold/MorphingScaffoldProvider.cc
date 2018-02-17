@@ -13,6 +13,7 @@
 #include <riflib/scaffold/util.hh>
 #include <ObjexxFCL/format.hh>
 #include <riflib/HSearchConstraints.hh>
+#include <core/import_pose/import_pose.hh>
 
 #include <string>
 #include <vector>
@@ -136,7 +137,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
             ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
 
-            core::pose::PoseCOP scaffold = data_cache->scaffold_full_centered_p;
+            core::pose::PoseCOP scaffold = data_cache->scaffold_unmodified_p;
 
 
             std::vector<core::pose::PoseOP> poses = apply_direct_segment_lookup_mover( 
@@ -157,8 +158,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             for ( core::pose::PoseOP pose : poses ) {
                 count++;
 
-
-
                 ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
                     *pose,
                     scaffold_res,
@@ -166,9 +165,9 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     scaffold_perturb,
                     rot_index_p,
                     opt,
-                    csts);
+                    csts,
+                    data_cache->scaffold_center);
 
-                temp_data_cache_->scaffold_center += data_cache->scaffold_center;
 
                 if ( opt.use_parent_body_energies ) {
                     std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
@@ -214,50 +213,71 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     if ( opt.morph_silent_file != "" ) {
         std::vector<core::pose::PoseOP> poses = extract_poses_from_silent_file( opt.morph_silent_file );
 
+        if ( poses.size() > opt.morph_silent_max_structures ) {
+            // std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
+
+            if ( opt.morph_silent_random_selection ) {
+                std::cout << "Randomly selecting " << opt.morph_silent_max_structures << " from silent file" << std::endl;
+                poses = random_selection_poses_leaving_n( poses, opt.morph_silent_max_structures );
+            } else {
+                std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
+                poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+            }
+        }
+
         ScaffoldDataCacheOP data_cache = get_data_cache_slow( ti );
+
+        EigenXform archetype_to_input = EigenXform::Identity();
+
+        if ( opt.morph_silent_archetype != "" ) {
+            core::pose::Pose archetype = *core::import_pose::pose_from_file( opt.morph_silent_archetype );
+            archetype_to_input = find_xform_from_identical_pose_to_pose( archetype, *data_cache->scaffold_unmodified_p, 1 );
+        }
 
         for ( core::pose::PoseOP const & pose : poses ) {
 
-                ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
-                    *pose,
-                    scaffold_res,
-                    pose->pdb_info()->name(),
-                    scaffold_perturb,
-                    rot_index_p,
-                    opt,
-                    csts);
+            apply_xform_to_pose( *pose, archetype_to_input );
 
-                temp_data_cache_->scaffold_center += data_cache->scaffold_center;
+            ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
+                *pose,
+                scaffold_res,
+                pose->pdb_info()->name(),
+                scaffold_perturb,
+                rot_index_p,
+                opt,
+                csts,
+                data_cache->scaffold_center);
 
-                if ( opt.use_parent_body_energies ) {
-                    std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
-                    if ( ! data_cache->local_onebody_p ) {
-                        data_cache->setup_onebody_tables( rot_index_p, opt );
-                    }
-                    if ( ! data_cache->local_twobody_p ) {
-                        data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
-                    }
-                    // one-body
-                    temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
-                    temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
-                    // two-body
-                    temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
-                    temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+
+            if ( opt.use_parent_body_energies ) {
+                std::cout << "use_parent_body_energies: Preparing parent body energies" << std::endl;
+                if ( ! data_cache->local_onebody_p ) {
+                    data_cache->setup_onebody_tables( rot_index_p, opt );
                 }
+                if ( ! data_cache->local_twobody_p ) {
+                    data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+                }
+                // one-body
+                temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
+                temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
+                // two-body
+                temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
+                temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+            }
 
-                ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
+            ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
-                MorphMember mmember;
-                mmember.conformation = conformation;
+            MorphMember mmember;
+            mmember.conformation = conformation;
 
-                mmember.tree_relation.depth = 1;
-                mmember.tree_relation.parent_member = 0;
-                mmember.tree_relation.first_child = BOGUS_INDEX;
-                mmember.tree_relation.last_child = BOGUS_INDEX;
+            mmember.tree_relation.depth = 1;
+            mmember.tree_relation.parent_member = 0;
+            mmember.tree_relation.first_child = BOGUS_INDEX;
+            mmember.tree_relation.last_child = BOGUS_INDEX;
 
-                // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
+            // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
 
-                add_morph_member( mmember );
+            add_morph_member( mmember );
         }
     } 
 
@@ -297,6 +317,10 @@ MorphingScaffoldProvider::add_morph_member( MorphMember mmember ) {
         map_.resize( map_.size() + 1 );
     }
     map_[depth].push_back( mmember );
+
+    // Tree indexes are 16 bit so be careful
+    runtime_assert(depth < BOGUS_INDEX);
+    runtime_assert(map_[depth].size() < BOGUS_INDEX);
     return TreeIndex(depth, map_[depth].size());
 }
 
@@ -315,7 +339,7 @@ MorphingScaffoldProvider::get_scaffold(TreeIndex i) {
 
 MorphMember & 
 MorphingScaffoldProvider::get_morph_member(TreeIndex i) {
-    assert( is_valid_index( i ) );
+    runtime_assert( is_valid_index( i ) );
 
     return map_[ i.depth ][ i.member ];
 }

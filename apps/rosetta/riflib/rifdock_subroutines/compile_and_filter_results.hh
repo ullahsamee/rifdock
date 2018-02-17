@@ -208,7 +208,8 @@ void compile_and_filter_results(
         std::vector< RifDockResult > & selected_results, 
         std::vector< RifDockResult > & allresults,
         RifDockData & rdd,
-        omp_lock_t & dump_lock ) {
+        int n_pdb_out,
+        float redundancy_filter_mag ) {
 
 
     using namespace core::scoring;
@@ -260,8 +261,8 @@ void compile_and_filter_results(
 
     int nclosemax      = rdd.opt.force_output_if_close_to_input_num;
     float nclosethresh = rdd.opt.force_output_if_close_to_input;
-    int n_pdb_out = rdd.opt.n_pdb_out;
-    float redundancy_filter_mag = rdd.opt.redundancy_filter_mag;
+    // int n_pdb_out = rdd.opt.n_pdb_out;
+    // float redundancy_filter_mag = rdd.opt.redundancy_filter_mag;
     std::cout << "redundancy_filter_mag " << redundancy_filter_mag << "A \"rmsd\"" << std::endl;
     int64_t Nout_singlethread = std::min( (int64_t)10000, Nout );
 
@@ -283,7 +284,7 @@ void compile_and_filter_results(
             redundancy_filter_rg, redundancy_filter_mag, scaffold_center,
             allresults_pt, selected_results, selected_xforms, n_pdb_out,
             #ifdef USE_OPENMP
-                dump_lock,
+                rdd.dump_lock,
             #endif
             rdd.objectives.back(), nclose, nclosemax, nclosethresh,
             scaffold_perturb
@@ -315,7 +316,7 @@ void compile_and_filter_results(
                 redundancy_filter_rg, redundancy_filter_mag, scaffold_center,
                 allresults_pt, selected_results, selected_xforms, n_pdb_out,
                 #ifdef USE_OPENMP
-                    dump_lock,
+                    rdd.dump_lock,
                 #endif
                 rdd.objectives.back(), nclose, nclosemax, nclosethresh,
                 scaffold_perturb

@@ -61,12 +61,13 @@ hsearch_original(
     hsearch_results_p = make_shared<std::vector< SearchPointWithRots >>();
     std::vector< SearchPointWithRots > & hsearch_results = *hsearch_results_p;
 
+    uint64_t to_save = std::min( (uint64_t)rdd.opt.max_beam_size_after_hsearch, (uint64_t)samples.back().size() );
 
-    hsearch_results.resize( samples.back().size() );
+    hsearch_results.resize( to_save );
     #ifdef USE_OPENMP
     #pragma omp parallel for schedule(dynamic,1024)
     #endif
-    for( int ipack = 0; ipack < hsearch_results.size(); ++ipack ){
+    for( int ipack = 0; ipack < to_save; ++ipack ){
         hsearch_results[ipack].score = samples.back()[ipack].score;
         hsearch_results[ipack].index = samples.back()[ipack].index;
     }

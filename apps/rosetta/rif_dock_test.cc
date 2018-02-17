@@ -704,6 +704,9 @@ int main(int argc, char *argv[]) {
  						rif_ptrs,
  						rso_config,
  						rif_factory,
+    					#ifdef USE_OPENMP
+ 							dump_lock,
+ 						#endif
  						scaffold_provider
 			};
 
@@ -772,7 +775,7 @@ int main(int argc, char *argv[]) {
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
 			std::vector< RifDockResult > selected_results, allresults;
-			compile_and_filter_results( packed_results, selected_results, allresults, rdd, dump_lock );
+			compile_and_filter_results( packed_results, selected_results, allresults, rdd, opt.n_pdb_out, opt.redundancy_filter_mag );
 
 
 
