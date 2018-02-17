@@ -668,7 +668,7 @@ int main(int argc, char *argv[]) {
 			{
 				EigenXform x(EigenXform::Identity());
 				x.translation() = rep_scaffold_center;
-				director->set_scene( RifDockIndex(0, rep_si), 0, *scene_minimal);
+				director->set_scene( RifDockIndex(0, 0 /* default seeding index */,rep_si), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);

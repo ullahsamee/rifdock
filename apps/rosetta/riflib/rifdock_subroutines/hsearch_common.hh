@@ -219,7 +219,7 @@ do_an_hsearch(uint64_t start_resl,
                     if( iresl == 0 ) ++d.non0_space_size;
                     for( uint64_t j = 0; j < rdd.opt.DIMPOW2; ++j ){
                         uint64_t isamp = isamp0 * rdd.opt.DIMPOW2 + j;
-                        samples[this_stage+1].push_back( SearchPoint(RifDockIndex(isamp, samples[this_stage][i].index.scaffold_index)) );
+                        samples[this_stage+1].push_back( SearchPoint(RifDockIndex(isamp, 0, samples[this_stage][i].index.scaffold_index)) );
                     }
                 }
 
