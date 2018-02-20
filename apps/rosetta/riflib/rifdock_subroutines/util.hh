@@ -18,6 +18,7 @@
 #include <scheme/kinematics/Director.hh>
 #include <scheme/search/HackPack.hh>
 #include <riflib/util.hh>
+#include <riflib/rifdock_typedefs.hh>
 
 #include <rif_dock_test.hh>
 #include <riflib/rotamer_energy_tables.hh>
@@ -111,23 +112,12 @@ void xform_pose( core::pose::Pose & pose, numeric::xyzTransform<float> s, core::
 
 
 
+
 template<class _DirectorBigIndex>
-struct tmplRifDockResult {
-    typedef _DirectorBigIndex DirectorBigIndex;
-    typedef tmplRifDockResult<DirectorBigIndex> This;
-    float dist0, packscore, nopackscore, rifscore, stericscore;
-    uint64_t isamp;
-    DirectorBigIndex scene_index;
-    uint32_t prepack_rank;
-    float cluster_score;
-    bool operator< ( This const & o ) const { return packscore < o.packscore; }
-    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
-    core::pose::PoseOP pose_ = nullptr;
-    size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
-    std::vector< std::pair<intRot,intRot> > const & rotamers() const { assert(rotamers_!=nullptr); return *rotamers_; }
-};
+struct tmplSearchPointWithRots;
 
-
+template<class _DirectorBigIndex>
+struct tmplRifDockResult;
 
 
 #pragma pack (push, 4) // allows size to be 12 rather than 16
@@ -142,9 +132,18 @@ struct tmplSearchPoint {
     bool operator < (This const & o) const {
         return score < o.score;
     }
+    This& operator=( tmplSearchPointWithRots<DirectorBigIndex> const & ot ) {
+        score = ot.score;
+        index = ot.index;
+        return *this;
+    }
+    This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
+        score = ot.packscore;
+        index = ot.scene_index;
+        return *this;
+    }
 };
 #pragma pack (pop)
-
 
 
 template<class _DirectorBigIndex>
@@ -166,7 +165,52 @@ struct tmplSearchPointWithRots {
     bool operator < (This const & o) const {
         return score < o.score;
     }
+    This& operator=( tmplSearchPoint<DirectorBigIndex> const & ot ) {
+        score = ot.score;
+        index = ot.index;
+        return *this;
+    }
+    This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
+        score = ot.packscore;
+        prepack_rank = ot.prepack_rank;
+        index = ot.scene_index;
+        rotamers_ = ot.rotamers_;
+        pose_ = ot.pose_;
+        return *this;
+    }
 };
+
+template<class _DirectorBigIndex>
+struct tmplRifDockResult {
+    typedef _DirectorBigIndex DirectorBigIndex;
+    typedef tmplRifDockResult<DirectorBigIndex> This;
+    float dist0, packscore, nopackscore, rifscore, stericscore;
+    uint64_t isamp;
+    DirectorBigIndex scene_index;
+    uint32_t prepack_rank;
+    float cluster_score;
+    bool operator< ( This const & o ) const { return packscore < o.packscore; }
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
+    core::pose::PoseOP pose_ = nullptr;
+    size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
+    std::vector< std::pair<intRot,intRot> > const & rotamers() const { assert(rotamers_!=nullptr); return *rotamers_; }
+
+    This& operator=( tmplSearchPoint<DirectorBigIndex> const & ot ) {
+        packscore = ot.score;
+        scene_index = ot.index;
+        return *this;
+    }
+    This& operator=( tmplSearchPointWithRots<DirectorBigIndex> const & ot ) {
+        packscore = ot.score;
+        prepack_rank = ot.prepack_rank;
+        scene_index = ot.index;
+        rotamers_ = ot.rotamers_;
+        pose_ = ot.pose_;
+        return *this;
+    }
+};
+
+
 
 
 // Convenience templates for the above templated containers
@@ -310,6 +354,9 @@ sanity_check_hackpack(
 
 
 }
+
+
+
 
 
 
