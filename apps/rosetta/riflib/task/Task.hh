@@ -33,7 +33,7 @@ enum TaskType {
 
 struct Task {
 
-    Task();
+    Task() {}
 
 
     virtual shared_ptr<std::vector<SearchPoint>> return_search_points( shared_ptr<std::vector<SearchPoint>> search_points, RifDockData & rdd, ProtocolData & pd ) = 0;

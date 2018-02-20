@@ -87,6 +87,11 @@
 
 	#include <riflib/HSearchConstraints.hh>
 
+// Task system
+	#include <riflib/task/TaskProtocol.hh>
+	#include <riflib/rifdock_tasks/FilterForHackPackTask.hh>
+	#include <riflib/rifdock_tasks/HackPackTask.hh>
+
 
 
 using ::scheme::make_shared;
@@ -710,6 +715,19 @@ int main(int argc, char *argv[]) {
  						scaffold_provider
 			};
 
+			ProtocolData pd;
+
+
+			int final_resl = rdd.RESLS.size() - 1;
+
+			std::vector<shared_ptr<Task>> task_list;
+
+			if ( opt.hack_pack ) {
+				task_list.push_back(make_shared<FilterForHackPackTask>());
+				task_list.push_back(make_shared<HackPackTask>( final_resl, opt.global_score_cut));
+			}
+
+			TaskProtocol protocol( task_list );
 
 
 
@@ -748,11 +766,22 @@ int main(int argc, char *argv[]) {
 				
 
 				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
-		        if (opt.hack_pack) {
-		        	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
-		        } else {
-		        	packed_results = *hsearch_results_p;
-		        }
+
+
+				pd.total_search_effort = total_search_effort;
+
+				ThreePointVectors input;
+				input.search_point_with_rotss = hsearch_results_p;
+				ThreePointVectors results = protocol.run( input, rdd, pd );
+
+				packed_results = *results.search_point_with_rotss;
+				npack = pd.npack;
+		        // if (opt.hack_pack) {
+		        // 	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
+		        // } else {
+		        // 	packed_results = *hsearch_results_p;
+		        // }
+
 
 
 				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;

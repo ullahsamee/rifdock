@@ -89,6 +89,7 @@ HackPackTask::return_search_point_with_rotss(
     }
     if( exception ) std::rethrow_exception(exception);
     end = std::chrono::high_resolution_clock::now();
+    std::cout << std::endl;
 
     std::chrono::duration<double> elapsed_seconds_pack = end-start;
     std::cout << "packing rate: " << (double)pd.npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
@@ -96,7 +97,6 @@ HackPackTask::return_search_point_with_rotss(
 
 
 
-    std::cout << std::endl;
     std::cout << "full sort of packed samples" << std::endl;
     __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
 

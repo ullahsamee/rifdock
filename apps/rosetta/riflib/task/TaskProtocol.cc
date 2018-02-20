@@ -23,14 +23,24 @@ namespace devel {
 namespace scheme {
 
 
-void
-TaskProtocol::run( shared_ptr<std::vector<SearchPoint>> search_points, RifDockData & rdd, ProtocolData & pd ) {
+ThreePointVectors
+TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd ) {
 
-    TaskType last_task_type = SearchPointTaskType;
+    TaskType last_task_type;
 
-    shared_ptr<std::vector<SearchPoint>> working_search_points = search_points;
-    shared_ptr<std::vector<SearchPointWithRots>> working_search_point_with_rotss = nullptr;
-    shared_ptr<std::vector<RifDockResult>> working_rif_dock_results = nullptr;
+    shared_ptr<std::vector<SearchPoint>> working_search_points = input.search_points;
+    shared_ptr<std::vector<SearchPointWithRots>> working_search_point_with_rotss = input.search_point_with_rotss;
+    shared_ptr<std::vector<RifDockResult>> working_rif_dock_results = input.rif_dock_results;
+
+    if ( working_search_points ) {
+        last_task_type = SearchPointTaskType;
+    } else if ( working_search_point_with_rotss ) {
+        last_task_type = SearchPointWithRotsTaskType;
+    } else if ( working_rif_dock_results ) {
+        last_task_type = RifDockResultTaskType;
+    } else {
+        runtime_assert(false);
+    }
 
 
     size_t current_taskno = 0;
@@ -43,6 +53,19 @@ TaskProtocol::run( shared_ptr<std::vector<SearchPoint>> search_points, RifDockDa
         TaskType current_task_type = task.get_task_type();
         TaskType reported_task_type = current_task_type;
 
+// Debug delete this!!!!!!!!!!!!!!!!!!!
+
+        if ( working_search_points ) {
+            std::cout << "working_search_points.size(): " << working_search_points->size() << std::endl;
+        } else if ( working_search_point_with_rotss ) {
+            std::cout << "working_search_point_with_rotss.size(): " << working_search_point_with_rotss->size() << std::endl;
+        } else if ( working_rif_dock_results ) {
+            std::cout << "working_rif_dock_results.size(): " << working_rif_dock_results->size() << std::endl;
+        } else {
+            runtime_assert(false);
+        }
+
+///////////////////////////////////////
         switch (last_task_type) {
             case SearchPointTaskType: {
                 runtime_assert( working_search_points );
@@ -157,6 +180,14 @@ TaskProtocol::run( shared_ptr<std::vector<SearchPoint>> search_points, RifDockDa
         current_taskno++;
 
     }
+
+    ThreePointVectors to_return {
+        working_search_points,
+        working_search_point_with_rotss,
+        working_rif_dock_results
+    };
+
+    return to_return;
 
 }
 

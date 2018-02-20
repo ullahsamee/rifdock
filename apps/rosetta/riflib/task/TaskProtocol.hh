@@ -21,6 +21,12 @@
 namespace devel {
 namespace scheme {
 
+struct ThreePointVectors {
+    shared_ptr<std::vector<SearchPoint>> search_points;
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss;
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results;
+};
+
 struct TaskProtocol {
 
     TaskProtocol( std::vector<shared_ptr<Task>> const & tasks ) :
@@ -28,8 +34,8 @@ struct TaskProtocol {
     {}
 
 
-    void
-    run( shared_ptr<std::vector<SearchPoint>> search_points, RifDockData & rdd, ProtocolData & pd );
+    ThreePointVectors
+    run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd );
 
 
 private:
