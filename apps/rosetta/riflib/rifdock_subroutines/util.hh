@@ -262,6 +262,21 @@ struct RifDockData {
 
 struct ProtocolData {
 
+// Data related to the original RifDock as written by Will
+    int64_t total_search_effort;
+    int64_t npack;
+
+
+
+    ProtocolData() :
+    total_search_effort(0),
+    npack(0)
+
+
+    {}
+
+
+
 };
 
 

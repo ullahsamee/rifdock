@@ -34,25 +34,25 @@ struct AnyPointTask : public Task {
 
 // These are not supposed to be virtual!!!
 
-    virtual SearchPoint return_search_points( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;  
-    SearchPoint return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
-    SearchPoint return_search_points( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
+    virtual std::vector<SearchPoint> return_search_points( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;  
+    std::vector<SearchPoint> return_search_points( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
+    std::vector<SearchPoint> return_search_points( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
 
-    SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) override;
-    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
-    SearchPointWithRots return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
+    std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) override;
+    virtual std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
+    std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
 
-    RifDockResult return_rif_dock_results( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) override;
-    RifDockResult return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
-    virtual RifDockResult return_rif_dock_results( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
+    std::vector<RifDockResult> return_rif_dock_results( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) override;
+    std::vector<RifDockResult> return_rif_dock_results( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
+    virtual std::vector<RifDockResult> return_rif_dock_results( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
 
 
 // C++ standard doesn't allow this, but I declare the following syntax as part of the class
 
     // template<class AnyPoint>
     // virtual
-    // AnyPoint
-    // return_any_points( std::vector<AnyPoint> const & any_points, RifDockData & rdd, ProtocolData & pd ) = 0;
+    // std::vector<AnyPoint>
+    // return_any_points( std::vector<AnyPoint> & any_points, RifDockData & rdd, ProtocolData & pd ) = 0;
 
 
 

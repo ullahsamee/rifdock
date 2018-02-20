@@ -27,17 +27,17 @@ struct Task {
     Task();
 
 
-    virtual SearchPoint return_search_points( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual SearchPoint return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual SearchPoint return_search_points( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPoint> return_search_points( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPoint> return_search_points( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPoint> return_search_points( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
 
-    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<SearchPointWithRots> return_search_point_with_rotss( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
 
-    virtual RifDockResult return_rif_dock_results( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual RifDockResult return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
-    virtual RifDockResult return_rif_dock_results( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<RifDockResult> return_rif_dock_results( std::vector<SearchPoint> & search_points, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<RifDockResult> return_rif_dock_results( std::vector<SearchPointWithRots> & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
+    virtual std::vector<RifDockResult> return_rif_dock_results( std::vector<RifDockResult> & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
 
 private:
 };
