@@ -21,22 +21,22 @@
 namespace devel {
 namespace scheme {
 
-std::vector<SearchPointWithRots>
+shared_ptr<std::vector<SearchPointWithRots>>
 FilterForHackPackTask::return_search_point_with_rotss( 
-    std::vector<SearchPointWithRots> & search_point_with_rotss, 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
 
     size_t n_packsamp = 0;
-    for( n_packsamp; n_packsamp < search_point_with_rotss.size(); ++n_packsamp ){
-        if( search_point_with_rotss[n_packsamp].score > 0 ) break;
+    for( n_packsamp; n_packsamp < search_point_with_rotss->size(); ++n_packsamp ){
+        if( (*search_point_with_rotss)[n_packsamp].score > 0 ) break;
     }
     
     pd.npack = std::min( n_packsamp, (size_t)(pd.total_search_effort *
         ( rdd.opt.hack_pack_frac / (rdd.packopts.pack_n_iters*rdd.packopts.pack_iter_mult)) ) );
 
-    search_point_with_rotss.resize( pd.npack );
+    search_point_with_rotss->resize( pd.npack );
 
     return search_point_with_rotss;
 }

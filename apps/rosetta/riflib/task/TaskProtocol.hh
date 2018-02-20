@@ -7,12 +7,11 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#ifndef INCLUDED_riflib_rifdock_tasks_HackPackTask_hh
-#define INCLUDED_riflib_rifdock_tasks_HackPackTask_hh
+#ifndef INCLUDED_riflib_task_TaskProtocol_hh
+#define INCLUDED_riflib_task_TaskProtocol_hh
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
-#include <riflib/task/SearchPointWithRotsTask.hh>
+#include <riflib/task/Task.hh>
 
 #include <string>
 #include <vector>
@@ -22,24 +21,22 @@
 namespace devel {
 namespace scheme {
 
-struct HackPackTask : public SearchPointWithRotsTask {
+struct TaskProtocol {
 
-    HackPackTask( int resl, float global_score_cut ) : 
-        resl_(resl),
-        global_score_cut_(global_score_cut)
+    TaskProtocol( std::vector<shared_ptr<Task>> const & tasks ) :
+    tasks_( tasks )
     {}
 
-    shared_ptr<std::vector<SearchPointWithRots>>
-    return_search_point_with_rotss( 
-        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-        RifDockData & rdd, 
-        ProtocolData & pd );
 
+    void
+    run( shared_ptr<std::vector<SearchPoint>> search_points, RifDockData & rdd, ProtocolData & pd );
 
 
 private:
-    int resl_;
-    float global_score_cut_;
+
+
+    std::vector<shared_ptr<Task>> tasks_;
+
 
 
 };
