@@ -260,6 +260,11 @@ struct RifDockData {
     ScaffoldProviderOP scaffold_provider;
 };
 
+struct ProtocolData {
+
+};
+
+
 
 inline
 void

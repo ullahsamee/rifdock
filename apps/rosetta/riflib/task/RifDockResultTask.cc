@@ -23,39 +23,39 @@ namespace devel {
 namespace scheme {
 
 SearchPoint 
-RifDockResultTask::return_search_points( std::vector<SearchPoint> const & search_points ) { 
+RifDockResultTask::return_search_points( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 SearchPoint 
-RifDockResultTask::return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss ) { 
+RifDockResultTask::return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 SearchPoint 
-RifDockResultTask::return_search_points( std::vector<RifDockResult> const & rif_dock_results ) { 
+RifDockResultTask::return_search_points( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 
 
 SearchPointWithRots 
-RifDockResultTask::return_search_point_with_rotss( std::vector<SearchPoint> const & search_points ) { 
+RifDockResultTask::return_search_point_with_rotss( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 SearchPointWithRots 
-RifDockResultTask::return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss ) { 
+RifDockResultTask::return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 SearchPointWithRots 
-RifDockResultTask::return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results ) { 
+RifDockResultTask::return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) { 
     runtime_assert(false); 
 }
 
 RifDockResult 
-RifDockResultTask::return_rif_dock_results( std::vector<SearchPoint> const & search_points ) {
-    return return_rif_dock_results( rif_dock_results_from_search_points( search_points ) );
+RifDockResultTask::return_rif_dock_results( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) {
+    return return_rif_dock_results( rif_dock_results_from_search_points( search_points ), rdd, pd );
 }
 RifDockResult 
-RifDockResultTask::return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss ) {
-    return return_rif_dock_results( rif_dock_results_from_search_point_with_rotss( search_point_with_rotss ) );
+RifDockResultTask::return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) {
+    return return_rif_dock_results( rif_dock_results_from_search_point_with_rotss( search_point_with_rotss ), rdd, pd );
 }
 
 

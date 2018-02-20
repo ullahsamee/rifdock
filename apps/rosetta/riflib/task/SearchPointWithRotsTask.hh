@@ -28,17 +28,17 @@ struct SearchPointWithRotsTask : public Task {
 
 
 
-    SearchPoint return_search_points( std::vector<SearchPoint> const & search_points ) override;
-    SearchPoint return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss ) override;
-    SearchPoint return_search_points( std::vector<RifDockResult> const & rif_dock_results ) override;
+    SearchPoint return_search_points( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) override;
+    SearchPoint return_search_points( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
+    SearchPoint return_search_points( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
 
-    SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPoint> const & search_points ) override;
-    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss ) = 0;
-    SearchPointWithRots return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results ) override;
+    SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) override;
+    virtual SearchPointWithRots return_search_point_with_rotss( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) = 0;
+    SearchPointWithRots return_search_point_with_rotss( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
 
-    RifDockResult return_rif_dock_results( std::vector<SearchPoint> const & search_points ) override;
-    RifDockResult return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss ) override;
-    RifDockResult return_rif_dock_results( std::vector<RifDockResult> const & rif_dock_results ) override;
+    RifDockResult return_rif_dock_results( std::vector<SearchPoint> const & search_points, RifDockData & rdd, ProtocolData & pd ) override;
+    RifDockResult return_rif_dock_results( std::vector<SearchPointWithRots> const & search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
+    RifDockResult return_rif_dock_results( std::vector<RifDockResult> const & rif_dock_results, RifDockData & rdd, ProtocolData & pd ) override;
 
 
 
