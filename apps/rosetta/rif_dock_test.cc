@@ -89,8 +89,8 @@
 
 // Task system
 	#include <riflib/task/TaskProtocol.hh>
-	#include <riflib/rifdock_tasks/FilterForHackPackTask.hh>
 	#include <riflib/rifdock_tasks/HackPackTask.hh>
+	#include <riflib/rifdock_tasks/RosettaScoreAndMin.hh>
 
 
 
@@ -723,9 +723,45 @@ int main(int argc, char *argv[]) {
 			std::vector<shared_ptr<Task>> task_list;
 
 			if ( opt.hack_pack ) {
-				task_list.push_back(make_shared<FilterForHackPackTask>());
-				task_list.push_back(make_shared<HackPackTask>( final_resl, opt.global_score_cut));
+				task_list.push_back(make_shared<FilterForHackPackTask>(
+					));
+				task_list.push_back(make_shared<HackPackTask>( 
+					final_resl, 
+					opt.global_score_cut
+					));
 			}
+
+			bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
+			do_rosetta_score = do_rosetta_score && opt.hack_pack;
+			bool do_rosetta_min = rdd.opt.rosetta_min_fraction > 0.0 && do_rosetta_score;
+
+			if ( do_rosetta_score ) {
+
+				if (opt.zrosetta_filter_before) {
+
+				} else {
+					task_list.push_back(make_shared<FilterForRosettaScoreTask>(
+						opt.rosetta_score_fraction, 
+						opt.rosetta_score_then_min_below_thresh,
+						opt.rosetta_score_at_least,
+						opt.rosetta_score_at_most
+						));
+				}
+
+				task_list.push_back(make_shared<RosettaScoreTask>( 
+					opt.rosetta_score_cut,
+					do_rosetta_min));
+			}
+
+			if ( do_rosetta_min ) {
+				task_list.push_back(make_shared<FilterForRosettaMinTask>(
+					opt.rosetta_min_fraction
+					));
+				task_list.push_back(make_shared<RosettaMinTask>(
+					opt.rosetta_score_cut
+					));
+			}
+			
 
 			TaskProtocol protocol( task_list );
 
@@ -762,8 +798,15 @@ int main(int argc, char *argv[]) {
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
 				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
+		        
 				
+
+
+
+
+			
+			// std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
+
 
 				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
 
@@ -774,29 +817,20 @@ int main(int argc, char *argv[]) {
 				input.search_point_with_rotss = hsearch_results_p;
 				ThreePointVectors results = protocol.run( input, rdd, pd );
 
+
 				packed_results = *results.search_point_with_rotss;
 				npack = pd.npack;
-		        // if (opt.hack_pack) {
-		        // 	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
-		        // } else {
-		        // 	packed_results = *hsearch_results_p;
-		        // }
-
-
-
-				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
-				time_pck += elapsed_seconds_pack.count();
-			}
-			// std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
-
-
-			bool const do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
-
-			if( do_rosetta_score && opt.hack_pack ){
-
-				rosetta_rescore( packed_results, rdd, total_search_effort, time_ros );
+				time_pck += pd.time_pck;
+				time_ros += pd.time_ros;
 
 			}
+
+
+			// if( do_rosetta_score && opt.hack_pack ){
+
+			// 	rosetta_rescore( packed_results, rdd, total_search_effort, time_ros );
+
+			// }
 
 
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

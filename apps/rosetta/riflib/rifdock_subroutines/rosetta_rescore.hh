@@ -143,7 +143,7 @@ rosetta_rescore(
             n_scormin = std::min( n_scormin, valid_points_after_score );
         } else {
 
-            if (rdd.opt.rosetta_filter_before) {
+            if (rdd.opt.zrosetta_filter_before) {
 
                 int n_per_scaffold = rdd.opt.rosetta_filter_n_per_scaffold;
                 float magnitude = rdd.opt.rosetta_filter_redundancy_mag;

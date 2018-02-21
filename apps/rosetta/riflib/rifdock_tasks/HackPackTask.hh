@@ -44,6 +44,19 @@ private:
 
 };
 
+struct FilterForHackPackTask : public SearchPointWithRotsTask {
+
+    FilterForHackPackTask() {}
+
+    shared_ptr<std::vector<SearchPointWithRots>>
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd );
+
+};
+
+
 
 
 }}

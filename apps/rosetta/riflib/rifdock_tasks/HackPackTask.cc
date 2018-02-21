@@ -21,12 +21,37 @@
 namespace devel {
 namespace scheme {
 
+
+shared_ptr<std::vector<SearchPointWithRots>>
+FilterForHackPackTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+
+    size_t n_packsamp = 0;
+    for( n_packsamp; n_packsamp < search_point_with_rotss->size(); ++n_packsamp ){
+        if( (*search_point_with_rotss)[n_packsamp].score > 0 ) break;
+    }
+    
+    pd.npack = std::min( n_packsamp, (size_t)(pd.total_search_effort *
+        ( rdd.opt.hack_pack_frac / (rdd.packopts.pack_n_iters*rdd.packopts.pack_iter_mult)) ) );
+
+    search_point_with_rotss->resize( pd.npack );
+
+    return search_point_with_rotss;
+}
+
+
+    
+
 shared_ptr<std::vector<SearchPointWithRots>>
 HackPackTask::return_search_point_with_rotss( 
     shared_ptr<std::vector<SearchPointWithRots>> packed_results_p, 
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
 
     using namespace devel::scheme;
     using std::cout;
@@ -109,6 +134,9 @@ HackPackTask::return_search_point_with_rotss(
         sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene, resl_);
     }
 
+
+    std::chrono::duration<double> elapsed_seconds_all_pack = std::chrono::high_resolution_clock::now()-start_pack;
+    pd.time_pck += elapsed_seconds_all_pack.count();
 
 
     return packed_results_p;

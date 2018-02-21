@@ -266,11 +266,18 @@ struct ProtocolData {
     int64_t total_search_effort;
     int64_t npack;
 
+    double time_rif;
+    double time_pck; 
+    double time_ros;
 
 
     ProtocolData() :
     total_search_effort(0),
-    npack(0)
+    npack(0),
+    time_rif(0),
+    time_pck(0),
+    time_ros(0)
+
 
 
     {}

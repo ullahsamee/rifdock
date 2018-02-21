@@ -111,10 +111,6 @@ hack_pack(
         sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene, resl);
     }
 
-    std::cout << std::endl;
-    std::cout << "full sort of packed samples" << std::endl;
-    __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
-
     std::chrono::duration<double> elapsed_seconds_pack = end-start;
     std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()                   << " iface packs per second" << std::endl;
     std::cout << "packing rate: " << (double)npack/elapsed_seconds_pack.count()/omp_max_threads() << " iface packs per second per thread" << std::endl;
