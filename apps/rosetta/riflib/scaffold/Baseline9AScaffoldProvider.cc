@@ -87,13 +87,6 @@ Baseline9AScaffoldProvider::set_fa_mode( bool fa ) {
 }
 
 
-::scheme::scaffold::TreeIndex 
-Baseline9AScaffoldProvider::get_representative_scaffold_index() {
-    ScaffoldIndex();
-}
-
-
-
 void 
 Baseline9AScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) {
     get_data_cache_slow( i )->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);

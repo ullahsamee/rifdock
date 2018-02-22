@@ -95,13 +95,6 @@ SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
     }
 }
 
-
-::scheme::scaffold::TreeIndex 
-SingleFileScaffoldProvider::get_representative_scaffold_index() {
-    return ScaffoldIndex();
-}
-
-
 void 
 SingleFileScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) {
     get_data_cache_slow( i )->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);

@@ -88,6 +88,7 @@ typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 // If you add something to the index, you must follow these rules
 // 1. Keep your item lightweight
 // 2. Add your item to the hash functions
+// 3. RifDockIndex() must provide a valid index
 
 struct RifDockIndex {
     uint64_t nest_index;

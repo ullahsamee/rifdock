@@ -357,13 +357,6 @@ MorphingScaffoldProvider::get_scaffold_index_limits() const {
 }
 
 
-::scheme::scaffold::TreeIndex 
-MorphingScaffoldProvider::get_representative_scaffold_index() {
-    return TreeIndex(0, 0);
-}
-
-
-
 
 void 
 MorphingScaffoldProvider::set_fa_mode( bool fa ) {

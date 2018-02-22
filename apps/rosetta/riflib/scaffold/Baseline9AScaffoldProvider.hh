@@ -53,8 +53,6 @@ struct Baseline9AScaffoldProvider :
 
     void set_fa_mode( bool fa ) override;
 
-    ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
-
     void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
 
 

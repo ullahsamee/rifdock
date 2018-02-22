@@ -570,21 +570,14 @@ int main(int argc, char *argv[]) {
 				make2bopts,
 				rotrf_table_manager);
 
-			ScaffoldIndex rep_si = scaffold_provider->get_representative_scaffold_index();
-			ScaffoldDataCacheOP rep_data_cache = scaffold_provider->get_data_cache_slow( rep_si );
-			assert(rep_data_cache);
-
-			// debugging info
-			scaffold_sequence_glob0 = *(rep_data_cache->scaffold_sequence_glob0_p);
-			scaffold_res = *(rep_data_cache->scaffold_res_p);
-
-			// needed for scene
-			float rep_scaff_radius = rep_data_cache->scaff_radius;
-
-			// needed for cout
-			float rep_scaff_redundancy_filter_rg = rep_data_cache->scaff_redundancy_filter_rg;
-			Eigen::Vector3f rep_scaffold_center = rep_data_cache->scaffold_center;
-
+			// General info about a generic scaffold for debugging, cout, and the director
+			ScaffoldDataCacheOP test_data_cache = scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
+			assert(test_data_cache);
+			scaffold_sequence_glob0 = *(test_data_cache->scaffold_sequence_glob0_p);
+			scaffold_res = *(test_data_cache->scaffold_res_p);
+			float rep_scaff_radius = test_data_cache->scaff_radius;
+			float rep_scaff_redundancy_filter_rg = test_data_cache->scaff_redundancy_filter_rg;
+			Eigen::Vector3f rep_scaffold_center = test_data_cache->scaffold_center;
 			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
 			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;
 
@@ -621,8 +614,6 @@ int main(int argc, char *argv[]) {
 			ScenePtr scene_minimal( scene_prototype->clone_deep() );
 			scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
 
-
-			// utility_exit_with_message("FOO");
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup director based on scaffold and target sizes" ); //////////////////////////////////////////////////////////////////////////////////////////////
@@ -664,18 +655,17 @@ int main(int argc, char *argv[]) {
 				director = make_shared<RifDockDirector>(director_list);
 			}
 
-			// Longxing
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    		rep_data_cache->setup_onebody_tables( rot_index_p, opt);
+    		test_data_cache->setup_onebody_tables( rot_index_p, opt);
 			cout << std::endl;
 			cout << "scores for scaffold in original position: " << std::endl;
 			{
 				EigenXform x(EigenXform::Identity());
 				x.translation() = rep_scaffold_center;
-				director->set_scene( RifDockIndex(0, 0 /* default seeding index */,rep_si), 0, *scene_minimal);
+				director->set_scene( RifDockIndex(), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
