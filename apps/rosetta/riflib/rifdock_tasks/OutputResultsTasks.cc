@@ -65,7 +65,7 @@ OutputResultsTask::return_rif_dock_results(
         RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
 // Brian Injection
-        ScaffoldIndex si = selected_results[i_selected_result].scene_index.scaffold_index;
+        ScaffoldIndex si = selected_results[i_selected_result].index.scaffold_index;
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
 
 
@@ -84,7 +84,7 @@ OutputResultsTask::return_rif_dock_results(
         oss << "rif score: " << I(4,i_selected_result)
             << " rank "       << I(9,selected_result.isamp)
             << " dist0:    "  << F(7,2,selected_result.dist0)
-            << " packscore: " << F(7,3,selected_result.packscore)
+            << " packscore: " << F(7,3,selected_result.score)
             // << " score: "     << F(7,3,selected_result.nopackscore)
             // << " rif: "       << F(7,3,selected_result.rifscore)
             << " steric: "    << F(7,3,selected_result.stericscore)
@@ -123,7 +123,7 @@ dump_rif_result_(
     using std::endl;
 
 
-    ScaffoldIndex si = selected_result.scene_index.scaffold_index;
+    ScaffoldIndex si = selected_result.index.scaffold_index;
     ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
     std::vector<int> const & scaffres_g2l = *(sdc->scaffres_g2l_p);
     std::vector<int> const & scaffres_l2g = *(sdc->scaffres_l2g_p);
@@ -140,7 +140,7 @@ dump_rif_result_(
     }
 
 
-    rdd.director->set_scene( selected_result.scene_index, iresl, *rdd.scene_minimal );
+    rdd.director->set_scene( selected_result.index, iresl, *rdd.scene_minimal );
 
     devel::scheme::ScoreRotamerVsTarget<
         VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -249,7 +249,7 @@ dump_rif_result_(
     expdb << "rif_residues ";
 
     if ( selected_result.rotamers_ ) {
-        sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+        sanity_check_hackpack( rdd, selected_result.index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
     }
 
     std::vector<int> needs_RIFRES;

@@ -140,8 +140,8 @@ struct tmplSearchPoint {
         return *this;
     }
     This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
-        score = ot.packscore;
-        index = ot.scene_index;
+        score = ot.score;
+        index = ot.index;
         return *this;
     }
 };
@@ -173,9 +173,9 @@ struct tmplSearchPointWithRots {
         return *this;
     }
     This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
-        score = ot.packscore;
+        score = ot.score;
         prepack_rank = ot.prepack_rank;
-        index = ot.scene_index;
+        index = ot.index;
         rotamers_ = ot.rotamers_;
         pose_ = ot.pose_;
         return *this;
@@ -186,26 +186,27 @@ template<class _DirectorBigIndex>
 struct tmplRifDockResult {
     typedef _DirectorBigIndex DirectorBigIndex;
     typedef tmplRifDockResult<DirectorBigIndex> This;
-    float dist0, packscore, nopackscore, rifscore, stericscore;
+    float dist0, nopackscore, rifscore, stericscore;
+    float score; // formerly packscore
     uint64_t isamp;
-    DirectorBigIndex scene_index;
+    DirectorBigIndex index; // formerly index
     uint32_t prepack_rank;
     float cluster_score;
-    bool operator< ( This const & o ) const { return packscore < o.packscore; }
+    bool operator< ( This const & o ) const { return score < o.score; }
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
     core::pose::PoseOP pose_ = nullptr;
     size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
     std::vector< std::pair<intRot,intRot> > const & rotamers() const { assert(rotamers_!=nullptr); return *rotamers_; }
 
     This& operator=( tmplSearchPoint<DirectorBigIndex> const & ot ) {
-        packscore = ot.score;
-        scene_index = ot.index;
+        score = ot.score;
+        index = ot.index;
         return *this;
     }
     This& operator=( tmplSearchPointWithRots<DirectorBigIndex> const & ot ) {
-        packscore = ot.score;
+        score = ot.score;
         prepack_rank = ot.prepack_rank;
-        scene_index = ot.index;
+        index = ot.index;
         rotamers_ = ot.rotamers_;
         pose_ = ot.pose_;
         return *this;

@@ -114,8 +114,8 @@ awful_compile_output_helper_(
     RifDockResult r; // float dist0, packscore, nopackscore, rifscore, stericscore;
     r.isamp = isamp;
     r.prepack_rank = sp.prepack_rank;
-    r.scene_index = sp.index;
-    r.packscore = sp.score;
+    r.index = sp.index;
+    r.score = sp.score;
     r.nopackscore = nopackscore;
     r.rifscore = rifscore;
     r.stericscore = stericscore;

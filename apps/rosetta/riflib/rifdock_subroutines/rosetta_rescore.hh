@@ -155,8 +155,8 @@ rosetta_rescore(
                 for (RifDockResult const & rdr : selected_results) {
                     SearchPointWithRots pr;
                     pr.prepack_rank = rdr.prepack_rank;
-                    pr.index = rdr.scene_index;
-                    pr.score = rdr.packscore;
+                    pr.index = rdr.index;
+                    pr.score = rdr.score;
                     pr.rotamers_ = rdr.rotamers_;
                     packed_results.push_back(pr);
                 }
