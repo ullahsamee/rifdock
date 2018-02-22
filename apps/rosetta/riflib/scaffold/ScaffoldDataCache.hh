@@ -76,6 +76,7 @@ struct ScaffoldDataCache {
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
     shared_ptr<std::vector<std::vector<float> > > local_onebody_p;       //onebodies in local numbering
 
+    bool onebody_set_correctly;
 
     typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
 
@@ -231,6 +232,7 @@ struct ScaffoldDataCache {
             csts.push_back(cst);
         }
 
+        onebody_set_correctly = false;
     }
 
     // returns true if there are more than 0 constraints
@@ -250,6 +252,8 @@ struct ScaffoldDataCache {
     setup_fake_onebody_tables(
         shared_ptr< RotamerIndex> rot_index_p,
         RifDockOpt const & opt ) {
+
+        onebody_set_correctly = false;
 
         RotamerIndex & rot_index = *rot_index_p;
 
@@ -292,7 +296,8 @@ struct ScaffoldDataCache {
         RifDockOpt const & opt ) {
 
         // if (local_onebody_p) return;
-
+        if ( onebody_set_correctly ) return;
+        onebody_set_correctly = true;
 
         scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>();
 
