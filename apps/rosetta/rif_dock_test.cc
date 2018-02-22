@@ -30,7 +30,7 @@
 	#include <core/conformation/ResidueFactory.hh>
 	#include <core/kinematics/MoveMap.hh>
 	#include <core/scoring/Energies.hh>
-        #include <protocols/minimization_packing/MinMover.hh>
+    #include <protocols/minimization_packing/MinMover.hh>
 
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
@@ -811,18 +811,6 @@ int main(int argc, char *argv[]) {
 				time_rif += elapsed_seconds_rif.count();
 
 
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		        
-				
-
-
-
-
-			
-			// std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
-
 
 				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
 
@@ -835,22 +823,9 @@ int main(int argc, char *argv[]) {
 
 
 
-
-			std::vector< RifDockResult > & selected_results = *results.rif_dock_results;
-			npack = pd.npack;
 			time_pck += pd.time_pck;
 			time_ros += pd.time_ros;
 
-			
-			
-			// compile_and_filter_results( packed_results, selected_results, allresults, rdd, opt.n_pdb_out, opt.redundancy_filter_mag );
-
-
-
-
-
-
-			// output_results(selected_results, rdd, dokout, npack);
 			
 			}
 
