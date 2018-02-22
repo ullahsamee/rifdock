@@ -38,6 +38,94 @@
 namespace devel {
 namespace scheme {
 
+shared_ptr<std::vector<SearchPoint>> 
+FilterForRosettaScoreTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterForRosettaScoreTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterForRosettaScoreTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+// assumes sorted vector
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterForRosettaScoreTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    int n_scormin = rosetta_score_fraction_/40.0 * pd.total_search_effort;
+    if( rosetta_score_then_min_below_thresh_ > -9e8 ){
+        for( n_scormin=0; n_scormin < any_points->size(); ++n_scormin ){
+            if( (*any_points)[n_scormin].score > rosetta_score_then_min_below_thresh_ )
+                break;
+        }
+    }
+    n_scormin = std::min<int>( std::max<int>( n_scormin, rosetta_score_at_least_ ), rosetta_score_at_most_ );
+    n_scormin = std::min<int>( n_scormin, any_points->size() );
+
+    any_points->resize(n_scormin);
+
+    return any_points;
+}
+
+
+shared_ptr<std::vector<SearchPoint>> 
+FilterForRosettaMinTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterForRosettaMinTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterForRosettaMinTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+// assumes sorted vector
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterForRosettaMinTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    size_t n_scormin = 0;
+    // min take ~10x score time, so do on 1/10th of the scored
+    n_scormin = any_points->size() * rosetta_min_fraction_;
+    n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
+    n_scormin = std::min( n_scormin, any_points->size() );
+
+    any_points->resize(n_scormin);
+
+    return any_points;
+}
+
+
 
 shared_ptr<std::vector<SearchPointWithRots>>
 RosettaScoreTask::return_search_point_with_rotss( 
@@ -57,69 +145,6 @@ RosettaMinTask::return_search_point_with_rotss(
     ProtocolData & pd ) {
 
     rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, true, true);
-
-    return search_point_with_rotss;
-}
-
-
-// shared_ptr<std::vector<SearchPointWithRots>>
-// RedundancyFilterForRosettaScoreTask::return_search_point_with_rotss( 
-//     shared_ptr<std::vector<SearchPointWithRots>> packed_results, 
-//     RifDockData & rdd, 
-//     ProtocolData & pd ) {
-
-//     std::vector< RifDockResult > selected_results, allresults;
-//     compile_and_filter_results( *packed_results, selected_results, allresults, rdd, n_per_block_, redundancy_mag_ );
-
-//     packed_results->resize(0);
-
-//     for (RifDockResult const & rdr : selected_results) {
-//         SearchPointWithRots pr;
-//         pr.prepack_rank = rdr.prepack_rank;
-//         pr.index = rdr.scene_index;
-//         pr.score = rdr.packscore;
-//         pr.rotamers_ = rdr.rotamers_;
-//         packed_results->push_back(pr);
-//     }
-    
-//     return packed_results;
-// }
-
-// assumes sorted vector
-shared_ptr<std::vector<SearchPointWithRots>>
-FilterForRosettaScoreTask::return_search_point_with_rotss( 
-    shared_ptr<std::vector<SearchPointWithRots>> packed_results, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-
-    int n_scormin = rosetta_score_fraction_/40.0 * pd.total_search_effort;
-    if( rosetta_score_then_min_below_thresh_ > -9e8 ){
-        for( n_scormin=0; n_scormin < packed_results->size(); ++n_scormin ){
-            if( (*packed_results)[n_scormin].score > rosetta_score_then_min_below_thresh_ )
-                break;
-        }
-    }
-    n_scormin = std::min<int>( std::max<int>( n_scormin, rosetta_score_at_least_ ), rosetta_score_at_most_ );
-    n_scormin = std::min<int>( n_scormin, packed_results->size() );
-
-    packed_results->resize(n_scormin);
-
-    return packed_results;
-}
-
-shared_ptr<std::vector<SearchPointWithRots>>
-FilterForRosettaMinTask::return_search_point_with_rotss( 
-    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-
-    size_t n_scormin = 0;
-    // min take ~10x score time, so do on 1/10th of the scored
-    n_scormin = search_point_with_rotss->size() * rosetta_min_fraction_;
-    n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
-    n_scormin = std::min( n_scormin, search_point_with_rotss->size() );
-
-    search_point_with_rotss->resize(n_scormin);
 
     return search_point_with_rotss;
 }

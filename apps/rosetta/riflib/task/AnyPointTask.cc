@@ -25,7 +25,10 @@ namespace scheme {
 // reference implementation
 //  copy this into subsequent files
 // shared_ptr<std::vector<SearchPoint>> 
-// AnyPointTask::return_search_points( shared_ptr<std::vector<SearchPoint>> search_points, RifDockData & rdd, ProtocolData & pd ) {
+// AnyPointTask::return_search_points( 
+//     shared_ptr<std::vector<SearchPoint>> search_points, 
+//     RifDockData & rdd, 
+//     ProtocolData & pd ) {
 //     return return_any_points( search_points, rdd, pd );
 // }
 shared_ptr<std::vector<SearchPoint>> 
@@ -46,7 +49,10 @@ AnyPointTask::return_search_point_with_rotss( shared_ptr<std::vector<SearchPoint
 // reference implementation
 //  copy this into subsequent files
 // shared_ptr<std::vector<SearchPointWithRots>> 
-// AnyPointTask::return_search_point_with_rotss( shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) { 
+// AnyPointTask::return_search_point_with_rotss( 
+//     shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+//     RifDockData & rdd, 
+//     ProtocolData & pd ) { 
 //     return return_any_points( search_point_with_rotss, rdd, pd );
 // }
 shared_ptr<std::vector<SearchPointWithRots>> 
@@ -65,7 +71,10 @@ AnyPointTask::return_rif_dock_results( shared_ptr<std::vector<SearchPointWithRot
 // reference implementation
 //  copy this into subsequent files
 // shared_ptr<std::vector<RifDockResult>> 
-// AnyPointTask::return_rif_dock_results( shared_ptr<std::vector<RifDockResult>> rif_dock_results, RifDockData & rdd, ProtocolData & pd ) { 
+// AnyPointTask::return_rif_dock_results( 
+//     shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+//     RifDockData & rdd, 
+//     ProtocolData & pd ) { 
 //     return return_any_points( rif_dock_results, rdd, pd );
 // }
 

@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/task/SearchPointWithRotsTask.hh>
+#include <riflib/task/AnyPointTask.hh>
 
 #include <string>
 #include <vector>
@@ -21,6 +22,94 @@
 
 namespace devel {
 namespace scheme {
+
+
+struct FilterForRosettaScoreTask : public AnyPointTask {
+
+    FilterForRosettaScoreTask(
+        float rosetta_score_fraction,
+        float rosetta_score_then_min_below_thresh,
+        int rosetta_score_at_least,
+        int rosetta_score_at_most
+        ) :
+        rosetta_score_fraction_( rosetta_score_fraction ),
+        rosetta_score_then_min_below_thresh_( rosetta_score_then_min_below_thresh ),
+        rosetta_score_at_least_( rosetta_score_at_least ),
+        rosetta_score_at_most_( rosetta_score_at_most )
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd );
+
+private:
+    float rosetta_score_fraction_;
+    float rosetta_score_then_min_below_thresh_;
+    int rosetta_score_at_least_;
+    int rosetta_score_at_most_;
+
+};
+
+struct FilterForRosettaMinTask : public AnyPointTask {
+
+    FilterForRosettaMinTask( float rosetta_min_fraction ) :
+    rosetta_min_fraction_( rosetta_min_fraction )
+    {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd );
+
+private:
+    float rosetta_min_fraction_;
+
+};
+
+
 
 struct RosettaScoreTask : public SearchPointWithRotsTask {
 
@@ -61,69 +150,6 @@ private:
 
 };
 
-struct FilterForRosettaScoreTask : public SearchPointWithRotsTask {
-
-    FilterForRosettaScoreTask(
-        float rosetta_score_fraction,
-        float rosetta_score_then_min_below_thresh,
-        int rosetta_score_at_least,
-        int rosetta_score_at_most
-        ) :
-        rosetta_score_fraction_( rosetta_score_fraction ),
-        rosetta_score_then_min_below_thresh_( rosetta_score_then_min_below_thresh ),
-        rosetta_score_at_least_( rosetta_score_at_least ),
-        rosetta_score_at_most_( rosetta_score_at_most )
-        {}
-
-    shared_ptr<std::vector<SearchPointWithRots>>
-    return_search_point_with_rotss( 
-        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-private:
-    float rosetta_score_fraction_;
-    float rosetta_score_then_min_below_thresh_;
-    int rosetta_score_at_least_;
-    int rosetta_score_at_most_;
-
-};
-
-struct FilterForRosettaMinTask : public SearchPointWithRotsTask {
-
-    FilterForRosettaMinTask( float rosetta_min_fraction ) :
-    rosetta_min_fraction_( rosetta_min_fraction )
-    {}
-
-    shared_ptr<std::vector<SearchPointWithRots>>
-    return_search_point_with_rotss( 
-        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-private:
-    float rosetta_min_fraction_;
-
-};
-
-// struct RedundancyFilterForRosettaScoreTask : public SearchPointWithRotsTask {
-
-//     RedundancyFilterForRosettaScoreTask( int n_per_block, float redundancy_mag ) :
-//         n_per_block_( n_per_block ),
-//         redundancy_mag_( redundancy_mag )
-//     {}
-
-//     shared_ptr<std::vector<SearchPointWithRots>>
-//     return_search_point_with_rotss( 
-//         shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-//         RifDockData & rdd, 
-//         ProtocolData & pd );
-
-// private:
-//     int n_per_block_;
-//     float redundancy_mag_;
-
-// };
 
 void
 rosetta_score_inner( 

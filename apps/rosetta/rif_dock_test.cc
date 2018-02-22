@@ -717,6 +717,9 @@ int main(int argc, char *argv[]) {
 
 			if ( opt.hack_pack ) {
 				task_list.push_back(make_shared<FilterForHackPackTask>(
+					opt.hack_pack_frac,
+					rdd.packopts.pack_n_iters,
+					rdd.packopts.pack_iter_mult
 					));
 				task_list.push_back(make_shared<HackPackTask>( 
 					final_resl, 

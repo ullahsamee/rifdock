@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/task/SearchPointWithRotsTask.hh>
+#include <riflib/task/AnyPointTask.hh>
 
 #include <string>
 #include <vector>
@@ -21,6 +22,53 @@
 
 namespace devel {
 namespace scheme {
+
+struct FilterForHackPackTask : public AnyPointTask {
+
+    FilterForHackPackTask(
+        float hack_pack_frac,
+        int pack_n_iters,
+        float pack_iter_mult
+        ) :
+        hack_pack_frac_( hack_pack_frac ),
+        pack_n_iters_( pack_n_iters ),
+        pack_iter_mult_( pack_iter_mult )
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ); // override
+
+private:
+    float hack_pack_frac_;
+    int pack_n_iters_;
+    float pack_iter_mult_;
+
+};
+
 
 struct HackPackTask : public SearchPointWithRotsTask {
 
@@ -36,7 +84,6 @@ struct HackPackTask : public SearchPointWithRotsTask {
         ProtocolData & pd ) override;
 
 
-
 private:
     int resl_;
     float global_score_cut_;
@@ -44,17 +91,6 @@ private:
 
 };
 
-struct FilterForHackPackTask : public SearchPointWithRotsTask {
-
-    FilterForHackPackTask() {}
-
-    shared_ptr<std::vector<SearchPointWithRots>>
-    return_search_point_with_rotss( 
-        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-};
 
 
 

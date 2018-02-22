@@ -22,27 +22,47 @@ namespace devel {
 namespace scheme {
 
 
-shared_ptr<std::vector<SearchPointWithRots>>
+shared_ptr<std::vector<SearchPoint>> 
+FilterForHackPackTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
 FilterForHackPackTask::return_search_point_with_rotss( 
     shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
     RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterForHackPackTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterForHackPackTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
     ProtocolData & pd ) {
 
-
     size_t n_packsamp = 0;
-    for( n_packsamp; n_packsamp < search_point_with_rotss->size(); ++n_packsamp ){
-        if( (*search_point_with_rotss)[n_packsamp].score > 0 ) break;
+    for( n_packsamp; n_packsamp < any_points->size(); ++n_packsamp ){
+        if( (*any_points)[n_packsamp].score > 0 ) break;
     }
     
     pd.npack = std::min( n_packsamp, (size_t)(pd.total_search_effort *
-        ( rdd.opt.hack_pack_frac / (rdd.packopts.pack_n_iters*rdd.packopts.pack_iter_mult)) ) );
+        ( hack_pack_frac_ / (pack_n_iters_*pack_iter_mult_)) ) );
 
-    search_point_with_rotss->resize( pd.npack );
+    any_points->resize( pd.npack );
 
-    return search_point_with_rotss;
+    return any_points;
 }
-
-
     
 
 shared_ptr<std::vector<SearchPointWithRots>>

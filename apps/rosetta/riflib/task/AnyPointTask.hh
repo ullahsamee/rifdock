@@ -46,13 +46,36 @@ struct AnyPointTask : public Task {
     shared_ptr<std::vector<RifDockResult>> return_rif_dock_results( shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, RifDockData & rdd, ProtocolData & pd ) override;
     virtual shared_ptr<std::vector<RifDockResult>> return_rif_dock_results( shared_ptr<std::vector<RifDockResult>> rif_dock_results, RifDockData & rdd, ProtocolData & pd ) = 0;
 
+// Here are the declarations for the above-not-supposed-to-be-virtual functions
+
+    // shared_ptr<std::vector<SearchPoint>> 
+    // return_search_points( 
+    //     shared_ptr<std::vector<SearchPoint>> search_points, 
+    //     RifDockData & rdd, 
+    //     ProtocolData & pd ) override;
+
+    // shared_ptr<std::vector<SearchPointWithRots>> 
+    // return_search_point_with_rotss( 
+    //     shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    //     RifDockData & rdd, 
+    //     ProtocolData & pd ) override;
+
+    // shared_ptr<std::vector<RifDockResult>> 
+    // return_rif_dock_results( 
+    //     shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    //     RifDockData & rdd, 
+    //     ProtocolData & pd ) override;
+
 
 // C++ standard doesn't allow this, but I declare the following syntax as part of the class
 
     // template<class AnyPoint>
     // virtual
     // shared_ptr<std::vector<AnyPoint>>
-    // return_any_points( shared_ptr<std::vector<AnyPoint>> any_points, RifDockData & rdd, ProtocolData & pd ) = 0;
+    // return_any_points( 
+    //     shared_ptr<std::vector<AnyPoint>> any_points, 
+    //     RifDockData & rdd, 
+    //     ProtocolData & pd ) = 0;
 
     TaskType get_task_type() const { return AnyPointTaskType; }
 
