@@ -66,6 +66,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, redundancy_filter_mag )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, filter_seeding_positions_separately )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, filter_scaffolds_separately )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, force_output_if_close_to_input )
 	OPT_1GRP_KEY(  Integer     , rif_dock, force_output_if_close_to_input_num )
@@ -235,6 +237,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
+			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", false );
+			NEW_OPT(  rif_dock::filter_scaffolds_separately, "Redundancy filter each scaffold separately", true );
 
 			NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
 			NEW_OPT(  rif_dock::force_output_if_close_to_input_num, "" , 0 );
@@ -427,6 +431,8 @@ struct RifDockOpt
 	float       upweight_iface                       ;
 	float       upweight_multi_hbond                 ;
 	float       redundancy_filter_mag                ;
+	bool        filter_seeding_positions_separately  ;
+	bool        filter_scaffolds_separately          ;
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
 	int         n_pdb_out                            ;
@@ -577,6 +583,8 @@ struct RifDockOpt
 
 		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
+		filter_seeding_positions_separately    = option[rif_dock::filter_seeding_positions_separately   ]();
+		filter_scaffolds_separately            = option[rif_dock::filter_scaffolds_separately           ]();
 		rotrf_oversample                       = option[rif_dock::rotrf_oversample                      ]();
 		rotrf_resl                             = option[rif_dock::rotrf_resl                            ]();
 		rotrf_spread                           = option[rif_dock::rotrf_spread                          ]();

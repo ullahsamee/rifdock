@@ -30,16 +30,16 @@ struct CompileAndFilterResultsTask : public RifDockResultTask {
         float redundancy_mag,
         int force_output_if_close_to_input_num,
         float force_output_if_close_to_input,
-        bool block_by_scaffold,
-        bool block_by_seed
+        bool filter_seeding_positions_separately,
+        bool filter_scaffolds_separately
          ) : 
         resl_( resl ),
         n_per_block_( n_per_block ),
         redundancy_mag_( redundancy_mag ),
         force_output_if_close_to_input_num_( force_output_if_close_to_input_num ),
         force_output_if_close_to_input_( force_output_if_close_to_input ),
-        block_by_scaffold_( block_by_scaffold ),
-        block_by_seed_( block_by_seed )
+        filter_seeding_positions_separately_( filter_seeding_positions_separately ),
+        filter_scaffolds_separately_( filter_scaffolds_separately )
     {}
 
     shared_ptr<std::vector<RifDockResult>>
@@ -69,8 +69,8 @@ private:
     float redundancy_mag_;
     int force_output_if_close_to_input_num_;
     float force_output_if_close_to_input_;
-    bool block_by_scaffold_;
-    bool block_by_seed_;
+    bool filter_seeding_positions_separately_;
+    bool filter_scaffolds_separately_;
 
 
 };

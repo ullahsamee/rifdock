@@ -769,8 +769,8 @@ int main(int argc, char *argv[]) {
 				opt.redundancy_filter_mag,
 				opt.force_output_if_close_to_input_num,
 				opt.force_output_if_close_to_input,
-				true,
-				true
+				opt.filter_seeding_positions_separately,
+				opt.filter_scaffolds_separately
 				));
 
 

@@ -165,7 +165,7 @@ awful_compile_output_helper_(
                     if( redundancy_filter_mag > 0.0001 ) {
                         selected_xforms.push_back( XRtriple {
                             xposition1, 
-                            sp.index.scaffold_index,
+                            sp.index,
                             (int64_t)selected_results.size()
                         } );
                     }
@@ -206,21 +206,25 @@ CompileAndFilterResultsTask::return_rif_dock_results(
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    typedef tmplXRtriple<EigenXform, ScaffoldIndex> XRtriple;
+    typedef tmplXRtriple<EigenXform, RifDockIndex> XRtriple;
 
     int64_t Nout = packed_results.size(); 
 
     std::vector< std::vector< RifDockResult > > allresults_pt( omp_max_threads() );
 
+    SelectiveRifDockIndexHasher   hasher( false, filter_seeding_positions_separately_, filter_scaffolds_separately_ );
+    SelectiveRifDockIndexEquater equater( false, filter_seeding_positions_separately_, filter_scaffolds_separately_ );
 
-    std::unordered_map< ScaffoldIndex, std::vector< XRtriple > > selected_xforms_map;  // default value here needs to be .reserve(65536)
-    std::unordered_map< ScaffoldIndex, int > nclose_map; // default value here needs to be 0
+    std::unordered_map< RifDockIndex, std::vector< XRtriple >, SelectiveRifDockIndexHasher, SelectiveRifDockIndexEquater > 
+        selected_xforms_map(1000, hasher, equater);  // default value here needs to be .reserve(65536)
+    std::unordered_map< RifDockIndex, int, SelectiveRifDockIndexHasher, SelectiveRifDockIndexEquater > 
+        nclose_map(1000, hasher, equater); // default value here needs to be 0
 
     for ( uint64_t isamp = 0; isamp < Nout; isamp++ ) {
-        ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
-        if ( selected_xforms_map.count(si) == 0 ) {
-            selected_xforms_map[ si ].reserve(65536); // init big to reduce liklihood of resizes
-            nclose_map[ si ] = 0;
+        RifDockIndex rdi = packed_results[isamp].index;
+        if ( selected_xforms_map.count(rdi) == 0 ) {
+            selected_xforms_map[ rdi ].reserve(65536); // init big to reduce liklihood of resizes
+            nclose_map[ rdi ] = 0;
         }
     }
 
@@ -238,9 +242,10 @@ CompileAndFilterResultsTask::return_rif_dock_results(
     for( int64_t isamp = 0; isamp < Nout_singlethread; ++isamp ){
         if( isamp%out_interval==0 ){ cout << '*'; cout.flush(); }
 
+        RifDockIndex rdi = packed_results[isamp].index;
         ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
-        std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( si );
-        int & nclose = nclose_map.at( si );
+        std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( rdi );
+        int & nclose = nclose_map.at( rdi );
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
         float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
         EigenXform scaffold_perturb = sdc->scaffold_perturb;
@@ -270,9 +275,10 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         try{
             if( isamp%out_interval==0 ){ cout << '*'; cout.flush(); }
 
+            RifDockIndex rdi = packed_results[isamp].index;
             ScaffoldIndex si = packed_results[isamp].index.scaffold_index;
-            std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( si );
-            int & nclose = nclose_map.at( si );
+            std::vector< XRtriple > & selected_xforms = selected_xforms_map.at( rdi );
+            int & nclose = nclose_map.at( rdi );
             ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
             float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
             EigenXform scaffold_perturb = sdc->scaffold_perturb;
