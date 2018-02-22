@@ -32,7 +32,7 @@ hsearch_original(
     using namespace devel::scheme;
 
 
-    ScaffoldIndex si = scaffold_index_default_value( ScaffoldIndex());
+    ScaffoldIndex si = ScaffoldIndex();
     ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
     Eigen::Vector3f scaffold_center = sdc->scaffold_center;
@@ -45,7 +45,7 @@ hsearch_original(
     std::vector< std::vector< SearchPoint > > samples( rdd.RESLS.size() );
     samples[0].resize( rdd.director->size(0, RifDockIndex()).nest_index );
     for( uint64_t i = 0; i < rdd.director->size(0, RifDockIndex()).nest_index; ++i ) samples[0][i] 
-        = SearchPoint( RifDockIndex( i, 0, scaffold_index_default_value( ScaffoldIndex())) );
+        = SearchPoint( RifDockIndex( i, 0, ScaffoldIndex()) );
 
     d.unique_scaffolds.resize(1);
     d.unique_scaffolds.front() = si;

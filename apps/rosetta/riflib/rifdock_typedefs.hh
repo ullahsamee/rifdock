@@ -95,11 +95,10 @@ struct RifDockIndex {
     ScaffoldIndex scaffold_index;
 
     RifDockIndex() :
-        nest_index(::scheme::kinematics::director_index_default_value()) 
-        {
-            seeding_index = 0;
-            scaffold_index = ::scheme::scaffold::scaffold_index_default_value(scaffold_index);
-        }
+        nest_index(0),
+        seeding_index(0),
+        scaffold_index(ScaffoldIndex()) {}
+        
 
     RifDockIndex( 
         uint64_t nest_index_in,

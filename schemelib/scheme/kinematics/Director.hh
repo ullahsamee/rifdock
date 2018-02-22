@@ -319,7 +319,6 @@ struct ScaffoldDirector
 
 	// This doesn't actually work, the format of ScaffoldProvider.size() can't be returned in this format
 	virtual BigIndex size(int resl, BigIndex sizes) const override {
-		sizes.scaffold_index = scaffold::scaffold_index_default_value(ScaffoldIndex());
 		return sizes;
 	}
 
@@ -331,13 +330,6 @@ template< class Position, class ScaffoldProvider, class RifDockIndex >
 std::ostream & operator << ( std::ostream & out, ScaffoldDirector<Position,ScaffoldProvider,RifDockIndex> const & d ){
 	out << "ScaffoldNestDirector ";
 	return out;
-}
-
-
-inline
-uint64_t
-director_index_default_value() {
-	return 0;
 }
 
 

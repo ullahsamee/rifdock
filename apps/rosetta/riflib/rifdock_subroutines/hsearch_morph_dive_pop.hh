@@ -48,7 +48,6 @@ hsearch_morph_dive_pop(
 
 
 
-using ::scheme::scaffold::BOGUS_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
 

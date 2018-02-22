@@ -20,7 +20,7 @@
 #include <boost/any.hpp>
 #include <boost/format.hpp>
 
-using ::scheme::scaffold::BOGUS_INDEX;
+using ::scheme::scaffold::BAD_SCAFFOLD_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
 
@@ -66,9 +66,9 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     mmember.conformation = conformation;
 
     mmember.tree_relation.depth = 0;
-    mmember.tree_relation.parent_member = BOGUS_INDEX;
-    mmember.tree_relation.first_child = BOGUS_INDEX;
-    mmember.tree_relation.last_child = BOGUS_INDEX;
+    mmember.tree_relation.parent_member = BAD_SCAFFOLD_INDEX;
+    mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+    mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
 
     add_morph_member( mmember );
@@ -192,8 +192,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
                 mmember.tree_relation.depth = 1;
                 mmember.tree_relation.parent_member = 0;
-                mmember.tree_relation.first_child = BOGUS_INDEX;
-                mmember.tree_relation.last_child = BOGUS_INDEX;
+                mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+                mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
                 mmember.morph_history.push_back(rule);
 
                 pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
@@ -272,8 +272,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
             mmember.tree_relation.depth = 1;
             mmember.tree_relation.parent_member = 0;
-            mmember.tree_relation.first_child = BOGUS_INDEX;
-            mmember.tree_relation.last_child = BOGUS_INDEX;
+            mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+            mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
             // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
 
@@ -295,8 +295,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
         mmember.conformation = parent_mm.conformation;
         mmember.tree_relation.depth = 1;
         mmember.tree_relation.parent_member = 0;
-        mmember.tree_relation.first_child = BOGUS_INDEX;
-        mmember.tree_relation.last_child = BOGUS_INDEX;
+        mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+        mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
         add_morph_member( mmember );
     }
@@ -319,8 +319,8 @@ MorphingScaffoldProvider::add_morph_member( MorphMember mmember ) {
     map_[depth].push_back( mmember );
 
     // Tree indexes are 16 bit so be careful
-    runtime_assert(depth < BOGUS_INDEX);
-    runtime_assert(map_[depth].size() < BOGUS_INDEX);
+    runtime_assert(depth < BAD_SCAFFOLD_INDEX);
+    runtime_assert(map_[depth].size() < BAD_SCAFFOLD_INDEX);
     return TreeIndex(depth, map_[depth].size());
 }
 

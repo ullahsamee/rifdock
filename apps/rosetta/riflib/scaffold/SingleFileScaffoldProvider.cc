@@ -89,7 +89,7 @@ SingleFileScaffoldProvider::get_scaffold_index_limits() const {
 
 void 
 SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
-    ScaffoldDataCacheOP cache = get_data_cache_slow( scaffold_index_default_value( ScaffoldIndex()) );
+    ScaffoldDataCacheOP cache = get_data_cache_slow( ScaffoldIndex());
     if ( cache->conformation_is_fa != fa ) {
         conformation_ = make_conformation_from_data_cache(cache, fa);
     }
@@ -98,7 +98,7 @@ SingleFileScaffoldProvider::set_fa_mode( bool fa ) {
 
 ::scheme::scaffold::TreeIndex 
 SingleFileScaffoldProvider::get_representative_scaffold_index() {
-    return scaffold_index_default_value( ScaffoldIndex());
+    return ScaffoldIndex();
 }
 
 
