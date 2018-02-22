@@ -8,6 +8,8 @@
 
 #include <riflib/types.hh>
 
+#include <utility/io/ozstream.hh>
+
 #include <core/conformation/Residue.hh>
 #include <core/id/AtomID.hh>
 #include <core/pose/Pose.hh>
@@ -257,6 +259,7 @@ struct RifDockData {
         omp_lock_t & dump_lock;
     #endif
 
+    utility::io::ozstream & dokout;
     ScaffoldProviderOP scaffold_provider;
 };
 
@@ -269,6 +272,9 @@ struct ProtocolData {
     double time_rif;
     double time_pck; 
     double time_ros;
+
+    // rosetta score
+
 
 
     ProtocolData() :

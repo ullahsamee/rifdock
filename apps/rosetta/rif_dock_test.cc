@@ -92,6 +92,7 @@
 	#include <riflib/rifdock_tasks/HackPackTasks.hh>
 	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
 	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
+	#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
 
 
 
@@ -713,6 +714,7 @@ int main(int argc, char *argv[]) {
     					#ifdef USE_OPENMP
  							dump_lock,
  						#endif
+ 						dokout,
  						scaffold_provider
 			};
 
@@ -771,6 +773,9 @@ int main(int argc, char *argv[]) {
 				opt.force_output_if_close_to_input,
 				opt.filter_seeding_positions_separately,
 				opt.filter_scaffolds_separately
+				));
+
+			task_list.push_back(make_shared<OutputResultsTask>(
 				));
 
 
@@ -842,23 +847,10 @@ int main(int argc, char *argv[]) {
 
 
 
-			std::cout << " selected_results.size(): " << selected_results.size() << std::endl;
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "timing info" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			std::cout<<"total RIF     time: "<<KMGT(time_rif)<<" fraction: "<<time_rif/(time_rif+time_pck+time_ros)<<std::endl;
-			std::cout<<"total Pack    time: "<<KMGT(time_pck)<<" fraction: "<<time_pck/(time_rif+time_pck+time_ros)<<std::endl;
-			std::cout<<"total Rosetta time: "<<KMGT(time_ros)<<" fraction: "<<time_ros/(time_rif+time_pck+time_ros)<<std::endl;			
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-			output_results(selected_results, rdd, dokout, npack);
+			// output_results(selected_results, rdd, dokout, npack);
 			
 			}
 
