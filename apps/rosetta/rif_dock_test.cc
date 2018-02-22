@@ -89,8 +89,9 @@
 
 // Task system
 	#include <riflib/task/TaskProtocol.hh>
-	#include <riflib/rifdock_tasks/HackPackTask.hh>
-	#include <riflib/rifdock_tasks/RosettaScoreAndMin.hh>
+	#include <riflib/rifdock_tasks/HackPackTasks.hh>
+	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
+	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
 
 
 
@@ -762,6 +763,16 @@ int main(int argc, char *argv[]) {
 					));
 			}
 			
+			task_list.push_back(make_shared<CompileAndFilterResultsTask>(
+				final_resl,
+				opt.n_pdb_out,
+				opt.redundancy_filter_mag,
+				opt.force_output_if_close_to_input_num,
+				opt.force_output_if_close_to_input,
+				true,
+				true
+				));
+
 
 			TaskProtocol protocol( task_list );
 
@@ -818,31 +829,20 @@ int main(int argc, char *argv[]) {
 				ThreePointVectors results = protocol.run( input, rdd, pd );
 
 
-				packed_results = *results.search_point_with_rotss;
-				npack = pd.npack;
-				time_pck += pd.time_pck;
-				time_ros += pd.time_ros;
-
-			}
 
 
-			// if( do_rosetta_score && opt.hack_pack ){
+			std::vector< RifDockResult > & selected_results = *results.rif_dock_results;
+			npack = pd.npack;
+			time_pck += pd.time_pck;
+			time_ros += pd.time_ros;
 
-			// 	rosetta_rescore( packed_results, rdd, total_search_effort, time_ros );
-
-			// }
-
-
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "compile and filter results" ); ///////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			
-			std::vector< RifDockResult > selected_results, allresults;
-			compile_and_filter_results( packed_results, selected_results, allresults, rdd, opt.n_pdb_out, opt.redundancy_filter_mag );
+			
+			// compile_and_filter_results( packed_results, selected_results, allresults, rdd, opt.n_pdb_out, opt.redundancy_filter_mag );
 
 
 
-			std::cout << "allresults.size(): " << allresults.size() << " selected_results.size(): " << selected_results.size() << std::endl;
+			std::cout << " selected_results.size(): " << selected_results.size() << std::endl;
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "timing info" ); //////////////////////////////////////////////////////////////////////////////////////////////
@@ -857,13 +857,10 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-			BOOST_FOREACH( RifDockResult const & r, allresults ){
-				; // nothing with all results ATM
-			}
 
 			output_results(selected_results, rdd, dokout, npack);
 			
-			
+			}
 
 		} catch( std::exception const & ex ) {
 			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;

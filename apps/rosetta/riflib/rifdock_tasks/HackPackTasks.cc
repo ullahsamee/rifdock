@@ -8,7 +8,7 @@
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
 
-#include <riflib/rifdock_tasks/HackPackTask.hh>
+#include <riflib/rifdock_tasks/HackPackTasks.hh>
 
 #include <riflib/types.hh>
 

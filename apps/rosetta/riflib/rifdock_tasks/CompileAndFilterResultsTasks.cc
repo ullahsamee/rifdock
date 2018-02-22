@@ -1,22 +1,50 @@
 // -*- mode:c++;tab-width:2;indent-tabs-mode:t;show-trailing-whitespace:t;rm-trailing-spaces:t -*-
 // vi: set ts=2 noet:
+//
+// (c) Copyright Rosetta Commons Member Institutions.
+// (c) This file is part of the Rosetta software suite and is made available under license.
+// (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
+// (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
+// (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
 
-#ifndef INCLUDED_riflib_rifdock_subroutines_compile_and_filter_results_hh
-#define INCLUDED_riflib_rifdock_subroutines_compile_and_filter_results_hh
-
+#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/task/util.hh>
+#include <riflib/scaffold/ScaffoldDataCache.hh>
+
+#include <string>
+#include <vector>
 #include <unordered_map>
 
-
-using ::scheme::make_shared;
-using ::scheme::shared_ptr;
 
 
 namespace devel {
 namespace scheme {
+
+
+shared_ptr<std::vector<RifDockResult>>
+CompileAndFilterResultsTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss = search_point_with_rotss_from_rif_dock_results( rif_dock_results );
+    return return_rif_dock_results( search_point_with_rotss, rdd, pd );
+}
+
+
+shared_ptr<std::vector<RifDockResult>>
+CompileAndFilterResultsTask::return_rif_dock_results( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss = search_point_with_rotss_from_search_points( search_points );
+    return return_rif_dock_results( search_point_with_rotss, rdd, pd );
+}
+
 
 typedef int32_t intRot;
 
@@ -41,7 +69,7 @@ template<
     class ScaffoldIndex
 >
 void
-awful_compile_output_helper(
+awful_compile_output_helper_(
     int64_t isamp,
     int resl,
     std::vector< SearchPointWithRots > const & packed_results,
@@ -159,92 +187,32 @@ awful_compile_output_helper(
 
 
 
+shared_ptr<std::vector<RifDockResult>> 
+CompileAndFilterResultsTask::return_rif_dock_results( 
+    shared_ptr<std::vector<SearchPointWithRots>> packed_results_p, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
 
-/*
- this needs to get fixed
- the job of this code:
- (1) do redundancy filtering
- (2) build selected_results, allresults from packed_results
- could probably split these up?
-       packed_results is
-            struct SearchPointWithRots {
-                float score;
-                uint32_t prepack_rank;
-                uint64_t index;
-                shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
-                core::pose::PoseOP pose_ = nullptr;
-        allresults is
-            struct RifDockResult {
-                float dist0, packscore, nopackscore, rifscore, stericscore;
-                uint64_t isamp, scene_index;
-                uint32_t prepack_rank;
-                float cluster_score;
-                bool operator< ( RifDockResult const & o ) const { return packscore < o.packscore; }
-                shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
-                core::pose::PoseOP pose_ = nullptr;
-                size_t numrots() const { if(rotamers_==nullptr) return 0; return rotamers_->size(); }
-                std::vector< std::pair<intRot,intRot> > const & rotamers() const { assert(rotamers_!=nullptr); return *rotamers_; }
+    std::vector<SearchPointWithRots> & packed_results = *packed_results_p;
+    std::vector< RifDockResult > allresults;
+
+    shared_ptr<std::vector<RifDockResult>> selected_results_p = make_shared<std::vector<RifDockResult>>();
+    std::vector< RifDockResult > & selected_results = *selected_results_p;
+
+    using std::cout;
+    using std::endl;
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    print_header( "compile and filter results" ); ///////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-*/
-
-// template<class DirectorBase, class ScaffoldProvider>
-// struct CompileAndFilterResultsData {
-//     RifDockOpt & opt;
-//     std::vector<float> & RESLS;
-//     std::vector< devel::scheme::ScenePtr > & scene_pt;
-//     DirectorBase & director;
-//     float & target_redundancy_filter_rg;
-//     // Eigen::Vector3f & scaffold_center;
-//     omp_lock_t & dump_lock;
-//     std::vector< devel::scheme::ObjectivePtr > & objectives;
-//     // devel::scheme::EigenXform & scaffold_perturb;
-//     shared_ptr<ScaffoldProvider> scaffold_provider;
-// };
-
-
-void compile_and_filter_results( 
-        std::vector< SearchPointWithRots > & packed_results,
-        std::vector< RifDockResult > & selected_results, 
-        std::vector< RifDockResult > & allresults,
-        RifDockData & rdd,
-        int n_pdb_out,
-        float redundancy_filter_mag ) {
-
-
-    using namespace core::scoring;
-        using std::cout;
-        using std::endl;
-        using namespace devel::scheme;
-        typedef numeric::xyzVector<core::Real> Vec;
-        typedef numeric::xyzMatrix<core::Real> Mat;
-        // typedef numeric::xyzTransform<core::Real> Xform;
-        using ObjexxFCL::format::F;
-        using ObjexxFCL::format::I;
-        using devel::scheme::print_header;
-        using ::devel::scheme::RotamerIndex;
-
-    typedef ::scheme::util::SimpleArray<3,float> F3;
-    typedef ::scheme::util::SimpleArray<3,int> I3;
-
-    typedef _RifDockResult<DirectorBase> RifDockResult;
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
     typedef tmplXRtriple<EigenXform, ScaffoldIndex> XRtriple;
 
-
-
-    int64_t Nout = packed_results.size(); //samples.back().size(); //std::min(samples.back().size(),(size_t)1000000);
-    // Nout = std::min( (int64_t)rdd.opt.n_result_limit, Nout );
+    int64_t Nout = packed_results.size(); 
 
     std::vector< std::vector< RifDockResult > > allresults_pt( omp_max_threads() );
 
-    //////////////////// brian
-    // old
-    // std::vector< XRtriple > selected_xforms;
-    // selected_xforms.reserve(65536); // init big to reduce liklihood of resizes
-    // float redundancy_filter_mag = rdd.opt.redundancy_filter_mag;
-    // int nclose = 0;
-    // new
+
     std::unordered_map< ScaffoldIndex, std::vector< XRtriple > > selected_xforms_map;  // default value here needs to be .reserve(65536)
     std::unordered_map< ScaffoldIndex, int > nclose_map; // default value here needs to be 0
 
@@ -259,11 +227,10 @@ void compile_and_filter_results(
     ////////////////////
 
 
-    int nclosemax      = rdd.opt.force_output_if_close_to_input_num;
-    float nclosethresh = rdd.opt.force_output_if_close_to_input;
-    // int n_pdb_out = rdd.opt.n_pdb_out;
-    // float redundancy_filter_mag = rdd.opt.redundancy_filter_mag;
-    std::cout << "redundancy_filter_mag " << redundancy_filter_mag << "A \"rmsd\"" << std::endl;
+    int nclosemax      = force_output_if_close_to_input_num_;
+    float nclosethresh = force_output_if_close_to_input_;
+
+    std::cout << "redundancy_filter_mag " << redundancy_mag_ << "A \"rmsd\"" << std::endl;
     int64_t Nout_singlethread = std::min( (int64_t)10000, Nout );
 
     std::cout << "going throuth 10K results (1 thread): ";
@@ -279,10 +246,10 @@ void compile_and_filter_results(
         EigenXform scaffold_perturb = sdc->scaffold_perturb;
         Eigen::Vector3f scaffold_center = sdc->scaffold_center;
                                         
-        awful_compile_output_helper< EigenXform, ScenePtr, ObjectivePtr >(
-            isamp, rdd.RESLS.size()-1, packed_results, rdd.scene_pt, rdd.director,
-            redundancy_filter_rg, redundancy_filter_mag, scaffold_center,
-            allresults_pt, selected_results, selected_xforms, n_pdb_out,
+        awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
+            isamp, resl_, packed_results, rdd.scene_pt, rdd.director,
+            redundancy_filter_rg, redundancy_mag_, scaffold_center,
+            allresults_pt, selected_results, selected_xforms, n_per_block_,
             #ifdef USE_OPENMP
                 rdd.dump_lock,
             #endif
@@ -311,10 +278,10 @@ void compile_and_filter_results(
             EigenXform scaffold_perturb = sdc->scaffold_perturb;
             Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
-            awful_compile_output_helper< EigenXform, ScenePtr, ObjectivePtr >(
-                isamp, rdd.RESLS.size()-1, packed_results, rdd.scene_pt, rdd.director,
-                redundancy_filter_rg, redundancy_filter_mag, scaffold_center,
-                allresults_pt, selected_results, selected_xforms, n_pdb_out,
+            awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
+                isamp, resl_, packed_results, rdd.scene_pt, rdd.director,
+                redundancy_filter_rg, redundancy_mag_, scaffold_center,
+                allresults_pt, selected_results, selected_xforms, n_per_block_,
                 #ifdef USE_OPENMP
                     rdd.dump_lock,
                 #endif
@@ -337,8 +304,12 @@ void compile_and_filter_results(
     }
     __gnu_parallel::sort( allresults.begin(), allresults.end() );
 
+
+    return selected_results_p;
+
 }
 
-}}
 
-#endif
+
+
+}}

@@ -65,7 +65,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, upweight_multi_hbond )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
 
-	OPT_1GRP_KEY(  Integer     , rif_dock, n_result_limit )
 	OPT_1GRP_KEY(  Real        , rif_dock, redundancy_filter_mag )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, force_output_if_close_to_input )
@@ -234,8 +233,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
 			NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
-
-			NEW_OPT(  rif_dock::n_result_limit, "" , 2000000000 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
 
@@ -429,7 +426,6 @@ struct RifDockOpt
 	float       hbond_weight                         ;
 	float       upweight_iface                       ;
 	float       upweight_multi_hbond                 ;
-	int         n_result_limit                       ;
 	float       redundancy_filter_mag                ;
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
@@ -591,7 +587,6 @@ struct RifDockOpt
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
 		upweight_iface                         = option[rif_dock::upweight_iface                        ]();
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
-		n_result_limit                         = option[rif_dock::n_result_limit                        ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();

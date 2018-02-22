@@ -8,7 +8,7 @@
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
 
-#include <riflib/rifdock_tasks/RosettaScoreAndMin.hh>
+#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
 
 #include <riflib/types.hh>
 #include <riflib/scaffold/MultithreadPoseCloner.hh>

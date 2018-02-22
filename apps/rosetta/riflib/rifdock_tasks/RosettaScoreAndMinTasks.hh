@@ -7,8 +7,8 @@
 // (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
 // (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
-#ifndef INCLUDED_riflib_rifdock_tasks_RosettaScoreAndMin_hh
-#define INCLUDED_riflib_rifdock_tasks_RosettaScoreAndMin_hh
+#ifndef INCLUDED_riflib_rifdock_tasks_RosettaScoreAndMinTasks_hh
+#define INCLUDED_riflib_rifdock_tasks_RosettaScoreAndMinTasks_hh
 
 #include <riflib/types.hh>
 #include <riflib/rifdock_subroutines/util.hh>
@@ -33,7 +33,7 @@ struct RosettaScoreTask : public SearchPointWithRotsTask {
     return_search_point_with_rotss( 
         shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
         RifDockData & rdd, 
-        ProtocolData & pd );
+        ProtocolData & pd ) override;
 
 
 
@@ -53,7 +53,7 @@ struct RosettaMinTask : public SearchPointWithRotsTask {
     return_search_point_with_rotss( 
         shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
         RifDockData & rdd, 
-        ProtocolData & pd );
+        ProtocolData & pd ) override;
 
 
 private:
@@ -79,7 +79,7 @@ struct FilterForRosettaScoreTask : public SearchPointWithRotsTask {
     return_search_point_with_rotss( 
         shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
         RifDockData & rdd, 
-        ProtocolData & pd );
+        ProtocolData & pd ) override;
 
 private:
     float rosetta_score_fraction_;
@@ -99,7 +99,7 @@ struct FilterForRosettaMinTask : public SearchPointWithRotsTask {
     return_search_point_with_rotss( 
         shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
         RifDockData & rdd, 
-        ProtocolData & pd );
+        ProtocolData & pd ) override;
 
 private:
     float rosetta_min_fraction_;
