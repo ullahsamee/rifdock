@@ -740,8 +740,16 @@ int main(int argc, char *argv[]) {
 
 			if ( do_rosetta_score ) {
 
-				if (opt.zrosetta_filter_before) {
-
+				if (opt.rosetta_filter_before) {
+					task_list.push_back(make_shared<CompileAndFilterResultsTask>(
+						final_resl,
+						opt.rosetta_filter_n_per_scaffold,
+						opt.rosetta_filter_redundancy_mag,
+						0,
+						0,
+						opt.filter_seeding_positions_separately,
+						opt.filter_scaffolds_separately
+						));
 				} else {
 					task_list.push_back(make_shared<FilterForRosettaScoreTask>(
 						opt.rosetta_score_fraction, 
