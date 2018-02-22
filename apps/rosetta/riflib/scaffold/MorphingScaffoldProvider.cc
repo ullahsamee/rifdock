@@ -360,11 +360,13 @@ MorphingScaffoldProvider::get_scaffold_index_limits() const {
 
 void 
 MorphingScaffoldProvider::set_fa_mode( bool fa ) {
-    for ( uint64_t i = 0; i < map_[1].size(); i++) {
-        MorphMember & mmember = get_morph_member( TreeIndex(1, i) );
-        ScaffoldDataCacheOP cache = mmember.conformation->cache_data_;
-        if ( cache->conformation_is_fa != fa ) {
-            mmember.conformation = make_conformation_from_data_cache(cache, fa);
+    for ( uint64_t depth = 0; depth < map_.size(); depth++ ) {
+        for ( uint64_t i = 0; i < map_[depth].size(); i++) {
+            MorphMember & mmember = get_morph_member( TreeIndex(depth, i) );
+            ScaffoldDataCacheOP cache = mmember.conformation->cache_data_;
+            if ( cache->conformation_is_fa != fa ) {
+                mmember.conformation = make_conformation_from_data_cache(cache, fa);
+            }
         }
     }
 

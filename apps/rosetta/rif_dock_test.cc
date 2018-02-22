@@ -89,6 +89,7 @@
 
 // Task system
 	#include <riflib/task/TaskProtocol.hh>
+	#include <riflib/rifdock_tasks/SetFaModeTasks.hh>
 	#include <riflib/rifdock_tasks/HackPackTasks.hh>
 	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
 	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
@@ -561,14 +562,15 @@ int main(int argc, char *argv[]) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
 
-
+			bool needs_scaffold_director = false;
 
 			ScaffoldProviderOP scaffold_provider = get_scaffold_provider(
 				iscaff,
 				rot_index_p,
 				opt,
 				make2bopts,
-				rotrf_table_manager);
+				rotrf_table_manager,
+				needs_scaffold_director);
 
 			// General info about a generic scaffold for debugging, cout, and the director
 			ScaffoldDataCacheOP test_data_cache = scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
@@ -650,32 +652,14 @@ int main(int argc, char *argv[]) {
 
 				std::vector<DirectorBase> director_list;
 				director_list.push_back( nest_director );  // Nest director must come first!!!!
-				director_list.push_back( scaff_director );
+				if ( needs_scaffold_director ) {
+					director_list.push_back( scaff_director );
+				}
 
 				director = make_shared<RifDockDirector>(director_list);
 			}
 
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    		test_data_cache->setup_onebody_tables( rot_index_p, opt);
-			cout << std::endl;
-			cout << "scores for scaffold in original position: " << std::endl;
-			{
-				EigenXform x(EigenXform::Identity());
-				x.translation() = rep_scaffold_center;
-				director->set_scene( RifDockIndex(), 0, *scene_minimal);
-				scene_minimal->set_position(1,x);
-				for(int i = 0; i < RESLS.size(); ++i){
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
-					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
-				}
-
-			}
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();
@@ -711,9 +695,39 @@ int main(int argc, char *argv[]) {
 			ProtocolData pd;
 
 
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+			global_set_fa_mode( false, rdd );
+    		test_data_cache->setup_onebody_tables( rot_index_p, opt);
+			cout << std::endl;
+			cout << "scores for scaffold in original position: " << std::endl;
+			{
+				EigenXform x(EigenXform::Identity());
+				x.translation() = rep_scaffold_center;
+				director->set_scene( RifDockIndex(), 0, *scene_minimal);
+				scene_minimal->set_position(1,x);
+				for(int i = 0; i < RESLS.size(); ++i){
+					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					     << F( 7, 3, sc[0]       ) << " "
+					     << F( 7, 3, sc[1]       ) << endl;
+				}
+
+			}
+
+
+
+
 			int final_resl = rdd.RESLS.size() - 1;
 
 			std::vector<shared_ptr<Task>> task_list;
+
+			task_list.push_back(make_shared<SetFaModeTask>(
+				true
+				));
 
 			if ( opt.hack_pack ) {
 				task_list.push_back(make_shared<FilterForHackPackTask>(
@@ -813,7 +827,7 @@ int main(int argc, char *argv[]) {
 
 
 
-				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
+				// scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
 
 
 				pd.total_search_effort = total_search_effort;

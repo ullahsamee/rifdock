@@ -28,11 +28,13 @@ get_scaffold_provider(
         shared_ptr< RotamerIndex > rot_index_p, 
         RifDockOpt const & opt,
         MakeTwobodyOpts const & make2bopts,
-        ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager ) {
+        ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager,
+        bool & needs_scaffold_director ) {
 
 
     if (opt.scaff_search_mode == "default") {
 
+        needs_scaffold_director = false;
         return make_shared<SingleFileScaffoldProvider>(
                 iscaff,
                 rot_index_p,
@@ -42,6 +44,7 @@ get_scaffold_provider(
 
     } else if (opt.scaff_search_mode == "morph_dive_pop") {
 
+        needs_scaffold_director = true;
         return make_shared<MorphingScaffoldProvider>(
                 iscaff,
                 rot_index_p,
@@ -51,6 +54,7 @@ get_scaffold_provider(
 
     } else if (opt.scaff_search_mode == "nineA_baseline") {
 
+        needs_scaffold_director = true;
         return make_shared<Baseline9AScaffoldProvider>(
                 iscaff,
                 rot_index_p,
