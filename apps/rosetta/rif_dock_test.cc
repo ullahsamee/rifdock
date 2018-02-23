@@ -15,49 +15,47 @@
 	#include <boost/lexical_cast.hpp>
 	// #include <boost/random/mersenne_twister.hpp>
 
-	#include <core/id/AtomID.hh>
+	// #include <core/id/AtomID.hh>
 	#include <core/import_pose/import_pose.hh>
         #include <core/chemical/ChemicalManager.hh>
         #include <core/chemical/ResidueTypeSet.hh>
 	#include <core/pose/Pose.hh>
 	#include <core/pose/PDBInfo.hh>
 	#include <core/pose/util.hh>
-	#include <core/scoring/EnergyGraph.hh>
-	#include <core/scoring/ScoreFunction.hh>
-	#include <core/scoring/ScoreFunctionFactory.hh>
-	#include <core/scoring/hbonds/HBondOptions.hh>
-	#include <core/scoring/methods/EnergyMethodOptions.hh>
-	#include <core/conformation/ResidueFactory.hh>
-	#include <core/kinematics/MoveMap.hh>
-	#include <core/scoring/Energies.hh>
-    #include <protocols/minimization_packing/MinMover.hh>
+	// #include <core/scoring/EnergyGraph.hh>
+	// #include <core/scoring/ScoreFunction.hh>
+	// #include <core/scoring/ScoreFunctionFactory.hh>
+	// #include <core/scoring/hbonds/HBondOptions.hh>
+	// #include <core/scoring/methods/EnergyMethodOptions.hh>
+	// #include <core/conformation/ResidueFactory.hh>
+	// #include <core/kinematics/MoveMap.hh>
+	// #include <core/scoring/Energies.hh>
+ //    #include <protocols/minimization_packing/MinMover.hh>
 
 	#include <devel/init.hh>
-	#include <riflib/RotamerGenerator.hh>
-	#include <riflib/rosetta_field.hh>
+	// #include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
-	#include <riflib/rotamer_energy_tables.hh>
 
 	// #include <numeric/alignment/QCP_Kernel.hh>
 	#include <parallel/algorithm>
 	#include <exception>
 	#include <stdexcept>
 
-	#include <scheme/actor/Atom.hh>
-	#include <scheme/actor/BackboneActor.hh>
-	#include <scheme/actor/VoxelActor.hh>
+	// #include <scheme/actor/Atom.hh>
+	// #include <scheme/actor/BackboneActor.hh>
+	// #include <scheme/actor/VoxelActor.hh>
 	#include <scheme/kinematics/Director.hh>
-	#include <scheme/kinematics/SceneBase.hh>
-	#include <scheme/nest/pmap/OriTransMap.hh>
-	#include <scheme/numeric/rand_xform.hh>
-	// #include <scheme/objective/ObjectiveFunction.hh>
-	#include <scheme/objective/voxel/FieldCache.hh>
+	// #include <scheme/kinematics/SceneBase.hh>
+	// #include <scheme/nest/pmap/OriTransMap.hh>
+	// #include <scheme/numeric/rand_xform.hh>
+	// // #include <scheme/objective/ObjectiveFunction.hh>
+	// #include <scheme/objective/voxel/FieldCache.hh>
 	// #include <scheme/objective/voxel/VoxelArray.hh>
 	// #include <scheme/objective/hash/XformMap.hh>
 	// #include <scheme/objective/storage/RotamerScores.hh>
-	#include <scheme/util/StoragePolicy.hh>
-	#include <scheme/search/HackPack.hh>
-	#include <scheme/objective/integration/SceneObjective.hh>
+	// #include <scheme/util/StoragePolicy.hh>
+	// #include <scheme/search/HackPack.hh>
+	// #include <scheme/objective/integration/SceneObjective.hh>
 
 	#include <riflib/RifFactory.hh>
 
@@ -74,18 +72,6 @@
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
 
-
-// refactor
-	#include <riflib/rifdock_subroutines/util.hh>
-	
-	#include <riflib/rifdock_subroutines/HSearchFactory.hh>	
-
-	#include <riflib/rifdock_subroutines/hack_pack.hh>
-	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
-	#include <riflib/rifdock_subroutines/compile_and_filter_results.hh>
-	#include <riflib/rifdock_subroutines/output_results.hh>
-
-	#include <riflib/HSearchConstraints.hh>
 
 // Task system
 	#include <riflib/task/TaskProtocol.hh>
@@ -730,133 +716,55 @@ int main(int argc, char *argv[]) {
 
 
 			if ( opt.scaff_search_mode == "morph_dive_pop" ) {
-				create_dive_pop_hsearch_task( task_list, rdd);
-			} else {
-				task_list.push_back(make_shared<DiversifyByNestTask>(
-					0
-					));
-				task_list.push_back(make_shared<HSearchInit>(
-					));
+				create_dive_pop_hsearch_task( task_list, rdd); } 
+			else {
+				task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+				task_list.push_back(make_shared<HSearchInit>( ));
 				for ( int i = 0; i <= final_resl; i++ ) {
-					task_list.push_back(make_shared<HSearchScoreAtReslTask>(
-						i,
-						opt.tether_to_input_position_cut
-						));
+					task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, opt.tether_to_input_position_cut ));
 
 					if (opt.hack_pack_during_hsearch) {
-						task_list.push_back(make_shared<SortByScoreTask>(
-							));
-						task_list.push_back(make_shared<FilterForHackPackTask>(
-							1,
-							rdd.packopts.pack_n_iters,
-							rdd.packopts.pack_iter_mult
-							));
-						task_list.push_back(make_shared<HackPackTask>( 
-							i, 
-							opt.global_score_cut
-							));
-					}
+						task_list.push_back(make_shared<SortByScoreTask>( ));
+						task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+						task_list.push_back(make_shared<HackPackTask>( i,  opt.global_score_cut )); }
 
-					task_list.push_back(make_shared<HSearchFilterSortTask>(
-						i,
-						opt.beam_size / opt.DIMPOW2,
-						opt.global_score_cut,
-						i < final_resl
-						));
+					task_list.push_back(make_shared<HSearchFilterSortTask>( i, opt.beam_size / opt.DIMPOW2, opt.global_score_cut, i < final_resl ));
 
 					if (opt.dump_x_frames_per_resl > 0) {
-						task_list.push_back(make_shared<DumpHSearchFramesTask>(
-							i,
-							opt.dump_x_frames_per_resl,
-							opt.dump_only_best_frames,
-							opt.dump_only_best_stride,
-							opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i)
-							));
-					}
-
-
+						task_list.push_back(make_shared<DumpHSearchFramesTask>( i, opt.dump_x_frames_per_resl, opt.dump_only_best_frames, opt.dump_only_best_stride, 
+							                                                    opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i) )); }
 					if ( i < final_resl ) {
-						task_list.push_back(make_shared<HSearchScaleToReslTask>(
-							i,
-							i+1,
-							opt.DIMPOW2,
-							opt.global_score_cut
-							));
-					}
-				}
-				task_list.push_back(make_shared<HSearchFinishTask>(
-					opt.global_score_cut
-					));
-			}
+						task_list.push_back(make_shared<HSearchScaleToReslTask>( i, i+1, opt.DIMPOW2, opt.global_score_cut )); } }
+				task_list.push_back(make_shared<HSearchFinishTask>( opt.global_score_cut )); }
 
 
-			task_list.push_back(make_shared<SetFaModeTask>(
-				true
-				));
+			task_list.push_back(make_shared<SetFaModeTask>( true ));
 
 			if ( opt.hack_pack ) {
-				task_list.push_back(make_shared<FilterForHackPackTask>(
-					opt.hack_pack_frac,
-					rdd.packopts.pack_n_iters,
-					rdd.packopts.pack_iter_mult
-					));
-				task_list.push_back(make_shared<HackPackTask>( 
-					final_resl, 
-					opt.global_score_cut
-					));
-			}
+				task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+				task_list.push_back(make_shared<HackPackTask>(  final_resl,  opt.global_score_cut )); }
 
 			bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
-			do_rosetta_score = do_rosetta_score && opt.hack_pack;
-			bool do_rosetta_min = rdd.opt.rosetta_min_fraction > 0.0 && do_rosetta_score;
+			     do_rosetta_score = do_rosetta_score && opt.hack_pack;
+			bool do_rosetta_min   = rdd.opt.rosetta_min_fraction > 0.0 && do_rosetta_score;
 
 			if ( do_rosetta_score ) {
-
 				if (opt.rosetta_filter_before) {
-					task_list.push_back(make_shared<CompileAndFilterResultsTask>(
-						final_resl,
-						opt.rosetta_filter_n_per_scaffold,
-						opt.rosetta_filter_redundancy_mag,
-						0,
-						0,
-						opt.filter_seeding_positions_separately,
-						opt.filter_scaffolds_separately
-						));
-				} else {
-					task_list.push_back(make_shared<FilterForRosettaScoreTask>(
-						opt.rosetta_score_fraction, 
-						opt.rosetta_score_then_min_below_thresh,
-						opt.rosetta_score_at_least,
-						opt.rosetta_score_at_most
-						));
-				}
-
-				task_list.push_back(make_shared<RosettaScoreTask>( 
-					opt.rosetta_score_cut,
-					do_rosetta_min));
-			}
+					task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, opt.rosetta_filter_n_per_scaffold, opt.rosetta_filter_redundancy_mag, 0, 0, 
+						                                                          opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); } 
+				else {
+					task_list.push_back(make_shared<FilterForRosettaScoreTask>( opt.rosetta_score_fraction,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
+						                                                        opt.rosetta_score_at_most )); }
+				task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min)); }
 
 			if ( do_rosetta_min ) {
-				task_list.push_back(make_shared<FilterForRosettaMinTask>(
-					opt.rosetta_min_fraction
-					));
-				task_list.push_back(make_shared<RosettaMinTask>(
-					opt.rosetta_score_cut
-					));
-			}
+				task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction ));
+				task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut )); }
 			
-			task_list.push_back(make_shared<CompileAndFilterResultsTask>(
-				final_resl,
-				opt.n_pdb_out,
-				opt.redundancy_filter_mag,
-				opt.force_output_if_close_to_input_num,
-				opt.force_output_if_close_to_input,
-				opt.filter_seeding_positions_separately,
-				opt.filter_scaffolds_separately
-				));
-
-			task_list.push_back(make_shared<OutputResultsTask>(
-				));
+			task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, opt.force_output_if_close_to_input_num, 
+				                                                          opt.force_output_if_close_to_input, opt.filter_seeding_positions_separately, 
+				                                                          opt.filter_scaffolds_separately ));
+			task_list.push_back(make_shared<OutputResultsTask>( ));
 
 
 			TaskProtocol protocol( task_list );

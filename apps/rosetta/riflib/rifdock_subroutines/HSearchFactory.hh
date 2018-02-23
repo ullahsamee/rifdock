@@ -13,8 +13,8 @@
 
 #include <scheme/types.hh>
 #include <riflib/rifdock_typedefs.hh>
-#include <riflib/rifdock_subroutines/hsearch_original.hh>
-#include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
+// #include <riflib/rifdock_subroutines/hsearch_original.hh>
+// #include <riflib/rifdock_subroutines/hsearch_morph_dive_pop.hh>
 
 
 namespace devel {
@@ -28,17 +28,18 @@ call_hsearch_protocol(
     shared_ptr<std::vector< SearchPointWithRots > > & hsearch_results_p
     ) {
 
+    return true;
 
-    if (rdd.opt.scaff_search_mode == "default" || rdd.opt.scaff_search_mode == "nineA_baseline") {
+    // if (rdd.opt.scaff_search_mode == "default" || rdd.opt.scaff_search_mode == "nineA_baseline") {
 
-        return hsearch_original( rdd, d, hsearch_results_p );
+    //     return hsearch_original( rdd, d, hsearch_results_p );
 
-    } else if (rdd.opt.scaff_search_mode == "morph_dive_pop") {
+    // } else if (rdd.opt.scaff_search_mode == "morph_dive_pop") {
 
-        return hsearch_morph_dive_pop( rdd, d, hsearch_results_p );
+    //     return hsearch_morph_dive_pop( rdd, d, hsearch_results_p );
 
-    } else {
-        utility_exit_with_message("Error!!!! -rif_dock:scaff_search_mode " + rdd.opt.scaff_search_mode + " does not name an HSearch protocol!");
+    // } else {
+    //     utility_exit_with_message("Error!!!! -rif_dock:scaff_search_mode " + rdd.opt.scaff_search_mode + " does not name an HSearch protocol!");
     }
 
 }
