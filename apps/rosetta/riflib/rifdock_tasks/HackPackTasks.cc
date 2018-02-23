@@ -59,6 +59,8 @@ FilterForHackPackTask::return_any_points(
     pd.npack = std::min( n_packsamp, (size_t)(pd.total_search_effort *
         ( hack_pack_frac_ / (pack_n_iters_*pack_iter_mult_)) ) );
 
+    if ( hack_pack_frac_ >= 1 ) pd.npack = n_packsamp;
+
     any_points->resize( pd.npack );
 
     return any_points;

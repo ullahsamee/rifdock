@@ -101,6 +101,8 @@ OutputResultsTask::return_rif_dock_results(
 
     }
 
+    return selected_results_p;
+
 }
 
 

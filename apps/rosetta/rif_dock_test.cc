@@ -95,6 +95,7 @@
 	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
 	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
 	#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
+	#include <riflib/rifdock_tasks/UtilTasks.hh>
 
 
 
@@ -728,48 +729,65 @@ int main(int argc, char *argv[]) {
 			std::vector<shared_ptr<Task>> task_list;
 
 
-
-			task_list.push_back(make_shared<DiversifyByNestTask>(
-				0
-				));
-			task_list.push_back(make_shared<HSearchInit>(
-				));
-			for ( int i = 0; i <= final_resl; i++ ) {
-				task_list.push_back(make_shared<HSearchScoreAtReslTask>(
-					i,
-					opt.tether_to_input_position_cut
+			if ( opt.scaff_search_mode == "morph_dive_pop" ) {
+				create_dive_pop_hsearch_task( task_list, rdd);
+			} else {
+				task_list.push_back(make_shared<DiversifyByNestTask>(
+					0
 					));
-				task_list.push_back(make_shared<HSearchFilterSortTask>(
-					i,
-					opt.beam_size / opt.DIMPOW2,
-					opt.global_score_cut,
-					i < final_resl
+				task_list.push_back(make_shared<HSearchInit>(
 					));
-
-				if (opt.dump_x_frames_per_resl > 0) {
-					task_list.push_back(make_shared<DumpHSearchFramesTask>(
+				for ( int i = 0; i <= final_resl; i++ ) {
+					task_list.push_back(make_shared<HSearchScoreAtReslTask>(
 						i,
-						opt.dump_x_frames_per_resl,
-						opt.dump_only_best_frames,
-						opt.dump_only_best_stride,
-						opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i)
+						opt.tether_to_input_position_cut
 						));
-				}
 
+					if (opt.hack_pack_during_hsearch) {
+						task_list.push_back(make_shared<SortByScoreTask>(
+							));
+						task_list.push_back(make_shared<FilterForHackPackTask>(
+							1,
+							rdd.packopts.pack_n_iters,
+							rdd.packopts.pack_iter_mult
+							));
+						task_list.push_back(make_shared<HackPackTask>( 
+							i, 
+							opt.global_score_cut
+							));
+					}
 
-				if ( i < final_resl ) {
-					task_list.push_back(make_shared<HSearchScaleToReslTask>(
+					task_list.push_back(make_shared<HSearchFilterSortTask>(
 						i,
-						i+1,
-						opt.DIMPOW2,
-						opt.global_score_cut
+						opt.beam_size / opt.DIMPOW2,
+						opt.global_score_cut,
+						i < final_resl
 						));
+
+					if (opt.dump_x_frames_per_resl > 0) {
+						task_list.push_back(make_shared<DumpHSearchFramesTask>(
+							i,
+							opt.dump_x_frames_per_resl,
+							opt.dump_only_best_frames,
+							opt.dump_only_best_stride,
+							opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i)
+							));
+					}
+
+
+					if ( i < final_resl ) {
+						task_list.push_back(make_shared<HSearchScaleToReslTask>(
+							i,
+							i+1,
+							opt.DIMPOW2,
+							opt.global_score_cut
+							));
+					}
 				}
+				task_list.push_back(make_shared<HSearchFinishTask>(
+					opt.global_score_cut
+					));
 			}
-			task_list.push_back(make_shared<HSearchFinishTask>(
-				opt.global_score_cut
-				));
-
 
 
 			task_list.push_back(make_shared<SetFaModeTask>(
@@ -843,35 +861,6 @@ int main(int argc, char *argv[]) {
 
 			TaskProtocol protocol( task_list );
 
-
-
-			// int64_t non0_space_size = 0;
-			// int64_t total_search_effort = 0;
-			
-	  //       std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
-
-			// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			// print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		 //    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
-
-			// {
-			// 	HSearchData data {
-			// 		total_search_effort,
-			// 		non0_space_size,
-			// 	};
-
-
-			// 	bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
-			// 	if ( ! hsearch_success ) continue;
-			// }
-
-			// std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
-			// time_rif += elapsed_seconds_rif.count();
-
-
-			// pd.total_search_effort = total_search_effort;
 
 			shared_ptr<std::vector<SearchPoint>> starting_point = make_shared<std::vector<SearchPoint>>( );
 			starting_point->push_back(SearchPoint(RifDockIndex()));

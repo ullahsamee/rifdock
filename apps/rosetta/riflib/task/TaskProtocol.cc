@@ -179,6 +179,32 @@ TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd
         last_task_type = reported_task_type;
         current_taskno++;
 
+        bool no_samples = false;
+
+        switch (last_task_type) {
+            case SearchPointTaskType: {
+                runtime_assert(working_search_points);
+                no_samples = working_search_points->size() == 0;
+                break;
+            }
+            case SearchPointWithRotsTaskType: {
+                runtime_assert(working_search_point_with_rotss);
+                no_samples = working_search_point_with_rotss->size() == 0;
+                break;
+            }
+            case RifDockResultTaskType: {
+                runtime_assert(working_rif_dock_results);
+                no_samples = working_rif_dock_results->size() == 0;
+                break;
+            }
+            default: { runtime_assert(false); }
+        }
+
+        if ( no_samples ) {
+            std::cout << "search fail, no valid samples!" << std::endl;
+            return ThreePointVectors();
+        }
+
     }
 
     ThreePointVectors to_return {
