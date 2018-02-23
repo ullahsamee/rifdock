@@ -55,15 +55,15 @@ TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd
 
 // Debug delete this!!!!!!!!!!!!!!!!!!!
 
-        if ( working_search_points ) {
-            std::cout << "working_search_points.size(): " << working_search_points->size() << std::endl;
-        } else if ( working_search_point_with_rotss ) {
-            std::cout << "working_search_point_with_rotss.size(): " << working_search_point_with_rotss->size() << std::endl;
-        } else if ( working_rif_dock_results ) {
-            std::cout << "working_rif_dock_results.size(): " << working_rif_dock_results->size() << std::endl;
-        } else {
-            runtime_assert(false);
-        }
+        // if ( working_search_points ) {
+        //     std::cout << "working_search_points.size(): " << working_search_points->size() << std::endl;
+        // } else if ( working_search_point_with_rotss ) {
+        //     std::cout << "working_search_point_with_rotss.size(): " << working_search_point_with_rotss->size() << std::endl;
+        // } else if ( working_rif_dock_results ) {
+        //     std::cout << "working_rif_dock_results.size(): " << working_rif_dock_results->size() << std::endl;
+        // } else {
+        //     runtime_assert(false);
+        // }
 
 ///////////////////////////////////////
         switch (last_task_type) {

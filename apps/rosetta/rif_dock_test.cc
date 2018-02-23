@@ -223,6 +223,7 @@ int main(int argc, char *argv[]) {
 		shared_ptr<RifFactory> rif_factory = ::devel::scheme::create_rif_factory( rif_factory_config );
 
 
+
 		// shared_ptr<RifFactory> rif_factory;
 		// if ( opt.scaffold_provider_type == "SingleFile" ) {
 		// 	rif_factory = ::devel::scheme::create_rif_factory<SingleFileScaffoldProvider>(rif_factory_config);
@@ -364,6 +365,15 @@ int main(int argc, char *argv[]) {
 		// 	}
 		// }
 	}
+
+	std::vector<bool> resl_load_map(RESLS.size(), true);	// by default load all resls
+
+	if ( opt.only_load_highest_resl ) {
+		for ( int i = 0; i < resl_load_map.size() - 1; i++) {
+			resl_load_map[i] = false;
+		}
+	}
+
 	std::vector< VoxelArrayPtr > target_field_by_atype;
 	std::vector< std::vector< VoxelArrayPtr > > target_bounding_by_atype;
 	{
@@ -408,7 +418,8 @@ int main(int argc, char *argv[]) {
 				target_field_by_atype,
 				target_bounding_by_atype,
 				false,
-				cache_prefix
+				cache_prefix,
+				resl_load_map
 			);
 			runtime_assert( target_bounding_by_atype.size() == RESLS.size() );
 			// now scale down the any positive component by 1/RESL if RESL > 1
@@ -459,6 +470,7 @@ int main(int argc, char *argv[]) {
 		#endif
 		for( int i_readmap = 0; i_readmap < opt.rif_files.size(); ++i_readmap ){
 			if( exception ) continue;
+			if ( ! resl_load_map.at(i_readmap) ) continue;
 			try {
 				std::string const & rif_file = opt.rif_files[i_readmap];
 				std::string & rif_dscr = rif_descriptions[i_readmap];
@@ -698,6 +710,7 @@ int main(int argc, char *argv[]) {
 				director->set_scene( RifDockIndex(), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
+					if ( ! resl_load_map.at(i) ) continue;
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
 					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
 					     << F( 7, 3, sc[0]+sc[1] ) << " "

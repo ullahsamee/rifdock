@@ -508,26 +508,6 @@ xform_pose(
 );
 
 
-void
-sanity_check_rots(
-    RifDockData & rdd, 
-    RifDockIndex i,
-    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
-    ScenePtr scene,
-    bool original,
-    int resl 
-); 
-
-
-void 
-sanity_check_hackpack(
-    RifDockData & rdd, 
-    RifDockIndex i,
-    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
-    ScenePtr scene,
-    int resl 
-);
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

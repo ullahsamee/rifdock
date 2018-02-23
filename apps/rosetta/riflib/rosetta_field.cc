@@ -446,7 +446,8 @@ get_rosetta_bounding_fields_from_fba(
 	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
 	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
 	bool verbose,
-	std::string cache_prefix
+	std::string cache_prefix,
+	std::vector<bool> only_load_these /*= std::vector<bool>(0)*/
 ){
 
 	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
@@ -456,6 +457,7 @@ get_rosetta_bounding_fields_from_fba(
 
 	std::vector<std::pair<float,int> > jobs;
 	for( int iresl = RESLS.size()-1; iresl >= 0; --iresl ){
+		if ( iresl < only_load_these.size() && ! only_load_these[iresl]) continue;
 		for( int itype = 1; itype <= N_ATYPE; ++itype ){
             if( opts.one_atype_only && itype != opts.one_atype_only ) continue;
 			jobs.push_back( std::make_pair( iresl, itype ) );

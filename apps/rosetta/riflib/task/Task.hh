@@ -11,7 +11,7 @@
 #define INCLUDED_riflib_task_Task_hh
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/task/types.hh>
 
 #include <string>
 #include <vector>

@@ -11,7 +11,6 @@
 #define INCLUDED_riflib_task_SearchPointWithRotsTask_hh
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/task/Task.hh>
 
 #include <string>

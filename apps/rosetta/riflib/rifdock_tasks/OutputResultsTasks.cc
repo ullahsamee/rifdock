@@ -12,6 +12,7 @@
 
 #include <riflib/types.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
+#include <riflib/rifdock_tasks/HackPackTasks.hh>
 
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/ResidueTypeSet.hh>

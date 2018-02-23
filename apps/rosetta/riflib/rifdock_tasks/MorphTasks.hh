@@ -11,7 +11,6 @@
 #define INCLUDED_riflib_rifdock_tasks_MorphTasks_hh
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/task/SearchPointTask.hh>
 
 #include <string>

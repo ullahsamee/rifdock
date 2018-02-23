@@ -11,7 +11,6 @@
 #define INCLUDED_riflib_rifdock_tasks_HackPackTasks_hh
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/task/SearchPointWithRotsTask.hh>
 #include <riflib/task/AnyPointTask.hh>
 
@@ -91,6 +90,27 @@ private:
 
 };
 
+
+
+void
+sanity_check_rots(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene,
+    bool original,
+    int resl 
+); 
+
+
+void 
+sanity_check_hackpack(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene,
+    int resl 
+);
 
 
 

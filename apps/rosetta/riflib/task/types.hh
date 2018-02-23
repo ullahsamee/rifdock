@@ -7,12 +7,19 @@
 
 
 #include <riflib/types.hh>
+#include <rif_dock_test.hh>
 
 
 #include <core/pose/Pose.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/rotamer_energy_tables.hh>
+#include <scheme/search/HackPack.hh>
+#include <riflib/RifBase.hh>
+#include <riflib/RifFactory.hh>
 
+#include <utility/io/ozstream.hh>
 
+#include <chrono>
 
 
 using ::scheme::make_shared;

@@ -17,7 +17,6 @@
 #include <scheme/nest/NEST.hh>
 #include <scheme/objective/storage/TwoBodyTable.hh>
 #include <riflib/rifdock_typedefs.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/rosetta_field.hh>
 #include <riflib/RotamerGenerator.hh>
 #include <riflib/util.hh>

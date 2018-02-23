@@ -22,6 +22,8 @@
 #include <scheme/nest/NEST.hh>
 #include <scheme/nest/pmap/OriTransMap.hh>
 #include <scheme/kinematics/Director.hh>
+#include <scheme/objective/integration/SceneObjective.hh>
+#include <scheme/chemical/RotamerIndex.hh>
 
 
 #include <boost/mpl/vector.hpp>
@@ -147,6 +149,9 @@ typedef ::scheme::kinematics::CompositeDirector< EigenXform, RifDockIndex > RifD
 typedef shared_ptr<::scheme::kinematics::Director<EigenXform, RifDockIndex>> DirectorBase;
 
 
+typedef shared_ptr< ::scheme::kinematics::SceneBase<EigenXform,uint64_t> > ScenePtr;
+typedef shared_ptr< ::scheme::objective::integration::SceneOjbective<EigenXform,uint64_t> > ObjectivePtr;
+
 
 struct SelectiveRifDockIndexHasher {
     SelectiveRifDockIndexHasher( 
@@ -218,6 +223,23 @@ private:
     bool treat_scaffolds_differently_;
 };
 
+
+
+typedef ::scheme::actor::Atom<
+    ::Eigen::Vector3f
+> SchemeAtom;
+
+typedef ::scheme::chemical::ChemicalIndex<
+    ::scheme::chemical::AtomData
+> ChemicalIndex;
+
+struct RosettaRotamerGenerator;
+
+typedef ::scheme::chemical::RotamerIndex<
+    SchemeAtom,
+    RosettaRotamerGenerator,
+    EigenXform
+> RotamerIndex;
 
 
 
