@@ -266,7 +266,10 @@ HSearchScaleToResl::return_search_points(
     if ( target_resl_ >= current_resl_ ) {
         int num_resls = target_resl_ - current_resl_;
 
-        float use_pow2 = std::pow( DIMPOW2_, num_resls );
+        int use_pow2 = 1;
+        for ( int i = 0; i < num_resls; i++) {
+            use_pow2 *= DIMPOW2_;
+        }
 
         out_points.reserve( use_pow2 * search_points.size() );
 
