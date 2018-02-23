@@ -88,10 +88,6 @@ HSearchInit::return_search_points(
 
     pd.start_rif = std::chrono::high_resolution_clock::now();
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////
-
     SelectiveRifDockIndexHasher   hasher( false, false, true );
     SelectiveRifDockIndexEquater equater( false, false, true );
     std::unordered_map<RifDockIndex, bool, SelectiveRifDockIndexHasher, SelectiveRifDockIndexEquater> uniq_scaffolds (
@@ -107,6 +103,12 @@ HSearchInit::return_search_points(
         rdd.scaffold_provider->get_data_cache_slow(si)->setup_onebody_tables( rdd.rot_index_p, rdd.opt);
         pd.unique_scaffolds.push_back(si);
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+
 
     std::cout << "Beam size multiplier: " << pd.beam_multiplier << std::endl;
 
@@ -167,7 +169,8 @@ HSearchScoreAtReslTask::return_search_points(
                 if( tether_to_input_position_cut_ > 0 ){
                     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 
-                    EigenXform x = tscene->position(1);
+                    EigenXform x;// = tscene->position(1);
+                    rdd.nest.get_state( isamp.nest_index, resl_, x );
                     x.translation() -= sdc->scaffold_center;
                     float xmag =  xform_magnitude( x, redundancy_filter_rg );
                     if( xmag > tether_to_input_position_cut_ + rdd.RESLS[resl_] ){

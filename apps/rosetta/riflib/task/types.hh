@@ -174,6 +174,7 @@ struct RifDockData {
     std::vector<shared_ptr<RifBase> > & rif_ptrs;
     RifSceneObjectiveConfig & rso_config;
     shared_ptr<RifFactory> & rif_factory;
+    NestOriTrans6D const & nest;
     #ifdef USE_OPENMP
         omp_lock_t & dump_lock;
     #endif

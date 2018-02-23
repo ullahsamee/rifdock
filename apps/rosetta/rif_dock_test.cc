@@ -621,6 +621,7 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup director based on scaffold and target sizes" ); //////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			shared_ptr<RifDockNestDirector> nest_director;
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
 				float const body_radius = std::min( test_scaff_radius, rif_radius );
@@ -644,7 +645,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<RifDockNestDirector> nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
+				nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
 				std::cout << "NestDirector:" << endl << *nest_director << endl;
 				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
 				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
@@ -686,6 +687,7 @@ int main(int argc, char *argv[]) {
  						rif_ptrs,
  						rso_config,
  						rif_factory,
+ 						nest_director->nest(),
     					#ifdef USE_OPENMP
  							dump_lock,
  						#endif
