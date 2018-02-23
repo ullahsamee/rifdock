@@ -477,6 +477,58 @@ random_selection_poses_leaving_n(
 	uint64_t n );
 
 
+// from riflib/rifdock_subroutines/util.hh
+
+
+Eigen::Vector3f
+pose_center(
+    core::pose::Pose const & pose,
+    utility::vector1<core::Size> const & useres = utility::vector1<core::Size>()
+);
+
+
+
+void
+get_rg_radius(
+    core::pose::Pose const & pose,
+    float & rg,
+    float & radius,
+    utility::vector1<core::Size> const & useres = utility::vector1<core::Size>(),
+    bool allatom = false
+);
+
+
+
+void 
+xform_pose( 
+	core::pose::Pose & pose, 
+	numeric::xyzTransform<float> s, 
+	core::Size sres=1, 
+	core::Size eres=0
+);
+
+
+void
+sanity_check_rots(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene,
+    bool original,
+    int resl 
+); 
+
+
+void 
+sanity_check_hackpack(
+    RifDockData & rdd, 
+    RifDockIndex i,
+    shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
+    ScenePtr scene,
+    int resl 
+);
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
