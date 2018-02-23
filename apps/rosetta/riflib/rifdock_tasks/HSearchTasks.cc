@@ -12,6 +12,7 @@
 
 #include <riflib/types.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
+#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
 
 
 #include <string>
@@ -252,7 +253,7 @@ HSearchFilterSortTask::return_search_points(
 }
 
 shared_ptr<std::vector<SearchPoint>> 
-HSearchScaleToResl::return_search_points( 
+HSearchScaleToReslTask::return_search_points( 
     shared_ptr<std::vector<SearchPoint>> search_points_p, 
     RifDockData & rdd, 
     ProtocolData & pd ) {
@@ -291,7 +292,7 @@ HSearchScaleToResl::return_search_points(
 
     } else {
 
-        int dropped_resls = rdd.opt.dive_resl - rdd.opt.pop_resl;
+        int dropped_resls = current_resl_ - target_resl_;
         int shift_factor = dropped_resls * 6;
 
         SelectiveRifDockIndexHasher   hasher( true, true, true );
@@ -349,6 +350,33 @@ HSearchFinishTask::return_search_points(
 
     std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-pd.start_rif;
     pd.time_rif += elapsed_seconds_rif.count();
+
+    return search_points_p;
+}
+
+shared_ptr<std::vector<SearchPoint>> 
+DumpHSearchFramesTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points_p, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    std::cout << "Dumping frames with prefix: " << prefix_ << std::endl;
+
+    uint64_t dump_every = std::floor( search_points_p->size() / dump_x_frames_per_resl_ );
+
+    if ( dump_only_best_frames_ ) {
+        dump_every = std::max( 1, dump_only_best_stride_ );
+        __gnu_parallel::sort( search_points_p->begin(), search_points_p->end() );
+    }
+
+    for ( uint64_t i = 0; i < search_points_p->size(); i++ ) {
+        if ( (   dump_only_best_frames_ && i < dump_x_frames_per_resl_ ) ||
+             ( ! dump_only_best_frames_ && ( i % dump_every ) == 0 )) {
+            std::string filename = prefix_ + boost::str( boost::format( "_%06i.pdb.gz" ) % (i/dump_every));
+            dump_search_point_( rdd, (*search_points_p)[i], filename, resl_, true );
+        }
+    }
+
 
     return search_points_p;
 }

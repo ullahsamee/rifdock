@@ -122,9 +122,9 @@ private:
 
 };
 
-struct HSearchScaleToResl : public SearchPointTask {
+struct HSearchScaleToReslTask : public SearchPointTask {
 
-    HSearchScaleToResl(
+    HSearchScaleToReslTask(
         int current_resl,
         int target_resl,
         int DIMPOW2,
@@ -169,6 +169,36 @@ private:
 
 };
 
+struct DumpHSearchFramesTask : public SearchPointTask {
+
+    DumpHSearchFramesTask(
+        int resl,
+        int dump_x_frames_per_resl,
+        bool dump_only_best_frames,
+        int dump_only_best_stride,
+        std::string prefix
+         ) :
+        resl_( resl ),
+        dump_x_frames_per_resl_( dump_x_frames_per_resl ),
+        dump_only_best_frames_( dump_only_best_frames ),
+        dump_only_best_stride_( dump_only_best_stride ),
+        prefix_( prefix )
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:        
+    int resl_;
+    int dump_x_frames_per_resl_;
+    bool dump_only_best_frames_;
+    int dump_only_best_stride_;
+    std::string prefix_;
+
+};
 
 
 }}

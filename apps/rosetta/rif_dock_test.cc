@@ -745,8 +745,20 @@ int main(int argc, char *argv[]) {
 					opt.global_score_cut,
 					i < final_resl
 					));
+
+				if (opt.dump_x_frames_per_resl > 0) {
+					task_list.push_back(make_shared<DumpHSearchFramesTask>(
+						i,
+						opt.dump_x_frames_per_resl,
+						opt.dump_only_best_frames,
+						opt.dump_only_best_stride,
+						opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i)
+						));
+				}
+
+
 				if ( i < final_resl ) {
-					task_list.push_back(make_shared<HSearchScaleToResl>(
+					task_list.push_back(make_shared<HSearchScaleToReslTask>(
 						i,
 						i+1,
 						opt.DIMPOW2,
