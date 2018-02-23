@@ -89,11 +89,13 @@
 
 // Task system
 	#include <riflib/task/TaskProtocol.hh>
+	#include <riflib/rifdock_tasks/HSearchTasks.hh>
 	#include <riflib/rifdock_tasks/SetFaModeTasks.hh>
 	#include <riflib/rifdock_tasks/HackPackTasks.hh>
 	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
 	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
 	#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
+
 
 
 
@@ -577,11 +579,11 @@ int main(int argc, char *argv[]) {
 			assert(test_data_cache);
 			scaffold_sequence_glob0 = *(test_data_cache->scaffold_sequence_glob0_p);
 			scaffold_res = *(test_data_cache->scaffold_res_p);
-			float rep_scaff_radius = test_data_cache->scaff_radius;
-			float rep_scaff_redundancy_filter_rg = test_data_cache->scaff_redundancy_filter_rg;
-			Eigen::Vector3f rep_scaffold_center = test_data_cache->scaffold_center;
-			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
-			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;
+			float test_scaff_radius = test_data_cache->scaff_radius;
+			float test_scaff_redundancy_filter_rg = test_data_cache->scaff_redundancy_filter_rg;
+			Eigen::Vector3f test_scaffold_center = test_data_cache->scaffold_center;
+			float test_redundancy_filter_rg = std::min( test_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
+			std::cout << "using redundancy_filter_rg: ~" << test_redundancy_filter_rg << std::endl;
 
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -622,7 +624,7 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
-				float const body_radius = std::min( rep_scaff_radius, rif_radius );
+				float const body_radius = std::min( test_scaff_radius, rif_radius );
 				double const cart_grid = opt.resl0*opt.hsearch_scale_factor/sqrt(3); // 1.5 is a big hack here.... 2 would be more "correct"
 				double const hackysin = std::min( 1.0, opt.resl0*opt.hsearch_scale_factor/2.0/ body_radius );
 				runtime_assert( hackysin > 0.0 );
@@ -633,7 +635,7 @@ int main(int argc, char *argv[]) {
 				std::cout << "resl0:           " << opt.resl0 << std::endl;
 				std::cout << "body_radius:     " << body_radius << std::endl;
 				std::cout << "rif_radius:      " << rif_radius << std::endl;
-				std::cout << "scaffold_radius: " << rep_scaff_radius << std::endl;
+				std::cout << "scaffold_radius: " << test_scaff_radius << std::endl;
 				std::cout << "cart_grid:       " << cart_grid  << std::endl;
 				std::cout << "rot_resl_deg0:   " << rot_resl_deg0 << std::endl;
 				I3 nc( nside, nside, nside );
@@ -705,7 +707,7 @@ int main(int argc, char *argv[]) {
 			cout << "scores for scaffold in original position: " << std::endl;
 			{
 				EigenXform x(EigenXform::Identity());
-				x.translation() = rep_scaffold_center;
+				x.translation() = test_scaffold_center;
 				director->set_scene( RifDockIndex(), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
 				for(int i = 0; i < RESLS.size(); ++i){
@@ -724,6 +726,39 @@ int main(int argc, char *argv[]) {
 			int final_resl = rdd.RESLS.size() - 1;
 
 			std::vector<shared_ptr<Task>> task_list;
+
+
+
+			task_list.push_back(make_shared<DiversifyByNestTask>(
+				0
+				));
+			task_list.push_back(make_shared<HSearchInit>(
+				));
+			for ( int i = 0; i <= final_resl; i++ ) {
+				task_list.push_back(make_shared<HSearchScoreAtReslTask>(
+					i,
+					opt.tether_to_input_position_cut
+					));
+				task_list.push_back(make_shared<HSearchFilterSortTask>(
+					i,
+					opt.beam_size / opt.DIMPOW2,
+					opt.global_score_cut,
+					i < final_resl
+					));
+				if ( i < final_resl ) {
+					task_list.push_back(make_shared<HSearchScaleToResl>(
+						i,
+						i+1,
+						opt.DIMPOW2,
+						opt.global_score_cut
+						));
+				}
+			}
+			task_list.push_back(make_shared<HSearchFinishTask>(
+				opt.global_score_cut
+				));
+
+
 
 			task_list.push_back(make_shared<SetFaModeTask>(
 				true
@@ -798,51 +833,47 @@ int main(int argc, char *argv[]) {
 
 
 
-			std::vector< SearchPointWithRots > packed_results;
-			int64_t non0_space_size = 0;
-			int64_t npack = 0;
-			int64_t total_search_effort = 0;
-			{
-		        std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
+			// int64_t non0_space_size = 0;
+			// int64_t total_search_effort = 0;
+			
+	  //       std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
 
-				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
+		 //    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
 
-				{
-					HSearchData data {
-						total_search_effort,
-						non0_space_size,
-					};
+			// {
+			// 	HSearchData data {
+			// 		total_search_effort,
+			// 		non0_space_size,
+			// 	};
 
 
-					bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
-					if ( ! hsearch_success ) continue;
-				}
+			// 	bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
+			// 	if ( ! hsearch_success ) continue;
+			// }
 
-				std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
-				time_rif += elapsed_seconds_rif.count();
-
-
-
-				// scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
+			// std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
+			// time_rif += elapsed_seconds_rif.count();
 
 
-				pd.total_search_effort = total_search_effort;
+			// pd.total_search_effort = total_search_effort;
 
-				ThreePointVectors input;
-				input.search_point_with_rotss = hsearch_results_p;
-				ThreePointVectors results = protocol.run( input, rdd, pd );
+			shared_ptr<std::vector<SearchPoint>> starting_point = make_shared<std::vector<SearchPoint>>( );
+			starting_point->push_back(SearchPoint(RifDockIndex()));
 
+			ThreePointVectors input;
+			input.search_points = starting_point;
+			ThreePointVectors results = protocol.run( input, rdd, pd );
 
-
+			time_rif += pd.time_rif;
 			time_pck += pd.time_pck;
 			time_ros += pd.time_ros;
 
 			
-			}
+			
 
 		} catch( std::exception const & ex ) {
 			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;

@@ -267,23 +267,36 @@ struct RifDockData {
 struct ProtocolData {
 
 // Data related to the original RifDock as written by Will
+    int64_t non0_space_size;
     int64_t total_search_effort;
     int64_t npack;
 
     double time_rif;
     double time_pck; 
     double time_ros;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_rif;
+
+    double hsearch_rate; // instantaneous rate of hsearch
+
+// for constraints
+    std::vector< ScaffoldIndex > unique_scaffolds;
+
+// for scaffolds
+    double beam_multiplier;
 
     // rosetta score
 
 
 
     ProtocolData() :
+    non0_space_size(0),
     total_search_effort(0),
     npack(0),
     time_rif(0),
     time_pck(0),
-    time_ros(0)
+    time_ros(0),
+    hsearch_rate(0),
+    beam_multiplier(1)
 
 
 

@@ -180,7 +180,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     // one-body
                     temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
                     temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
-                    temp_data_cache_->onebody_set_correctly = true;
                     // two-body
                     temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
                     temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
@@ -262,7 +261,6 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 // one-body
                 temp_data_cache_->scaffold_onebody_glob0_p = data_cache->scaffold_onebody_glob0_p;
                 temp_data_cache_->local_onebody_p = data_cache->local_onebody_p;
-                temp_data_cache_->onebody_set_correctly = true;
                 // two-body
                 temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
                 temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
