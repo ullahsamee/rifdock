@@ -716,9 +716,12 @@ int main(int argc, char *argv[]) {
 
 
 			if ( opt.scaff_search_mode == "morph_dive_pop" ) {
-				create_dive_pop_hsearch_task( task_list, rdd); } 
-			else {
+				create_dive_pop_hsearch_task( task_list, rdd); 
+			} else {
+
+
 				task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+
 				task_list.push_back(make_shared<HSearchInit>( ));
 				for ( int i = 0; i <= final_resl; i++ ) {
 					task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, opt.tether_to_input_position_cut ));
@@ -726,23 +729,29 @@ int main(int argc, char *argv[]) {
 					if (opt.hack_pack_during_hsearch) {
 						task_list.push_back(make_shared<SortByScoreTask>( ));
 						task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-						task_list.push_back(make_shared<HackPackTask>( i,  opt.global_score_cut )); }
+						task_list.push_back(make_shared<HackPackTask>( i,  opt.global_score_cut )); 
+					}
 
 					task_list.push_back(make_shared<HSearchFilterSortTask>( i, opt.beam_size / opt.DIMPOW2, opt.global_score_cut, i < final_resl ));
 
 					if (opt.dump_x_frames_per_resl > 0) {
 						task_list.push_back(make_shared<DumpHSearchFramesTask>( i, opt.dump_x_frames_per_resl, opt.dump_only_best_frames, opt.dump_only_best_stride, 
-							                                                    opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i) )); }
+							                                                    opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i) ));
+					}
 					if ( i < final_resl ) {
-						task_list.push_back(make_shared<HSearchScaleToReslTask>( i, i+1, opt.DIMPOW2, opt.global_score_cut )); } }
-				task_list.push_back(make_shared<HSearchFinishTask>( opt.global_score_cut )); }
+						task_list.push_back(make_shared<HSearchScaleToReslTask>( i, i+1, opt.DIMPOW2, opt.global_score_cut )); 
+					} 
+				}
+				task_list.push_back(make_shared<HSearchFinishTask>( opt.global_score_cut )); 
+			}
 
 
 			task_list.push_back(make_shared<SetFaModeTask>( true ));
 
 			if ( opt.hack_pack ) {
 				task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-				task_list.push_back(make_shared<HackPackTask>(  final_resl,  opt.global_score_cut )); }
+				task_list.push_back(make_shared<HackPackTask>(  final_resl,  opt.global_score_cut )); 
+			}
 
 			bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
 			     do_rosetta_score = do_rosetta_score && opt.hack_pack;
@@ -751,15 +760,19 @@ int main(int argc, char *argv[]) {
 			if ( do_rosetta_score ) {
 				if (opt.rosetta_filter_before) {
 					task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, opt.rosetta_filter_n_per_scaffold, opt.rosetta_filter_redundancy_mag, 0, 0, 
-						                                                          opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); } 
+						                                                          opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
+				} 
 				else {
 					task_list.push_back(make_shared<FilterForRosettaScoreTask>( opt.rosetta_score_fraction,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
-						                                                        opt.rosetta_score_at_most )); }
-				task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min)); }
+						                                                        opt.rosetta_score_at_most )); 
+				}
+				task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min)); 
+			}
 
 			if ( do_rosetta_min ) {
 				task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction ));
-				task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut )); }
+				task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut )); 
+			}
 			
 			task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, opt.force_output_if_close_to_input_num, 
 				                                                          opt.force_output_if_close_to_input, opt.filter_seeding_positions_separately, 
@@ -781,8 +794,9 @@ int main(int argc, char *argv[]) {
 			time_pck += pd.time_pck;
 			time_ros += pd.time_ros;
 
-			
-			
+
+
+
 
 		} catch( std::exception const & ex ) {
 			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
