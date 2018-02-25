@@ -200,10 +200,11 @@ struct ProtocolData {
 // for constraints
     std::vector< ScaffoldIndex > unique_scaffolds;
 
-// for scaffolds
+// for hsearch
     double beam_multiplier;
 
-    // rosetta score
+// for seeding positions
+    std::vector<std::string> seeding_tags;
 
 
 

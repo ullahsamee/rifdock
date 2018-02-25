@@ -66,20 +66,23 @@ OutputResultsTask::return_rif_dock_results(
         RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
 // Brian Injection
-        ScaffoldIndex si = selected_results[i_selected_result].index.scaffold_index;
+        ScaffoldIndex si = selected_result.index.scaffold_index;
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
 
+        std::string seeding_tag = "";
+        if ( selected_result.index.seeding_index < pd.seeding_tags.size() ) seeding_tag = pd.seeding_tags[ selected_result.index.seeding_index ];
 
-        std::string const & scafftag = sdc->scafftag;
+        std::string const & use_scafftag = sdc->scafftag + seeding_tag;
 
 /////
-        std::string pdboutfile = rdd.opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+
+        std::string pdboutfile = rdd.opt.outdir + "/" + use_scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
         if( rdd.opt.output_tag.size() ){
-            pdboutfile = rdd.opt.outdir + "/" + scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+            pdboutfile = rdd.opt.outdir + "/" + use_scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
         }
 
-        std::string resfileoutfile = rdd.opt.outdir + "/" + scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
-        std::string allrifrotsoutfile = rdd.opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
+        std::string resfileoutfile = rdd.opt.outdir + "/" + use_scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
+        std::string allrifrotsoutfile = rdd.opt.outdir + "/" + use_scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
 
         std::ostringstream oss;
         oss << "rif score: " << I(4,i_selected_result)

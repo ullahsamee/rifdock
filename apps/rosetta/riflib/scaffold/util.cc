@@ -61,7 +61,7 @@ get_info_for_iscaff(
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
-    scafftag = utility::file_basename( utility::file::file_basename( scaff_fname ) );
+    scafftag = pdb_name(scaff_fname);
 
     std::cout << "!!!!!!!!!!!!!!!name:: " << scaff_fname << std::endl;
 
@@ -579,6 +579,14 @@ extract_poses_from_silent_file( std::string const & filename ) {
     return poses;
 }
 
+
+std::string
+pdb_name( std::string const & fname ) {
+    std::string name = utility::file_basename( fname );
+    if (utility::endswith( name, ".gz" ) ) name = name.substr(0, name.length() - 3);
+    if (utility::endswith( name, ".pdb" ) ) name = name.substr(0, name.length() - 4);
+    return name;
+}
 
 
 

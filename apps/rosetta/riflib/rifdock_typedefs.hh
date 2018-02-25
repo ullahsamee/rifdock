@@ -175,11 +175,11 @@ struct SelectiveRifDockIndexHasher {
             boost::hash<int> hasher;
             hash_combine(the_hash, hasher(rdi.nest_index));
         }
-        if ( treat_scaffolds_differently_ ) {
+        if ( treat_seeds_differently_ ) {
             boost::hash<int> seeding_index_hasher;
             hash_combine(the_hash, seeding_index_hasher(rdi.seeding_index));
         }
-        if ( treat_seeds_differently_ ) {      
+        if ( treat_scaffolds_differently_ ) {      
             std::hash<devel::scheme::ScaffoldIndex> scaffold_index_hasher;
             hash_combine(the_hash, scaffold_index_hasher(rdi.scaffold_index));
         }

@@ -65,6 +65,11 @@ private:
 };
 
 
+void
+create_dive_pop_hsearch_task( 
+    std::vector<shared_ptr<Task>> & task_list, RifDockData & rdd );
+
+
 
 }}
 

@@ -110,6 +110,14 @@ HSearchInit::return_search_points(
     ///////////////////////////////////////////////////////////
 
 
+    if (rdd.opt.multiply_beam_by_scaffolds) pd.beam_multiplier *= pd.unique_scaffolds.size();
+    if (rdd.opt.multiply_beam_by_seeding_positions) pd.beam_multiplier *= rdd.director->size(0, RifDockIndex()).seeding_index;
+
+    if ( pd.beam_multiplier > rdd.opt.max_beam_multiplier ) {
+        std::cout << "Beam multiplier exceeds max_beam_multiplier: " << pd.beam_multiplier << std::endl;
+        pd.beam_multiplier = rdd.opt.max_beam_multiplier;
+    }
+
     std::cout << "Beam size multiplier: " << pd.beam_multiplier << std::endl;
 
     return search_points;

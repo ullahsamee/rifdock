@@ -96,7 +96,8 @@ internal_comparative_clash_check( core::scoring::Energies const & original_energ
 std::vector<core::pose::PoseOP>
 extract_poses_from_silent_file( std::string const & filename );
 
-
+std::string
+pdb_name( std::string const & fname );
 
 
 

@@ -82,6 +82,8 @@
 	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
 	#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
 	#include <riflib/rifdock_tasks/UtilTasks.hh>
+	#include <riflib/rifdock_tasks/SeedingPositionTasks.hh>
+	#include <riflib/rifdock_tasks/MorphTasks.hh>
 
 
 
@@ -553,6 +555,8 @@ int main(int argc, char *argv[]) {
 		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all; // Seqposs of residues to design, default whole scaffold
 		try {
 
+			ProtocolData pd;
+
 			runtime_assert( rot_index_p );
 			std::string scafftag = utility::file_basename( utility::file::file_basename( scaff_fname ) );
 
@@ -583,6 +587,9 @@ int main(int argc, char *argv[]) {
 			Eigen::Vector3f test_scaffold_center = test_data_cache->scaffold_center;
 			float test_redundancy_filter_rg = std::min( test_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
 			std::cout << "using redundancy_filter_rg: ~" << test_redundancy_filter_rg << std::endl;
+
+
+			shared_ptr<std::vector<EigenXform>> seeding_positions = setup_seeding_positions( opt, pd, scaffold_provider );
 
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -650,12 +657,14 @@ int main(int argc, char *argv[]) {
 				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
 				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 
-				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 );
 
 				std::vector<DirectorBase> director_list;
 				director_list.push_back( nest_director );  // Nest director must come first!!!!
 				if ( needs_scaffold_director ) {
-					director_list.push_back( scaff_director );
+					director_list.push_back( make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 ) );
+				}
+				if ( seeding_positions ) {
+					director_list.push_back( make_shared<RifDockSeedingDirector>(seeding_positions, 1, -1 ) );
 				}
 
 				director = make_shared<RifDockDirector>(director_list);
@@ -695,7 +704,6 @@ int main(int argc, char *argv[]) {
  						scaffold_provider
 			};
 
-			ProtocolData pd;
 
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -735,6 +743,7 @@ int main(int argc, char *argv[]) {
 			} else {
 
 
+				task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); // this is a no-op if there are no seeding positions
 				task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
 
 				task_list.push_back(make_shared<HSearchInit>( ));

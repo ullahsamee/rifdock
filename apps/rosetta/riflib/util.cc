@@ -447,6 +447,8 @@ find_xform_from_identical_pose_to_pose(
 	core::pose::Pose const & pose2,
 	float align_error /* = 0.2 */ ) {
 
+	runtime_assert( pose1.size() == pose2.size() );
+
 	// we can use anything here because they're the same
 	utility::vector1<core::Size> scaffold_res;
 	get_default_scaffold_res( pose1, scaffold_res );

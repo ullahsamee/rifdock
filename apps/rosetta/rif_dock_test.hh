@@ -33,7 +33,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, data_cache_dir )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, beam_size_M )
-	OPT_1GRP_KEY(  Real        , rif_dock, max_beam_size_after_hsearch_M )
+    OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, multiply_beam_by_seeding_positions )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, multiply_beam_by_scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, search_diameter )
 	OPT_1GRP_KEY(  Real        , rif_dock, hsearch_scale_factor )
 
@@ -171,11 +173,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
     OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
-    OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
 
     OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
     // constrain file
 	OPT_1GRP_KEY(  StringVector, rif_dock, cst_files )
+
+	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
 
 
@@ -211,7 +215,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
 			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
-			NEW_OPT(  rif_dock::max_beam_size_after_hsearch_M, "max search points to keep after hsearch in M", 100.00000);
+
+			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier", 1 );
+			NEW_OPT(  rif_dock::multiply_beam_by_seeding_positions, "Multiply beam size by number of seeding positions", false);
+			NEW_OPT(  rif_dock::multiply_beam_by_scaffolds, "Multiply beam size by number of scaffolds", true);
 			NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
 			NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 			NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
@@ -344,11 +351,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::pop_resl , "Return to this depth after diversifying", 4 );
 			NEW_OPT(  rif_dock::match_this_pdb, "Like tether to input position but applied at diversification time.", "" );
 			NEW_OPT(  rif_dock::match_this_rmsd, "RMSD for match_this_pdb", 7 );
-			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
 			NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","NOT SPECIFIED");
 	        // constrain file names
 			NEW_OPT(  rif_dock::cst_files, "" , utility::vector1<std::string>() );
+
+			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
 		}
 	#endif
@@ -370,7 +379,9 @@ struct RifDockOpt
 	int64_t     DIM                                  ;
 	int64_t     DIMPOW2                              ;
 	int64_t     beam_size                            ;
-	int64_t     max_beam_size_after_hsearch          ;
+    float       max_beam_multiplier                  ;
+    bool        multiply_beam_by_seeding_positions   ;
+    bool        multiply_beam_by_scaffolds           ;
 	bool        replace_all_with_ala_1bre            ;
 	bool        lowres_sterics_cbonly                ;
 	float       tether_to_input_position_cut         ;
@@ -502,11 +513,13 @@ struct RifDockOpt
     int         pop_resl                             ;
     std::string match_this_pdb                       ;
     float       match_this_rmsd                      ;
-    float       max_beam_multiplier                  ;
 
     std::string rot_spec_fname                       ;
     // constrain file names
 	std::vector<std::string> cst_fnames              ;
+
+	std::vector<std::string> seed_with_these_pdbs    ;
+	bool        seed_include_input                   ;
 
 
     void init_from_cli();
@@ -533,7 +546,9 @@ struct RifDockOpt
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;
-		max_beam_size_after_hsearch            = int64_t( option[rif_dock::max_beam_size_after_hsearch_M]() * 1000000.0 );
+        max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                ]();
+		multiply_beam_by_seeding_positions     = option[rif_dock::multiply_beam_by_seeding_positions ]();
+		multiply_beam_by_scaffolds             = option[rif_dock::multiply_beam_by_scaffolds         ]();        
 		replace_all_with_ala_1bre              = option[rif_dock::replace_all_with_ala_1bre          ]();
 
 		target_pdb                             = option[rif_dock::target_pdb                         ]();
@@ -660,9 +675,10 @@ struct RifDockOpt
         pop_resl                               = option[rif_dock::pop_resl                              ]();
         match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
         match_this_rmsd                        = option[rif_dock::match_this_rmsd                       ]();
-        max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                   ]();
 
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
+
+		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
 
 
 
@@ -734,6 +750,7 @@ struct RifDockOpt
         // constrain file names
 		for( std::string s : option[rif_dock::cst_files  ]() ) cst_fnames.push_back(s);
 
+		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
 
 	}
