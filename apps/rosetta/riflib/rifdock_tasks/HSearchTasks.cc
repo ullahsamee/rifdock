@@ -283,22 +283,29 @@ HSearchScaleToReslTask::return_search_points(
             use_pow2 *= DIMPOW2_;
         }
 
-        out_points.reserve( use_pow2 * search_points.size() );
+        __gnu_parallel::sort( search_points.begin(), search_points.end() );
+        size_t good_points = 0;
+        for ( good_points = 0; good_points < search_points.size(); good_points++ ) {
+            if ( search_points[good_points].score >= global_score_cut_ ) break;
+        }
 
-        for( int64_t i = 0; i < search_points.size(); ++i ){
+        if( current_resl_ == 0 ) pd.non0_space_size += good_points;
+
+        out_points.resize( use_pow2 * good_points );
+
+        #ifdef USE_OPENMP
+        #pragma omp parallel for schedule(dynamic,64)
+        #endif
+        for( int64_t i = 0; i < good_points; ++i ){
             RifDockIndex rdi0 = search_points[i].index;
             uint64_t isamp0 = use_pow2 * rdi0.nest_index;
+            uint64_t array_offset = i*use_pow2;
 
-            if( search_points[i].score >= global_score_cut_ ) continue;
-
-            if( current_resl_ == 0 ) ++pd.non0_space_size;
             for( uint64_t j = 0; j < use_pow2; ++j ){
-                uint64_t isamp = isamp0 + j;
-                RifDockIndex rdi = rdi0;
-                rdi.nest_index = isamp;
-                out_points.push_back( SearchPoint(rdi) );
+                SearchPoint & rdi = out_points[array_offset+j];
+                rdi = rdi0;
+                rdi.index.nest_index = isamp0 + j;
             }
-            
         }
 
     } else {
