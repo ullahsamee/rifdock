@@ -7,14 +7,12 @@
 // (c) For more information, see http://www.rosettacommons.org. Questions about this can be
 // (c) addressed to University of Washington UW TechTransfer, email: license@u.washington.edu.
 
-
 #include <riflib/util.hh>
 #include <riflib/scaffold/util.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/rosetta_field.hh>
 #include <riflib/scaffold/MultithreadPoseCloner.hh>
 #include <numeric/agglomerative_hierarchical_clustering.hh>
-
+#include <scheme/chemical/stub.hh>
 
 #include <ObjexxFCL/format.hh>
 #include <core/id/AtomID.hh>
@@ -35,6 +33,7 @@
 #include <core/scoring/dssp/Dssp.hh>
 #include <utility/io/izstream.hh>
 #include <utility/io/ozstream.hh>
+
 
 #include <core/scoring/rms_util.hh>
 #include <core/select/util.hh>
@@ -448,6 +447,8 @@ find_xform_from_identical_pose_to_pose(
 	core::pose::Pose const & pose2,
 	float align_error /* = 0.2 */ ) {
 
+	runtime_assert( pose1.size() == pose2.size() );
+
 	// we can use anything here because they're the same
 	utility::vector1<core::Size> scaffold_res;
 	get_default_scaffold_res( pose1, scaffold_res );
@@ -541,11 +542,13 @@ apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform) {
 }
 
 
-utility::vector1<utility::vector1<core::Real>>
-all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses ) {
+void
+all_by_all_rmsd( 
+	std::vector<core::pose::PoseOP> const & poses,
+	utility::vector1<utility::vector1<core::Real>> & table ) {
 	
-
-	utility::vector1<utility::vector1<core::Real>> table( poses.size() );
+	table.clear();
+	table.resize( poses.size() );
 
 	for ( core::Size i = 1; i <= table.size(); i++ ) {
 		table[i].resize(poses.size(), 0);	// initialize the diagonal to 0
@@ -586,18 +589,20 @@ all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses ) {
 	} // end of OMP loop
     if( exception ) std::rethrow_exception(exception);
 
-	return table;
-
 }
 
-std::vector<std::vector<core::pose::PoseOP>>
+std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>>
 cluster_poses_into_n_bins( 
 	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n ) {
+	uint64_t n,
+	utility::vector1<utility::vector1<core::Real>> & rmsds ) {
 
 	runtime_assert( poses.size() >= n );
 
-	utility::vector1<utility::vector1<core::Real>> rmsds = all_by_all_rmsd( poses );
+	if (rmsds.size() != poses.size()) {
+		std::cout << "Calculating n^2 rmsd table" << std::endl;
+		all_by_all_rmsd( poses, rmsds );
+	}
 
 	numeric::AverageLinkClusterer alc;
 	utility::vector1<numeric::ClusteringTreeNodeOP> roots = alc.cluster(rmsds, n);
@@ -609,10 +614,10 @@ cluster_poses_into_n_bins(
 
 	std::vector<bool> pose_got_used(poses.size(), false);
 
-	std::vector<std::vector<core::pose::PoseOP>> bins;
+	std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>> bins;
 
 	for ( core::Size i = 1; i <= roots.size(); i++ ) {
-		std::vector<core::pose::PoseOP> this_bin;
+		std::vector<std::pair<core::pose::PoseOP, uint64_t>> this_bin;
 
 		utility::vector1<uint64_t> this_bin_indices;
 		numeric::get_cluster_data( input_indices, roots[i], this_bin_indices );
@@ -622,7 +627,7 @@ cluster_poses_into_n_bins(
 		for ( uint64_t index : this_bin_indices ) {
 			runtime_assert( ! pose_got_used[index] );
 			pose_got_used[index] = true;
-			this_bin.push_back( poses[index] );
+			this_bin.push_back( std::pair<core::pose::PoseOP, uint64_t>(poses[index], index) );
 		}
 
 		bins.push_back( this_bin );
@@ -642,12 +647,171 @@ cluster_poses_leaving_n(
 
 	if ( n >= poses.size() ) return poses;
 
-	std::vector<std::vector<core::pose::PoseOP>> bins = cluster_poses_into_n_bins( poses, n );
+	utility::vector1<utility::vector1<core::Real>> rmsds;
+	std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>> bins = cluster_poses_into_n_bins( poses, n, rmsds );
 
 	std::vector<core::pose::PoseOP> output_poses;
 
-	for (std::vector<core::pose::PoseOP> const & bin : bins) {
-		output_poses.push_back(bin.front());
+	for (std::vector<std::pair<core::pose::PoseOP, uint64_t>> const & bin : bins) {
+		output_poses.push_back(bin.front().first);
+	}
+
+	return output_poses;
+}
+
+// this returns the index into the indexes list
+// indexes should be 0 based even though rmsds is 1 based
+size_t
+find_cluster_center( 
+	std::vector<uint64_t> indexes,
+	utility::vector1<utility::vector1<core::Real>> const & rmsds ) {
+
+	std::vector<core::Real> rmsd_sums( indexes.size() );
+
+	for ( size_t i = 0; i < indexes.size(); i++ ) {
+		uint64_t index = indexes[i];
+
+		core::Real this_sum = 0;
+		for ( uint64_t ind : indexes ) {
+			this_sum += rmsds.at(ind+1).at(index+1);
+		}
+		// std::cout << this_sum << std::endl;
+		rmsd_sums[i] = this_sum;
+	}
+	ptrdiff_t center_index = std::min_element(rmsd_sums.begin(), rmsd_sums.end()) - rmsd_sums.begin();
+
+	std::cout << "Cluster center is " << center_index << " with rmsd sum " << rmsd_sums[center_index] << std::endl;
+
+	return center_index;
+}
+
+// uses a binary search to try to find a number
+// of bins to cluster poses into such than the top n
+// represent frac of poses within tol
+std::vector<core::pose::PoseOP>
+cluster_poses_leaving_n_representing_frac(
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n,
+	float frac,
+	float tol
+	) {
+
+	using ObjexxFCL::format::I;
+
+	runtime_assert( frac > 0 && frac <= 1);
+
+	uint64_t trial = n * (uint64_t)( 1.0 / frac );
+	uint64_t initial_trial = trial;
+	std::vector<uint64_t> trial_history;
+
+	std::vector<size_t> idx ;
+	utility::vector1<utility::vector1<core::Real>> rmsds;
+
+	std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>> bins;
+
+	while (true) {
+
+		trial_history.push_back( trial );
+		std::cout << "Round " << trial_history.size() << " : trial size " << trial << std::endl;
+
+		bins = cluster_poses_into_n_bins( poses, trial, rmsds );
+
+// sort indexes based on size of bin
+		idx.clear();
+		idx.resize(bins.size());
+  		std::iota(idx.begin(), idx.end(), 0);
+		std::sort(idx.begin(), idx.end(),
+       		[&bins](size_t i1, size_t i2) {return bins[i1].size() < bins[i2].size();});
+
+
+		size_t biggest_bin = bins[idx.back()].size();
+
+// display block //////////////////////////
+		{
+			// find the number of digits
+			int digits = 0; 
+			{
+				size_t temp = biggest_bin;
+				while (temp != 0) { temp /= 10; digits++; }
+			}
+
+			size_t star_every = std::max<size_t>(biggest_bin / 50, 1);
+
+			for ( size_t i = 0; i < bins.size(); i++ ) {
+				if ( i == n ) std::cout << "============================ cut =========================" << std::endl;
+				// going in reverse order and using indexes
+				size_t bin = idx[ bins.size() - i - 1 ];
+
+				std::cout << I( digits + 1, bins[bin].size() ) << " ";
+
+				{
+					int temp = bins[bin].size() - star_every;
+					while ( temp > 0 ) { std::cout << "*"; temp -= star_every; }
+				}
+				std::cout << std::endl;
+			}
+		}
+
+/////////////////////////////////////////////
+
+// decide if we have met the tolerance criteria
+		size_t current_count = 0;
+		for ( size_t i = 0; i < n; i++ ) {
+			size_t bin = idx[ bins.size() - i - 1 ];
+			current_count += bins[bin].size();
+		}
+
+		float current_frac = (float)current_count / (float)poses.size();
+		float error = current_frac - frac;
+		std::cout << "Error = " << error << std::endl;
+		if ( std::abs(error) < tol ) {
+			std::cout << "Tolerance satisfied, clustering complete" << std::endl;
+			break;
+		}
+
+// find position in array
+		std::sort(trial_history.begin(), trial_history.end());
+		ptrdiff_t pos = std::find(trial_history.begin(), trial_history.end(), trial ) - trial_history.begin();
+
+// either one plus or one minus
+		int other_relevant_pos;
+		if ( error > 0 ) {
+			other_relevant_pos = pos + 1;
+		} else {
+			other_relevant_pos = pos - 1;
+		}
+
+// naively set the next trial size
+		if ( other_relevant_pos < 0 ) {
+			trial /= 2;
+		} else if ( other_relevant_pos >= trial_history.size() ) {
+			trial *= 4;
+		} else {
+			uint64_t other_trial = trial_history[other_relevant_pos];
+			trial = ( other_trial + trial ) / 2;
+		}
+
+// cap it to meaningful values
+		trial = std::max<uint64_t>( 1, trial );
+		trial = std::min<uint64_t>( poses.size(), trial );
+
+// make sure next trial will be unique
+		if ( std::find(trial_history.begin(), trial_history.end(), trial ) != trial_history.end() ) {
+			std::cout << "Repeating trial, clustering complete" << std::endl;
+			break;
+		}
+	}
+
+	std::vector<core::pose::PoseOP> output_poses;
+
+	for ( size_t i = 0; i < n; i++ ) {
+		size_t bin = idx.at( bins.size() - i - 1 );
+		std::vector<uint64_t> indexes;
+		for ( std::pair<core::pose::PoseOP, uint64_t> pair : bins[bin] ) {
+			indexes.push_back( pair.second );
+		}
+		size_t cluster_center = find_cluster_center( indexes, rmsds );
+		output_poses.push_back( bins.at(bin).at(cluster_center).first );
 	}
 
 	return output_poses;
@@ -675,6 +839,91 @@ random_selection_poses_leaving_n(
 
 	return output_poses;
 }
+
+
+
+
+Eigen::Vector3f
+pose_center(
+    core::pose::Pose const & pose,
+    utility::vector1<core::Size> const & useres /* = utility::vector1<core::Size>()*/
+){
+    typedef numeric::xyzVector<core::Real> Vec;
+    Vec cen(0,0,0);
+    int count = 0;
+    for( int ir = 1; ir <= pose.size(); ++ir ) {
+        if( useres.size()==0 || std::find(useres.begin(),useres.end(),ir)!=useres.end() ){
+            for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
+                cen += pose.xyz(core::id::AtomID(ia,ir));
+                ++count;
+            }
+        // } else {
+            // std::cout << "pose_center skip " << ir << std::endl;
+        }
+    }
+    cen /= double(count);
+    // ::scheme::util::SimpleArray<3,float> center;
+    Eigen::Vector3f center;
+    center[0] = cen[0];
+    center[1] = cen[1];
+    center[2] = cen[2];
+    return center;
+}
+
+void
+get_rg_radius(
+    core::pose::Pose const & pose,
+    float & rg,
+    float & radius,
+    utility::vector1<core::Size> const & useres /*= utility::vector1<core::Size>()*/,
+    bool allatom /*= false*/
+){
+    Eigen::Vector3f centmp = pose_center( pose, useres );
+    numeric::xyzVector<double> cen;
+    float maxdis = -9e9, avgdis2 = 0.0;
+    for( int i = 0; i < 3; ++i ) cen[i] = centmp[i];
+    for( int iri = 1; iri <= useres.size(); ++iri ){
+        int ir = useres[iri];
+        if( allatom ){
+            for( int ia = 1; ia <= pose.residue(ir).nheavyatoms(); ++ia ){
+                numeric::xyzVector<double> coord = pose.residue(ir).xyz(ia);
+                avgdis2 += cen.distance_squared( coord );
+                maxdis = std::max( maxdis, (float)cen.distance( coord ) );
+            }
+        } else {
+            numeric::xyzVector<double> coord;
+            if(      pose.residue(ir).has("CB") ) coord = pose.residue(ir).xyz("CB");
+            else if( pose.residue(ir).has("CA") ) coord = pose.residue(ir).xyz("CA");
+            else                                  coord = pose.residue(ir).nbr_atom_xyz();
+            avgdis2 += cen.distance_squared( coord );
+            maxdis = std::max( maxdis, (float)cen.distance( coord ) );
+        }
+    }
+    avgdis2 /= useres.size();
+    rg = sqrt( avgdis2 );
+    radius = maxdis;
+}
+
+
+void 
+xform_pose( 
+	core::pose::Pose & pose, 
+	numeric::xyzTransform<float> s, 
+	core::Size sres/*=1*/, 
+	core::Size eres/*=0*/
+) {
+  if(eres==0) eres = pose.size();
+  for(core::Size ir = sres; ir <= eres; ++ir) {
+    for(core::Size ia = 1; ia <= pose.residue_type(ir).natoms(); ++ia) {
+      core::id::AtomID const aid(core::id::AtomID(ia,ir));
+      pose.set_xyz( aid, s*pose.xyz(aid) );
+    }
+  }
+}
+
+
+
+
 
 }
 }

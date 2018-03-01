@@ -99,7 +99,8 @@ get_rosetta_bounding_fields_from_fba(
 	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
 	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
 	bool verbose,
-	std::string cache_prefix
+	std::string cache_prefix,
+	std::vector<bool> only_load_these = std::vector<bool>(0)
 );
 
 void

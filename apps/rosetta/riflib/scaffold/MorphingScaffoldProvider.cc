@@ -20,7 +20,7 @@
 #include <boost/any.hpp>
 #include <boost/format.hpp>
 
-using ::scheme::scaffold::BOGUS_INDEX;
+using ::scheme::scaffold::BAD_SCAFFOLD_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
 
@@ -66,9 +66,9 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     mmember.conformation = conformation;
 
     mmember.tree_relation.depth = 0;
-    mmember.tree_relation.parent_member = BOGUS_INDEX;
-    mmember.tree_relation.first_child = BOGUS_INDEX;
-    mmember.tree_relation.last_child = BOGUS_INDEX;
+    mmember.tree_relation.parent_member = BAD_SCAFFOLD_INDEX;
+    mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+    mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
 
     add_morph_member( mmember );
@@ -183,6 +183,7 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     // two-body
                     temp_data_cache_->scaffold_twobody_p = data_cache->scaffold_twobody_p;
                     temp_data_cache_->local_twobody_p = data_cache->local_twobody_p;
+
                 }
 
                 ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
@@ -192,8 +193,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
                 mmember.tree_relation.depth = 1;
                 mmember.tree_relation.parent_member = 0;
-                mmember.tree_relation.first_child = BOGUS_INDEX;
-                mmember.tree_relation.last_child = BOGUS_INDEX;
+                mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+                mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
                 mmember.morph_history.push_back(rule);
 
                 pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
@@ -221,7 +222,11 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 poses = random_selection_poses_leaving_n( poses, opt.morph_silent_max_structures );
             } else {
                 std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
-                poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+                if ( opt.morph_silent_cluster_use_frac >= 1) {
+                    poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+                } else {
+                    poses = cluster_poses_leaving_n_representing_frac( poses, opt.morph_silent_max_structures, opt.morph_silent_cluster_use_frac, 0.05);
+                }
             }
         }
 
@@ -272,8 +277,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
             mmember.tree_relation.depth = 1;
             mmember.tree_relation.parent_member = 0;
-            mmember.tree_relation.first_child = BOGUS_INDEX;
-            mmember.tree_relation.last_child = BOGUS_INDEX;
+            mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+            mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
             // pose->dump_pdb(temp_data_cache_->scafftag + ".pdb");
 
@@ -295,8 +300,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
         mmember.conformation = parent_mm.conformation;
         mmember.tree_relation.depth = 1;
         mmember.tree_relation.parent_member = 0;
-        mmember.tree_relation.first_child = BOGUS_INDEX;
-        mmember.tree_relation.last_child = BOGUS_INDEX;
+        mmember.tree_relation.first_child = BAD_SCAFFOLD_INDEX;
+        mmember.tree_relation.last_child = BAD_SCAFFOLD_INDEX;
 
         add_morph_member( mmember );
     }
@@ -319,8 +324,8 @@ MorphingScaffoldProvider::add_morph_member( MorphMember mmember ) {
     map_[depth].push_back( mmember );
 
     // Tree indexes are 16 bit so be careful
-    runtime_assert(depth < BOGUS_INDEX);
-    runtime_assert(map_[depth].size() < BOGUS_INDEX);
+    runtime_assert(depth < BAD_SCAFFOLD_INDEX);
+    runtime_assert(map_[depth].size() < BAD_SCAFFOLD_INDEX);
     return TreeIndex(depth, map_[depth].size());
 }
 
@@ -357,21 +362,16 @@ MorphingScaffoldProvider::get_scaffold_index_limits() const {
 }
 
 
-::scheme::scaffold::TreeIndex 
-MorphingScaffoldProvider::get_representative_scaffold_index() {
-    return TreeIndex(0, 0);
-}
-
-
-
 
 void 
 MorphingScaffoldProvider::set_fa_mode( bool fa ) {
-    for ( uint64_t i = 0; i < map_[1].size(); i++) {
-        MorphMember & mmember = get_morph_member( TreeIndex(1, i) );
-        ScaffoldDataCacheOP cache = mmember.conformation->cache_data_;
-        if ( cache->conformation_is_fa != fa ) {
-            mmember.conformation = make_conformation_from_data_cache(cache, fa);
+    for ( uint64_t depth = 0; depth < map_.size(); depth++ ) {
+        for ( uint64_t i = 0; i < map_[depth].size(); i++) {
+            MorphMember & mmember = get_morph_member( TreeIndex(depth, i) );
+            ScaffoldDataCacheOP cache = mmember.conformation->cache_data_;
+            if ( cache->conformation_is_fa != fa ) {
+                mmember.conformation = make_conformation_from_data_cache(cache, fa);
+            }
         }
     }
 

@@ -22,6 +22,8 @@
 #include <scheme/nest/NEST.hh>
 #include <scheme/nest/pmap/OriTransMap.hh>
 #include <scheme/kinematics/Director.hh>
+#include <scheme/objective/integration/SceneObjective.hh>
+#include <scheme/chemical/RotamerIndex.hh>
 
 
 #include <boost/mpl/vector.hpp>
@@ -87,19 +89,19 @@ typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 // If you add something to the index, you must follow these rules
 // 1. Keep your item lightweight
-// 2. Add your item to the hash function
+// 2. Add your item to the hash functions
+// 3. RifDockIndex() must provide a valid index
 
 struct RifDockIndex {
     uint64_t nest_index;
-    uint64_t seeding_index;
+    uint16_t seeding_index;
     ScaffoldIndex scaffold_index;
 
     RifDockIndex() :
-      nest_index(::scheme::kinematics::director_index_default_value()) 
-      {
-          seeding_index = 0;
-          scaffold_index = ::scheme::scaffold::scaffold_index_default_value(scaffold_index);
-      }
+        nest_index(0),
+        seeding_index(0),
+        scaffold_index(ScaffoldIndex()) {}
+        
 
     RifDockIndex( 
         uint64_t nest_index_in,
@@ -126,20 +128,20 @@ struct RifDockIndex {
 // Typedefs related to the Hierarchical Search Director
 
 typedef ::scheme::nest::NEST< 6,
-              devel::scheme::EigenXform,
-              ::scheme::nest::pmap::OriTransMap,
-              ::scheme::util::StoreNothing, // do not store a transform in the Nest
-              uint64_t,
-              float,
-              false // do not inherit from NestBase
-             > NestOriTrans6D;
+            devel::scheme::EigenXform,
+            ::scheme::nest::pmap::OriTransMap,
+            ::scheme::util::StoreNothing, // do not store a transform in the Nest
+            uint64_t,
+            float,
+            false // do not inherit from NestBase
+            > NestOriTrans6D;
 
 
 // typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
 typedef ::scheme::kinematics::NestDirector< NestOriTrans6D, RifDockIndex> RifDockNestDirector;
 
 typedef ::scheme::kinematics::ScaffoldDirector< EigenXform, ScaffoldProvider, RifDockIndex > RifDockScaffoldDirector;
-    
+
 typedef ::scheme::kinematics::SeedingDirector< EigenXform, std::vector<EigenXform>, RifDockIndex > RifDockSeedingDirector;
 
 typedef ::scheme::kinematics::CompositeDirector< EigenXform, RifDockIndex > RifDockDirector;
@@ -147,36 +149,127 @@ typedef ::scheme::kinematics::CompositeDirector< EigenXform, RifDockIndex > RifD
 typedef shared_ptr<::scheme::kinematics::Director<EigenXform, RifDockIndex>> DirectorBase;
 
 
+typedef shared_ptr< ::scheme::kinematics::SceneBase<EigenXform,uint64_t> > ScenePtr;
+typedef shared_ptr< ::scheme::objective::integration::SceneOjbective<EigenXform,uint64_t> > ObjectivePtr;
 
 
+struct SelectiveRifDockIndexHasher {
+    SelectiveRifDockIndexHasher( 
+        bool treat_nests_differently,
+        bool treat_seeds_differently,
+        bool treat_scaffolds_differently
+        ) :
+        treat_nests_differently_(treat_nests_differently),
+        treat_seeds_differently_(treat_seeds_differently),
+        treat_scaffolds_differently_(treat_scaffolds_differently)
+        {}
 
-}
-}
+    size_t operator() (devel::scheme::RifDockIndex const & rdi) const {
 
-namespace std {
+        using boost::hash;
+        using boost::hash_combine;
 
-    template <>
-    struct hash<devel::scheme::RifDockIndex>
-    {
-        std::size_t operator()(const devel::scheme::RifDockIndex& rdi) const {
-            using std::size_t;
-            using boost::hash;
-            using boost::hash_combine;
+        std::size_t the_hash = 0;
 
-            std::size_t seed = 0;
-
+        if ( treat_nests_differently_ ) {
             boost::hash<int> hasher;
-            hash_combine(seed, hasher(rdi.nest_index));
-            boost::hash<int> seeding_index_hasher;
-            hash_combine(seed, seeding_index_hasher(rdi.seeding_index));
-            std::hash<devel::scheme::ScaffoldIndex> scaffold_index_hasher;
-            hash_combine(seed, scaffold_index_hasher(rdi.scaffold_index));
-
-            return seed;
+            hash_combine(the_hash, hasher(rdi.nest_index));
         }
-    };
+        if ( treat_seeds_differently_ ) {
+            boost::hash<int> seeding_index_hasher;
+            hash_combine(the_hash, seeding_index_hasher(rdi.seeding_index));
+        }
+        if ( treat_scaffolds_differently_ ) {      
+            std::hash<devel::scheme::ScaffoldIndex> scaffold_index_hasher;
+            hash_combine(the_hash, scaffold_index_hasher(rdi.scaffold_index));
+        }
+
+        return the_hash;
+    }
+private:
+    bool treat_nests_differently_;
+    bool treat_seeds_differently_;
+    bool treat_scaffolds_differently_;
+};
+
+struct SelectiveRifDockIndexEquater {
+    SelectiveRifDockIndexEquater( 
+        bool treat_nests_differently,
+        bool treat_seeds_differently,
+        bool treat_scaffolds_differently
+        ) :
+        treat_nests_differently_(treat_nests_differently),
+        treat_seeds_differently_(treat_seeds_differently),
+        treat_scaffolds_differently_(treat_scaffolds_differently)
+        {}
+
+    bool operator() (devel::scheme::RifDockIndex const & rdi1, devel::scheme::RifDockIndex const & rdi2) const {
+
+        if ( treat_nests_differently_ ) {
+            if ( rdi1.nest_index != rdi2.nest_index ) return false;
+        }
+        if ( treat_seeds_differently_ ) {
+            if ( rdi1.seeding_index != rdi2.seeding_index ) return false;
+        }
+        if ( treat_scaffolds_differently_ ) {
+            if ( ! ( rdi1.scaffold_index == rdi2.scaffold_index ) ) return false;
+        }
+
+        return true;
+    }
+private:
+    bool treat_nests_differently_;
+    bool treat_seeds_differently_;
+    bool treat_scaffolds_differently_;
+};
+
+
+
+typedef ::scheme::actor::Atom<
+    ::Eigen::Vector3f
+> SchemeAtom;
+
+typedef ::scheme::chemical::ChemicalIndex<
+    ::scheme::chemical::AtomData
+> ChemicalIndex;
+
+struct RosettaRotamerGenerator;
+
+typedef ::scheme::chemical::RotamerIndex<
+    SchemeAtom,
+    RosettaRotamerGenerator,
+    EigenXform
+> RotamerIndex;
+
+
 
 }
+}
+
+// namespace std {
+
+//     template <>
+//     struct hash<devel::scheme::RifDockIndex>
+//     {
+//         std::size_t operator()(const devel::scheme::RifDockIndex& rdi) const {
+//             using std::size_t;
+//             using boost::hash;
+//             using boost::hash_combine;
+
+//             std::size_t the_hash = 0;
+
+//             boost::hash<int> hasher;
+//             hash_combine(the_hash, hasher(rdi.nest_index));
+//             boost::hash<int> seeding_index_hasher;
+//             hash_combine(the_hash, seeding_index_hasher(rdi.seeding_index));
+//             std::hash<devel::scheme::ScaffoldIndex> scaffold_index_hasher;
+//             hash_combine(the_hash, scaffold_index_hasher(rdi.scaffold_index));
+
+//             return the_hash;
+//         }
+//     };
+
+// }
 
 
 #endif

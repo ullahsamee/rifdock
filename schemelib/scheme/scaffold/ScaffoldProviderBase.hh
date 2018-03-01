@@ -24,7 +24,7 @@
 namespace scheme {
 namespace scaffold {
 
-const uint16_t BOGUS_INDEX = std::numeric_limits<uint16_t>::max();
+const uint16_t BAD_SCAFFOLD_INDEX = std::numeric_limits<uint16_t>::max();
 
 template<
     class _Scaffold,
@@ -47,8 +47,6 @@ struct ScaffoldProviderBase {
 
     virtual void set_fa_mode( bool is_fa ) = 0;
 
-    virtual ScaffoldIndex get_representative_scaffold_index() = 0;
-
     virtual void setup_twobody_tables( ScaffoldIndex i ) = 0;
 
     virtual void modify_pose_for_output( ScaffoldIndex i, core::pose::Pose & pose ) {}
@@ -57,12 +55,12 @@ struct ScaffoldProviderBase {
 
 
 // Key Assumptions of this class:
-
+//    TreeIndex default value must always point to a valid scaffold
 
 struct TreeIndex {
     uint16_t depth;
     uint16_t member;
-    TreeIndex() : depth(BOGUS_INDEX), member(BOGUS_INDEX) {};
+    TreeIndex() : depth(0), member(0) {};
     TreeIndex(uint16_t _depth, uint16_t _member) : depth(_depth), member(_member) {};
 
     bool operator==(const TreeIndex &other) const { 
@@ -119,19 +117,6 @@ protected:
     }
 
 };
-
-
-
-inline
-uint64_t scaffold_index_default_value(uint64_t) {
-    return BOGUS_INDEX;
-}
-
-inline
-TreeIndex scaffold_index_default_value(TreeIndex) {
-    return TreeIndex();
-}
-
 
 
 

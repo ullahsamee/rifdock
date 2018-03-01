@@ -15,6 +15,7 @@
 #include <scheme/objective/integration/SceneObjective.hh>
 #include <riflib/RotamerGenerator.hh>
 #include <scheme/objective/storage/TwoBodyTable.hh>
+#include <riflib/rifdock_typedefs.hh>
 
 #include <string>
 #include <vector>
@@ -29,8 +30,6 @@ namespace devel {
 namespace scheme {
 
 
-	typedef shared_ptr< ::scheme::kinematics::SceneBase<EigenXform,uint64_t> > ScenePtr;
-	typedef shared_ptr< ::scheme::objective::integration::SceneOjbective<EigenXform,uint64_t> > ObjectivePtr;
 
 /////////////////////// RifFactory ////////////////////////////
 

@@ -17,7 +17,6 @@
 #include <scheme/nest/NEST.hh>
 #include <scheme/objective/storage/TwoBodyTable.hh>
 #include <riflib/rifdock_typedefs.hh>
-#include <riflib/rifdock_subroutines/util.hh>
 #include <riflib/rosetta_field.hh>
 #include <riflib/RotamerGenerator.hh>
 #include <riflib/util.hh>
@@ -75,7 +74,6 @@ struct ScaffoldDataCache {
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
     shared_ptr<std::vector<std::vector<float> > > local_onebody_p;       //onebodies in local numbering
-
 
     typedef ::scheme::objective::storage::TwoBodyTable<float> TBT;
 
@@ -251,6 +249,7 @@ struct ScaffoldDataCache {
         shared_ptr< RotamerIndex> rot_index_p,
         RifDockOpt const & opt ) {
 
+
         RotamerIndex & rot_index = *rot_index_p;
 
         scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>(scaffold_centered_p->size());
@@ -291,8 +290,7 @@ struct ScaffoldDataCache {
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt ) {
 
-        // if (local_onebody_p) return;
-
+        if (local_onebody_p) return;
 
         scaffold_onebody_glob0_p = make_shared<std::vector<std::vector<float> >>();
 
