@@ -765,7 +765,7 @@ cluster_poses_leaving_n_representing_frac(
 		float error = current_frac - frac;
 		std::cout << "Error = " << error << std::endl;
 		if ( std::abs(error) < tol ) {
-			std::cout << "Tolerance satisfied, quitting" << std::endl;
+			std::cout << "Tolerance satisfied, clustering complete" << std::endl;
 			break;
 		}
 
@@ -797,7 +797,7 @@ cluster_poses_leaving_n_representing_frac(
 
 // make sure next trial will be unique
 		if ( std::find(trial_history.begin(), trial_history.end(), trial ) != trial_history.end() ) {
-			std::cout << "Repeating trial, quitting" << std::endl;
+			std::cout << "Repeating trial, clustering complete" << std::endl;
 			break;
 		}
 	}
@@ -807,10 +807,8 @@ cluster_poses_leaving_n_representing_frac(
 	for ( size_t i = 0; i < n; i++ ) {
 		size_t bin = idx.at( bins.size() - i - 1 );
 		std::vector<uint64_t> indexes;
-		int temp = 0;
 		for ( std::pair<core::pose::PoseOP, uint64_t> pair : bins[bin] ) {
 			indexes.push_back( pair.second );
-			pair.first->dump_pdb("clus_" + boost::str(boost::format("%i_%i")%i%temp++) + ".pdb.gz");
 		}
 		size_t cluster_center = find_cluster_center( indexes, rmsds );
 		output_poses.push_back( bins.at(bin).at(cluster_center).first );
