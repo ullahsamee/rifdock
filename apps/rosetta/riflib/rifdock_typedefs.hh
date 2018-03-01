@@ -94,7 +94,7 @@ typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 
 struct RifDockIndex {
     uint64_t nest_index;
-    uint64_t seeding_index;
+    uint16_t seeding_index;
     ScaffoldIndex scaffold_index;
 
     RifDockIndex() :
