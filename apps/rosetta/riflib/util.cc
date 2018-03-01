@@ -675,7 +675,8 @@ find_cluster_center(
 		for ( uint64_t ind : indexes ) {
 			this_sum += rmsds.at(ind+1).at(index+1);
 		}
-		rmsd_sums[index] = this_sum;
+		// std::cout << this_sum << std::endl;
+		rmsd_sums[i] = this_sum;
 	}
 	ptrdiff_t center_index = std::min_element(rmsd_sums.begin(), rmsd_sums.end()) - rmsd_sums.begin();
 
@@ -784,7 +785,7 @@ cluster_poses_leaving_n_representing_frac(
 		if ( other_relevant_pos < 0 ) {
 			trial /= 2;
 		} else if ( other_relevant_pos >= trial_history.size() ) {
-			trial *= 1.3f;
+			trial *= 4;
 		} else {
 			uint64_t other_trial = trial_history[other_relevant_pos];
 			trial = ( other_trial + trial ) / 2;
@@ -806,13 +807,14 @@ cluster_poses_leaving_n_representing_frac(
 	for ( size_t i = 0; i < n; i++ ) {
 		size_t bin = idx.at( bins.size() - i - 1 );
 		std::vector<uint64_t> indexes;
+		int temp = 0;
 		for ( std::pair<core::pose::PoseOP, uint64_t> pair : bins[bin] ) {
 			indexes.push_back( pair.second );
+			pair.first->dump_pdb("clus_" + boost::str(boost::format("%i_%i")%i%temp++) + ".pdb.gz");
 		}
 		size_t cluster_center = find_cluster_center( indexes, rmsds );
-		output_poses.push_back( bins[bin][cluster_center].first );
+		output_poses.push_back( bins.at(bin).at(cluster_center).first );
 	}
-
 
 	return output_poses;
 }
