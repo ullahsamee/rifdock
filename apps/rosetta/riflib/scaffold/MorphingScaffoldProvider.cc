@@ -222,7 +222,11 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 poses = random_selection_poses_leaving_n( poses, opt.morph_silent_max_structures );
             } else {
                 std::cout << "Clustering silent file into " << opt.morph_silent_max_structures << " cluster centers" << std::endl;
-                poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+                if ( opt.morph_silent_cluster_use_frac >= 1) {
+                    poses = cluster_poses_leaving_n( poses, opt.morph_silent_max_structures );
+                } else {
+                    poses = cluster_poses_leaving_n_representing_frac( poses, opt.morph_silent_max_structures, opt.morph_silent_cluster_use_frac, 0.05);
+                }
             }
         }
 

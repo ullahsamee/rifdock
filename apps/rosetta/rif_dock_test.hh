@@ -165,6 +165,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      , rif_dock, morph_silent_archetype )
     OPT_1GRP_KEY(  Real        , rif_dock, morph_silent_max_structures )
     OPT_1GRP_KEY(  Boolean     , rif_dock, morph_silent_random_selection )
+    OPT_1GRP_KEY(  Real        , rif_dock, morph_silent_cluster_use_frac )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
@@ -343,6 +344,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::morph_silent_archetype, "PDB to calculate transform difference between input position and silent file", "" );
 			NEW_OPT(  rif_dock::morph_silent_max_structures, "Cluster silent file into this many cluster centers", 1000000000 );
 			NEW_OPT(  rif_dock::morph_silent_random_selection, "Use random picks instead of clustering to limit silent file", false );
+            NEW_OPT(  rif_dock::morph_silent_cluster_use_frac, "Cluster and take the top clusters that make up this frac of total", 1 );
 
 			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
@@ -505,6 +507,7 @@ struct RifDockOpt
     std::string morph_silent_archetype               ;
     int         morph_silent_max_structures          ;
     bool        morph_silent_random_selection        ;
+    float       morph_silent_cluster_use_frac        ;
 
     bool        include_parent                       ;
     bool        use_parent_body_energies             ;
@@ -667,6 +670,7 @@ struct RifDockOpt
         morph_silent_archetype                 = option[rif_dock::morph_silent_archetype                ]();
         morph_silent_max_structures            = option[rif_dock::morph_silent_max_structures           ]();
         morph_silent_random_selection          = option[rif_dock::morph_silent_random_selection         ]();
+        morph_silent_cluster_use_frac          = option[rif_dock::morph_silent_cluster_use_frac         ]();
 
         include_parent                         = option[rif_dock::include_parent                        ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();

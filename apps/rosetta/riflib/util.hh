@@ -458,18 +458,34 @@ find_xform_from_identical_pose_to_pose(
 void
 apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform);
 
-utility::vector1<utility::vector1<core::Real>>
-all_by_all_rmsd( std::vector<core::pose::PoseOP> const & poses );
+void
+all_by_all_rmsd( 
+	std::vector<core::pose::PoseOP> const & poses,
+	utility::vector1<utility::vector1<core::Real>> & table );
 
-std::vector<std::vector<core::pose::PoseOP>>
+std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>>
 cluster_poses_into_n_bins( 
 	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n );
+	uint64_t n,
+	utility::vector1<utility::vector1<core::Real>> & rmsds );
 
 std::vector<core::pose::PoseOP>
 cluster_poses_leaving_n( 
 	std::vector<core::pose::PoseOP> const & poses,
 	uint64_t n );
+
+size_t
+find_cluster_center( 
+	std::vector<uint64_t> indexes,
+	utility::vector1<utility::vector1<core::Real>> const & rmsds );
+
+std::vector<core::pose::PoseOP>
+cluster_poses_leaving_n_representing_frac(
+	std::vector<core::pose::PoseOP> const & poses,
+	uint64_t n,
+	float frac,
+	float tol
+	);
 
 std::vector<core::pose::PoseOP>
 random_selection_poses_leaving_n( 
