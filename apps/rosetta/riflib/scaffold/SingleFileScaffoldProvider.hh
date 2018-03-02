@@ -55,9 +55,6 @@ struct SingleFileScaffoldProvider :
     ScaffoldDataCacheOP get_data_cache_slow(::scheme::scaffold::TreeIndex i) override;
 
     void set_fa_mode( bool fa ) override;
-
-
-    ::scheme::scaffold::TreeIndex get_representative_scaffold_index() override;
     
     void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
 

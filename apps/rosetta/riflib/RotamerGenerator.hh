@@ -18,28 +18,12 @@
 #include <numeric/xyzVector.hh>
 #include <vector>
 #include <Eigen/Dense>
+#include <riflib/rifdock_typedefs.hh>
 
 namespace devel {
 namespace scheme {
 
-typedef ::scheme::actor::Atom<
-	::Eigen::Vector3f
-> SchemeAtom;
-
-typedef ::scheme::chemical::ChemicalIndex<
-	::scheme::chemical::AtomData
-> ChemicalIndex;
-
-struct RosettaRotamerGenerator;
-
-typedef ::scheme::chemical::RotamerIndex<
-	SchemeAtom,
-	RosettaRotamerGenerator,
-	EigenXform
-> RotamerIndex;
-
 using ::scheme::chemical::HBondRay;
-
 
 struct RosettaRotamerGenerator {
 	typedef SchemeAtom Atom;

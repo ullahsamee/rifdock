@@ -61,7 +61,7 @@ get_info_for_iscaff(
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
-    scafftag = utility::file_basename( utility::file::file_basename( scaff_fname ) );
+    scafftag = pdb_name(scaff_fname);
 
     std::cout << "!!!!!!!!!!!!!!!name:: " << scaff_fname << std::endl;
 
@@ -530,23 +530,63 @@ extract_poses_from_silent_file( std::string const & filename ) {
 
     std::cout << "Reading poses from silent file: " << filename << std::endl;
 
-    std::vector<core::pose::PoseOP> poses;
 
     core::io::silent::SilentFileOptions options;
     core::io::silent::SilentFileData sfd( options );
     sfd.read_file( filename );
-    for ( std::string const & tag : sfd.tags() ){
-        core::io::silent::SilentStruct const & ss = sfd.get_structure(tag);
-        core::pose::PoseOP pose ( new core::pose::Pose() );
-        ss.fill_pose( *pose );
-        add_pdbinfo_if_missing( *pose );
-        pose->pdb_info()->name( tag );
-        poses.push_back( pose );
+
+    std::cout << "Turning structures into poses" << std::endl;
+
+    std::vector<std::reference_wrapper<core::io::silent::SilentStruct const>> silent_structs;
+    std::vector<std::string> tags;
+    for ( std::string const & tag : sfd.tags() ) {
+        silent_structs.push_back( sfd.get_structure(tag) );
+        tags.push_back(tag);
     }
+
+    std::vector<core::pose::PoseOP> poses( silent_structs.size() );
+
+    std::exception_ptr exception = nullptr;
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+    for ( uint64_t i = 0; i < silent_structs.size(); i++ ) {
+        if (exception) continue;
+        try {
+            core::io::silent::SilentStruct const & ss = silent_structs[i];
+            core::pose::PoseOP pose( new core::pose::Pose() );
+            ss.fill_pose( *pose );
+            add_pdbinfo_if_missing( *pose );
+            pose->pdb_info()->name( tags[i] );
+            poses[i] = pose;
+        } catch(...) {
+            #pragma omp critical
+            exception = std::current_exception();
+        }
+    } // end of OMP loop
+    if( exception ) std::rethrow_exception(exception);
+
+
+    // for ( std::string const & tag : sfd.tags() ){
+    //     core::io::silent::SilentStruct const & ss = sfd.get_structure(tag);
+    //     core::pose::PoseOP pose ( new core::pose::Pose() );
+    //     ss.fill_pose( *pose );
+    //     add_pdbinfo_if_missing( *pose );
+    //     pose->pdb_info()->name( tag );
+    //     poses.push_back( pose );
+    // }
 
     return poses;
 }
 
+
+std::string
+pdb_name( std::string const & fname ) {
+    std::string name = utility::file_basename( fname );
+    if (utility::endswith( name, ".gz" ) ) name = name.substr(0, name.length() - 3);
+    if (utility::endswith( name, ".pdb" ) ) name = name.substr(0, name.length() - 4);
+    return name;
+}
 
 
 

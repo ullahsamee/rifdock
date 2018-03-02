@@ -1,36 +1,125 @@
 // -*- mode:c++;tab-width:2;indent-tabs-mode:t;show-trailing-whitespace:t;rm-trailing-spaces:t -*-
 // vi: set ts=2 noet:
+//
+// (c) Copyright Rosetta Commons Member Institutions.
+// (c) This file is part of the Rosetta software suite and is made available under license.
+// (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
+// (c) For more information, see http://wsic_dockosettacommons.org. Questions about this casic_dock
+// (c) addressed to University of Waprotocolsgton UW TechTransfer, email: license@u.washington.eprotocols
 
 
-#ifndef INCLUDED_riflib_rifdock_subroutines_output_results_hh
-#define INCLUDED_riflib_rifdock_subroutines_output_results_hh
-
+#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
 
 #include <riflib/types.hh>
-#include <riflib/rifdock_typedefs.hh>
-#include <riflib/rifdock_subroutines/util.hh>
+#include <riflib/scaffold/ScaffoldDataCache.hh>
+#include <riflib/rifdock_tasks/HackPackTasks.hh>
+
+#include <core/chemical/ChemicalManager.hh>
+#include <core/chemical/ResidueTypeSet.hh>
+#include <core/conformation/ResidueFactory.hh>
+#include <core/pose/PDBInfo.hh>
+
+#include <string>
+#include <vector>
 
 
-using ::scheme::make_shared;
-using ::scheme::shared_ptr;
+#include <ObjexxFCL/format.hh>
 
-typedef int32_t intRot;
 
 
 namespace devel {
 namespace scheme {
 
+shared_ptr<std::vector<RifDockResult>>
+OutputResultsTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> selected_results_p, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    std::vector<RifDockResult> & selected_results = *selected_results_p;
+
+    using std::cout;
+    using std::endl;
+    using ObjexxFCL::format::F;
+    using ObjexxFCL::format::I;
+
+
+    std::cout << " selected_results.size(): " << selected_results.size() << std::endl;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    print_header( "timing info" ); //////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    std::cout<<"total RIF     time: "<<KMGT(pd.time_rif)<<" fraction: "<<pd.time_rif/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;
+    std::cout<<"total Pack    time: "<<KMGT(pd.time_pck)<<" fraction: "<<pd.time_pck/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;
+    std::cout<<"total Rosetta time: "<<KMGT(pd.time_ros)<<" fraction: "<<pd.time_ros/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;         
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+    if( rdd.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
+    else                        std::cout << "ALIGN TO TARGET"   << std::endl;
+    for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
+        RifDockResult const & selected_result = selected_results.at( i_selected_result );
+
+// Brian Injection
+        ScaffoldIndex si = selected_result.index.scaffold_index;
+        ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
+
+        std::string seeding_tag = "";
+        if ( selected_result.index.seeding_index < pd.seeding_tags.size() ) seeding_tag = pd.seeding_tags[ selected_result.index.seeding_index ];
+
+        std::string const & use_scafftag = sdc->scafftag + seeding_tag;
+
+/////
+
+        std::string pdboutfile = rdd.opt.outdir + "/" + use_scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+        if( rdd.opt.output_tag.size() ){
+            pdboutfile = rdd.opt.outdir + "/" + use_scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+        }
+
+        std::string resfileoutfile = rdd.opt.outdir + "/" + use_scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
+        std::string allrifrotsoutfile = rdd.opt.outdir + "/" + use_scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
+
+        std::ostringstream oss;
+        oss << "rif score: " << I(4,i_selected_result)
+            << " rank "       << I(9,selected_result.isamp)
+            << " dist0:    "  << F(7,2,selected_result.dist0)
+            << " packscore: " << F(7,3,selected_result.score)
+            // << " score: "     << F(7,3,selected_result.nopackscore)
+            // << " rif: "       << F(7,3,selected_result.rifscore)
+            << " steric: "    << F(7,3,selected_result.stericscore)
+            << " cluster: "   << I(7,selected_result.cluster_score)
+            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack)
+            << " " << pdboutfile
+            << std::endl;
+        std::cout << oss.str();
+        rdd.dokout << oss.str(); rdd.dokout.flush();
+
+
+        dump_rif_result_(rdd, selected_result, pdboutfile, rdd.RESLS.size()-1, false, resfileoutfile, allrifrotsoutfile);
+
+
+    }
+
+    return selected_results_p;
+
+}
+
+
 void
-dump_rif_result(
+dump_rif_result_(
     RifDockData & rdd,
     RifDockResult const & selected_result, 
     std::string const & pdboutfile, 
     int iresl,
-    bool quiet = true,
-    std::string const & resfileoutfile = "",
-    std::string const & allrifrotsoutfile = ""
+    bool quiet /* = true */,
+    std::string const & resfileoutfile /* = "" */,
+    std::string const & allrifrotsoutfile /* = "" */
     ) {
-
 
     using ObjexxFCL::format::F;
     using ObjexxFCL::format::I;
@@ -40,9 +129,7 @@ dump_rif_result(
     using std::endl;
 
 
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
-    ScaffoldIndex si = selected_result.scene_index.scaffold_index;
+    ScaffoldIndex si = selected_result.index.scaffold_index;
     ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
     std::vector<int> const & scaffres_g2l = *(sdc->scaffres_g2l_p);
     std::vector<int> const & scaffres_l2g = *(sdc->scaffres_l2g_p);
@@ -59,7 +146,7 @@ dump_rif_result(
     }
 
 
-    rdd.director->set_scene( selected_result.scene_index, iresl, *rdd.scene_minimal );
+    rdd.director->set_scene( selected_result.index, iresl, *rdd.scene_minimal );
 
     devel::scheme::ScoreRotamerVsTarget<
         VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -170,7 +257,7 @@ dump_rif_result(
     expdb << "rif_residues ";
 
     if ( selected_result.rotamers_ ) {
-        sanity_check_hackpack( rdd, selected_result.scene_index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+        sanity_check_hackpack( rdd, selected_result.index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
     }
 
     std::vector<int> needs_RIFRES;
@@ -244,106 +331,22 @@ dump_rif_result(
         out2.close();
     }
 
-} // end crappy pdb io
 
+}
 
 void
-dump_search_point(
+dump_search_point_(
     RifDockData & rdd,
     SearchPoint const & search_point, 
     std::string const & pdboutfile, 
     int iresl,
     bool quiet) {
 
-
     RifDockResult result;
-    result.scene_index = search_point.index;
+    result = search_point;
 
-    dump_rif_result( rdd, result, pdboutfile, iresl, quiet, "", "" );
+    dump_rif_result_( rdd, result, pdboutfile, iresl, quiet, "", "" );
 }
-
-
-
-
-void
-output_results(
-    std::vector< RifDockResult > & selected_results,
-    RifDockData & rdd,
-    utility::io::ozstream & dokout,
-    int64_t npack) {
-
-
-    using namespace core::scoring;
-        using std::cout;
-        using std::endl;
-        using namespace devel::scheme;
-        typedef numeric::xyzVector<core::Real> Vec;
-        typedef numeric::xyzMatrix<core::Real> Mat;
-        // typedef numeric::xyzTransform<core::Real> Xform;
-        using ObjexxFCL::format::F;
-        using ObjexxFCL::format::I;
-        using devel::scheme::print_header;
-        using ::devel::scheme::RotamerIndex;
-
-    typedef ::scheme::util::SimpleArray<3,float> F3;
-    typedef ::scheme::util::SimpleArray<3,int> I3;
-
-    typedef _RifDockResult<DirectorBase> RifDockResult;
-    typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
-
-    if( rdd.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
-    else                        std::cout << "ALIGN TO TARGET"   << std::endl;
-    for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
-        RifDockResult const & selected_result = selected_results.at( i_selected_result );
-
-// Brian Injection
-        ScaffoldIndex si = selected_results[i_selected_result].scene_index.scaffold_index;
-        ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
-
-
-        std::string const & scafftag = sdc->scafftag;
-
-/////
-        std::string pdboutfile = rdd.opt.outdir + "/" + scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-        if( rdd.opt.output_tag.size() ){
-            pdboutfile = rdd.opt.outdir + "/" + scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-        }
-
-        std::string resfileoutfile = rdd.opt.outdir + "/" + scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
-        std::string allrifrotsoutfile = rdd.opt.outdir + "/" + scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
-
-        std::ostringstream oss;
-        oss << "rif score: " << I(4,i_selected_result)
-            << " rank "       << I(9,selected_result.isamp)
-            << " dist0:    "  << F(7,2,selected_result.dist0)
-            << " packscore: " << F(7,3,selected_result.packscore)
-            // << " score: "     << F(7,3,selected_result.nopackscore)
-            // << " rif: "       << F(7,3,selected_result.rifscore)
-            << " steric: "    << F(7,3,selected_result.stericscore)
-            << " cluster: "   << I(7,selected_result.cluster_score)
-            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)npack)
-            << " " << pdboutfile
-            << std::endl;
-        std::cout << oss.str();
-        dokout << oss.str(); dokout.flush();
-
-
-        dump_rif_result(rdd, selected_result, pdboutfile, rdd.RESLS.size()-1, false, resfileoutfile, allrifrotsoutfile);
-
-
-
-    }
-
-
-
-}
-
-
 
 
 }}
-
-
-
-
-#endif

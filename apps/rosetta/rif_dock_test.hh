@@ -20,7 +20,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
-	OPT_1GRP_KEY(  Boolean     , rif_dock, dont_center_scaffold )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
 	OPT_1GRP_KEY(  String      , rif_dock, target_pdb )
@@ -29,10 +28,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, target_rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, target_rf_oversample )
 	OPT_1GRP_KEY(  String      , rif_dock, target_rf_cache )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, data_cache_dir )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, beam_size_M )
+    OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, multiply_beam_by_seeding_positions )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, multiply_beam_by_scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, search_diameter )
 	OPT_1GRP_KEY(  Real        , rif_dock, hsearch_scale_factor )
 
@@ -65,8 +68,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, upweight_multi_hbond )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
 
-	OPT_1GRP_KEY(  Integer     , rif_dock, n_result_limit )
 	OPT_1GRP_KEY(  Real        , rif_dock, redundancy_filter_mag )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, filter_seeding_positions_separately )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, filter_scaffolds_separately )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, force_output_if_close_to_input )
 	OPT_1GRP_KEY(  Integer     , rif_dock, force_output_if_close_to_input_num )
@@ -122,6 +126,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_rifres_scaffold_weight )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_soft_score )
 	OPT_1GRP_KEY(  String      , rif_dock, rosetta_hard_score )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_before )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_filter_n_per_scaffold )
+	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_filter_redundancy_mag )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
@@ -155,6 +162,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, max_fragments )
     OPT_1GRP_KEY(  StringVector, rif_dock, morph_rules_files )
     OPT_1GRP_KEY(  String      , rif_dock, morph_silent_file )
+    OPT_1GRP_KEY(  String      , rif_dock, morph_silent_archetype )
+    OPT_1GRP_KEY(  Real        , rif_dock, morph_silent_max_structures )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, morph_silent_random_selection )
+    OPT_1GRP_KEY(  Real        , rif_dock, morph_silent_cluster_use_frac )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, include_parent )
     OPT_1GRP_KEY(  Boolean     , rif_dock, use_parent_body_energies )
@@ -163,11 +174,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, pop_resl )
     OPT_1GRP_KEY(  String      , rif_dock, match_this_pdb )
     OPT_1GRP_KEY(  Real        , rif_dock, match_this_rmsd )
-    OPT_1GRP_KEY(  Real        , rif_dock, max_beam_multiplier )
 
     OPT_1GRP_KEY(  String      , rif_dock, rot_spec_fname )
     // constrain file
 	OPT_1GRP_KEY(  StringVector, rif_dock, cst_files )
+
+	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
 
 
@@ -187,7 +200,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
 			NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 			NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
-			NEW_OPT(  rif_dock::dont_center_scaffold, "don't use this", false );
 
 			NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::target_pdb, "" , "" );
@@ -200,9 +212,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
+			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
 
 			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
 			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
+
+			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier", 1 );
+			NEW_OPT(  rif_dock::multiply_beam_by_seeding_positions, "Multiply beam size by number of seeding positions", false);
+			NEW_OPT(  rif_dock::multiply_beam_by_scaffolds, "Multiply beam size by number of scaffolds", true);
 			NEW_OPT(  rif_dock::max_rf_bounding_ratio, "" , 4 );
 			NEW_OPT(  rif_dock::make_bounding_plot_data, "" , false );
 			NEW_OPT(  rif_dock::align_output_to_scaffold, "" , false );
@@ -229,9 +246,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
-			NEW_OPT(  rif_dock::n_result_limit, "" , 2000000000 );
-
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
+			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", false );
+			NEW_OPT(  rif_dock::filter_scaffolds_separately, "Redundancy filter each scaffold separately", true );
 
 			NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
 			NEW_OPT(  rif_dock::force_output_if_close_to_input_num, "" , 0 );
@@ -290,6 +307,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_rifres_scaffold_weight, "", 0.5 );
 			NEW_OPT(  rif_dock::rosetta_soft_score, "", "beta_soft" );
 			NEW_OPT(  rif_dock::rosetta_hard_score, "", "beta" );
+			NEW_OPT(  rif_dock::rosetta_filter_before, "redundancy filter results before rosetta score", false );
+			NEW_OPT(  rif_dock::rosetta_filter_n_per_scaffold, "use with rosetta_filter_before, num to save per scaffold", 300);
+			NEW_OPT(  rif_dock::rosetta_filter_redundancy_mag, "use with rosetta_filter_before, redundancy mag on the clustering", 0.5);
 
 			NEW_OPT(  rif_dock::extra_rotamers, "", true );
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
@@ -321,6 +341,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::max_fragments, "Maximum number of fragments to find.", 10000000 );
 			NEW_OPT(  rif_dock::morph_rules_files, "List of files for each scaffold to specify morph regions", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::morph_silent_file, "Silent file containing pre-morphed structures. Overrides other options", "" );
+			NEW_OPT(  rif_dock::morph_silent_archetype, "PDB to calculate transform difference between input position and silent file", "" );
+			NEW_OPT(  rif_dock::morph_silent_max_structures, "Cluster silent file into this many cluster centers", 1000000000 );
+			NEW_OPT(  rif_dock::morph_silent_random_selection, "Use random picks instead of clustering to limit silent file", false );
+            NEW_OPT(  rif_dock::morph_silent_cluster_use_frac, "Cluster and take the top clusters that make up this frac of total", 1 );
 
 			NEW_OPT(  rif_dock::include_parent, "Include parent fragment in diversified scaffolds.", false );
 			NEW_OPT(  rif_dock::use_parent_body_energies, "Don't recalculate 1-/2-body energies for fragment insertions", false );
@@ -329,11 +353,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::pop_resl , "Return to this depth after diversifying", 4 );
 			NEW_OPT(  rif_dock::match_this_pdb, "Like tether to input position but applied at diversification time.", "" );
 			NEW_OPT(  rif_dock::match_this_rmsd, "RMSD for match_this_pdb", 7 );
-			NEW_OPT(  rif_dock::max_beam_multiplier, "Maximum beam multiplier after diversification. Otherwise defaults to number of fragments found.", 1 );
 
 			NEW_OPT(  rif_dock::rot_spec_fname,"rot_spec_fname","NOT SPECIFIED");
 	        // constrain file names
 			NEW_OPT(  rif_dock::cst_files, "" , utility::vector1<std::string>() );
+
+			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
+			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
 		}
 	#endif
@@ -355,6 +381,9 @@ struct RifDockOpt
 	int64_t     DIM                                  ;
 	int64_t     DIMPOW2                              ;
 	int64_t     beam_size                            ;
+    float       max_beam_multiplier                  ;
+    bool        multiply_beam_by_seeding_positions   ;
+    bool        multiply_beam_by_scaffolds           ;
 	bool        replace_all_with_ala_1bre            ;
 	bool        lowres_sterics_cbonly                ;
 	float       tether_to_input_position_cut         ;
@@ -394,11 +423,11 @@ struct RifDockOpt
 	int         target_rf_oversample                 ;
 	float       max_rf_bounding_ratio                ;
 	std::string target_rf_cache                      ;
+	bool        only_load_highest_resl               ;
 	bool        downscale_atr_by_hierarchy           ;
 	float       favorable_1body_multiplier           ;
 	float       favorable_2body_multiplier           ;
 	bool        random_perturb_scaffold              ;
-	bool        dont_center_scaffold				 ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
@@ -417,8 +446,9 @@ struct RifDockOpt
 	float       hbond_weight                         ;
 	float       upweight_iface                       ;
 	float       upweight_multi_hbond                 ;
-	int         n_result_limit                       ;
 	float       redundancy_filter_mag                ;
+	bool        filter_seeding_positions_separately  ;
+	bool        filter_scaffolds_separately          ;
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
 	int         n_pdb_out                            ;
@@ -446,6 +476,9 @@ struct RifDockOpt
 	bool        rosetta_beta                         ;
 	std::string rosetta_soft_score                   ;
 	std::string rosetta_hard_score                   ;
+	bool        rosetta_filter_before                ;
+	int         rosetta_filter_n_per_scaffold        ;
+	float       rosetta_filter_redundancy_mag        ;
 
     int         nfold_symmetry                       ;
     std::vector<float> symmetry_axis                 ;
@@ -471,6 +504,10 @@ struct RifDockOpt
     int         max_fragments                        ;
     std::vector<std::string> morph_rules_fnames      ;
     std::string morph_silent_file                    ;
+    std::string morph_silent_archetype               ;
+    int         morph_silent_max_structures          ;
+    bool        morph_silent_random_selection        ;
+    float       morph_silent_cluster_use_frac        ;
 
     bool        include_parent                       ;
     bool        use_parent_body_energies             ;
@@ -479,11 +516,13 @@ struct RifDockOpt
     int         pop_resl                             ;
     std::string match_this_pdb                       ;
     float       match_this_rmsd                      ;
-    float       max_beam_multiplier                  ;
 
     std::string rot_spec_fname                       ;
     // constrain file names
 	std::vector<std::string> cst_fnames              ;
+
+	std::vector<std::string> seed_with_these_pdbs    ;
+	bool        seed_include_input                   ;
 
 
     void init_from_cli();
@@ -510,6 +549,9 @@ struct RifDockOpt
 		DIM                                    = 6;
 		DIMPOW2                                = 1<<DIM;
 		beam_size                              = int64_t( option[rif_dock::beam_size_M]() * 1000000.0 / DIMPOW2 ) * DIMPOW2;
+        max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                ]();
+		multiply_beam_by_seeding_positions     = option[rif_dock::multiply_beam_by_seeding_positions ]();
+		multiply_beam_by_scaffolds             = option[rif_dock::multiply_beam_by_scaffolds         ]();        
 		replace_all_with_ala_1bre              = option[rif_dock::replace_all_with_ala_1bre          ]();
 
 		target_pdb                             = option[rif_dock::target_pdb                         ]();
@@ -550,11 +592,11 @@ struct RifDockOpt
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();
 		max_rf_bounding_ratio                  = option[rif_dock::max_rf_bounding_ratio                 ]();
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
+		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
-		dont_center_scaffold				   = option[rif_dock::dont_center_scaffold					]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
@@ -563,6 +605,8 @@ struct RifDockOpt
 
 		rf_oversample                          = option[rif_dock::rf_oversample                         ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
+		filter_seeding_positions_separately    = option[rif_dock::filter_seeding_positions_separately   ]();
+		filter_scaffolds_separately            = option[rif_dock::filter_scaffolds_separately           ]();
 		rotrf_oversample                       = option[rif_dock::rotrf_oversample                      ]();
 		rotrf_resl                             = option[rif_dock::rotrf_resl                            ]();
 		rotrf_spread                           = option[rif_dock::rotrf_spread                          ]();
@@ -573,7 +617,6 @@ struct RifDockOpt
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
 		upweight_iface                         = option[rif_dock::upweight_iface                        ]();
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
-		n_result_limit                         = option[rif_dock::n_result_limit                        ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();
@@ -601,6 +644,9 @@ struct RifDockOpt
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  					]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score 				    ]();
 		rosetta_beta                           = option[corrections::beta 								]();
+		rosetta_filter_before                  = option[rif_dock::rosetta_filter_before                 ]();
+		rosetta_filter_n_per_scaffold          = option[rif_dock::rosetta_filter_n_per_scaffold         ]();
+		rosetta_filter_redundancy_mag          = option[rif_dock::rosetta_filter_redundancy_mag         ]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
 
@@ -621,6 +667,10 @@ struct RifDockOpt
         fragment_max_rmsd                      = option[rif_dock::fragment_max_rmsd                     ]();
         max_fragments                          = option[rif_dock::max_fragments                         ]();
         morph_silent_file                      = option[rif_dock::morph_silent_file                     ]();
+        morph_silent_archetype                 = option[rif_dock::morph_silent_archetype                ]();
+        morph_silent_max_structures            = option[rif_dock::morph_silent_max_structures           ]();
+        morph_silent_random_selection          = option[rif_dock::morph_silent_random_selection         ]();
+        morph_silent_cluster_use_frac          = option[rif_dock::morph_silent_cluster_use_frac         ]();
 
         include_parent                         = option[rif_dock::include_parent                        ]();
         use_parent_body_energies               = option[rif_dock::use_parent_body_energies              ]();
@@ -629,9 +679,10 @@ struct RifDockOpt
         pop_resl                               = option[rif_dock::pop_resl                              ]();
         match_this_pdb                         = option[rif_dock::match_this_pdb                        ]();
         match_this_rmsd                        = option[rif_dock::match_this_rmsd                       ]();
-        max_beam_multiplier                    = option[rif_dock::max_beam_multiplier                   ]();
 
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
+
+		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
 
 
 
@@ -696,7 +747,6 @@ struct RifDockOpt
         	runtime_assert( num_scaffolds > 0 );
         	scaffold_fnames.resize(num_scaffolds);
 
-        	dont_center_scaffold = true;
         }
 
         for( std::string s : option[rif_dock::morph_rules_files ]() ) morph_rules_fnames.push_back(s);
@@ -704,6 +754,7 @@ struct RifDockOpt
         // constrain file names
 		for( std::string s : option[rif_dock::cst_files  ]() ) cst_fnames.push_back(s);
 
+		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
 
 	}

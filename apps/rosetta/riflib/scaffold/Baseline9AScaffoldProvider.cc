@@ -20,7 +20,6 @@
 #include <boost/any.hpp>
 #include <boost/format.hpp>
 
-using ::scheme::scaffold::BOGUS_INDEX;
 using ::scheme::scaffold::TreeIndex;
 using ::scheme::scaffold::TreeLimits;
 
@@ -81,18 +80,11 @@ Baseline9AScaffoldProvider::get_scaffold_index_limits() const {
 
 void 
 Baseline9AScaffoldProvider::set_fa_mode( bool fa ) {
-    ScaffoldDataCacheOP cache = get_data_cache_slow( scaffold_index_default_value( ScaffoldIndex()) );
+    ScaffoldDataCacheOP cache = get_data_cache_slow( ScaffoldIndex());
     if ( cache->conformation_is_fa != fa ) {
         nmember_.conformation = make_conformation_from_data_cache(cache, fa);
     }
 }
-
-
-::scheme::scaffold::TreeIndex 
-Baseline9AScaffoldProvider::get_representative_scaffold_index() {
-    scaffold_index_default_value( ScaffoldIndex());
-}
-
 
 
 void 
