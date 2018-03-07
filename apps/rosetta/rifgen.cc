@@ -105,6 +105,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rif_rotamers )
+	OPT_1GRP_KEY( Boolean       , rifgen, use_rosetta_grid_energies )
+	OPT_1GRP_KEY( Real          , rifgen, rosetta_grid_energies_bbox_padding )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
@@ -164,6 +166,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
 		NEW_OPT(  rifgen::extra_rif_rotamers               , "" , true );
+		NEW_OPT(  rifgen::use_rosetta_grid_energies        , "Use Frank's grid energies for scoring polar residues", false );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
@@ -513,6 +516,14 @@ int main(int argc, char *argv[]) {
 					// You clicked /btn_strep//A/TRP`92/CB
 					// You clicked /btn_strep//A/TRP`108/CE2
 				}
+
+
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+	if ( option[rifgen::use_rosetta_grid_energies]() ) {
+		print_header( "preparing rosetta energy grids" );
+		grid_scorer = prepare_grid_scorer( *target, target_res );
+	}
+
 
 	std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > generators;
 	//temp move here for testing 

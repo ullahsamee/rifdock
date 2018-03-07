@@ -21,6 +21,7 @@
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/Residue.hh>
 #include <core/conformation/ResidueFactory.hh>
+#include <core/conformation/util.hh>
 #include <core/scoring/ScoreFunctionFactory.hh>
 #include <core/scoring/ScoreFunction.hh>
 #include <core/scoring/methods/EnergyMethodOptions.hh>
@@ -919,6 +920,86 @@ xform_pose(
       pose.set_xyz( aid, s*pose.xyz(aid) );
     }
   }
+}
+
+
+shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer>
+prepare_grid_scorer(
+	core::pose::Pose const & target,
+	utility::vector1<core::Size> const & target_res,
+	std::string const & atype_aas /*= "ACDEFGHIKLMNPQRSTVWY" */
+) {
+
+	using ObjexxFCL::format::F;
+
+	std::vector<std::pair<core::Real,core::Real>> xyz_min_max(3);
+	for ( std::pair<core::Real,core::Real> & pair : xyz_min_max ) { pair.first = 9e9; pair.second = -9e9; }
+
+	for ( core::Size ir : target_res ) {
+		for( int ia = 1; ia <= target.residue(ir).nheavyatoms(); ++ia ){
+			numeric::xyzVector<core::Real> const & xyz = target.residue(ir).xyz(ia);
+			
+			for ( int j = 0; j < 3; j++ ) {
+				xyz_min_max[j].first = std::min(xyz_min_max[j].first, xyz[j]);
+				xyz_min_max[j].second = std::max(xyz_min_max[j].second, xyz[j]);
+			}
+		}
+	}
+
+	numeric::xyzVector< core::Real > centers(3);
+	numeric::xyzVector< core::Real > radii(3);
+
+	for ( int j = 0; j < 3; j++ ) {
+		centers[j] = ( xyz_min_max[j].first + xyz_min_max[j].second ) / 2.0;
+		radii[j] = ( xyz_min_max[j].second - centers[j] );
+		runtime_assert( radii[j] > 0 );
+	}
+
+
+	std::cout << "Grid bounds: ";
+	for ( int j = 0; j < 3; j++ ) {
+		if (j > 0) std::cout << " x ";
+		std::cout << "( " << F(5,1,xyz_min_max[j].first) << ", " << F(5,1,xyz_min_max[j].second) << " )";
+	}
+	std::cout << std::endl;
+
+	radii += 5.0;	// max interaction cutoff
+
+	std::cout << "Padded grid dimensions: ";
+	for ( int j = 0; j < 3; j++ ) {
+		if (j > 0) std::cout << " x ";
+		std::cout << F(5,1,radii[j]); 
+	}
+	std::cout << std::endl;
+
+	std::cout << "Grid volume: " << F(7,1,radii[0]*radii[1]*radii[2]*8) << std::endl;
+
+	core::scoring::ScoreFunctionOP scorefxn = core::scoring::ScoreFunctionFactory::create_score_function("beta_nov16");
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer 
+		= make_shared<protocols::ligand_docking::ga_ligand_dock::GridScorer>( scorefxn );
+	grid_scorer->set_grid_com_radii( centers, radii );
+
+	// first A is the "ligand"
+	std::string atype_aas_wlig = "A" + atype_aas;
+	numeric::xyzVector< core::Real> far_away( 10000, 10000, 10000);
+	numeric::xyzMatrix< core::Real> identity = numeric::xyzMatrix< core::Real>::identity();
+
+	std::cout << "Using residue types: " << atype_aas << " for atom types" << std::endl;
+
+	core::pose::PoseOP grid_pose = target.clone();
+	utility::vector1< core::Size > fake_movingSCs;
+	int ligand_resid = grid_pose->size() + 1;
+	for ( int i = 0; i < atype_aas_wlig.size(); i++ ) {
+		core::conformation::ResidueOP res = core::conformation::get_residue_from_name1( atype_aas_wlig[i] );
+		res->apply_transform_Rx_plus_v( identity, far_away );
+		grid_pose->append_residue_by_jump( *res, 1 );
+		if ( i > 0 ) fake_movingSCs.push_back( grid_pose->size() );
+	}
+
+	grid_scorer->calculate_grid( *grid_pose, ligand_resid, fake_movingSCs );
+
+	return grid_scorer;
+
 }
 
 

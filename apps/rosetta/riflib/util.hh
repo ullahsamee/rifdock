@@ -28,6 +28,8 @@
 #include <core/select/residue_selector/ResidueSelector.fwd.hh>
 #include <core/id/AtomID.hh>
 
+#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+
 namespace devel {
 namespace scheme {
 
@@ -523,6 +525,13 @@ xform_pose(
 	core::Size eres=0
 );
 
+
+shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer>
+prepare_grid_scorer(
+	core::pose::Pose const & target,
+	utility::vector1<core::Size> const & target_res,
+	std::string const & atype_aas = "ACDEFGHIKLMNPQRSTVWY"
+);
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
