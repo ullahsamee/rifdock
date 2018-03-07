@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
 		
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file );
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies );
 		RotamerIndex & rot_index( *rot_index_p );
 
 

@@ -217,6 +217,10 @@ struct HBJob {
 			rot_tgt_scorer.hbond_weight_ = opts.hbond_weight;
 			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond;
 			rot_tgt_scorer.upweight_iface_ = 1.0;
+#ifdef USEGRIDSCORE
+			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
+#endif
+
 
 		}
 

@@ -293,6 +293,9 @@ struct ScoreRotamerVsTarget {
 	float upweight_multi_hbond_ = 0.0;
 	float min_hb_quality_for_multi_ = -0.5;
 	float min_hb_quality_for_satisfaction_ = -0.6;
+#ifdef USEGRIDSCORE
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer_;
+#endif
 	ScoreRotamerVsTarget(){}
 
 	template< class Xform, class Int >
@@ -459,6 +462,9 @@ find_xform_from_identical_pose_to_pose(
 
 void
 apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform);
+
+void
+apply_xform_to_residue( core::conformation::Residue & residue, EigenXform const & xform);
 
 void
 all_by_all_rmsd( 

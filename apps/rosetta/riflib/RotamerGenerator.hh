@@ -41,6 +41,13 @@ struct RosettaRotamerGenerator {
 
 };
 
+core::conformation::ResidueOP
+get_residue_at_identity( 
+	core::chemical::ResidueType const & rtype,
+	std::string const & resname,
+	std::vector<float> const & chi 
+);
+
 // makes copy of pose to score
 std::set<std::pair<int,int>>
 get_satisfied_atoms(core::pose::Pose pose, float ethresh=-0.1);
@@ -75,15 +82,17 @@ get_rotamer_spec_default(
 	bool extra_rotamers,
 	bool extra_primary_rotamers	
 );
-//new get_rotamer_index for rot_spec
-std::shared_ptr<RotamerIndex>
+
+shared_ptr<RotamerIndex>
 get_rotamer_index(
-	::scheme::chemical::RotamerIndexSpec const & rot_index
+	::scheme::chemical::RotamerIndexSpec const & rot_index,
+	bool build_per_thread_rotamers
 );
 
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
-	std::string cachefile
+	std::string cachefile,
+	bool build_per_thread_rotamers
 );
 
 

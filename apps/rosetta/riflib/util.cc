@@ -535,10 +535,15 @@ find_xform_from_identical_pose_to_pose(
 
 void
 apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform) {
-
 	numeric::xyzTransform<float> transform = eigen2xyz( xform );
 	pose.apply_transform_Rx_plus_v( transform.R, transform.t );
 
+}
+
+void
+apply_xform_to_residue( core::conformation::Residue & residue, EigenXform const & xform) {
+	numeric::xyzTransform<float> transform = eigen2xyz( xform );
+	residue.apply_transform_Rx_plus_v( transform.R, transform.t );
 
 }
 

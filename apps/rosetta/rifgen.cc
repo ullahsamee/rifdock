@@ -517,13 +517,17 @@ int main(int argc, char *argv[]) {
 					// You clicked /btn_strep//A/TRP`108/CE2
 				}
 
-
+#ifdef USEGRIDSCORE
 	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
 	if ( option[rifgen::use_rosetta_grid_energies]() ) {
 		print_header( "preparing rosetta energy grids" );
 		grid_scorer = prepare_grid_scorer( *target, target_res );
 	}
-
+#else
+	if ( option[rifgen::use_rosetta_grid_energies]() ) {
+		utility_exit_with_message( "You must build with -DUSEGRIDSCORE=1 to use -use_rosetta_grid_energies!!!");
+	}
+#endif
 
 	std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > generators;
 	//temp move here for testing 
@@ -552,7 +556,7 @@ int main(int argc, char *argv[]) {
 	rot_index_spec.save(spec_out);
 	spec_out.close();
 
-	shared_ptr<RotamerIndex> rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec );
+	shared_ptr<RotamerIndex> rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec, option[rifgen::use_rosetta_grid_energies]() );
 		RotamerIndex & rot_index( *rot_index_p );
 
 		
@@ -675,6 +679,9 @@ int main(int argc, char *argv[]) {
 		params->rot_index_p = rot_index_p;
 		params->cache_data_path = cache_data_path;
 		params->field_by_atype = field_by_atype;
+#ifdef USEGRIDSCORE
+		params->grid_scorer = grid_scorer;
+#endif
 
 		for( int igen = 0; igen < generators.size(); ++igen )
 		{

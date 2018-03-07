@@ -9,6 +9,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <core/conformation/Residue.hh>
+
 #include <cstdlib>
 #include <string>
 #include <iostream>
@@ -315,6 +317,10 @@ struct RotamerIndex {
 	std::vector<int> structural_parents_;
 	std::vector<int> structural_parent_of_;
 	std::vector<Xform> to_structural_parent_frame_;
+
+	// this is egregious and is only used with GridScoring
+	// per_thread_rotamers_[thread][irot];
+	std::vector<std::vector<core::conformation::ResidueOP>> per_thread_rotamers_;
 
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
@@ -688,6 +694,24 @@ struct RotamerIndex {
 			if( irot < n_primary_rotamers_ ){ ALWAYS_ASSERT(  is_primary(irot) ) }
 			else                            { ALWAYS_ASSERT( !is_primary(irot) ) }
 		}
+	}
+
+	void
+	build_per_thread_rotamers( int threads ) {
+		per_thread_rotamers_.resize(threads);
+
+		for ( int i = 0; i < per_thread_rotamers_.size(); i++ ) per_thread_rotamers_[i].resize( size() );
+
+		// for ( int irot = 0; irot < size(); irot++ ) {
+		// 	core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+	 //        pose_from_rif.replace_residue( ires+1, *newrsd, true );
+	 //        resfile << ires+1 << " A NATRO" << std::endl;
+	 //        expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one
+	 //        for( int ichi = 0; ichi < rdd.rot_index_p->nchi(irot); ++ichi ){
+	 //            pose_from_rif.set_chi( ichi+1, ires+1, rdd.rot_index_p->chi( irot, ichi ) );
+	 //        }
+	 //        needs_RIFRES.push_back(ires+1);
+		// }
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
