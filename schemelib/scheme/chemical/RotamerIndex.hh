@@ -6,10 +6,16 @@
 #include "scheme/chemical/AtomData.hh"
 #include "scheme/chemical/stub.hh"
 #include "scheme/io/dump_pdb_atom.hh"
+#include "scheme/actor/BackboneActor.hh"
 
 #include <boost/functional/hash.hpp>
 
+#include <numeric/xyzMatrix.hh>
+#include <numeric/xyzTransform.hh>
+#include <core/chemical/ChemicalManager.hh>
+#include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/Residue.hh>
+#include <core/conformation/ResidueFactory.hh>
 
 #include <cstdlib>
 #include <string>
@@ -149,8 +155,50 @@ RotamerSpec{
 	std::string resname_;
 	std::vector<float> chi_;
 	int parent_key_, n_proton_chi_;
-
 };
+
+inline
+core::conformation::ResidueOP
+get_residue_at_identity( 
+	core::chemical::ResidueType const & rtype,
+	std::vector<float> const & chi 
+) {
+
+	typedef ::Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+
+	core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+	runtime_assert( chi.size() == resop->nchi() );
+	for(int i = 0; i < chi.size(); ++i){
+		resop->set_chi( i+1, chi[i] );
+	}
+
+	{
+		Eigen::Vector3f N ( resop->xyz("N" ).x(), resop->xyz("N" ).y(), resop->xyz("N" ).z() );
+		Eigen::Vector3f CA( resop->xyz("CA").x(), resop->xyz("CA").y(), resop->xyz("CA").z() );
+		Eigen::Vector3f C ( resop->xyz("C" ).x(), resop->xyz("C" ).y(), resop->xyz("C" ).z() );
+		// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+		::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
+
+		EigenXform xform = bbactor.position().inverse();
+
+		::numeric::xyzMatrix<float> m;
+		for(int i = 0; i < 3; ++i){
+			for(int j = 0; j < 3; ++j){
+				m(i+1,j+1) = xform.rotation()(i,j);
+			}
+		}
+		::numeric::xyzTransform<float> x(m);
+		x.t[0] = xform.translation()[0];
+		x.t[1] = xform.translation()[1];
+		x.t[2] = xform.translation()[2];
+
+		resop->apply_transform_Rx_plus_v( x.R, x.t );
+	}
+
+
+	return resop;
+
+}
 
 //template<class _Atom, class RotamerGenerator, class Xform>
 struct
@@ -702,16 +750,16 @@ struct RotamerIndex {
 
 		for ( int i = 0; i < per_thread_rotamers_.size(); i++ ) per_thread_rotamers_[i].resize( size() );
 
-		// for ( int irot = 0; irot < size(); irot++ ) {
-		// 	core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
-	 //        pose_from_rif.replace_residue( ires+1, *newrsd, true );
-	 //        resfile << ires+1 << " A NATRO" << std::endl;
-	 //        expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one
-	 //        for( int ichi = 0; ichi < rdd.rot_index_p->nchi(irot); ++ichi ){
-	 //            pose_from_rif.set_chi( ichi+1, ires+1, rdd.rot_index_p->chi( irot, ichi ) );
-	 //        }
-	 //        needs_RIFRES.push_back(ires+1);
-		// }
+
+		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+
+		for ( int irot = 0; irot < size(); irot++ ) {
+			core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname(irot));
+
+			core::conformation::ResidueOP rsd = get_residue_at_identity(rtype, chis(irot));
+
+			for ( int i = 0; i < per_thread_rotamers_.size(); i++ ) per_thread_rotamers_[i].at(irot) = rsd->clone();
+		}
 	}
 
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
@@ -938,6 +986,8 @@ std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG,X> const & ri
 	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
  	return out;
 }
+
+
 
 
 

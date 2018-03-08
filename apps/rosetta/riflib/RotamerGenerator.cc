@@ -121,10 +121,22 @@ struct RichardsonRotData {
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
 
-		core::conformation::ResidueOP resop = get_residue_at_identity(rtype, resname, chi );
+		core::conformation::ResidueOP resop = ::scheme::chemical::get_residue_at_identity(rtype, chi );
 
 		core::pose::Pose pose;
 		pose.append_residue_by_jump(*resop,1);
+
+		{
+			core::conformation::Residue const & res = pose.residue(1);
+			Eigen::Vector3f N ( res.xyz("N" ).x(), res.xyz("N" ).y(), res.xyz("N" ).z() );
+			Eigen::Vector3f CA( res.xyz("CA").x(), res.xyz("CA").y(), res.xyz("CA").z() );
+			Eigen::Vector3f C ( res.xyz("C" ).x(), res.xyz("C" ).y(), res.xyz("C" ).z() );
+			// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+			::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
+
+			runtime_assert( xform_magnitude( bbactor.position(), 1) < 0.001 );	// double check that we are in fact at the identity
+		}
+
 
 		std::vector<int> atypemap = get_rif_atype_map();
 
@@ -286,42 +298,7 @@ struct RichardsonRotData {
 	}
 
 
-core::conformation::ResidueOP
-get_residue_at_identity( 
-	core::chemical::ResidueType const & rtype,
-	std::string const & resname,
-	std::vector<float> const & chi 
-) {
 
-	core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
-	runtime_assert( chi.size() == resop->nchi() );
-	for(int i = 0; i < chi.size(); ++i){
-		resop->set_chi( i+1, chi[i] );
-	}
-
-	{
-		Eigen::Vector3f N ( resop->xyz("N" ).x(), resop->xyz("N" ).y(), resop->xyz("N" ).z() );
-		Eigen::Vector3f CA( resop->xyz("CA").x(), resop->xyz("CA").y(), resop->xyz("CA").z() );
-		Eigen::Vector3f C ( resop->xyz("C" ).x(), resop->xyz("C" ).y(), resop->xyz("C" ).z() );
-		// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
-		::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
-
-		apply_xform_to_residue( *resop, bbactor.position().inverse() );
-	}
-
-	{
-		Eigen::Vector3f N ( resop->xyz("N" ).x(), resop->xyz("N" ).y(), resop->xyz("N" ).z() );
-		Eigen::Vector3f CA( resop->xyz("CA").x(), resop->xyz("CA").y(), resop->xyz("CA").z() );
-		Eigen::Vector3f C ( resop->xyz("C" ).x(), resop->xyz("C" ).y(), resop->xyz("C" ).z() );
-		// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
-		::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
-
-		runtime_assert( xform_magnitude( bbactor.position(), 1) < 0.001 );	// double check that we are in fact at the identity
-	}
-
-	return resop;
-
-}
 
 core::pack::rotamer_set::RotamerSetOP
 get_rosetta_rot_set(
@@ -764,10 +741,10 @@ get_rotamer_index(
 	std::cout << "finish building rotamer_index now try fill rotamer index ... " << std::endl;
 	rot_index_spec.fill_rotamer_index(*rot_index);
 
-	// if (build_per_thread_rotamers) {
-	// 	std::cout << "Building per-thread rotamers for grid scoring..." << std::endl;
-	// 	rot_index->build_per_thread_rotamers();
-	// }
+	if (build_per_thread_rotamers) {
+		std::cout << "Building per-thread rotamers for grid scoring..." << std::endl;
+		rot_index->build_per_thread_rotamers(omp_max_threads());
+	}
 
 	return rot_index;
 }

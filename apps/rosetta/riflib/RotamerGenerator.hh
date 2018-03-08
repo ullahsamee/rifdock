@@ -41,13 +41,6 @@ struct RosettaRotamerGenerator {
 
 };
 
-core::conformation::ResidueOP
-get_residue_at_identity( 
-	core::chemical::ResidueType const & rtype,
-	std::string const & resname,
-	std::vector<float> const & chi 
-);
-
 // makes copy of pose to score
 std::set<std::pair<int,int>>
 get_satisfied_atoms(core::pose::Pose pose, float ethresh=-0.1);
