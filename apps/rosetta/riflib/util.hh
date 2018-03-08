@@ -316,8 +316,8 @@ struct ScoreRotamerVsTarget {
 		float bad_score_thresh = 10.0, // hbonds won't get computed if grid score is above this
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
-		int tmp1=-12345, tmp2=-12345;
-		return score_rotamer_v_target_sat( irot, rbpos, tmp1, tmp2, false, bad_score_thresh, start_atom );
+		int tmp1=-12345, tmp2=-12345, hbcount=0;
+		return score_rotamer_v_target_sat( irot, rbpos, tmp1, tmp2, false, hbcount, bad_score_thresh, start_atom );
 	}
 
 	template< class Xform, class Int >
@@ -328,6 +328,7 @@ struct ScoreRotamerVsTarget {
 		int & sat1,
 		int & sat2,
 		bool want_sats,	// need to do double score if we want_sats and grid scoring
+		int & hbcount, // how many hbonds? Requires (want_sat or ! grid_scorer_) and upweight_multi_hbond_
 		float bad_score_thresh = 10.0, // hbonds won't get computed if grid score is above this
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
@@ -364,7 +365,7 @@ struct ScoreRotamerVsTarget {
 		// in one test: 244m with this, 182m without... need to optimize...
 		if( calculate_hbonds ){
 			float hbscore = 0;
-			int hbcount = 0;
+			// int hbcount = 0;
 			if( rot_index_p_->rotamer(irot).acceptors_.size() > 0 ||
 				rot_index_p_->rotamer(irot).donors_   .size() > 0 )
 			{

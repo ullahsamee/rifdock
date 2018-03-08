@@ -704,9 +704,9 @@ std::string get_rif_type_from_file( std::string fname )
 				//std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
-					int sat1=-1, sat2=-1;
+					int sat1=-1, sat2=-1, hbcount=0;
 					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
-									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, 10.0, 4 );
+									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
 					// todo: should do extra selection here?
 					// if( recalc_rot_v_tgt < -1.0 ){
 					// 	selected_rotamers.push_back( result.rotamers_[i] );
