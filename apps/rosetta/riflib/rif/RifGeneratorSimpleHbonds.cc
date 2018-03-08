@@ -60,6 +60,7 @@
 
 	#include <boost/random/mersenne_twister.hpp>
 	#include <boost/random/uniform_real.hpp>
+	#include <boost/format.hpp>
 
 namespace devel {
 namespace scheme {
@@ -665,9 +666,9 @@ struct HBJob {
 						if ( opts.dump_bindentate_hbonds && hbcount >= 2 ) {
 							omp_set_lock(&io_lock);
 								if( rif_bindentate_out == nullptr ){
-									std::string outfilename = params->output_prefix+"RifGen_bindentate_"+I(3,ir)+hbgeomtag+".pdb.gz";
+									std::string outfilename = params->output_prefix+"RifGen_bindentate_"+boost::str(boost::format("%03i")%ir)+hbgeomtag+".pdb.gz";
 									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
-									rif_hbond_vis_out = new utility::io::ozstream( outfilename );
+									rif_bindentate_out = new utility::io::ozstream( outfilename );
 								}
 								*rif_bindentate_out << "MODEL " << irot << "_" << hbcount << endl;
 								for( auto a : res_atoms ){
