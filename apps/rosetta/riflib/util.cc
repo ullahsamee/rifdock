@@ -927,7 +927,7 @@ xform_pose(
   }
 }
 
-
+#ifdef USEGRIDSCORE
 shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer>
 prepare_grid_scorer(
 	core::pose::Pose const & target,
@@ -1007,7 +1007,7 @@ prepare_grid_scorer(
 
 }
 
-
+#endif
 
 
 

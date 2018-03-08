@@ -30,6 +30,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, target_rf_cache )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_rosetta_grid_energies )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, soft_rosetta_grid_energies )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, data_cache_dir )
 
@@ -215,6 +216,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
 			NEW_OPT(  rif_dock::use_rosetta_grid_energies, "Use Frank's grid energies for scoring", false );
+			NEW_OPT(  rif_dock::soft_rosetta_grid_energies, "Use soft option for grid energies", false );
 
 			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
 			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
@@ -427,6 +429,7 @@ struct RifDockOpt
 	std::string target_rf_cache                      ;
 	bool        only_load_highest_resl               ;
 	bool        use_rosetta_grid_energies            ;
+	bool        soft_rosetta_grid_energies           ;
 	bool        downscale_atr_by_hierarchy           ;
 	float       favorable_1body_multiplier           ;
 	float       favorable_2body_multiplier           ;
@@ -597,6 +600,7 @@ struct RifDockOpt
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
 		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
 		use_rosetta_grid_energies              = option[rif_dock::use_rosetta_grid_energies             ]();
+		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();

@@ -225,19 +225,6 @@ int main(int argc, char *argv[]) {
 		shared_ptr<RifFactory> rif_factory = ::devel::scheme::create_rif_factory( rif_factory_config );
 
 
-
-		// shared_ptr<RifFactory> rif_factory;
-		// if ( opt.scaffold_provider_type == "SingleFile" ) {
-		// 	rif_factory = ::devel::scheme::create_rif_factory<SingleFileScaffoldProvider>(rif_factory_config);
-		// } else if ( opt.scaffold_provider_type == "Alex" ) {
-		// 	rif_factory = ::devel::scheme::create_rif_factory<MorphingScaffoldProvider>(rif_factory_config);
-		// } else {
-		// 	utility_exit_with_message( "rif_dock_test: unknown scaffold provider type "+opt.scaffold_provider_type );
-		// }
-
-
-
-
 	print_header( "create rotamer index" );
 		
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
@@ -246,34 +233,11 @@ int main(int argc, char *argv[]) {
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		// {
-		// 	utility::io::ozstream out("test.rotidx.gz",std::ios_base::binary);
-		// 	rot_index.save(out);
-		// 	out.close();
-		// }
-		// {
-		// 	RotamerIndex ri2;
-		// 	utility::io::izstream in("test.rotidx.gz",std::ios_base::binary);
-		// 	ri2.load(in);
-		// 	in.close();
+		// Brian resurrects this thing. It's really useful for debugging
+		std::cout << "================ RotamerIndex ===================" << std::endl;\
+		std::cout << rot_index << std::endl;
+		std::cout << "=================================================" << std::endl;
 
-		// 	std::cout << rot_index << std::endl;
-		// 	std::cout << std::endl;
-		// 	std::cout << ri2 << std::endl;
-
-		// 	runtime_assert( ri2 == rot_index );
-		// 	utility_exit_with_message("test rot index load/save");
-		// }
-
-		// std::cout << "================ RotamerIndex ===================" << std::endl;
-		// std::cout << rot_index.size() << " " << rot_index.n_primary_rotamers() << std::endl;
-		// std::cout << rot_index << std::endl;
-		// {
-		// 	utility::io::ozstream out("rot_index.pdb");
-		// 	rot_index.dump_pdb( out );
-		// 	utility_exit_with_message("ortsdn");
-		// }
-		// std::cout << "=================================================" << std::endl;
 
 		RotamerRFOpts rotrfopts;
 		rotrfopts.oversample     = opt.rotrf_oversample;
@@ -458,6 +422,20 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+
+#ifdef USEGRIDSCORE
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+	if ( opt.use_rosetta_grid_energies ) {
+		print_header( "preparing rosetta energy grids" );
+		grid_scorer = prepare_grid_scorer( target, target_res );
+	}
+#else
+	if ( opt.use_rosetta_grid_energies ) {
+		utility_exit_with_message( "You must build with -DUSEGRIDSCORE=1 to use -use_rosetta_grid_energies!!!");
+	}
+#endif
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	print_header( "read in RIFs" ); /////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -610,6 +588,10 @@ int main(int argc, char *argv[]) {
 				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
+#ifdef USEGRIDSCORE
+            	rso_config.grid_scorer = grid_scorer;
+            	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;
+#endif
 
 			
 			ScenePtr scene_prototype;
@@ -702,6 +684,9 @@ int main(int argc, char *argv[]) {
  						#endif
  						dokout,
  						scaffold_provider
+#ifdef USEGRIDSCORE
+    				,   grid_scorer
+#endif
 			};
 
 

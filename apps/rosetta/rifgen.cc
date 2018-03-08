@@ -106,7 +106,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rif_rotamers )
 	OPT_1GRP_KEY( Boolean       , rifgen, use_rosetta_grid_energies )
-	OPT_1GRP_KEY( Real          , rifgen, rosetta_grid_energies_bbox_padding )
+	OPT_1GRP_KEY( Boolean       , rifgen, soft_rosetta_grid_energies )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
@@ -167,6 +167,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
 		NEW_OPT(  rifgen::extra_rif_rotamers               , "" , true );
 		NEW_OPT(  rifgen::use_rosetta_grid_energies        , "Use Frank's grid energies for scoring polar residues", false );
+		NEW_OPT(  rifgen::soft_rosetta_grid_energies       , "Use soft option for grid energies", false );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
@@ -681,6 +682,7 @@ int main(int argc, char *argv[]) {
 		params->field_by_atype = field_by_atype;
 #ifdef USEGRIDSCORE
 		params->grid_scorer = grid_scorer;
+		params->soft_grid_energies = option[rifgen::soft_rosetta_grid_energies]();
 #endif
 
 		for( int igen = 0; igen < generators.size(); ++igen )

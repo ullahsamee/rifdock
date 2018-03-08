@@ -35,6 +35,10 @@
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <complex>
 
+#ifdef USEGRIDSCORE
+#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+#endif
+
 
 namespace devel {
 namespace scheme {
@@ -500,6 +504,10 @@ std::string get_rif_type_from_file( std::string fname )
 			std::vector<VoxelArrayPtr> const & target_field_by_atype,
 			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
 			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
+#ifdef USEGRIDSCORE
+            shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
+            bool soft_grid_energies,
+#endif
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
 			packing_ = true;
@@ -515,6 +523,10 @@ std::string get_rif_type_from_file( std::string fname )
 			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
 			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
 			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+#ifdef USEGRIDSCORE
+            rot_tgt_scorer_.grid_scorer_ = grid_scorer;
+            rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
+#endif
 			packopts_ = hackpackopts;
 			always_available_rotamers_.clear();
 			for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
@@ -694,7 +706,7 @@ std::string get_rif_type_from_file( std::string fname )
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
 					int sat1=-1, sat2=-1;
 					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
-									result.rotamers_[i].second, bb.position(), sat1, sat2, 10.0, 4 );
+									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, 10.0, 4 );
 					// todo: should do extra selection here?
 					// if( recalc_rot_v_tgt < -1.0 ){
 					// 	selected_rotamers.push_back( result.rotamers_[i] );
@@ -992,6 +1004,10 @@ struct RifFactoryImpl :
     			*config.target_field_by_atype,
     			*config.target_donors,
     			*config.target_acceptors,
+#ifdef USEGRIDSCORE
+                config.grid_scorer,
+                config.soft_grid_energies,
+#endif
     			local_packopts
     		);
         }

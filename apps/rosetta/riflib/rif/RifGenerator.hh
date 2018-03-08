@@ -61,6 +61,7 @@ struct RifGenParams {
 	HBRayOpts                      hbopt;
 #ifdef USEGRIDSCORE
 	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+	bool                           soft_grid_energies;
 #endif
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;

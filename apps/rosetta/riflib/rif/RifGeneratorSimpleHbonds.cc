@@ -219,6 +219,7 @@ struct HBJob {
 			rot_tgt_scorer.upweight_iface_ = 1.0;
 #ifdef USEGRIDSCORE
 			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
+			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
 #endif
 
 
@@ -632,7 +633,8 @@ struct HBJob {
 
 
 						int sat1=-1, sat2=-1;
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 10.0, 0 );
+						bool want_sats = n_sat_groups > 0;
+						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, want_sats, 10.0, 0 );
 						if( positioned_rotamer_score > opts.score_threshold ) continue;
 
 						if( n_sat_groups > 0 ){

@@ -169,7 +169,10 @@ namespace rif {
 				rot_tgt_scorer.hbond_weight_ = this->opts.hbond_weight;
 				rot_tgt_scorer.upweight_multi_hbond_ = this->opts.upweight_multi_hbond;
 				rot_tgt_scorer.upweight_iface_ = 1.0;
-
+#ifdef USEGRIDSCORE
+				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
+				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
+#endif
 			}
 		}
 
