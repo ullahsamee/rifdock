@@ -474,7 +474,7 @@ struct HBJob {
 			if( override ) hbgeomtag += "__" + target_tag;
 
 			utility::io::ozstream *rif_hbond_vis_out = nullptr;
-			utility::io::ozstream *rif_bindentate_out = nullptr;
+			utility::io::ozstream *rif_bidentate_out = nullptr;
 
 			omp_set_lock( &hbond_io_locks[hbgeomtag] );
 			if( ! hbond_geoms_cache[hbgeomtag] ){
@@ -665,19 +665,19 @@ struct HBJob {
 
 						if ( opts.dump_bindentate_hbonds && hbcount >= 2 ) {
 							omp_set_lock(&io_lock);
-								if( rif_bindentate_out == nullptr ){
-									std::string outfilename = params->output_prefix+"RifGen_bindentate_"+boost::str(boost::format("%03i")%ir)+hbgeomtag+".pdb.gz";
+								if( rif_bidentate_out == nullptr ){
+									std::string outfilename = params->output_prefix+"RifGen_bidentate_"+boost::str(boost::format("%03i")%ir)+hbgeomtag+".pdb.gz";
 									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
-									rif_bindentate_out = new utility::io::ozstream( outfilename );
+									rif_bidentate_out = new utility::io::ozstream( outfilename );
 								}
-								*rif_bindentate_out << "MODEL " << irot << "_" << hbcount << endl;
+								*rif_bidentate_out << "MODEL " << irot << "_" << hbcount << endl;
 								for( auto a : res_atoms ){
 									Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
 									tmp = xalign*tmp;
 									a.set_position( tmp );
-									::scheme::actor::write_pdb( *rif_bindentate_out, a, rot_index.chem_index_ );
+									::scheme::actor::write_pdb( *rif_bidentate_out, a, rot_index.chem_index_ );
 								}
-								*rif_bindentate_out << "ENDMDL" << endl;
+								*rif_bidentate_out << "ENDMDL" << endl;
 
 							omp_unset_lock(&io_lock);
 						}
@@ -805,6 +805,11 @@ struct HBJob {
 				}
 			}
 			// omp_unset_lock(&cout_lock);
+
+			if( rif_bidentate_out ){
+				rif_bidentate_out->close();
+				delete rif_bidentate_out;
+			}
 
 			if( rif_hbond_vis_out ){
 				rif_hbond_vis_out->close();
