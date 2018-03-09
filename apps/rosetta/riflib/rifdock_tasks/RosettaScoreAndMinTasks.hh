@@ -29,12 +29,14 @@ struct FilterForRosettaScoreTask : public AnyPointTask {
         float rosetta_score_fraction,
         float rosetta_score_then_min_below_thresh,
         int rosetta_score_at_least,
-        int rosetta_score_at_most
+        int rosetta_score_at_most,
+        bool rosetta_select_random
         ) :
         rosetta_score_fraction_( rosetta_score_fraction ),
         rosetta_score_then_min_below_thresh_( rosetta_score_then_min_below_thresh ),
         rosetta_score_at_least_( rosetta_score_at_least ),
-        rosetta_score_at_most_( rosetta_score_at_most )
+        rosetta_score_at_most_( rosetta_score_at_most ),
+        rosetta_select_random_( rosetta_select_random )
         {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -68,6 +70,7 @@ private:
     float rosetta_score_then_min_below_thresh_;
     int rosetta_score_at_least_;
     int rosetta_score_at_most_;
+    bool rosetta_select_random_;
 
 };
 

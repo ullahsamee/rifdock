@@ -773,7 +773,7 @@ int main(int argc, char *argv[]) {
 				} 
 				else {
 					task_list.push_back(make_shared<FilterForRosettaScoreTask>( opt.rosetta_score_fraction,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
-						                                                        opt.rosetta_score_at_most )); 
+						                                                        opt.rosetta_score_at_most, opt.rosetta_score_select_random )); 
 				}
 
 				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "hackpack_scores.dat")); 
