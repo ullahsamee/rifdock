@@ -57,6 +57,48 @@ SortByScoreTask::return_any_points(
 }
     
 
+shared_ptr<std::vector<SearchPoint>> 
+DumpScoresTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+DumpScoresTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+DumpScoresTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+DumpScoresTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    std::ofstream out;
+    out.open( file_name_ );
+
+    out << "RifDockIndex\tscore" << std::endl;
+    for ( AnyPoint const & pt : *any_points ) {
+        out << pt.index << "\t" << pt.score << std::endl;
+    }
+
+    out.close();
+
+    return any_points;
+}
+    
 
 
 }}

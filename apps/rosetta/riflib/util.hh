@@ -423,7 +423,6 @@ struct ScoreRotamerVsTarget {
 						}
 					}
 				}
-
 			}
 			// oh god, fix me..... what should the logic be??? probably "softer" thresh on thishb to count
 			if( upweight_multi_hbond_ != 0 ){

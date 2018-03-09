@@ -775,12 +775,19 @@ int main(int argc, char *argv[]) {
 					task_list.push_back(make_shared<FilterForRosettaScoreTask>( opt.rosetta_score_fraction,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
 						                                                        opt.rosetta_score_at_most )); 
 				}
+
+				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "hackpack_scores.dat")); 
+
 				task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min)); 
+
+				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_scores.dat")); 
 			}
 
 			if ( do_rosetta_min ) {
 				task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction ));
 				task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut )); 
+
+				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_min_scores.dat")); 
 			}
 			
 			task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, opt.force_output_if_close_to_input_num, 
