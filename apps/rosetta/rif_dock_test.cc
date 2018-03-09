@@ -777,6 +777,7 @@ int main(int argc, char *argv[]) {
 				}
 
 				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "hackpack_scores.dat")); 
+				if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpRotScoresTask>( "hackpack_rot_scores.dat", false, final_resl)); 
 
 				task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min)); 
 
