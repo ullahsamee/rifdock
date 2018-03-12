@@ -455,7 +455,7 @@ struct ScoreRotamerVsTarget {
 					hbscore += hbscore * multihb * upweight_multi_hbond_; // should multihb be additive or multiplicative?
 				}
 			}
-			if( hbscore < 0 && ! grid_scorer_) score += hbscore;
+			if( hbscore < 0 && ! use_grid_scorer ) score += hbscore;
 		}
 		return score * upweight_iface_;
 	}
