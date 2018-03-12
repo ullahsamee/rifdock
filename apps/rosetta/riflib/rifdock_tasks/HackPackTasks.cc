@@ -188,6 +188,10 @@ sanity_check_rots(
     rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
     rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+#ifdef USEGRIDSCORE
+    rot_tgt_scorer.grid_scorer_ = rdd.grid_scorer;
+    rot_tgt_scorer.soft_grid_energies_ = rdd.opt.soft_rosetta_grid_energies;
+#endif
 
 
     bool only_bad = true;

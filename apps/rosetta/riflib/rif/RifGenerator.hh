@@ -19,6 +19,10 @@
 #include <utility/vector1.hh>
 #include <string>
 
+#ifdef USEGRIDSCORE
+	#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+#endif
+
 namespace scheme {
 namespace chemical {
 	struct RotamerIndexSpec;
@@ -55,6 +59,10 @@ struct RifGenParams {
 	std::vector<std::string>       cache_data_path;
 	std::vector< VoxelArray* >     field_by_atype;
 	HBRayOpts                      hbopt;
+#ifdef USEGRIDSCORE
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+	bool                           soft_grid_energies;
+#endif
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;
 

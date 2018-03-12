@@ -78,6 +78,8 @@ FilterForRosettaScoreTask::return_any_points(
     n_scormin = std::min<int>( std::max<int>( n_scormin, rosetta_score_at_least_ ), rosetta_score_at_most_ );
     n_scormin = std::min<int>( n_scormin, any_points->size() );
 
+    if ( rosetta_select_random_ ) std::random_shuffle( any_points->begin(), any_points->end() );
+
     any_points->resize(n_scormin);
 
     return any_points;

@@ -75,15 +75,17 @@ get_rotamer_spec_default(
 	bool extra_rotamers,
 	bool extra_primary_rotamers	
 );
-//new get_rotamer_index for rot_spec
-std::shared_ptr<RotamerIndex>
+
+shared_ptr<RotamerIndex>
 get_rotamer_index(
-	::scheme::chemical::RotamerIndexSpec const & rot_index
+	::scheme::chemical::RotamerIndexSpec const & rot_index,
+	bool build_per_thread_rotamers
 );
 
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
-	std::string cachefile
+	std::string cachefile,
+	bool build_per_thread_rotamers
 );
 
 
