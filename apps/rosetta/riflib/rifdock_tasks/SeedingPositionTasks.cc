@@ -15,8 +15,17 @@
 
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/scaffold/util.hh>
+#include <riflib/seeding_util.hh>
 
 #include <core/import_pose/import_pose.hh>
+
+#include <riflib/rifdock_tasks/HSearchTasks.hh>
+#include <riflib/rifdock_tasks/SetFaModeTasks.hh>
+#include <riflib/rifdock_tasks/HackPackTasks.hh>
+#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
+#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
+#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
+#include <riflib/rifdock_tasks/UtilTasks.hh>
 
 #include <string>
 #include <vector>
@@ -81,38 +90,114 @@ DiversifyBySeedingPositionsTask::return_any_points(
 }
     
 
-shared_ptr<std::vector<EigenXform>>
-setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP & scaffold_provider ) {
 
-    shared_ptr<std::vector<EigenXform>> seeding_positions = make_shared<std::vector<EigenXform>>();
+shared_ptr<std::vector<SearchPoint>> 
+DiversifyByXformFileTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+DiversifyByXformFileTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+DiversifyByXformFileTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
 
-    if ( opt.seed_with_these_pdbs.size() > 0 ) {
-        if ( opt.seed_include_input ) {
-            std::cout << "Adding seeding position: " << "_SP_input" << std::endl;
-            seeding_positions->push_back(EigenXform::Identity());
-            pd.seeding_tags.push_back("_input");
-        }
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+DiversifyByXformFileTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
 
-        core::pose::Pose const & input = *scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_unmodified_p;
 
-        for ( std::string const & pdb : opt.seed_with_these_pdbs ) {
-            std::string tag = "_SP_" + pdb_name( pdb );
-            std::cout << "Adding seeding position: " << tag << std::endl;
-            core::pose::Pose pose;
-            core::import_pose::pose_from_file( pose, pdb );
-            std::cout << pose.size() << " " << input.size() << std::endl;
-            EigenXform xform = find_xform_from_identical_pose_to_pose( input, pose, 1 );
-            seeding_positions->push_back(xform);
-            pd.seeding_tags.push_back( tag );
-        }
-
-        return seeding_positions;
+    std::vector< std::pair< int64_t, EigenXform > > xform_positions;
+    {
+        runtime_assert_msg(parse_exhausitive_searching_file(file_name_, xform_positions /*, 10*/), "Faild to parse the xform file!!!");
     }
 
+    uint64_t nest_size = xform_positions.size();
 
-    return nullptr;
+    shared_ptr<std::vector<AnyPoint>> diversified = make_shared<std::vector<AnyPoint>>( nest_size * any_points->size() );
+
+    uint64_t added = 0;
+    for ( AnyPoint const & pt : *any_points ) {
+
+        for ( uint64_t i = 0; i < nest_size; i++ ) {
+            (*diversified)[added] = pt;
+            (*diversified)[added].index.nest_index = xform_positions[i].first;
+            added++;
+        }
+    }
+
+    any_points->clear();
+
+    return diversified;
+}
+
+
+
+
+void
+create_rifine_task( 
+    std::vector<shared_ptr<Task>> & task_list, RifDockData & rdd ) {
+
+    RifDockOpt const & opt = rdd.opt;
+    int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+
+    task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
+    task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+    
+    task_list.push_back(make_shared<HSearchInit>( ));
+    task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, rdd.opt.tether_to_input_position_cut ));
+    task_list.push_back(make_shared<HSearchFinishTask>( rdd.opt.global_score_cut ));
+
+    task_list.push_back(make_shared<FilterToBestNTask>( int( std::ceil ( opt.beam_size / seeding_size ) ), opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately));
+    task_list.push_back(make_shared<FilterByScoreCutTask>( opt.cluster_score_cut ));
+    task_list.push_back(make_shared<FilterByFracTask>( opt.hack_pack_frac, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+
+    task_list.push_back(make_shared<SetFaModeTask>( true ));
+    task_list.push_back(make_shared<HackPackTask>(  0, 9e9 )); // hackpack sorts the results
+
+    task_list.push_back(make_shared<FilterByScoreCutTask>( opt.cluster_score_cut ));
+    task_list.push_back(make_shared<FilterByBiggestBlocksFracTask>( opt.keep_top_clusters_frac, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+    task_list.push_back(make_shared<FilterByScoreCutTask>( opt.global_score_cut ));
+    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, 100000000, opt.redundancy_filter_mag, 0, 0, 
+                                                                                      opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
+    
+    bool do_rosetta_score = opt.rosetta_score_fraction > 0;
+    bool do_rosetta_min = do_rosetta_score && opt.rosetta_min_fraction > 0;
+
+    if ( opt.rosetta_score_fraction > 0 ) {
+        task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+        task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min, true));
+    }
+
+    if ( do_rosetta_min ) {
+        task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction ));
+        task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut, false )); 
+    }
+
+    // dummy task to turn these into RifDockResults
+    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, 100000000, opt.redundancy_filter_mag, 0, 0, 
+                                                                                      opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
+
+    task_list.push_back(make_shared<OutputResultsTask>( ));
+
+
 
 }
+
 
 
 

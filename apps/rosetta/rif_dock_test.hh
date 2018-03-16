@@ -186,6 +186,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
+	OPT_1GRP_KEY(  StringVector, rif_dock, seeding_pos )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, seeding_by_patchdock )
+    OPT_1GRP_KEY(  String      , rif_dock, xform_pos )
+    OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_each_seeding_at_least )
+    OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
+
 
 
 
@@ -369,6 +376,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
+			NEW_OPT(  rif_dock::seeding_pos, "" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::seeding_by_patchdock, "The format of seeding file can be either Rosetta Xform or raw patchdock outputs", true );
+            NEW_OPT(  rif_dock::xform_pos, "" , "" );
+            NEW_OPT(  rif_dock::rosetta_score_each_seeding_at_least, "", -1 );
+            NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
+            NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
+
 		}
 	#endif
 #endif
@@ -536,6 +550,13 @@ struct RifDockOpt
 	std::vector<std::string> seed_with_these_pdbs    ;
 	bool        seed_include_input                   ;
 
+    std::vector<std::string> seeding_fnames          ;
+    std::string xform_fname                          ;
+    float       rosetta_score_each_seeding_at_least  ;
+    float       cluster_score_cut                    ;
+    float       keep_top_clusters_frac               ;
+    bool        seeding_by_patchdock                 ;
+
 
     void init_from_cli();
 
@@ -700,6 +721,12 @@ struct RifDockOpt
 
 		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
 
+		seeding_by_patchdock                    = option[rif_dock::seeding_by_patchdock                 ]();
+        xform_fname                             = option[rif_dock::xform_pos                            ]();
+        rosetta_score_each_seeding_at_least     = option[rif_dock::rosetta_score_each_seeding_at_least  ]();
+        cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
+        keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
+
 
 
 
@@ -772,6 +799,7 @@ struct RifDockOpt
 
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
+        for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
 
 	}
 

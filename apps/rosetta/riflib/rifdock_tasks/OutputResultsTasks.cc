@@ -18,6 +18,7 @@
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/pose/PDBInfo.hh>
+#include <core/pose/Pose.hh>
 
 #include <string>
 #include <vector>
@@ -278,7 +279,13 @@ dump_rif_result_(
 
     // Add PDBInfo labels if they are applicable
     bool using_rosetta_model = selected_result.pose_ != nullptr;
-    core::pose::Pose & pose_to_dump( *(selected_result.pose_ ? selected_result.pose_.get() : &pose_from_rif) );
+
+    core::pose::PoseOP stored_pose = selected_result.pose_;
+    if ( using_rosetta_model ) {
+        stored_pose = stored_pose->split_by_chain().front();
+    }
+
+    core::pose::Pose & pose_to_dump( using_rosetta_model ? *stored_pose : pose_from_rif );
     if( !using_rosetta_model ){
         if( rdd.opt.pdb_info_pikaa ){
             for( auto p : pikaa ){

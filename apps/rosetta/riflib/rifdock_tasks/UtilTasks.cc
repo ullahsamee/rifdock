@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <riflib/seeding_util.hh>
 
 #include <boost/format.hpp>
 
@@ -60,6 +61,251 @@ SortByScoreTask::return_any_points(
     return any_points;
 }
     
+
+shared_ptr<std::vector<SearchPoint>> 
+FilterToBestNTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterToBestNTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterToBestNTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterToBestNTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        filter_seeding_positions_separately_, 
+                                        filter_scaffolds_separately_ );
+
+    std::vector<RifDockIndex> keys;
+    keys.reserve(map.size());
+    for ( auto pair : map ) {
+        keys.push_back(pair.first);
+    }
+
+    int num_keys = keys.size();
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+    for ( int i = 0; i < num_keys; i++ ) {
+        std::nth_element( map[keys[i]].begin(), map[keys[i]].begin()+n_, map[keys[i]].end());
+    }
+
+    any_points->resize(0);
+    any_points->reserve(map.size() * n_ );
+
+    for ( int i = 0; i < num_keys; i++ ) {
+        std::vector<AnyPoint> const & vec = map[keys[i]];
+        int count = std::min<int>( n_, vec.size());
+        for ( int j = 0; j < count; j++ ) {
+            any_points->push_back( vec[j] );
+        }
+    }
+
+    return any_points;
+}
+    
+
+
+shared_ptr<std::vector<SearchPoint>> 
+FilterByScoreCutTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterByScoreCutTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterByScoreCutTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterByScoreCutTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    shared_ptr<std::vector<AnyPoint>> out = make_shared<std::vector<AnyPoint>>();
+    out->reserve( any_points->size());
+
+    for ( AnyPoint const & pt : *any_points ) {
+        if ( pt.score > score_cut_ ) continue;
+        out->push_back( pt );
+    }
+
+    any_points->resize(0);
+    return out;
+}
+    
+
+
+
+shared_ptr<std::vector<SearchPoint>> 
+FilterByFracTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterByFracTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterByFracTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterByFracTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        filter_seeding_positions_separately_, 
+                                        filter_scaffolds_separately_ );
+
+    std::vector<RifDockIndex> keys;
+    keys.reserve(map.size());
+    for ( auto pair : map ) {
+        keys.push_back(pair.first);
+    }
+
+    int num_keys = keys.size();
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+    for ( int i = 0; i < num_keys; i++ ) {
+        std::sort( map[keys[i]].begin(), map[keys[i]].end());
+    }
+
+    int trial_size = any_points->size() * frac_;
+    any_points->resize(0);
+    any_points->reserve(trial_size );
+
+    for ( int i = 0; i < num_keys; i++ ) {
+        std::vector<AnyPoint> const & vec = map[keys[i]];
+        int count = int(std::ceil(vec.size() * frac_));
+        count = std::max<int>( keep_at_least_, count );
+        count = std::min<int>( count, vec.size() );
+        for ( int j = 0; j < count; j++ ) {
+            any_points->push_back( vec[j] );
+        }
+    }
+
+    return any_points;
+}
+    
+shared_ptr<std::vector<SearchPoint>> 
+FilterByBiggestBlocksFracTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+FilterByBiggestBlocksFracTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+FilterByBiggestBlocksFracTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+FilterByBiggestBlocksFracTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        filter_seeding_positions_separately_, 
+                                        filter_scaffolds_separately_ );
+
+    std::vector<RifDockIndex> keys;
+    keys.reserve(map.size());
+    std::vector<size_t> sizes;
+    sizes.reserve(map.size());
+    for ( auto pair : map ) {
+        keys.push_back(pair.first);
+        sizes.push_back(pair.second.size());
+    }
+
+    __gnu_parallel::sort( sizes.begin(), sizes.end() );
+
+    size_t last_index = int( std::floor ( (1 - frac_) * sizes.size() ) );
+    size_t cut_size = sizes.at(last_index);
+
+    int trial_size = any_points->size() * frac_;
+    any_points->resize(0);
+    any_points->reserve(trial_size );
+
+    int num_keys = keys.size();
+    for ( int i = 0; i < num_keys; i++ ) {
+        std::vector<AnyPoint> const & vec = map[keys[i]];
+        if (vec.size() < cut_size) continue;
+
+        int count = vec.size();
+        for ( int j = 0; j < count; j++ ) {
+            any_points->push_back( vec[j] );
+        }
+    }
+
+    return any_points;
+}
+    
+
+
 
 shared_ptr<std::vector<SearchPoint>> 
 DumpScoresTask::return_search_points( 

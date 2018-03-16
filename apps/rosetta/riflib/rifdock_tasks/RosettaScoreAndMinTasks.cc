@@ -135,7 +135,7 @@ RosettaScoreTask::return_search_point_with_rotss(
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
-    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, false, will_do_min_);
+    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, false, will_do_min_, store_pose_);
 
     return search_point_with_rotss;
 }
@@ -146,7 +146,7 @@ RosettaMinTask::return_search_point_with_rotss(
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
-    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, true, true);
+    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, true, true, store_pose_);
 
     return search_point_with_rotss;
 }
@@ -161,7 +161,8 @@ rosetta_score_inner(
     ProtocolData & pd,
     float rosetta_score_cut,
     bool is_minimizing,
-    bool will_do_min
+    bool will_do_min,
+    bool store_pose
     ) {
     devel::scheme::RotamerIndex & rot_index = *rdd.rot_index_p;
     std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
@@ -506,7 +507,7 @@ rosetta_score_inner(
             }
 
 
-            if( (is_minimizing || !will_do_min)     && packed_results[imin].score < rdd.opt.rosetta_score_cut ){
+            if( store_pose     && packed_results[imin].score < rdd.opt.rosetta_score_cut ){
                 packed_results[imin].pose_ = core::pose::PoseOP( new core::pose::Pose(pose_to_min) );
                 for(int ir : rifres){
                     packed_results[imin].pose_->pdb_info()->add_reslabel(ir, "RIFRES" );
