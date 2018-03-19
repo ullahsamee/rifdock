@@ -141,13 +141,13 @@ HSearchScoreAtReslTask::return_search_points(
     bool using_csts = false;
     for ( ScaffoldIndex si : pd.unique_scaffolds ) {
         ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
-        using_csts |= sdc->prepare_contraints( rdd.target, rdd.RESLS[resl_] );
+        using_csts |= sdc->prepare_contraints( rdd.target, rdd.RESLS[rif_resl_] );
     }
 
     bool need_sdc = using_csts || tether_to_input_position_cut_ != 0;
 
 
-    cout << "HSearsh stage " << resl_+1 << " resl " << F(5,2,rdd.RESLS[resl_]) << " begin threaded sampling, " << KMGT(search_points.size()) << " samples: ";
+    cout << "HSearsh stage " << rif_resl_+1 << " resl " << F(5,2,rdd.RESLS[rif_resl_]) << " begin threaded sampling, " << KMGT(search_points.size()) << " samples: ";
     int64_t const out_interval = search_points.size()/50;
     std::exception_ptr exception = nullptr;
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
@@ -164,7 +164,7 @@ HSearchScoreAtReslTask::return_search_points(
             RifDockIndex const isamp = search_points[i].index;
 
             ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-            bool director_success = rdd.director->set_scene( isamp, resl_, *tscene );
+            bool director_success = rdd.director->set_scene( isamp, director_resl_, *tscene );
             if ( ! director_success ) {
                 search_points[i].score = 9e9;
                 continue;
@@ -178,10 +178,10 @@ HSearchScoreAtReslTask::return_search_points(
                     float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
 
                     EigenXform x;// = tscene->position(1);
-                    rdd.nest.get_state( isamp.nest_index, resl_, x );
+                    rdd.nest.get_state( isamp.nest_index, director_resl_, x );
                     x.translation() -= sdc->scaffold_center;
                     float xmag =  xform_magnitude( x, redundancy_filter_rg );
-                    if( xmag > tether_to_input_position_cut_ + rdd.RESLS[resl_] ){
+                    if( xmag > tether_to_input_position_cut_ + rdd.RESLS[rif_resl_] ){
                         search_points[i].score = 9e9;
                         continue;
                     } 
@@ -207,7 +207,7 @@ HSearchScoreAtReslTask::return_search_points(
             }
 
             // the real rif score!!!!!!
-            search_points[i].score = rdd.objectives[resl_]->score( *tscene );// + tot_sym_score;
+            search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene );// + tot_sym_score;
 
 
         } catch( std::exception const & ex ) {
@@ -391,7 +391,7 @@ DumpHSearchFramesTask::return_search_points(
         if ( (   dump_only_best_frames_ && i < dump_x_frames_per_resl_ ) ||
              ( ! dump_only_best_frames_ && ( i % dump_every ) == 0 )) {
             std::string filename = prefix_ + boost::str( boost::format( "_%06i.pdb.gz" ) % (i/dump_every));
-            dump_search_point_( rdd, (*search_points_p)[i], filename, resl_, true );
+            dump_search_point_( rdd, (*search_points_p)[i], filename, director_resl_, rif_resl_, true );
         }
     }
 

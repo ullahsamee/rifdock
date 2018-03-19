@@ -53,6 +53,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, downscale_atr_by_hierarchy )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier )
+	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier_cutoff )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
@@ -116,6 +117,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_least )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_fix_target )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_scaffoldbb )
@@ -219,7 +221,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_rf_resl, ""       , 0.25 );
 			NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
 			NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
-			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than 0 gets multiplied by this", 1 );
+			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than favorable_1body_cutoff gets multiplied by this", 1 );
+			NEW_OPT(  rif_dock::favorable_1body_multiplier_cutoff, "Anything with a one-body energy less than this gets multiplied by favorable_1body_multiplier", 0 );
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
@@ -260,7 +263,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
-			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", false );
+			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", true );
 			NEW_OPT(  rif_dock::filter_scaffolds_separately, "Redundancy filter each scaffold separately", true );
 
 			NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
@@ -308,6 +311,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
+			NEW_OPT(  rif_dock::rosetta_min_at_least, "", -1 );
 			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
@@ -450,6 +454,7 @@ struct RifDockOpt
 	bool        soft_rosetta_grid_energies           ;
 	bool        downscale_atr_by_hierarchy           ;
 	float       favorable_1body_multiplier           ;
+	float       favorable_1body_multiplier_cutoff    ;
 	float       favorable_2body_multiplier           ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
@@ -486,6 +491,7 @@ struct RifDockOpt
 	float       rosetta_score_at_least               ;
 	float       rosetta_score_at_most                ;
 	float       rosetta_min_fraction                 ;
+	int         rosetta_min_at_least                 ;
 	bool        rosetta_min_fix_target               ;
 	bool        rosetta_min_targetbb                 ;
 	bool        rosetta_min_scaffoldbb               ;
@@ -630,6 +636,7 @@ struct RifDockOpt
 		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
+		favorable_1body_multiplier_cutoff      = option[rif_dock::favorable_1body_multiplier_cutoff     ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
@@ -666,6 +673,7 @@ struct RifDockOpt
   		rosetta_score_at_least                 = option[rif_dock::rosetta_score_at_least                ]();
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
   		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
+  		rosetta_min_at_least                   = option[rif_dock::rosetta_min_at_least                  ]();
   		rosetta_min_fix_target                 = option[rif_dock::rosetta_min_fix_target                ]();
   		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
   		rosetta_min_scaffoldbb                 = option[rif_dock::rosetta_min_scaffoldbb                ]();

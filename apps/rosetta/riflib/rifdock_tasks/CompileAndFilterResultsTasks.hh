@@ -24,7 +24,8 @@ namespace scheme {
 struct CompileAndFilterResultsTask : public RifDockResultTask {
 
     CompileAndFilterResultsTask( 
-        int resl,
+        int director_resl,
+        int rif_resl,
         int n_per_block,
         float redundancy_mag,
         int force_output_if_close_to_input_num,
@@ -32,7 +33,8 @@ struct CompileAndFilterResultsTask : public RifDockResultTask {
         bool filter_seeding_positions_separately,
         bool filter_scaffolds_separately
          ) : 
-        resl_( resl ),
+        director_resl_( director_resl ),
+        rif_resl_( rif_resl ),
         n_per_block_( n_per_block ),
         redundancy_mag_( redundancy_mag ),
         force_output_if_close_to_input_num_( force_output_if_close_to_input_num ),
@@ -63,7 +65,8 @@ struct CompileAndFilterResultsTask : public RifDockResultTask {
 
 
 private:
-    int resl_;
+    int director_resl_;
+    int rif_resl_;
     int n_per_block_;
     float redundancy_mag_;
     int force_output_if_close_to_input_num_;

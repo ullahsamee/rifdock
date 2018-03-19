@@ -154,45 +154,50 @@ create_rifine_task(
 
     RifDockOpt const & opt = rdd.opt;
     int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+    int final_resl = rdd.RESLS.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
     task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
     
     task_list.push_back(make_shared<HSearchInit>( ));
-    task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, rdd.opt.tether_to_input_position_cut ));
-    task_list.push_back(make_shared<HSearchFinishTask>( rdd.opt.global_score_cut ));
+    task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, final_resl, rdd.opt.tether_to_input_position_cut ));
+    // task_list.push_back(make_shared<HSearchFinishTask>( rdd.opt.global_score_cut ));
 
     task_list.push_back(make_shared<FilterToBestNTask>( int( std::ceil ( opt.beam_size / seeding_size ) ), opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately));
     task_list.push_back(make_shared<FilterByScoreCutTask>( opt.cluster_score_cut ));
     task_list.push_back(make_shared<FilterByFracTask>( opt.hack_pack_frac, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
 
     task_list.push_back(make_shared<SetFaModeTask>( true ));
-    task_list.push_back(make_shared<HackPackTask>(  0, 9e9 )); // hackpack sorts the results
+    task_list.push_back(make_shared<FilterForHackPackTask>( 1, 0, 0 ));
+    task_list.push_back(make_shared<HackPackTask>(  0, final_resl, 9e9 )); // hackpack sorts the results
 
     task_list.push_back(make_shared<FilterByScoreCutTask>( opt.cluster_score_cut ));
-    task_list.push_back(make_shared<FilterByBiggestBlocksFracTask>( opt.keep_top_clusters_frac, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+    task_list.push_back(make_shared<FilterByBiggestBlocksFracTask>( opt.keep_top_clusters_frac, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately, true ));
     task_list.push_back(make_shared<FilterByScoreCutTask>( opt.global_score_cut ));
-    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, 100000000, opt.redundancy_filter_mag, 0, 0, 
-                                                                                      opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
-    
+    // task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, 100000000, opt.redundancy_filter_mag, 0, 0, 
+    //                                                                                   opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
+    task_list.push_back(make_shared<RemoveRedundantPointsTask>( opt.redundancy_filter_mag, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+
+    task_list.push_back(make_shared<DumpSeedingClusterScoreTask>());
+
     bool do_rosetta_score = opt.rosetta_score_fraction > 0;
     bool do_rosetta_min = do_rosetta_score && opt.rosetta_min_fraction > 0;
 
     if ( opt.rosetta_score_fraction > 0 ) {
         task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
-        task_list.push_back(make_shared<RosettaScoreTask>( opt.rosetta_score_cut, do_rosetta_min, true));
+        task_list.push_back(make_shared<RosettaScoreTask>( 0, opt.rosetta_score_cut, do_rosetta_min, true));
     }
 
     if ( do_rosetta_min ) {
-        task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction ));
-        task_list.push_back(make_shared<RosettaMinTask>( opt.rosetta_score_cut, false )); 
+        task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+        task_list.push_back(make_shared<RosettaMinTask>( 0, opt.rosetta_score_cut, false )); 
     }
 
     // dummy task to turn these into RifDockResults
-    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, 100000000, opt.redundancy_filter_mag, 0, 0, 
+    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, 100000000, 0, 0, 0, 
                                                                                       opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
 
-    task_list.push_back(make_shared<OutputResultsTask>( ));
+    task_list.push_back(make_shared<OutputResultsTask>( 0, final_resl ));
 
 
 

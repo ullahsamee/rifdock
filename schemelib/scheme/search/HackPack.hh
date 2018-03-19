@@ -160,7 +160,7 @@ struct HackPack
 			rot_list_.push_back( std::make_pair( nres_-1, res_rots_.at(nres_-1).second.size() ) );
 			res_rots_.at(nres_-1).second.push_back( RotInfo( irotlocal, onebody_e ) );
 		} else {
-			std::cout << "Error!!!: Rotamer not in twobody energies " << irotglobal << " " << ires << std::endl;
+			// std::cout << "Error!!!: Rotamer not in twobody energies " << irotglobal << " " << ires << std::endl;
 			// static bool missingrotwarn = true;
 			// if( missingrotwarn ){
 			// 	#ifdef USE_OPENMP
@@ -414,7 +414,7 @@ struct HackPack
 			nchoices *= res_rots_.at(ires).second.size();
 			if( nchoices > 1000000000000000ull ) break;
 		}
-		if( nchoices == 1 ){
+		if( nchoices == 1 || true){
 			fill_result_rots( result_rots );
 			score_ = compute_energy_full( current_rots_ );
 			return score_;

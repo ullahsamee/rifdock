@@ -361,6 +361,7 @@ struct ScoreRotamerVsTarget {
 			}
 		}
 
+
 		bool calculate_hbonds = ( score < bad_score_thresh ) && ( ! use_grid_scorer || want_sats );
 		// in one test: 244m with this, 182m without... need to optimize...
 		if( calculate_hbonds ){

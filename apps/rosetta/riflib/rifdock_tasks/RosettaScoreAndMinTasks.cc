@@ -119,6 +119,7 @@ FilterForRosettaMinTask::return_any_points(
     size_t n_scormin = 0;
     // min take ~10x score time, so do on 1/10th of the scored
     n_scormin = any_points->size() * rosetta_min_fraction_;
+    n_scormin = std::max<size_t>( n_scormin, rosetta_min_at_least_);
     n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
     n_scormin = std::min( n_scormin, any_points->size() );
 
@@ -135,7 +136,7 @@ RosettaScoreTask::return_search_point_with_rotss(
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
-    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, false, will_do_min_, store_pose_);
+    rosetta_score_inner( search_point_with_rotss, rdd, pd, director_resl_, rosetta_score_cut_, false, will_do_min_, store_pose_);
 
     return search_point_with_rotss;
 }
@@ -146,7 +147,7 @@ RosettaMinTask::return_search_point_with_rotss(
     RifDockData & rdd, 
     ProtocolData & pd ) {
 
-    rosetta_score_inner( search_point_with_rotss, rdd, pd, rosetta_score_cut_, true, true, store_pose_);
+    rosetta_score_inner( search_point_with_rotss, rdd, pd, director_resl_, rosetta_score_cut_, true, true, store_pose_);
 
     return search_point_with_rotss;
 }
@@ -159,6 +160,7 @@ rosetta_score_inner(
     shared_ptr<std::vector< SearchPointWithRots >>  packed_results_p,
     RifDockData & rdd,
     ProtocolData & pd,
+    int director_resl,
     float rosetta_score_cut,
     bool is_minimizing,
     bool will_do_min,
@@ -295,7 +297,7 @@ rosetta_score_inner(
 
             int const ithread = omp_get_thread_num();
 
-            rdd.director->set_scene( packed_results[imin].index, rdd.RESLS.size()-1, *rdd.scene_pt[ithread] );
+            rdd.director->set_scene( packed_results[imin].index, director_resl, *rdd.scene_pt[ithread] );
             EigenXform xposition1 = rdd.scene_pt[ithread]->position(1);
             EigenXform xalignout = EigenXform::Identity();
             if( rdd.opt.align_to_scaffold ) xalignout = xposition1.inverse();

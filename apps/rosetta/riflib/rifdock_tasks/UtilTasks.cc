@@ -272,6 +272,18 @@ FilterByBiggestBlocksFracTask::return_any_points(
                                         filter_seeding_positions_separately_, 
                                         filter_scaffolds_separately_ );
 
+    if ( print_seeds_ ) {
+        std::cout << "Cluster score of each seeding pos:" << std::endl;
+        int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+        for ( int i = 0; i < seeding_size; i++ ) {
+            int size = 0;
+            RifDockIndex rdi = RifDockIndex(0, i, ScaffoldIndex());
+            if (map.count(rdi) > 0) size = map[rdi].size();
+            std::cout << i << ":" << size << " ";
+        }
+        std::cout << std::endl << std::endl;
+    }
+
     std::vector<RifDockIndex> keys;
     keys.reserve(map.size());
     std::vector<size_t> sizes;
@@ -301,9 +313,214 @@ FilterByBiggestBlocksFracTask::return_any_points(
         }
     }
 
+ 
     return any_points;
 }
     
+shared_ptr<std::vector<SearchPoint>> 
+RemoveRedundantPointsTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+RemoveRedundantPointsTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+RemoveRedundantPointsTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+RemoveRedundantPointsTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        filter_seeding_positions_separately_, 
+                                        filter_scaffolds_separately_ );
+
+    std::vector<RifDockIndex> keys;
+    keys.reserve(map.size());
+    for ( auto pair : map ) {
+        keys.push_back(pair.first);
+    }
+
+    int trial_size = any_points->size();
+    any_points->resize(0);
+    any_points->reserve(trial_size );
+
+    float redundancy_filter_rg = rdd.scaffold_provider->get_data_cache_slow(ScaffoldIndex())
+                                        ->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
+
+    // for ( RifDockIndex const & rdi : keys ) {
+
+    int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+    for ( int seed = 0; seed < seeding_size; seed++ ) {
+        int size = 0;
+        RifDockIndex rdi = RifDockIndex(0, seed, ScaffoldIndex());
+        if (map.count(rdi) == 0) continue;
+        std::vector<AnyPoint> const & vec = map[rdi];
+        runtime_assert( vec.size() > 0 );
+
+        int first_one = any_points->size();
+        any_points->push_back(vec[0]);
+        int end = any_points->size();
+
+
+        for ( int i = 1; i < vec.size(); i++ ) {
+            rdd.director->set_scene( vec[i].index, director_resl_, *rdd.scene_minimal );
+            EigenXform p1 = rdd.scene_minimal->position(1);
+
+            bool is_redundant = false;
+            for ( int j = first_one; j < end; j++ ) {
+                rdd.director->set_scene( any_points->at(j).index, director_resl_, *rdd.scene_minimal );
+                EigenXform p2 = rdd.scene_minimal->position(1);
+
+                float mag = devel::scheme::xform_magnitude( p2 * p1.inverse(), redundancy_filter_rg );
+                if ( mag <= redundancy_mag_ ) {
+                    is_redundant = true;
+                    break;
+                }
+            }
+            if ( ! is_redundant ) {
+                any_points->push_back( vec[i] );
+                end = any_points->size();
+            }
+
+        }
+
+
+    }
+
+
+    std::cout << "Number of total searching points left: " << any_points->size() << std::endl << std::endl;
+
+    return any_points;
+}
+    
+
+shared_ptr<std::vector<SearchPoint>> 
+DumpSeedingClusterScoreTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+DumpSeedingClusterScoreTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+DumpSeedingClusterScoreTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+DumpSeedingClusterScoreTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        true, 
+                                        true );
+
+
+
+    std::cout << "Cluster score of each seeding pos:" << std::endl;
+    int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+    for ( int i = 0; i < seeding_size; i++ ) {
+        int size = 0;
+        RifDockIndex rdi = RifDockIndex(0, i, ScaffoldIndex());
+        if (map.count(rdi) > 0) size = map[rdi].size();
+        if (size > 0 ) std::cout << i << ":" << size << " ";
+    }
+    std::cout << std::endl << std::endl;
+
+    return any_points;
+}
+    
+
+
+shared_ptr<std::vector<SearchPoint>> 
+DumpIndividualScoresTask::return_search_points( 
+    shared_ptr<std::vector<SearchPoint>> search_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+    return return_any_points( search_points, rdd, pd );
+}
+shared_ptr<std::vector<SearchPointWithRots>> 
+DumpIndividualScoresTask::return_search_point_with_rotss( 
+    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( search_point_with_rotss, rdd, pd );
+}
+shared_ptr<std::vector<RifDockResult>> 
+DumpIndividualScoresTask::return_rif_dock_results( 
+    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) { 
+    return return_any_points( rif_dock_results, rdd, pd );
+}
+
+template<class AnyPoint>
+shared_ptr<std::vector<AnyPoint>>
+DumpIndividualScoresTask::return_any_points( 
+    shared_ptr<std::vector<AnyPoint>> any_points, 
+    RifDockData & rdd, 
+    ProtocolData & pd ) {
+
+    typedef _AnyPointVectorsMap<AnyPoint> AnyPointVectorsMap;
+
+    AnyPointVectorsMap map = sort_into_blocks( any_points, false, 
+                                        true, 
+                                        true );
+
+
+
+    std::cout << "Cluster score of each seeding pos:" << std::endl;
+    int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+    for ( int i = 0; i < seeding_size; i++ ) {
+        int size = 0;
+        RifDockIndex rdi = RifDockIndex(0, i, ScaffoldIndex());
+        if (map.count(rdi) == 0) continue;
+        std::vector<AnyPoint> const & vec = map[rdi];
+
+        for ( int j = 0; j < vec.size(); j++ ) {
+            std::cout << i << ":" << j << " " << vec[0].score << " " << vec[0].index.nest_index << std::endl;
+        }
+    }
+
+
+    std::cout << std::endl << std::endl;
+
+    return any_points;
+}
+    
+
 
 
 

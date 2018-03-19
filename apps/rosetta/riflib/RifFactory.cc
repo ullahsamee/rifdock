@@ -603,7 +603,6 @@ std::string get_rif_type_from_file( std::string fname )
 
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
 
-
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
@@ -612,13 +611,18 @@ std::string get_rif_type_from_file( std::string fname )
                                                         rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 ) :
                                                         score_rot_v_target;
 
+                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
+
 						score_rot_v_target = recalc_rot_v_tgt;
 				
 						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
 						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
 
+                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
+
 							float sat_bonus = 0;
 							if (rotamer_satisfies) {
+                                std::cout << "Here" << std::endl;
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 								            packopts_.user_rotamer_bonus_constant;
 								// std::cout << "ires " << ires << " cdirot " << irot << std::endl;

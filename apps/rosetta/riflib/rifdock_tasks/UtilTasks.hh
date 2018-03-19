@@ -233,11 +233,13 @@ struct FilterByBiggestBlocksFracTask : public AnyPointTask {
     FilterByBiggestBlocksFracTask(
         float frac,
         bool filter_seeding_positions_separately,
-        bool filter_scaffolds_separately
+        bool filter_scaffolds_separately,
+        bool print_seeds
         ) :
         frac_( frac ),
         filter_seeding_positions_separately_( filter_seeding_positions_separately ),
-        filter_scaffolds_separately_( filter_scaffolds_separately )
+        filter_scaffolds_separately_( filter_scaffolds_separately ),
+        print_seeds_( print_seeds )
         {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -270,6 +272,126 @@ private:
     float frac_;
     bool filter_seeding_positions_separately_;
     bool filter_scaffolds_separately_;
+    bool print_seeds_;
+};
+
+struct DumpSeedingClusterScoreTask : public AnyPointTask {
+
+    DumpSeedingClusterScoreTask(
+        ) 
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ); // override
+
+private:
+};
+
+
+struct DumpIndividualScoresTask : public AnyPointTask {
+
+    DumpIndividualScoresTask(
+        ) 
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ); // override
+
+private:
+};
+
+struct RemoveRedundantPointsTask : public AnyPointTask {
+
+    RemoveRedundantPointsTask(
+        float redundancy_mag,
+        int director_resl,
+        bool filter_seeding_positions_separately,
+        bool filter_scaffolds_separately
+        ) :
+        redundancy_mag_( redundancy_mag ),
+        director_resl_( director_resl ),
+        filter_seeding_positions_separately_( filter_seeding_positions_separately ),
+        filter_scaffolds_separately_( filter_scaffolds_separately )
+        {}
+
+    shared_ptr<std::vector<SearchPoint>> 
+    return_search_points( 
+        shared_ptr<std::vector<SearchPoint>> search_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<SearchPointWithRots>> 
+    return_search_point_with_rotss( 
+        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+    shared_ptr<std::vector<RifDockResult>> 
+    return_rif_dock_results( 
+        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
+        RifDockData & rdd, 
+        ProtocolData & pd ) override;
+
+private:
+    template<class AnyPoint>
+    shared_ptr<std::vector<AnyPoint>>
+    return_any_points( 
+        shared_ptr<std::vector<AnyPoint>> any_points, 
+        RifDockData & rdd, 
+        ProtocolData & pd ); // override
+
+private:
+    float redundancy_mag_;
+    int director_resl_;
+    bool filter_seeding_positions_separately_;
+    bool filter_scaffolds_separately_;
+
 };
 
 
