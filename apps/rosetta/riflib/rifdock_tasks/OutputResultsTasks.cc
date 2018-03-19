@@ -282,7 +282,7 @@ dump_rif_result_(
     bool using_rosetta_model = selected_result.pose_ != nullptr;
 
     core::pose::PoseOP stored_pose = selected_result.pose_;
-    if ( using_rosetta_model ) {
+    if ( using_rosetta_model && ( rdd.opt.output_scaffold_only || rdd.opt.output_full_scaffold_only ) ) {
         stored_pose = stored_pose->split_by_chain().front();
     }
 
