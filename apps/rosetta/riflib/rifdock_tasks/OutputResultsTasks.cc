@@ -18,6 +18,7 @@
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/pose/PDBInfo.hh>
+#include <core/pose/Pose.hh>
 
 #include <string>
 #include <vector>
@@ -100,7 +101,7 @@ OutputResultsTask::return_rif_dock_results(
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
 
-        dump_rif_result_(rdd, selected_result, pdboutfile, rdd.RESLS.size()-1, false, resfileoutfile, allrifrotsoutfile);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile);
 
 
     }
@@ -115,7 +116,8 @@ dump_rif_result_(
     RifDockData & rdd,
     RifDockResult const & selected_result, 
     std::string const & pdboutfile, 
-    int iresl,
+    int director_resl,
+    int rif_resl,
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile /* = "" */
@@ -146,7 +148,7 @@ dump_rif_result_(
     }
 
 
-    rdd.director->set_scene( selected_result.index, iresl, *rdd.scene_minimal );
+    rdd.director->set_scene( selected_result.index, director_resl, *rdd.scene_minimal );
 
     devel::scheme::ScoreRotamerVsTarget<
         VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -188,7 +190,7 @@ dump_rif_result_(
 
         {
             std::vector< std::pair< float, int > > rotscores;
-            rdd.rif_ptrs[iresl]->get_rotamers_for_xform( bba.position(), rotscores );
+            rdd.rif_ptrs[rif_resl]->get_rotamers_for_xform( bba.position(), rotscores );
             typedef std::pair<float,int> PairFI;
             BOOST_FOREACH( PairFI const & p, rotscores ){
                 int const irot = p.second;
@@ -258,7 +260,7 @@ dump_rif_result_(
     expdb << "rif_residues ";
 
     if ( selected_result.rotamers_ ) {
-        sanity_check_hackpack( rdd, selected_result.index, selected_result.rotamers_, rdd.scene_pt.front(), rdd.RESLS.size()-1);
+        sanity_check_hackpack( rdd, selected_result.index, selected_result.rotamers_, rdd.scene_pt.front(), director_resl, rif_resl);
     }
 
     std::vector<int> needs_RIFRES;
@@ -278,7 +280,13 @@ dump_rif_result_(
 
     // Add PDBInfo labels if they are applicable
     bool using_rosetta_model = selected_result.pose_ != nullptr;
-    core::pose::Pose & pose_to_dump( *(selected_result.pose_ ? selected_result.pose_.get() : &pose_from_rif) );
+
+    core::pose::PoseOP stored_pose = selected_result.pose_;
+    if ( using_rosetta_model ) {
+        stored_pose = stored_pose->split_by_chain().front();
+    }
+
+    core::pose::Pose & pose_to_dump( using_rosetta_model ? *stored_pose : pose_from_rif );
     if( !using_rosetta_model ){
         if( rdd.opt.pdb_info_pikaa ){
             for( auto p : pikaa ){
@@ -333,13 +341,14 @@ dump_search_point_(
     RifDockData & rdd,
     SearchPoint const & search_point, 
     std::string const & pdboutfile, 
-    int iresl,
+    int director_resl,
+    int rif_resl,
     bool quiet) {
 
     RifDockResult result;
     result = search_point;
 
-    dump_rif_result_( rdd, result, pdboutfile, iresl, quiet, "", "" );
+    dump_rif_result_( rdd, result, pdboutfile, director_resl, rif_resl, quiet, "", "" );
 }
 
 

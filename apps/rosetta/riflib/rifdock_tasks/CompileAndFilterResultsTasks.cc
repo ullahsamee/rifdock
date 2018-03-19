@@ -71,7 +71,7 @@ template<
 void
 awful_compile_output_helper_(
     int64_t isamp,
-    int resl,
+    int director_resl,
     std::vector< SearchPointWithRots > const & packed_results,
     std::vector< ScenePtr > & scene_pt,
     DirectorBase director,
@@ -97,7 +97,7 @@ awful_compile_output_helper_(
     SearchPointWithRots const & sp = packed_results[isamp];
     if( sp.score >= 0.0f ) return;
     ScenePtr scene_minimal( scene_pt[omp_get_thread_num()] );
-    director->set_scene( sp.index, resl, *scene_minimal );
+    director->set_scene( sp.index, director_resl, *scene_minimal );
     std::vector<float> sc = objective->scores(*scene_minimal);
     float const nopackscore = sc[0]+sc[1]; //result.sum();
     float const rifscore = sc[0]; //result.template get<MyScoreBBActorRIF>();
@@ -252,13 +252,13 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         Eigen::Vector3f scaffold_center = sdc->scaffold_center;
                                         
         awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
-            isamp, resl_, packed_results, rdd.scene_pt, rdd.director,
+            isamp, director_resl_, packed_results, rdd.scene_pt, rdd.director,
             redundancy_filter_rg, redundancy_mag_, scaffold_center,
             allresults_pt, selected_results, selected_xforms, n_per_block_,
             #ifdef USE_OPENMP
                 rdd.dump_lock,
             #endif
-            rdd.objectives.back(), nclose, nclosemax, nclosethresh,
+            rdd.objectives.at(rif_resl_), nclose, nclosemax, nclosethresh,
             scaffold_perturb
         );
     }
@@ -285,13 +285,13 @@ CompileAndFilterResultsTask::return_rif_dock_results(
             Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
             awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
-                isamp, resl_, packed_results, rdd.scene_pt, rdd.director,
+                isamp, director_resl_, packed_results, rdd.scene_pt, rdd.director,
                 redundancy_filter_rg, redundancy_mag_, scaffold_center,
                 allresults_pt, selected_results, selected_xforms, n_per_block_,
                 #ifdef USE_OPENMP
                     rdd.dump_lock,
                 #endif
-                rdd.objectives.back(), nclose, nclosemax, nclosethresh,
+                rdd.objectives.at(rif_resl_), nclose, nclosemax, nclosethresh,
                 scaffold_perturb
             );
         } catch(...) {

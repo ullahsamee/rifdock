@@ -71,8 +71,13 @@ private:
 
 struct HackPackTask : public SearchPointWithRotsTask {
 
-    HackPackTask( int resl, float global_score_cut ) : 
-        resl_(resl),
+    HackPackTask( 
+        int director_resl,
+        int rif_resl, 
+        float global_score_cut
+    ) : 
+        director_resl_( director_resl ),
+        rif_resl_( rif_resl ),
         global_score_cut_(global_score_cut)
     {}
 
@@ -84,7 +89,8 @@ struct HackPackTask : public SearchPointWithRotsTask {
 
 
 private:
-    int resl_;
+    int director_resl_;
+    int rif_resl_;
     float global_score_cut_;
 
 
@@ -99,7 +105,8 @@ sanity_check_rots(
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene,
     bool original,
-    int resl 
+    int director_resl,
+    int rif_resl
 ); 
 
 
@@ -109,7 +116,8 @@ sanity_check_hackpack(
     RifDockIndex i,
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene,
-    int resl 
+    int director_resl,
+    int rif_resl
 );
 
 

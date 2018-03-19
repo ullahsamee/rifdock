@@ -158,6 +158,7 @@ typedef _SearchPoint<DirectorBase> SearchPoint;
 
 
 struct RifDockData {
+    int iscaff;
     RifDockOpt & opt;
     std::vector<float> & RESLS;
     DirectorBase & director;

@@ -1178,9 +1178,12 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 		else // use lkball for sidechains
 		{
 			auto waters = lkbinfo.waters()[iacc];
+			int num_waters = lkbinfo.n_attached_waters()[iacc];
+
 			auto basexyz = rsd.xyz(iacc);
 			std::vector<HBondRay> rays_this_atom;
-			for( auto watxyz : waters ){
+            for ( int i_water = 1; i_water <= num_waters; ++i_water ) {
+            	auto watxyz = waters[i_water];
 				bool is_donor_wat = false;
 				for( core::Size ih = rsd.attached_H_begin(iacc); ih <= rsd.attached_H_end(iacc); ++ih){
 					auto hxyz = rsd.xyz(ih);
