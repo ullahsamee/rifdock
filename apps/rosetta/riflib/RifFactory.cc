@@ -622,7 +622,6 @@ std::string get_rif_type_from_file( std::string fname )
 
 							float sat_bonus = 0;
 							if (rotamer_satisfies) {
-                                std::cout << "Here" << std::endl;
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 								            packopts_.user_rotamer_bonus_constant;
 								// std::cout << "ires " << ires << " cdirot " << irot << std::endl;

@@ -414,7 +414,7 @@ struct HackPack
 			nchoices *= res_rots_.at(ires).second.size();
 			if( nchoices > 1000000000000000ull ) break;
 		}
-		if( nchoices == 1 || true){
+		if( nchoices == 1 ){
 			fill_result_rots( result_rots );
 			score_ = compute_energy_full( current_rots_ );
 			return score_;
