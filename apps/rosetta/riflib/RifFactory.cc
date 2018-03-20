@@ -1087,13 +1087,13 @@ create_rif_factory( RifFactoryConfig const & config )
         using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
         typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4, SatDatum> crfRotScore;
         typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
-        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 72 );
+        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 84 );
         typedef ::scheme::objective::hash::XformMap<
                 EigenXform,
                 crfXMapValue,
                 ::scheme::objective::hash::XformHash_bt24_BCC6
             > crfXMap;
-        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 80 );
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 92 );
 
         return make_shared< RifFactoryImpl<crfXMap> >( config );
     }
