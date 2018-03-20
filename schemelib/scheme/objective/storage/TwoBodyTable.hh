@@ -21,6 +21,7 @@ namespace scheme { namespace objective { namespace storage {
 template< class _Data = float >
 struct TwoBodyTable {
 	typedef _Data Data;
+	typedef TwoBodyTable<Data> This;
 	typedef boost::multi_array< Data, 2 > Array2D;
 	typedef boost::multi_array< Array2D, 2 > TwoBody;
 
@@ -30,7 +31,7 @@ struct TwoBodyTable {
 	std::vector<int> nsel_;
 	TwoBody twobody_;
 
-	TwoBodyTable() {} // for use with load()
+	TwoBodyTable() {} // for use with load() and clone()
 
 	TwoBodyTable( size_t nres, size_t nrots ) { init( nres, nrots); }
 
@@ -43,6 +44,19 @@ struct TwoBodyTable {
 		sel2all_.resize( boost::extents[nres][nrots] );
 		nsel_.resize( nres, 0 );
 		twobody_.resize( boost::extents[nres][nres] );
+	}
+
+	shared_ptr<This>
+	clone() {
+		shared_ptr<This> tbt = make_shared<This>();
+		tbt->nres_ = nres_;
+		tbt->nrot_ = nrot_;
+		tbt->onebody_ = onebody_;
+		tbt->all2sel_ = all2sel_;
+		tbt->sel2all_ = sel2all_;
+		tbt->nsel_ = nsel_;
+		tbt->twobody_ = twobody_;
+		return tbt;
 	}
 
 	Data const & onebody( int ires, int irot ) const {
@@ -95,6 +109,41 @@ struct TwoBodyTable {
 			return Data(0.0);
 		}
 	}
+
+	void
+	upweight_edge( int ires, int jres, int irot, int jrot, Data upweight ) {
+		int const ir = ires > jres ? ires : jres;
+		int const jr = ires > jres ? jres : ires;
+		if( twobody_[ir][jr].num_elements() > 0 ){
+			int const irotlocal = all2sel_[ires][irot];
+			int const jrotlocal = all2sel_[jres][jrot];
+			if( irotlocal < 0 || jrotlocal < 0 ){
+				return;
+			}
+			// swap if jres > ires
+			int const irl = ires > jres ? irotlocal : jrotlocal;
+			int const jrl = ires > jres ? jrotlocal : irotlocal;
+			twobody_[ ir ][ jr ][ irl ][ jrl ] += upweight;
+		} 
+	}
+	void
+	restore_edge( int ires, int jres, int irot, int jrot, shared_ptr<TwoBodyTable<Data> const> twob )
+	{
+		int const ir = ires > jres ? ires : jres;
+		int const jr = ires > jres ? jres : ires;
+		if( twobody_[ir][jr].num_elements() > 0 ){
+			int const irotlocal = all2sel_[ires][irot];
+			int const jrotlocal = all2sel_[jres][jrot];
+			if( irotlocal < 0 || jrotlocal < 0 ){
+				return;
+			}
+			// swap if jres > ires
+			int const irl = ires > jres ? irotlocal : jrotlocal;
+			int const jrl = ires > jres ? jrotlocal : irotlocal;
+			twobody_[ ir ][ jr ][ irl ][ jrl ] = twob->twobody_[ ir ][ jr ][ irl ][ jrl ];
+		} 
+	}
+
 
 	// assumes onebody energies have been filled in at this point!
 	void init_onebody_filter( float thresh ){

@@ -34,6 +34,7 @@ struct BurialOpts {
 
 struct BurialManager {
 
+    BurialManager() {} // used by clone()
 
     BurialManager( 
         BurialOpts const & opts,
@@ -52,11 +53,17 @@ struct BurialManager {
         runtime_assert( opts_.neighbor_count_weights.size() >= 20 );
     }
 
+    shared_ptr<BurialManager>
+    clone() const;
+
+    void
+    reset();
+
     void
     set_target_neighbors( core::pose::Pose const & pose );
 
-    void
-    get_burial_weights( std::vector<float> & weights ) const;
+    std::vector<float>
+    get_burial_weights( ) const;
 
     void
     accumulate_neighbors( BBActor const & bb );

@@ -8,6 +8,21 @@ namespace scheme {
 
 
 
+shared_ptr<BurialManager>
+BurialManager::clone() const {
+    shared_ptr<BurialManager> ot = make_shared<BurialManager>();
+    ot->opts_ = opts_;
+    ot->num_donors_ = num_donors_;
+    ot->donor_acceptors_ = donor_acceptors_;
+    ot->target_neighbor_counts_ = target_neighbor_counts_;
+    ot->other_neighbor_counts_ = other_neighbor_counts_;
+    return ot;
+}
+
+void
+BurialManager::reset() {
+    std::fill(other_neighbor_counts_.begin(), other_neighbor_counts_.end(), 0);
+}
 
 void
 BurialManager::set_target_neighbors( core::pose::Pose const & pose ) {
@@ -29,10 +44,10 @@ BurialManager::set_target_neighbors( core::pose::Pose const & pose ) {
 }
 
 
-void
-BurialManager::get_burial_weights( std::vector<float> & weights ) const {
-    runtime_assert( weights.size() == target_neighbor_counts_.size());
+std::vector<float>
+BurialManager::get_burial_weights( ) const {
 
+    std::vector<float> weights( target_neighbor_counts_.size() );
     for ( int i_ray = 0; i_ray < target_neighbor_counts_.size(); i_ray++ ) {
         weights[i_ray] = opts_.neighbor_count_weights[ target_neighbor_counts_[i_ray] 
                                                     + other_neighbor_counts_[i_ray]];

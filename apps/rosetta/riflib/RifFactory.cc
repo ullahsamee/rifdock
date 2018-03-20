@@ -20,6 +20,7 @@
 
 #include <riflib/rif/RifAccumulators.hh>
 #include <riflib/ScoreRotamerVsTarget.hh>
+#include <riflib/BurialManager.hh>
 
 
 #include <scheme/objective/hash/XformMap.hh>
@@ -435,6 +436,16 @@ std::string get_rif_type_from_file( std::string fname )
 
 	typedef int32_t intRot;
 
+    struct ToPackRot {
+        int ires;
+        int irot;
+        float score;
+        int sat1;
+        int sat2;
+        ToPackRot( int _ires, int _irot, float _score, int _sat1, int _sat2 ) :
+            ires(_ires), irot(_irot), score(_score), sat1(_sat1), sat2(_sat2) {}
+    };
+
 	// should move to libraries somewhere
 	// empty class, serves only to position RIF in absolute space
 	// struct RIFAnchor {
@@ -462,6 +473,9 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector<bool> has_rifrot_;
         std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
         std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
+        shared_ptr< BurialManager > burial_manager_;
+        std::vector<ToPackRot> to_pack_rots_;
+        shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 	};
@@ -478,6 +492,7 @@ std::string get_rif_type_from_file( std::string fname )
 		::scheme::search::HackPackOpts packopts_;
 		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
 		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
+        std::vector< shared_ptr< BurialManager> > burialperthread_;
 	private:
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
@@ -549,6 +564,13 @@ std::string get_rif_type_from_file( std::string fname )
 				}
 			}
 		}
+        void init_for_burial(
+            shared_ptr< BurialManager > burial_manager
+        ) {
+            for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
+                burialperthread_.push_back( burial_manager->clone() );
+            }
+        }
 
 		template<class Scene, class Config>
 		void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
@@ -570,6 +592,12 @@ std::string get_rif_type_from_file( std::string fname )
 			}
 			scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
 			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
+
+            if ( burialperthread_.size() > 0 ) {
+                scratch.burial_manager_ = burialperthread_.at( ::devel::scheme::omp_thread_num() );
+                scratch.burial_manager_.reset();
+            }
+
 			if( !packing_ ) return;
 
 			// Added by brian ////////////////////////
@@ -580,15 +608,25 @@ std::string get_rif_type_from_file( std::string fname )
 			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
 			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
-			scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
+
+            if ( ! scratch.burial_manager_ ) {
+                scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
+            } else {
+                scratch.hackpack_->reinitialize( data_cache->local_twobody_per_thread.at(::devel::scheme::omp_thread_num()) );
+                scratch.to_pack_rots_.reserve(512);
+                scratch.reference_twobody_ = data_cache->local_twobody_p;
+            }
 		}
 
 		template<class Config>
 		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
 		{
+            if ( scratch.burial_manager_ ) scratch.burial_manager_->accumulate_neighbors( bb );
 			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
 				return 0.0;
 			}
+
+            const bool want_sats = scratch.burial_manager_;
 
 			typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
 			static int const Nrots = RIF::Value::N;
@@ -608,27 +646,25 @@ std::string get_rif_type_from_file( std::string fname )
 
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
 						
+                        int sat1 = -1, sat2 = -1, hbcount = 0;
 						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
-                                                        rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 ) :
+                                                        rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                                                                irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
                                                         score_rot_v_target;
-
-                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
 
 						score_rot_v_target = recalc_rot_v_tgt;
 				
 						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
 						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
 
-                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
-
 							float sat_bonus = 0;
 							if (rotamer_satisfies) {
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 								            packopts_.user_rotamer_bonus_constant;
-								// std::cout << "ires " << ires << " cdirot " << irot << std::endl;
-								// std::cout << "Sat bonus: " << sat_bonus << " Score: " << score_rot_v_target + rot1be << std::endl;
 							}
-							scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
+                            if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
+                            else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 ));
+                            
 						}
 					}
 					if( packopts_.use_extra_rotamers ){
@@ -636,13 +672,17 @@ std::string get_rif_type_from_file( std::string fname )
 						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
 							float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
 							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
+
+                            int sat1 = -1, sat2 = -1, hbcount = 0;
 							float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
-                                                                rot_tgt_scorer_.score_rotamer_v_target( crot, bb.position(), 10.0, 4 ) :
+                                                                rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                                                                    crot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
                                                                 score_rot_v_target; // this is certainly the wrong score
 
 							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
 							    recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
-								scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
+                                if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
+                                else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, crot, recalc_crot_v_tgt + crot1be, sat1, sat2 ));
 							}
 						}
 					}
@@ -669,10 +709,13 @@ std::string get_rif_type_from_file( std::string fname )
 				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
 					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
 						float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
+                        int sat1 = -1, sat2 = -1, hbcount = 0;
+						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                                                            irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
 						float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
 						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
-							scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
+							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
+                            else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, rot_tot_1b, sat1, sat2 ));
 						}
 					}
 				}
@@ -684,16 +727,18 @@ std::string get_rif_type_from_file( std::string fname )
 				for( int irot : always_available_rotamers_ ){
 					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 					if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
-					int sat1=-1, sat2=-1;
-					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 );
+					const bool want_sats = scratch.burial_manager_;
+                    int sat1 = -1, sat2 = -1, hbcount = 0;
+					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                                                                        irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
 					if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
 					    recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
-						scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
+						if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
+                        else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, recalc_rot_v_tgt + irot1be, sat1, sat2 ));
 					}
 				}
 			}
 
-			bestsc = std::min( bestsc, rotscores.score(Nrots-1) ); // in case not all rots stored...
 			return bestsc;
 		}
 
@@ -703,9 +748,60 @@ std::string get_rif_type_from_file( std::string fname )
 			if( packing_ ){
 
 				::scheme::search::HackPack & packer( *scratch.hackpack_ );
+
+                std::vector<float> burial_weights;
+                std::vector<std::vector<int>> who_sats_me;
+                if ( scratch.burial_manager_ ) {
+                    burial_weights = scratch.burial_manager_->get_burial_weights();
+                    who_sats_me.resize(burial_weights.size());
+                    for ( int i = 0; i < scratch.to_pack_rots_.size(); i++ ) {
+                        ToPackRot const & to = scratch.to_pack_rots_[i];
+                        float score = to.score;
+                        if ( to.sat1 > -1 ) {
+                            score += burial_weights.at( to.sat1 );
+                            who_sats_me[to.sat1].push_back( i );
+                        }
+                        if ( to.sat2 > -1 ) {
+                            score += burial_weights.at( to.sat2 );
+                            who_sats_me[to.sat2].push_back( i );
+                        }
+                        packer.add_tmp_rot( to.ires, to.irot, score);
+                    }
+
+                    for ( int i_sat = 0; i_sat < who_sats_me.size(); i_sat++ ) {
+                        std::vector<int> const & vec = who_sats_me[i_sat];
+                        if ( vec.size() <= 1 ) continue;
+                        const float weight = burial_weights[i_sat];
+                        for ( int i_satisfier1 = 0; i_satisfier1 < vec.size() - 1; i_satisfier1++ ) {
+                            ToPackRot const & satisfier1 = scratch.to_pack_rots_[i_satisfier1];
+                            for ( int i_satisfier2 = i_satisfier1 + 1; i_satisfier2 < vec.size(); i_satisfier2++ ) {
+                                ToPackRot const & satisfier2 = scratch.to_pack_rots_[i_satisfier2];
+                                packer.twob_->upweight_edge(satisfier1.ires, satisfier1.irot, satisfier2.ires, satisfier2.irot, weight);
+                            }
+                        }
+                    }
+                }
+
 				result.val_ = packer.pack( result.rotamers_ );
+
+
+                if ( scratch.burial_manager_ ) {
+                    for ( int i_sat = 0; i_sat < who_sats_me.size(); i_sat++ ) {
+                        std::vector<int> const & vec = who_sats_me[i_sat];
+                        if ( vec.size() <= 1 ) continue;
+                        const float weight = burial_weights[i_sat];
+                        for ( int i_satisfier1 = 0; i_satisfier1 < vec.size() - 1; i_satisfier1++ ) {
+                            ToPackRot const & satisfier1 = scratch.to_pack_rots_[i_satisfier1];
+                            for ( int i_satisfier2 = i_satisfier1 + 1; i_satisfier2 < vec.size(); i_satisfier2++ ) {
+                                ToPackRot const & satisfier2 = scratch.to_pack_rots_[i_satisfier2];
+                                packer.twob_->restore_edge(satisfier1.ires, satisfier1.irot, satisfier2.ires, satisfier2.irot, scratch.reference_twobody_);
+                            }
+                        }
+                    }
+                }
+
+
 				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-				//std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
 					int sat1=-1, sat2=-1, hbcount=0;
@@ -722,9 +818,19 @@ std::string get_rif_type_from_file( std::string fname )
 				}
 				// result.rotamers_ = selected_rotamers;
 
-			}
+			} else {
 
-			if( n_sat_groups_ > 0 && !packing_ ){
+                if ( scratch.burial_manager_ ) {
+                    std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights();
+                    for ( int i = 0; i < burial_weights.size(); i++ ) {
+                        if ( ! scratch.is_satisfied_[i] ) result.val_ += burial_weights[i];
+                    }
+                }
+
+
+            }
+
+			if( n_sat_groups_ > 0 ){
 				int nsat = 0;
 				
 				for( int i = 0; i < n_sat_groups_; ++i ){
