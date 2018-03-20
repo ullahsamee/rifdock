@@ -1082,7 +1082,21 @@ create_rif_factory( RifFactoryConfig const & config )
 		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
-	}
+	} else if( config.rif_type == "RotScoreSat_2x16" )
+    {
+        using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
+        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4, SatDatum> crfRotScore;
+        typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 72 );
+        typedef ::scheme::objective::hash::XformMap<
+                EigenXform,
+                crfXMapValue,
+                ::scheme::objective::hash::XformHash_bt24_BCC6
+            > crfXMap;
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 80 );
+
+        return make_shared< RifFactoryImpl<crfXMap> >( config );
+    }
 	else if( config.rif_type == "RotScoreSat_1x16" )
 	{
 		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
