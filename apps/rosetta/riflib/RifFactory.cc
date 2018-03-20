@@ -19,6 +19,7 @@
 #include <boost/format.hpp>
 
 #include <riflib/rif/RifAccumulators.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 
 #include <scheme/objective/hash/XformMap.hh>

@@ -12,6 +12,7 @@
 
 #include <riflib/types.hh>
 #include <riflib/util.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 
 #include <string>

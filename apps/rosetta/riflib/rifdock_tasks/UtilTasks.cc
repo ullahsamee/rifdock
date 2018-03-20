@@ -13,6 +13,8 @@
 #include <riflib/types.hh>
 #include <riflib/util.hh>
 
+#include <riflib/ScoreRotamerVsTarget.hh>
+
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 
 #include <string>

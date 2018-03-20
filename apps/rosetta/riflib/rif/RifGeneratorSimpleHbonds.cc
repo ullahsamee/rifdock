@@ -34,6 +34,7 @@
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
 	#include <riflib/rif/make_hbond_geometries.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 
 	#include <map>
 

@@ -30,6 +30,7 @@
   	#include <numeric/xyzMatrix.hh>
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 	#include <riflib/util.hh>
 	#include <scheme/numeric/rand_xform.hh>
 	#include <scheme/actor/Atom.hh>
