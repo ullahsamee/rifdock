@@ -1093,7 +1093,7 @@ create_rif_factory( RifFactoryConfig const & config )
                 crfXMapValue,
                 ::scheme::objective::hash::XformHash_bt24_BCC6
             > crfXMap;
-        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 92 );
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 96 );
 
         return make_shared< RifFactoryImpl<crfXMap> >( config );
     }
