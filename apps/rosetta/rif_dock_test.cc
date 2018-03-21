@@ -71,6 +71,7 @@
 	#include <scheme/objective/hash/XformHash.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
+	#include <riflib/BurialManager.hh>
 
 
 // Task system
@@ -268,6 +269,7 @@ int main(int argc, char *argv[]) {
 	utility::vector1<core::Size> target_res;
 	std::vector<HBondRay> target_donors, target_acceptors;
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
+	shared_ptr<BurialManager> burial_manager;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
@@ -303,6 +305,23 @@ int main(int argc, char *argv[]) {
 			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors );
 		}
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+
+		if ( opt.unsat_orbital_penalty > 0 ) {
+			BurialOpts burial_opts;
+			burial_opts.neighbor_distance_cutoff = opt.unsat_neighbor_cutoff;
+			burial_opts.neighbor_count_weights.resize(0);
+			for ( int i = 0; i < 20; i++ ) {
+				float weight;
+				if ( i < opt.unsat_neighbor_cutoff ) {
+					weight = 0;
+				} else {
+					weight = opt.unsat_orbital_penalty;
+				}
+				burial_opts.neighbor_count_weights.push_back( weight );
+			}
+			burial_manager = make_shared<BurialManager>( burial_opts, target_donors, target_acceptors );
+			burial_manager->set_target_neighbors( target );
+		}
 		// {
 		// 	{
 		// 		std::vector<HBondRay> tmpdon, tmpacc, tmpacclk;

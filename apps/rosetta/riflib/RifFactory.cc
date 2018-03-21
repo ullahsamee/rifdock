@@ -1122,6 +1122,11 @@ struct RifFactoryImpl :
     		);
         }
 
+        if ( config.burial_manager ) {
+            std::dynamic_pointer_cast<MyScoreBBActorRIF>(objectives.back())->init_for_burial( config.burial_manager );
+            std::dynamic_pointer_cast<MyScoreBBActorRIF>(packing_objectives.back())->init_for_burial( config.burial_manager );
+        }
+
 		return true;
 
 	}

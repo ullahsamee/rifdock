@@ -57,6 +57,7 @@ struct MorphingScaffoldProvider :
     void set_fa_mode( bool fa ) override;
 
     void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
+    void setup_twobody_tables_per_thread( ::scheme::scaffold::TreeIndex i ) override;
 
     void modify_pose_for_output( ::scheme::scaffold::TreeIndex i, core::pose::Pose & pose ) override;
 

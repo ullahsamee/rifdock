@@ -11,7 +11,7 @@
 #define INCLUDED_riflib_BurialManager_hh
 
 #include <riflib/types.hh>
-#include <riflib/task/types.hh>
+#include <riflib/rifdock_typedefs.hh>
 
 #include <core/pose/Pose.hh>
 
@@ -27,7 +27,7 @@ namespace scheme {
 
 
 struct BurialOpts {
-    float neighbor_distance_cutoff = 7;
+    float neighbor_distance_cutoff = 6;
     std::vector<float> neighbor_count_weights;
 };
 

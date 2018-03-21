@@ -195,7 +195,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
     OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
 
-
+    OPT_1GRP_KEY(  Real        , rif_dock, unsat_orbital_penalty )
+    OPT_1GRP_KEY(  Real        , rif_dock, neighbor_distance_cutoff )
+    OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
 
 
  
@@ -387,6 +389,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
+            NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 7.0 );
+            NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
+            NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
+
+
 		}
 	#endif
 #endif
@@ -563,6 +570,10 @@ struct RifDockOpt
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
 
+    float       unsat_orbital_penalty                ;
+    float       neighbor_distance_cutoff             ;
+    int         unsat_neighbor_cutoff                ;
+
 
     void init_from_cli();
 
@@ -735,6 +746,9 @@ struct RifDockOpt
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
         keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
 
+        unsat_orbital_penalty                   = option[rif_dock::unsat_orbital_penalty                ]();
+        neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
+        unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
 
 
 
