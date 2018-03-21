@@ -389,7 +389,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
-            NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 7.0 );
+            NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 0 );
             NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
             NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
 
