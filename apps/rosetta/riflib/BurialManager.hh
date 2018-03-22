@@ -36,19 +36,33 @@ struct BurialManager {
 
     BurialManager() {} // used by clone()
 
+    // BurialManager( 
+    //     BurialOpts const & opts,
+    //     std::vector< HBondRay > target_donors,
+    //     std::vector< HBondRay > target_acceptors
+    // ) :
+    //     opts_( opts )
+    // {
+    //     donor_acceptors_ = target_donors;
+    //     donor_acceptors_.insert( donor_acceptors_.end(), target_acceptors.begin(), target_acceptors.end());
+    //     num_donors_ = target_donors.size();
+
+    //     target_neighbor_counts_.resize( donor_acceptors_.size(), 0 );
+    //     other_neighbor_counts_.resize( donor_acceptors_.size(), 0 );
+
+    //     runtime_assert( opts_.neighbor_count_weights.size() >= 20 );
+    // }
+
     BurialManager( 
         BurialOpts const & opts,
-        std::vector< HBondRay > target_donors,
-        std::vector< HBondRay > target_acceptors
+        std::vector< Eigen::Vector3f > burial_points
     ) :
-        opts_( opts )
+        opts_( opts ),
+        target_burial_points_( burial_points )
     {
-        donor_acceptors_ = target_donors;
-        donor_acceptors_.insert( donor_acceptors_.end(), target_acceptors.begin(), target_acceptors.end());
-        num_donors_ = target_donors.size();
 
-        target_neighbor_counts_.resize( donor_acceptors_.size(), 0 );
-        other_neighbor_counts_.resize( donor_acceptors_.size(), 0 );
+        target_neighbor_counts_.resize( target_burial_points_.size(), 0 );
+        other_neighbor_counts_.resize( target_burial_points_.size(), 0 );
 
         runtime_assert( opts_.neighbor_count_weights.size() >= 20 );
     }
@@ -68,12 +82,16 @@ struct BurialManager {
     void
     accumulate_neighbors( BBActor const & bb );
 
+    std::vector<Eigen::Vector3f>
+    get_heavyatom_xyzs();
+
 private:
 
     BurialOpts opts_;
 
-    int num_donors_;
-    std::vector< HBondRay > donor_acceptors_;
+    // int num_donors_;
+    // std::vector< HBondRay > donor_acceptors_;
+    std::vector< Eigen::Vector3f > target_burial_points_;
     std::vector<int> target_neighbor_counts_;
     std::vector<int> other_neighbor_counts_;
 

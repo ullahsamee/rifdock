@@ -354,6 +354,11 @@ get_rg_radius(
 );
 
 
+float
+angle_between_vectors(
+	Eigen::Vector3f const & vec1,
+	Eigen::Vector3f const & vec2
+);
 
 void 
 xform_pose( 

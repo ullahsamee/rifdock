@@ -51,11 +51,20 @@ struct TwoBodyTable {
 		shared_ptr<This> tbt = make_shared<This>();
 		tbt->nres_ = nres_;
 		tbt->nrot_ = nrot_;
+		tbt->init( nres_, nrot_ );
 		tbt->onebody_ = onebody_;
 		tbt->all2sel_ = all2sel_;
 		tbt->sel2all_ = sel2all_;
 		tbt->nsel_ = nsel_;
-		tbt->twobody_ = twobody_;
+
+
+  		for( int ir = 0; ir < nres_; ++ir ){
+  		for( int jr = 0; jr < nres_; ++jr ){
+  			tbt->init_twobody(ir, jr);
+  			tbt->twobody_[ir][jr] = twobody_[ir][jr];
+  		}
+		}
+		runtime_assert( check_equal(*tbt));
 		return tbt;
 	}
 
@@ -185,22 +194,34 @@ struct TwoBodyTable {
 
 	bool check_equal( TwoBodyTable<Data> const & other ) const {
 		bool iseq = true;
+		std::cout << "A" << std::endl;
   		iseq &= nres_ == other.nres_;
   		iseq &= nrot_ == other.nrot_;
   		if( !iseq ) return false;
+		std::cout << "B" << std::endl;
   		for( int i = 0; i < nres_*nrot_; ++i ){
 	  		iseq &= sel2all_.data()[i] == other.sel2all_.data()[i];
 	  		iseq &= all2sel_.data()[i] == other.all2sel_.data()[i];
 	  		iseq &= onebody_.data()[i] == other.onebody_.data()[i];
   		}
+  		if( !iseq ) return false;
+		std::cout << "C" << std::endl;
   		for( int i = 0; i < nres_; ++i ){
 	  		iseq &= nsel_[i] == other.nsel_[i];
   		}
+  		if( !iseq ) return false;
+		std::cout << "D" << std::endl;
   		for( int ir = 0; ir < nres_; ++ir ){
   		for( int jr = 0; jr < nres_; ++jr ){
+
+		std::cout << "E" << std::endl;
   			iseq &= twobody_[ir][jr].num_elements() == other.twobody_[ir][jr].num_elements();
 	  		if( !iseq ) return false;
+
+		std::cout << "F" << std::endl;
 	  		for( int k = 0; k < twobody_[ir][jr].num_elements(); ++k ){
+
+		std::cout << "G" << std::endl;
 		  		iseq &= twobody_[ir][jr].data()[k] == other.twobody_[ir][jr].data()[k];
 	  		}
   		}}

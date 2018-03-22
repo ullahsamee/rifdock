@@ -72,6 +72,7 @@
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
 	#include <riflib/BurialManager.hh>
+	#include <riflib/UnsatManager.hh>
 
 
 // Task system
@@ -270,6 +271,7 @@ int main(int argc, char *argv[]) {
 	std::vector<HBondRay> target_donors, target_acceptors;
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
 	shared_ptr<BurialManager> burial_manager;
+	shared_ptr<UnsatManager> unsat_manager;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
@@ -295,18 +297,50 @@ int main(int argc, char *argv[]) {
 		::devel::scheme::HBRayOpts hbopt;
 
 
-		hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
 
 		// utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
 
+		std::vector<std::pair<int,std::string>> donor_anames;
+		std::vector<std::pair<int,std::string>> acceptor_anames;
+		bool donor_acceptors_from_file = false;
 
 		BOOST_FOREACH( core::Size ir, target_res ){
-			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors );
-			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors );
+			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors, donor_anames );
+			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors, acceptor_anames );
 		}
+
+		if ( opt.target_donors.length() > 0 || opt.target_acceptors.length() > 0 ) {
+			donor_acceptors_from_file = true;
+
+			if ( ! ( opt.target_donors.length() > 0 && opt.target_acceptors.length() > 0 ) ) {
+				utility_exit_with_message("Must specify both -rifgen:target_donors AND -rifgen:target_acceptors!!!");
+			}
+
+			target_donors = load_hbond_rays( opt.target_donors );
+			target_acceptors = load_hbond_rays( opt.target_acceptors );
+
+		}
+
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
 
 		if ( opt.unsat_orbital_penalty > 0 ) {
+			if ( ! donor_acceptors_from_file ) {
+				utility_exit_with_message("Must specify both -rifgen:target_donors and -rifgen:target_acceptors to use -unsat_orbital_penalty");
+			}
+
+
+
+			unsat_manager = make_shared<UnsatManager>( );
+
+			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
+			unsat_manager->find_target_presatisfied( target );
+
+			if (opt.dump_presatisfied_donors_acceptors) {
+				unsat_manager->dump_presatisfied();
+			}
+
+
 			BurialOpts burial_opts;
 			burial_opts.neighbor_distance_cutoff = opt.unsat_neighbor_cutoff;
 			burial_opts.neighbor_count_weights.resize(0);
@@ -319,8 +353,10 @@ int main(int argc, char *argv[]) {
 				}
 				burial_opts.neighbor_count_weights.push_back( weight );
 			}
-			burial_manager = make_shared<BurialManager>( burial_opts, target_donors, target_acceptors );
+			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
 			burial_manager->set_target_neighbors( target );
+
+
 		}
 		// {
 		// 	{

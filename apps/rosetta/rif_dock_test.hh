@@ -28,6 +28,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, target_rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, target_rf_oversample )
 	OPT_1GRP_KEY(  String      , rif_dock, target_rf_cache )
+	OPT_1GRP_KEY(  String      , rif_dock, target_donors )
+	OPT_1GRP_KEY(  String      , rif_dock, target_acceptors )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_rosetta_grid_energies )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, soft_rosetta_grid_energies )
@@ -199,6 +201,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, neighbor_distance_cutoff )
     OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
  
 
@@ -228,6 +231,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
+			NEW_OPT(  rif_dock::target_donors, "", "" );
+			NEW_OPT(  rif_dock::target_acceptors, "", "" );
 			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
 			NEW_OPT(  rif_dock::use_rosetta_grid_energies, "Use Frank's grid energies for scoring", false );
 			NEW_OPT(  rif_dock::soft_rosetta_grid_energies, "Use soft option for grid energies", false );
@@ -393,6 +398,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
             NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
 
+            NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
 
 		}
 	#endif
@@ -456,6 +462,8 @@ struct RifDockOpt
 	int         target_rf_oversample                 ;
 	float       max_rf_bounding_ratio                ;
 	std::string target_rf_cache                      ;
+	std::string target_donors                        ;
+	std::string target_acceptors                     ;
 	bool        only_load_highest_resl               ;
 	bool        use_rosetta_grid_energies            ;
 	bool        soft_rosetta_grid_energies           ;
@@ -574,6 +582,8 @@ struct RifDockOpt
     float       neighbor_distance_cutoff             ;
     int         unsat_neighbor_cutoff                ;
 
+    bool        dump_presatisfied_donors_acceptors   ;
+
 
     void init_from_cli();
 
@@ -642,6 +652,8 @@ struct RifDockOpt
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();
 		max_rf_bounding_ratio                  = option[rif_dock::max_rf_bounding_ratio                 ]();
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
+		target_donors                          = option[rif_dock::target_donors                         ]();
+		target_acceptors                       = option[rif_dock::target_acceptors                      ]();		
 		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
 		use_rosetta_grid_energies              = option[rif_dock::use_rosetta_grid_energies             ]();
 		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
@@ -750,6 +762,7 @@ struct RifDockOpt
         neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
         unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
 
+        dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
