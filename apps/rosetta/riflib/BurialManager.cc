@@ -53,6 +53,7 @@ BurialManager::get_burial_weights( ) const {
         weights[i_pt] = opts_.neighbor_count_weights[ target_neighbor_counts_[i_pt] 
                                                     + other_neighbor_counts_[i_pt]];
     }
+    return weights;
 }
 
 void

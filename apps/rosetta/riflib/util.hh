@@ -378,7 +378,14 @@ prepare_grid_scorer(
 #endif
 
 
+// https://stackoverflow.com/questions/7931358/printing-sizeoft-at-compile-time
 
+// usage: PRINT_SIZE_AS_WARNING<sizeof(int)>()();
+template<int N> 
+struct PRINT_SIZE_AS_ERROR
+{ 
+   int operator()() { return (int)std::vector<int>(); } //deliberately causing error
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

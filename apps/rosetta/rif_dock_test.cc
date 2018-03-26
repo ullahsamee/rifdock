@@ -272,6 +272,7 @@ int main(int argc, char *argv[]) {
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
 	shared_ptr<BurialManager> burial_manager;
 	shared_ptr<UnsatManager> unsat_manager;
+	bool donor_acceptors_from_file = false;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
@@ -303,7 +304,6 @@ int main(int argc, char *argv[]) {
 
 		std::vector<std::pair<int,std::string>> donor_anames;
 		std::vector<std::pair<int,std::string>> acceptor_anames;
-		bool donor_acceptors_from_file = false;
 
 		BOOST_FOREACH( core::Size ir, target_res ){
 			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors, donor_anames );
@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( );
+			unsat_manager = make_shared<UnsatManager>( hbond::DefaultUnsatPenalties );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -353,6 +353,7 @@ int main(int argc, char *argv[]) {
 				}
 				burial_opts.neighbor_count_weights.push_back( weight );
 			}
+			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
 			burial_manager->set_target_neighbors( target );
 
@@ -642,15 +643,42 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
-				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
 #ifdef USEGRIDSCORE
             	rso_config.grid_scorer = grid_scorer;
             	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;
 #endif
+            	rso_config.burial_manager = burial_manager;
+            	rso_config.unsat_manager = unsat_manager;
 
+            if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
+            	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {
+            		utility_exit_with_message("New error message to fix an old bug!!! You can fix this error!!!"
+            			"\n1. If you are using hotspots, you need to add this flag (and convince Brian/TaYi to fix this)"
+            			"\n    -rif_dock:num_hotspots <number of hotspots>"
+            			"\n   Feel free to overestimate. 1000 is pretty safe if in doubt."
+            			"\n2. Otherwise you need to add these two flags"
+            			"\n    -rif_dock:target_donors    <target donors file .pdb.gz>"
+            			"\n    -rif_dock:target_acceptors <target acceptors file .pdb.gz>"
+            			"\n   These files are already in your rifgen folder. Type ls <rifgen folder> *donor* to find them."
+            			);
+            	}
+
+            	if ( opt.num_hotspots != 0 ) {
+            		rso_config.n_sat_groups = opt.num_hotspots;
+            	} else {
+            		rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
+            	}
+
+
+            } else {
+            	rso_config.n_sat_groups = 0;
+            }
 			
+
+				
+
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
 			std::vector< ObjectivePtr > packing_objectives;

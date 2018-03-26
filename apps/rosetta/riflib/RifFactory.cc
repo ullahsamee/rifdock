@@ -434,481 +434,439 @@ std::string get_rif_type_from_file( std::string fname )
 
 //////////////////////////////////// ScoreBBActorVsRIF ////////////////////////////////////////////
 
-	typedef int32_t intRot;
+    typedef int32_t intRot;
 
-    struct ToPackRot {
-        int ires;
-        int irot;
-        float score;
-        int sat1;
-        int sat2;
-        ToPackRot( int _ires, int _irot, float _score, int _sat1, int _sat2 ) :
-            ires(_ires), irot(_irot), score(_score), sat1(_sat1), sat2(_sat2) {}
+
+
+    // should move to libraries somewhere
+    // empty class, serves only to position RIF in absolute space
+    // struct RIFAnchor {
+    //  RIFAnchor() {}
+    // };
+    std::ostream & operator<<( std::ostream & out, RIFAnchor const& va ){
+        return out << "RIFAnchor";
+    }
+    template< class MetaData >
+    void write_pdb( std::ostream & , RIFAnchor const &, MetaData const & ){}
+
+    struct ScoreBBActorvsRIFResult {
+        float val_;
+        std::vector< std::pair<intRot,intRot> > rotamers_;
+        ScoreBBActorvsRIFResult() : val_(0) {}
+        ScoreBBActorvsRIFResult( float f ) : val_(f) {}
+        operator float() const { return val_; }
+        void operator=( float f ) { val_ = f; }
+        void operator+=( float f ) { val_ += f; }
+        bool operator<( ScoreBBActorvsRIFResult const & other ) const { return val_ < other.val_; }
     };
-
-	// should move to libraries somewhere
-	// empty class, serves only to position RIF in absolute space
-	// struct RIFAnchor {
-	// 	RIFAnchor() {}
-	// };
-	std::ostream & operator<<( std::ostream & out, RIFAnchor const& va ){
-		return out << "RIFAnchor";
-	}
-	template< class MetaData >
-	void write_pdb( std::ostream & , RIFAnchor const &, MetaData const & ){}
-
-	struct ScoreBBActorvsRIFResult {
-		float val_;
-		std::vector< std::pair<intRot,intRot> > rotamers_;
-		ScoreBBActorvsRIFResult() : val_(0) {}
-		ScoreBBActorvsRIFResult( float f ) : val_(f) {}
-		operator float() const { return val_; }
-		void operator=( float f ) { val_ = f; }
-		void operator+=( float f ) { val_ += f; }
-		bool operator<( ScoreBBActorvsRIFResult const & other ) const { return val_ < other.val_; }
-	};
-	struct ScoreBBActorvsRIFScratch {
-		shared_ptr< ::scheme::search::HackPack> hackpack_;
-		std::vector<bool> is_satisfied_;
-		std::vector<bool> has_rifrot_;
+    struct ScoreBBActorvsRIFScratch {
+        shared_ptr< ::scheme::search::HackPack> hackpack_;
+        std::vector<bool> is_satisfied_;
+        std::vector<bool> has_rifrot_;
         std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
         std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
         shared_ptr< BurialManager > burial_manager_;
-        std::vector<ToPackRot> to_pack_rots_;
+        shared_ptr< UnsatManager > unsat_manager_;
         shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
-		// sat group vector goes here
-		//std::vector<float> is_satisfied_score_;
-	};
+        // sat group vector goes here
+        //std::vector<float> is_satisfied_score_;
+    };
 
-	template< class BBActor, class RIF, class VoxelArrayPtr >
-	struct ScoreBBActorVsRIF
-	{
-		typedef boost::mpl::true_ HasPre;
-		typedef boost::mpl::true_ HasPost;
-		typedef ScoreBBActorvsRIFScratch Scratch;
-		typedef ScoreBBActorvsRIFResult Result;
-		typedef std::pair<RIFAnchor,BBActor> Interaction;
-		bool packing_ = false;
-		::scheme::search::HackPackOpts packopts_;
-		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
-		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
+    template< class BBActor, class RIF, class VoxelArrayPtr >
+    struct ScoreBBActorVsRIF
+    {
+        typedef boost::mpl::true_ HasPre;
+        typedef boost::mpl::true_ HasPost;
+        typedef ScoreBBActorvsRIFScratch Scratch;
+        typedef ScoreBBActorvsRIFResult Result;
+        typedef std::pair<RIFAnchor,BBActor> Interaction;
+        bool packing_ = false;
+        ::scheme::search::HackPackOpts packopts_;
+        int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
+        std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
         std::vector< shared_ptr< BurialManager> > burialperthread_;
-	private:
-		shared_ptr<RIF const> rif_ = nullptr;
-	public:
-		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
-		devel::scheme::ScoreRotamerVsTarget<
-				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-			> rot_tgt_scorer_;
-		std::vector<int> always_available_rotamers_;
+        std::vector< shared_ptr< UnsatManager > > unsatperthread_;
+    private:
+        shared_ptr<RIF const> rif_ = nullptr;
+    public:
+        VoxelArrayPtr target_proximity_test_grid_ = nullptr;
+        devel::scheme::ScoreRotamerVsTarget<
+                VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+            > rot_tgt_scorer_;
+        std::vector<int> always_available_rotamers_;
 
-		ScoreBBActorVsRIF() {}
+        ScoreBBActorVsRIF() {}
 
-		 void clear() {
-		 	packperthread_.clear();
-		 }
+         void clear() {
+            packperthread_.clear();
+         }
 
-		static std::string name(){ return "ScoreBBActorVsRIF"; }
+        static std::string name(){ return "ScoreBBActorVsRIF"; }
 
-		void set_rif( shared_ptr< ::devel::scheme::RifBase const> rif_ptr ){
-			rif_ptr->get_xmap_const_ptr( rif_ );
-		}
+        void set_rif( shared_ptr< ::devel::scheme::RifBase const> rif_ptr ){
+            rif_ptr->get_xmap_const_ptr( rif_ );
+        }
 
-		void init_for_packing(
-			// ::scheme::objective::storage::TwoBodyTable<float> const & twob,
-			shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
-			std::vector<VoxelArrayPtr> const & target_field_by_atype,
-			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
-			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
+        void init_for_packing(
+            // ::scheme::objective::storage::TwoBodyTable<float> const & twob,
+            shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
+            std::vector<VoxelArrayPtr> const & target_field_by_atype,
+            std::vector< ::scheme::chemical::HBondRay > const & target_donors,
+            std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
 #ifdef USEGRIDSCORE
             shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
             bool soft_grid_energies,
 #endif
-			::scheme::search::HackPackOpts const & hackpackopts
-		){
-			packing_ = true;
-			packperthread_.clear();
-			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
-				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
-				packperthread_.push_back( tmp );
-			}
-			rot_tgt_scorer_.rot_index_p_ = rot_index_p;
-			rot_tgt_scorer_.target_field_by_atype_ = target_field_by_atype;
-			rot_tgt_scorer_.target_donors_ = target_donors;
-			rot_tgt_scorer_.target_acceptors_ = target_acceptors;
-			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
-			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
-			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+            ::scheme::search::HackPackOpts const & hackpackopts
+        ){
+            packing_ = true;
+            packperthread_.clear();
+            for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
+                shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
+                packperthread_.push_back( tmp );
+            }
+            rot_tgt_scorer_.rot_index_p_ = rot_index_p;
+            rot_tgt_scorer_.target_field_by_atype_ = target_field_by_atype;
+            rot_tgt_scorer_.target_donors_ = target_donors;
+            rot_tgt_scorer_.target_acceptors_ = target_acceptors;
+            rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
+            rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
+            rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
 #ifdef USEGRIDSCORE
             rot_tgt_scorer_.grid_scorer_ = grid_scorer;
             rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
 #endif
-			packopts_ = hackpackopts;
-			always_available_rotamers_.clear();
-			for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
-				switch( packopts_.always_available_rotamers_level ){
-					case 2:
-						always_available_rotamers_.push_back(irot);
-						break;
-					case 1:
-						if( rot_index_p->resname(irot) == "VAL" ) always_available_rotamers_.push_back(irot);
-						if( rot_index_p->resname(irot) == "ILE" ) always_available_rotamers_.push_back(irot);
-						if( rot_index_p->resname(irot) == "LEU" ) always_available_rotamers_.push_back(irot);
-						if( rot_index_p->resname(irot) == "MET" ) always_available_rotamers_.push_back(irot);
-						if( rot_index_p->resname(irot) == "PHE" ) always_available_rotamers_.push_back(irot);
-						break;
-					case 0:
-						break;
-					default:
-						utility_exit_with_message("unknown always_available_rotamers level");
-				}
-			}
-		}
+            packopts_ = hackpackopts;
+            always_available_rotamers_.clear();
+            for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
+                switch( packopts_.always_available_rotamers_level ){
+                    case 2:
+                        always_available_rotamers_.push_back(irot);
+                        break;
+                    case 1:
+                        if( rot_index_p->resname(irot) == "VAL" ) always_available_rotamers_.push_back(irot);
+                        if( rot_index_p->resname(irot) == "ILE" ) always_available_rotamers_.push_back(irot);
+                        if( rot_index_p->resname(irot) == "LEU" ) always_available_rotamers_.push_back(irot);
+                        if( rot_index_p->resname(irot) == "MET" ) always_available_rotamers_.push_back(irot);
+                        if( rot_index_p->resname(irot) == "PHE" ) always_available_rotamers_.push_back(irot);
+                        break;
+                    case 0:
+                        break;
+                    default:
+                        utility_exit_with_message("unknown always_available_rotamers level");
+                }
+            }
+        }
         void init_for_burial(
-            shared_ptr< BurialManager > burial_manager
+            shared_ptr< BurialManager > burial_manager,
+            shared_ptr< UnsatManager > unsat_manager
         ) {
             for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
                 burialperthread_.push_back( burial_manager->clone() );
+                unsatperthread_.push_back( unsat_manager->clone() );
             }
         }
 
-		template<class Scene, class Config>
-		void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
-		{
+        template<class Scene, class Config>
+        void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
+        {
 
-			// Added by brian ////////////////////////
-			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
+            // Added by brian ////////////////////////
+            ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
             runtime_assert( data_cache );
-			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
-			//////////////////////////////////////////
+            scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+            //////////////////////////////////////////
 
-			runtime_assert( rif_ );
-			runtime_assert( scratch.rotamer_energies_1b_ );
-			if( n_sat_groups_ > 0 ){
-				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
-				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
-				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
-			}
-			scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
-			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
+            runtime_assert( rif_ );
+            runtime_assert( scratch.rotamer_energies_1b_ );
+            if( n_sat_groups_ > 0 && burialperthread_.size() == 0 ){
+                scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
+                for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+                //scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
+                //for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
+            }
+            scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
+            for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
 
             if ( burialperthread_.size() > 0 ) {
                 scratch.burial_manager_ = burialperthread_.at( ::devel::scheme::omp_thread_num() );
-                scratch.burial_manager_.reset();
+                scratch.burial_manager_->reset();
+                scratch.unsat_manager_ = unsatperthread_.at( ::devel::scheme::omp_thread_num() );
+                scratch.unsat_manager_->reset();
+
+                scratch.is_satisfied_ = scratch.unsat_manager_->get_presatisfied();
             }
 
-			if( !packing_ ) return;
+            if( !packing_ ) return;
 
-			// Added by brian ////////////////////////
-			scratch.scaffold_rotamers_ = data_cache->local_rotamers_p.get();
-			//////////////////////////////////////////
+            // Added by brian ////////////////////////
+            scratch.scaffold_rotamers_ = data_cache->local_rotamers_p.get();
+            //////////////////////////////////////////
 
-			runtime_assert( scratch.scaffold_rotamers_ );
-			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
-			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
-			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
+            runtime_assert( scratch.scaffold_rotamers_ );
+            runtime_assert( rot_tgt_scorer_.rot_index_p_ );
+            runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
+            scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
 
             if ( ! scratch.burial_manager_ ) {
                 scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
             } else {
                 scratch.hackpack_->reinitialize( data_cache->local_twobody_per_thread.at(::devel::scheme::omp_thread_num()) );
-                scratch.to_pack_rots_.reserve(512);
                 scratch.reference_twobody_ = data_cache->local_twobody_p;
             }
-		}
+        }
 
-		template<class Config>
-		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
-		{
+        template<class Config>
+        Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
+        {
             if ( scratch.burial_manager_ ) scratch.burial_manager_->accumulate_neighbors( bb );
-			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
-				return 0.0;
-			}
+            if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
+                return 0.0;
+            }
 
             const bool want_sats = scratch.burial_manager_;
 
-			typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
-			static int const Nrots = RIF::Value::N;
-			int const ires = bb.index_;
-			float bestsc = 0.0;
-			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-				if( rotscores.empty(i_rs) ) {
-					break;
-				}
-				int irot = rotscores.rotamer(i_rs);
-				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-				float score_rot_v_target = rotscores.score(i_rs);
+            typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
+            static int const Nrots = RIF::Value::N;
+            int const ires = bb.index_;
+            float bestsc = 0.0;
+            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                if( rotscores.empty(i_rs) ) {
+                    break;
+                }
+                int irot = rotscores.rotamer(i_rs);
+                float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+                float score_rot_v_target = rotscores.score(i_rs);
 
-				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+                bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
 
-				if( packing_ && packopts_.packing_use_rif_rotamers ){
+                if( packing_ && packopts_.packing_use_rif_rotamers ){
 
-					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
-						
+                    if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
+                        
                         int sat1 = -1, sat2 = -1, hbcount = 0;
-						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+                        float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
                                                         rot_tgt_scorer_.score_rotamer_v_target_sat( 
                                                                 irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
                                                         score_rot_v_target;
 
-						score_rot_v_target = recalc_rot_v_tgt;
-				
-						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
-						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
+                        score_rot_v_target = recalc_rot_v_tgt;
+                
+                        if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
+                              score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
 
-							float sat_bonus = 0;
-							if (rotamer_satisfies) {
-								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
-								            packopts_.user_rotamer_bonus_constant;
-							}
+                            float sat_bonus = 0;
+                            if (rotamer_satisfies) {
+                                sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
+                                            packopts_.user_rotamer_bonus_constant;
+                            }
                             if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
-                            else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 ));
+                            else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
                             
-						}
-					}
-					if( packopts_.use_extra_rotamers ){
-						auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
-						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
-							float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
-							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
+                        }
+                    }
+                    if( packopts_.use_extra_rotamers ){
+                        auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
+                        for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
+                            float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
+                            if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 
                             int sat1 = -1, sat2 = -1, hbcount = 0;
-							float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+                            float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
                                                                 rot_tgt_scorer_.score_rotamer_v_target_sat( 
                                                                     crot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
                                                                 score_rot_v_target; // this is certainly the wrong score
 
-							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
-							    recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
+                            if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
+                                recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
                                 if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
-                                else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, crot, recalc_crot_v_tgt + crot1be, sat1, sat2 ));
-							}
-						}
-					}
-				}
+                                else                    scratch.unsat_manager_->add_to_pack_rot( ires, crot, recalc_crot_v_tgt + crot1be, sat1, sat2 );
+                            }
+                        }
+                    }
+                }
 
-				float const score_rot_tot = score_rot_v_target + rot1be;
-				//TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
-				if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
-					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
-				}
+                float const score_rot_tot = score_rot_v_target + rot1be;
+                //TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
+                if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
+                    rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
+                }
                 if ( score_rot_tot < 0.0 ) {
                     // std::cout << "Adding " << ires << std::endl;
                     scratch.has_rifrot_[ires] = true;
                 }
 
-				bestsc = std::min( score_rot_tot , bestsc );
-				//}
-			}
+                bestsc = std::min( score_rot_tot , bestsc );
+                //}
+            }
 
             // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
             //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
-			// // add native scaffold rotamers TODO: this is bugged somehow?
-			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
-				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
-					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
-						float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+            // // add native scaffold rotamers TODO: this is bugged somehow?
+            if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
+                for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
+                    if( scratch.hackpack_->using_rotamer( ires, irot ) ){
+                        float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
                         int sat1 = -1, sat2 = -1, hbcount = 0;
-						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                        float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
                                                             irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
-						float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
-						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
-							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
-                            else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, rot_tot_1b, sat1, sat2 ));
-						}
-					}
-				}
-			}
+                        float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
+                        if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
+                            if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
+                            else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, rot_tot_1b, sat1, sat2 );
+                        }
+                    }
+                }
+            }
 
             // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
             //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
-			if( packing_ ){
-				for( int irot : always_available_rotamers_ ){
-					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-					if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
-					const bool want_sats = scratch.burial_manager_;
+            if( packing_ ){
+                for( int irot : always_available_rotamers_ ){
+                    float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+                    if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
+                    const bool want_sats = scratch.burial_manager_;
                     int sat1 = -1, sat2 = -1, hbcount = 0;
-					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                    float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
                                                                         irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
-					if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
-					    recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
-						if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
-                        else                  scratch.to_pack_rots_.push_back(ToPackRot( ires, irot, recalc_rot_v_tgt + irot1be, sat1, sat2 ));
-					}
-				}
-			}
-
-			return bestsc;
-		}
-
-		template<class Scene, class Config>
-		void post( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
-		{
-			if( packing_ ){
-
-				::scheme::search::HackPack & packer( *scratch.hackpack_ );
-
-                std::vector<float> burial_weights;
-                std::vector<std::vector<int>> who_sats_me;
-                if ( scratch.burial_manager_ ) {
-                    burial_weights = scratch.burial_manager_->get_burial_weights();
-                    who_sats_me.resize(burial_weights.size());
-                    for ( int i = 0; i < scratch.to_pack_rots_.size(); i++ ) {
-                        ToPackRot const & to = scratch.to_pack_rots_[i];
-                        float score = to.score;
-                        if ( to.sat1 > -1 ) {
-                            score += burial_weights.at( to.sat1 );
-                            who_sats_me[to.sat1].push_back( i );
-                        }
-                        if ( to.sat2 > -1 ) {
-                            score += burial_weights.at( to.sat2 );
-                            who_sats_me[to.sat2].push_back( i );
-                        }
-                        packer.add_tmp_rot( to.ires, to.irot, score);
-                    }
-
-                    for ( int i_sat = 0; i_sat < who_sats_me.size(); i_sat++ ) {
-                        std::vector<int> const & vec = who_sats_me[i_sat];
-                        if ( vec.size() <= 1 ) continue;
-                        const float weight = burial_weights[i_sat];
-                        for ( int i_satisfier1 = 0; i_satisfier1 < vec.size() - 1; i_satisfier1++ ) {
-                            ToPackRot const & satisfier1 = scratch.to_pack_rots_[i_satisfier1];
-                            for ( int i_satisfier2 = i_satisfier1 + 1; i_satisfier2 < vec.size(); i_satisfier2++ ) {
-                                ToPackRot const & satisfier2 = scratch.to_pack_rots_[i_satisfier2];
-                                packer.twob_->upweight_edge(satisfier1.ires, satisfier1.irot, satisfier2.ires, satisfier2.irot, weight);
-                            }
-                        }
+                    if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
+                        recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
+                        if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
+                        else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, recalc_rot_v_tgt + irot1be, sat1, sat2 );
                     }
                 }
+            }
 
-				result.val_ = packer.pack( result.rotamers_ );
+            return bestsc;
+        }
 
+        template<class Scene, class Config>
+        void post( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
+        {
+            if( packing_ ){
 
+                ::scheme::search::HackPack & packer( *scratch.hackpack_ );
+
+                float unsat_zerobody = 0;
                 if ( scratch.burial_manager_ ) {
-                    for ( int i_sat = 0; i_sat < who_sats_me.size(); i_sat++ ) {
-                        std::vector<int> const & vec = who_sats_me[i_sat];
-                        if ( vec.size() <= 1 ) continue;
-                        const float weight = burial_weights[i_sat];
-                        for ( int i_satisfier1 = 0; i_satisfier1 < vec.size() - 1; i_satisfier1++ ) {
-                            ToPackRot const & satisfier1 = scratch.to_pack_rots_[i_satisfier1];
-                            for ( int i_satisfier2 = i_satisfier1 + 1; i_satisfier2 < vec.size(); i_satisfier2++ ) {
-                                ToPackRot const & satisfier2 = scratch.to_pack_rots_[i_satisfier2];
-                                packer.twob_->restore_edge(satisfier1.ires, satisfier1.irot, satisfier2.ires, satisfier2.irot, scratch.reference_twobody_);
-                            }
-                        }
+                    unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, scratch.burial_manager_->get_burial_weights() );
+                }
+                
+                result.val_ = packer.pack( result.rotamers_ );
+                result.val_ += unsat_zerobody;
+
+                if ( scratch.burial_manager_ ) {scratch.unsat_manager_->fix_packer( packer, scratch.reference_twobody_ );
+                    // runtime_assert(scratch.reference_twobody_->check_equal(*packer.twob_));
+                }
+                
+
+
+                if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+                for( int i = 0; i < result.rotamers_.size(); ++i ){
+                    BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
+                    int sat1=-1, sat2=-1, hbcount=0;
+                    float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
+                                    result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
+                    // todo: should do extra selection here?
+                    // if( recalc_rot_v_tgt < -1.0 ){
+                    //  selected_rotamers.push_back( result.rotamers_[i] );
+                    // }
+                    if( n_sat_groups_ > 0 ){
+                        if( sat1 >= 0 ) scratch.is_satisfied_[ sat1 ] = true;
+                        if( sat2 >= 0 ) scratch.is_satisfied_[ sat2 ] = true;
                     }
                 }
+                // result.rotamers_ = selected_rotamers;
 
-
-				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-				for( int i = 0; i < result.rotamers_.size(); ++i ){
-					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
-					int sat1=-1, sat2=-1, hbcount=0;
-					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
-									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
-					// todo: should do extra selection here?
-					// if( recalc_rot_v_tgt < -1.0 ){
-					// 	selected_rotamers.push_back( result.rotamers_[i] );
-					// }
-					if( n_sat_groups_ > 0 ){
-						if( sat1 >= 0 ) scratch.is_satisfied_[ sat1 ] = true;
-						if( sat2 >= 0 ) scratch.is_satisfied_[ sat2 ] = true;
-					}
-				}
-				// result.rotamers_ = selected_rotamers;
-
-			} else {
+            } else {
 
                 if ( scratch.burial_manager_ ) {
                     std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights();
-                    for ( int i = 0; i < burial_weights.size(); i++ ) {
-                        if ( ! scratch.is_satisfied_[i] ) result.val_ += burial_weights[i];
-                    }
+                    result.val_ += scratch.unsat_manager_->calculate_nonpack_score( burial_weights, scratch.is_satisfied_ );
                 }
 
 
             }
 
-			if( n_sat_groups_ > 0 ){
-				int nsat = 0;
-				
-				for( int i = 0; i < n_sat_groups_; ++i ){
-					
-					nsat += scratch.is_satisfied_[i];
-					//result.val_ += scratch.is_satisfied_score_[i];
-				}
-				// if (nsat >= 4 ){
-				// 	#pragma omp critical
-				// 	{
-				// 	std::cout << config << "     ";
-					
-				// 	for (int i = 0; i < 10; ++i){
-				// 		std::cout << " "<< scratch.is_satisfied_[i];
+            if( n_sat_groups_ > 0 ){
+                int nsat = 0;
+                
+                for( int i = 0; i < n_sat_groups_; ++i ){
+                    
+                    nsat += scratch.is_satisfied_[i];
+                    //result.val_ += scratch.is_satisfied_score_[i];
+                }
+                // if (nsat >= 4 ){
+                //  #pragma omp critical
+                //  {
+                //  std::cout << config << "     ";
+                    
+                //  for (int i = 0; i < 10; ++i){
+                //      std::cout << " "<< scratch.is_satisfied_[i];
 
-				// 	}
-				// 	std::cout << " " << std::endl;
-				// 	}
-				// }
-				// std::cout << "here: " << nsat << std::endl;
-				// runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
+                //  }
+                //  std::cout << " " << std::endl;
+                //  }
+                // }
+                // std::cout << "here: " << nsat << std::endl;
+                // runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 
-				if( nsat - require_satisfaction_ < 0 ){
-					result.val_ = 9e9;
-				} //else {
-					//result.val_ += -4.0f * nsat;
-				//}
+                if( nsat - require_satisfaction_ < 0 ){
+                    result.val_ = 9e9;
+                } //else {
+                    //result.val_ += -4.0f * nsat;
+                //}
 
-				// delete scratch.is_satisfied_;
-				// scratch.is_satisfied_.clear();
-			}
+                // delete scratch.is_satisfied_;
+                // scratch.is_satisfied_.clear();
+            }
 
-			// this is yolo code by Brian. I have no idea if th is will always work
-			if ( require_n_rifres_ > 0 ) {
-				if ( packing_ ) {
-					std::map<int, bool> used_positions;
-					for( int i = 0; i < result.rotamers_.size(); ++i ){
-						int position = result.rotamers_[i].first;
-						if ( used_positions.count(position) == 0 ) {
-							used_positions[position] = true;
-						}
-					}
-					// std::cout << result.rotamers_.size() << " ";
-					if (used_positions.size() < require_n_rifres_ ) {
-						result.val_ = 9e9;
-					}
-				} else {
-					int count = 0;
-					for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) {
-						if ( scratch.has_rifrot_[i] ) {
-							count ++;
-						}
-					}
-					// std::cout << "Found " << count << std::endl;
-					if (count < require_n_rifres_ ) {
-						result.val_ = 9e9;
-					}
-				}
-			}
+            // this is yolo code by Brian. I have no idea if th is will always work
+            if ( require_n_rifres_ > 0 ) {
+                if ( packing_ ) {
+                    std::map<int, bool> used_positions;
+                    for( int i = 0; i < result.rotamers_.size(); ++i ){
+                        int position = result.rotamers_[i].first;
+                        if ( used_positions.count(position) == 0 ) {
+                            used_positions[position] = true;
+                        }
+                    }
+                    // std::cout << result.rotamers_.size() << " ";
+                    if (used_positions.size() < require_n_rifres_ ) {
+                        result.val_ = 9e9;
+                    }
+                } else {
+                    int count = 0;
+                    for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) {
+                        if ( scratch.has_rifrot_[i] ) {
+                            count ++;
+                        }
+                    }
+                    // std::cout << "Found " << count << std::endl;
+                    if (count < require_n_rifres_ ) {
+                        result.val_ = 9e9;
+                    }
+                }
+            }
 
-				// #ifdef USE_OPENMP
-				// #pragma omp critical
-				// #endif
-				// std::cout << result.rotamers_.size() << " " << result.val_ << std::endl;
-			// if( result.rotamers_.size() == 0 ){
-			// 	#ifdef USE_OPENMP
-			// 	#pragma omp critical
-			// 	#endif
-			// 	std::cout << "no rotamers!" << std::endl;
-			// }
+                // #ifdef USE_OPENMP
+                // #pragma omp critical
+                // #endif
+                // std::cout << result.rotamers_.size() << " " << result.val_ << std::endl;
+            // if( result.rotamers_.size() == 0 ){
+            //  #ifdef USE_OPENMP
+            //  #pragma omp critical
+            //  #endif
+            //  std::cout << "no rotamers!" << std::endl;
+            // }
 
-			// std::cout << "bound score: " << result.val_ << ", packscore: " << packscore << std::endl;
-			// for( int i = 0; i < result.rotamers_.size(); ++i ){
-			// 	std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
-			// }
+            // std::cout << "bound score: " << result.val_ << ", packscore: " << packscore << std::endl;
+            // for( int i = 0; i < result.rotamers_.size(); ++i ){
+            //  std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
+            // }
 
-		}
-	};
+        }
+    };
 	template< class B, class X, class V >
 	std::ostream & operator<<( std::ostream & out, ScoreBBActorVsRIF<B,X,V> const& si ){ return out << si.name(); }
 
@@ -1123,8 +1081,10 @@ struct RifFactoryImpl :
         }
 
         if ( config.burial_manager ) {
-            std::dynamic_pointer_cast<MyScoreBBActorRIF>(objectives.back())->init_for_burial( config.burial_manager );
-            std::dynamic_pointer_cast<MyScoreBBActorRIF>(packing_objectives.back())->init_for_burial( config.burial_manager );
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                            .init_for_burial( config.burial_manager, config.unsat_manager );
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                            .init_for_burial( config.burial_manager, config.unsat_manager );
         }
 
 		return true;
@@ -1196,15 +1156,18 @@ create_rif_factory( RifFactoryConfig const & config )
 	} else if( config.rif_type == "RotScoreSat_2x16" )
     {
         using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
-        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4, SatDatum> crfRotScore;
-        typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
-        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 84 );
+        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -13, SatDatum> crfRotScore;
+        typedef ::scheme::objective::storage::RotamerScores< 19, crfRotScore > crfXMapValue;
+        // PRINT_SIZE_AS_ERROR<sizeof(crfXMapValue)>()();
+        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 114 );
         typedef ::scheme::objective::hash::XformMap<
                 EigenXform,
                 crfXMapValue,
                 ::scheme::objective::hash::XformHash_bt24_BCC6
             > crfXMap;
-        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 96 );
+
+        // PRINT_SIZE_AS_ERROR<sizeof(crfXMap::Map::value_type)>()();
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
 
         return make_shared< RifFactoryImpl<crfXMap> >( config );
     }

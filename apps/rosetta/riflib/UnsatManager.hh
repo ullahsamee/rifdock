@@ -13,6 +13,8 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 
+#include <scheme/search/HackPack.hh>
+
 #include <core/pose/Pose.hh>
 
 #include <string>
@@ -46,7 +48,7 @@ enum AType {
     Unknown
 };
 
-std::vector<int> NumOrbitals {
+const std::vector<int> NumOrbitals {
     2,  // "Hydroxyl",
     2,  // "TyrHydroxyl",
     1,  // "HydroxylH",
@@ -65,7 +67,7 @@ std::vector<int> NumOrbitals {
     0  // "Unknown"
 };
 
-std::vector<std::string> ATypeNames {
+const std::vector<std::string> ATypeNames {
     "Hydroxyl",
     "TyrHydroxyl",
     "HydroxylH",
@@ -86,6 +88,7 @@ std::vector<std::string> ATypeNames {
 
 // This is really arbitrary - brian
 // Loosely based on this http://www.biochem.ucl.ac.uk/bsm/atlas/index.html
+// See UnsatManager::prepare_packer for an explanation of why the scores are formatted like this
 
 // penalty__first_atom = DefaultUnsatPenalties[X][0]
 // penalty_second_atom = DefaultUnsatPenalties[X][0] * DefaultUnsatPenalties[X][1]
@@ -94,7 +97,7 @@ std::vector<std::string> ATypeNames {
 // first number is penalty for last unsat
 // second number is ratio of that for second one
 //    the third one is 1 - ( 2*(1 - ratio ) )
-std::vector<std::vector<float>> DefaultUnsatPenalties {
+const std::vector<std::vector<float>> DefaultUnsatPenalties {
     std::vector<float> {0, 0},    // "Hydroxyl",
     std::vector<float> {0, 0},    // "TyrHydroxyl",
     std::vector<float> {4, 0},    // "HydroxylH",
@@ -150,16 +153,27 @@ identify_acceptor( std::string const & aname, char one_letter, std::string & hea
 
 }
 
+struct ToPackRot {
+    int ires;
+    int irot;
+    float score;
+    int sat1;
+    int sat2;
+    ToPackRot( int _ires, int _irot, float _score, int _sat1, int _sat2 ) :
+        ires(_ires), irot(_irot), score(_score), sat1(_sat1), sat2(_sat2) {}
+};
+
 struct UnsatManager {
 
     UnsatManager() {} // used by clone()
 
-    // UnsatManager(
-    // ) 
-    // {
+    UnsatManager( std::vector<std::vector<float>> const & unsat_penalties );
 
-    // }
+    shared_ptr<UnsatManager>
+    clone() const;
 
+    void
+    reset();
 
     void
     set_target_donors_acceptors( 
@@ -180,6 +194,38 @@ struct UnsatManager {
     std::vector<Eigen::Vector3f>
     get_heavy_atom_xyzs();
 
+    std::vector<bool> const &
+    get_presatisfied() { return target_presatisfied_; }
+
+    float
+    calculate_nonpack_score( 
+        std::vector<float> const & burial_weights,
+        std::vector<bool> const & is_satisfied
+    );
+
+    float
+    calculate_unsat_score( float P0, float P1, int wants, int satisfied, float weight );
+
+    void
+    add_to_pack_rot( 
+        int ires,
+        int irot,
+        float score,
+        int sat1,
+        int sat2
+    );
+
+    float
+    prepare_packer( 
+        ::scheme::search::HackPack & packer, 
+        std::vector<float> const & burial_weights 
+    );
+
+    void
+    fix_packer( 
+        ::scheme::search::HackPack & packer, 
+        shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody
+    );
 
 private:
     int
@@ -197,6 +243,13 @@ private:
         int sat
     );
 
+    float
+    handle_twobody( 
+        int satisfier1,
+        int satisfier2,
+        float penalty,
+        ::scheme::search::HackPack & packer
+    );
 
     bool
     validate_heavy_atoms();
@@ -207,7 +260,11 @@ private:
     std::vector<HBondRay> target_donors_acceptors_;
     std::vector<hbond::HeavyAtom> target_heavy_atoms_;
     std::vector<bool> target_presatisfied_;
+    std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
 
+// things that are resetable
+    std::vector<ToPackRot> to_pack_rots_;
+    std::vector<std::array<int, 4>> modified_edges_;
 
 };
 

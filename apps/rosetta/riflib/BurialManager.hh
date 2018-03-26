@@ -82,8 +82,6 @@ struct BurialManager {
     void
     accumulate_neighbors( BBActor const & bb );
 
-    std::vector<Eigen::Vector3f>
-    get_heavyatom_xyzs();
 
 private:
 
