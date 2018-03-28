@@ -233,7 +233,14 @@ struct HBJob {
 			HBJob j;
 			j.ires = ir;
 			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
+				std::string acc_resname = accresn_user[iacc];
+				if (params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) != params -> rot_index_p -> d_l_map_.end()) {
+					acc_resname = params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) -> second;
+				} 
+				// else {
+				// 	core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
+				// }
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(acc_resname);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << accresn_user[iacc] << " into rif, no N,CA,C" << std::endl;
 					continue;
@@ -252,7 +259,12 @@ struct HBJob {
 				}
 			}
 			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_user[idon]);
+				std::string don_resname = donresn_user[idon];
+				if (params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) != params -> rot_index_p -> d_l_map_.end()) {
+					don_resname = params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) -> second;
+				}
+				//std::cout << "----------"<<donresn_user[idon] << std::endl;
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(don_resname);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
 					continue;

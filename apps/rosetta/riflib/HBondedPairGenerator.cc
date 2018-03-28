@@ -206,8 +206,24 @@ void HBondedPairGenerator::init(
 		{		
 			rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 		}
- 		rtype1op_ = rts.lock()->name_map(resn1).clone();
-		rtype2op_ = rts.lock()->name_map(resn2).clone();
+ 		std::cout << "-----" << resn1 << "-----" << resn2 << std::endl;
+ 		//rtype1op_ = rts.lock()->name_map(resn1).clone();
+		//rtype2op_ = rts.lock()->name_map(resn2).clone();
+
+		//TYU change what residue get loaded base on d_l_map_
+ 		if (rot_index.d_l_map_.find(resn1) != rot_index.d_l_map_.end() && rot_index.d_l_map_.find(resn2) == rot_index.d_l_map_.end()) {
+ 			core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(rot_index.d_l_map_.find(resn1)->second).get_self_ptr();
+ 			core::chemical::ResidueTypeCOP tmp_dcop = rts.lock() -> get_d_equivalent(rt_tmp);
+ 			rtype1op_ = tmp_dcop -> clone();
+ 			rtype2op_ = rts.lock() -> name_map(resn2).clone();
+ 		} 
+ 		else if (rot_index.d_l_map_.find(resn1) == rot_index.d_l_map_.end() && rot_index.d_l_map_.find(resn2) != rot_index.d_l_map_.end()) {
+ 			rtype1op_ = rts.lock() -> name_map(resn1).clone();
+			core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(rot_index.d_l_map_.find(resn2)->second).get_self_ptr();
+ 			core::chemical::ResidueTypeCOP tmp_dcop = rts.lock() -> get_d_equivalent(rt_tmp);
+ 			rtype2op_ = tmp_dcop -> clone();
+ 		}
+		std::cout << "----done-----" << std::endl;
 		if( rtype1op_->has( "H" ) && resn1 != "GLY" ) rtype1op_->set_atom_type( "H", "VIRT" );
 		if( rtype1op_->has( "O" ) && resn1 != "GLY" ) rtype1op_->set_atom_type( "O", "VIRT" );
 		if( rtype2op_->has( "H" ) && resn2 != "GLY" ) rtype2op_->set_atom_type( "H", "VIRT" );

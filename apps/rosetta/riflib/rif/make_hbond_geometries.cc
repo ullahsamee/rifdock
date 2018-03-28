@@ -118,13 +118,25 @@ void make_hbond_geometries(
 	bool fixed_is_nonstandard;
 	if( fix_donor ){
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-		core::chemical::ResidueType const & rtype = rts.lock()->name_map(resn1);
-		frame_atomno_1 = rtype.nheavyatoms()-2;
-		frame_atomno_2 = rtype.nheavyatoms()-1;
-		frame_atomno_3 = rtype.nheavyatoms()-0;
+		core::chemical::ResidueTypeCOP const & rtype = rts.lock() -> name_mapOP(resn1);
+		if (rot_index.d_l_map_.find(resn1) != rot_index.d_l_map_.end()) {
+			core::chemical::ResidueTypeCOP const & drtype = rts.lock() -> get_d_equivalent(rtype);
+			frame_atomno_1 = drtype -> nheavyatoms()-2;
+			frame_atomno_2 = drtype -> nheavyatoms()-1;
+			frame_atomno_3 = drtype -> nheavyatoms()-0;
+		} else {
+			frame_atomno_1 = rtype -> nheavyatoms()-2;
+			frame_atomno_2 = rtype -> nheavyatoms()-1;
+			frame_atomno_3 = rtype -> nheavyatoms()-0;
+		}
+		//core::chemical::ResidueTypeCOP const & drtype = rts.lock() -> get_d_equivalent(rtype);
+		//core::chemical::ResidueType const & rtype = rts.lock()->name_map(resn1);
+		// frame_atomno_1 = rtype -> nheavyatoms()-2;
+		// frame_atomno_2 = rtype -> nheavyatoms()-1;
+		// frame_atomno_3 = rtype -> nheavyatoms()-0;
 		fixed_is_nonstandard = ( exemplars.find(resn1)!=exemplars.end() );
 		cout << "alignment atomnos " << resn1 << " " << frame_atomno_1 << " " << frame_atomno_2 << " " << frame_atomno_3 << endl;
-		if( resn1=="SER" ){
+		if( resn1=="SER" || resn1 == "DSE"){
 			frame_atomno_1 = 11; // SER is special case because so small... use HG instead of bb O
 		}
 		if( resn1=="GLY" ){
@@ -136,13 +148,24 @@ void make_hbond_geometries(
 	}
 	if( fix_acceptor ){
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-		core::chemical::ResidueType const & rtype = rts.lock()->name_map(resn2);
-		frame_atomno_1 = rtype.nheavyatoms()-2;
-		frame_atomno_2 = rtype.nheavyatoms()-1;
-		frame_atomno_3 = rtype.nheavyatoms()-0;
+		core::chemical::ResidueTypeCOP const & rtype = rts.lock()->name_mapOP(resn2);
+		//core::chemical::ResidueType const & rtype = rts.lock()->name_map(resn2);
+		if (rot_index.d_l_map_.find(resn2) != rot_index.d_l_map_.end()) {
+			core::chemical::ResidueTypeCOP const & drtype = rts.lock() -> get_d_equivalent(rtype);
+			frame_atomno_1 = drtype -> nheavyatoms()-2;
+			frame_atomno_2 = drtype -> nheavyatoms()-1;
+			frame_atomno_3 = drtype -> nheavyatoms()-0;
+		} else {
+			frame_atomno_1 = rtype -> nheavyatoms()-2;
+			frame_atomno_2 = rtype -> nheavyatoms()-1;
+			frame_atomno_3 = rtype -> nheavyatoms()-0;
+		}
+		// frame_atomno_1 = rtype -> nheavyatoms()-2;
+		// frame_atomno_2 = rtype -> nheavyatoms()-1;
+		// frame_atomno_3 = rtype -> nheavyatoms()-0;
 		fixed_is_nonstandard = ( exemplars.find(resn2)!=exemplars.end() );
 		cout << "alignment atomnos " << resn2 << " " << frame_atomno_1 << " " << frame_atomno_2 << " " << frame_atomno_3 << endl;
-		if( resn2=="SER" ){
+		if( resn2=="SER" || resn2 == "DSE" ){
 			frame_atomno_1 = 11; // SER is special case because so small... use HG instead of bb O
 		}
 		if( resn2=="GLY" ){
@@ -151,9 +174,9 @@ void make_hbond_geometries(
 			frame_atomno_3 = 2; // CA
 		}
 		if( resn2=="ADX" || resn2=="CYX" || resn2=="GUX" || resn2=="THX" ){
-			frame_atomno_1 = rtype.atom_index("OP1");
-			frame_atomno_2 = rtype.atom_index("P");
-			frame_atomno_3 = rtype.atom_index("OP2");
+			frame_atomno_1 = (*rtype).atom_index("OP1");
+			frame_atomno_2 = (*rtype).atom_index("P");
+			frame_atomno_3 = (*rtype).atom_index("OP2");
 		}
 		// runtime_assert( frame_atomno_1 > 4 );
 	}

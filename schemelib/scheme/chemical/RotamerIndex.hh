@@ -951,6 +951,7 @@ struct RotamerIndex {
         for (auto it : this -> d_l_map_) {
         	if (it.second == l_name) {
         		d_name = it.first;
+        		break;
         	} else {
         		d_name = l_name;
         	}

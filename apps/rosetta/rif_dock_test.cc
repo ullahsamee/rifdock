@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
 		// 	std::cout << ri2 << std::endl;
 
 		// 	runtime_assert( ri2 == rot_index );
-		// 	utility_exit_with_message("test rot index load/save");
+		// 	//utility_exit_with_message("test rot index load/save");
 		// }
 
 		// std::cout << "================ RotamerIndex ===================" << std::endl;
@@ -283,6 +283,7 @@ int main(int argc, char *argv[]) {
 		rotrfopts.scale_atr      = opt.rotrf_scale_atr;
 		::devel::scheme::RotamerRFTablesManager rotrf_table_manager( rot_index_p, rotrfopts );
 		// rotrf_table_manager.preinit_all();
+		
 
 		MakeTwobodyOpts make2bopts;
 		// hacked by brian             VVVV

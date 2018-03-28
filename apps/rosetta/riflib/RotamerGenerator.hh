@@ -75,7 +75,8 @@ get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
 	bool extra_primary_rotamers,
-	bool use_d_aa
+	bool use_d_aa,
+	bool use_l_aa
 );
 //new get_rotamer_index for rot_spec
 std::shared_ptr<RotamerIndex>

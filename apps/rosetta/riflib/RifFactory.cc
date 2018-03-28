@@ -150,6 +150,7 @@ public:
 			for( int i = 0; i < RotScores::N; ++i ){
 				if( xmrot.empty(i) ) break;
 				if( xmrot.rotamer(i) >= using_rot.size() ) using_rot.resize( xmrot.rotamer(i)+1 , false );
+
 				using_rot[ xmrot.rotamer(i) ] = true;
 			}
 		}
@@ -1079,10 +1080,25 @@ create_rif_factory( RifFactoryConfig const & config )
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
 
+	} 
+	else if( config.rif_type == "Rot10Score6Sat16" )
+	{
+		typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 10, -4> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScores< 14, crfRotScore > crfXMapValue;
+		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 56 );
+		typedef ::scheme::objective::hash::XformMap<
+				EigenXform,
+				crfXMapValue,
+				::scheme::objective::hash::XformHash_bt24_BCC6
+			> crfXMap;
+		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 64 );
+
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	} else
 	{
 		utility_exit_with_message( "create_rif_factory_inner: unknown rif type "+config.rif_type );
 	}
+
 }
 
 

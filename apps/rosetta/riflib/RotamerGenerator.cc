@@ -134,6 +134,7 @@ struct RichardsonRotData {
 		core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
 		core::pose::Pose pose;
 		pose.append_residue_by_jump(*resop,1);
+		//std::cerr << resname << ":" << chi.size() << " " << resop->name3() << ":" << resop->nchi() << std::endl;
 		runtime_assert( chi.size() == resop->nchi() );
 		// flip if D
 		if (it != d_l_map.end()) {
@@ -146,24 +147,6 @@ struct RichardsonRotData {
 	    	pose.append_residue_by_jump(*resop,1);   
 	    	runtime_assert( chi.size() == resop->nchi() );
 		}
-
-		// // I am D
-		// 	resname = it -> second;
-		// 	rtype = rts.lock()->name_map( resname );
-		// 	resop = core::conformation::ResidueFactory::create_residue( rtype );
-		// 	pose.append_residue_by_jump(*resop,1);
-		// 	core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
-  //       	core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);// -> get_l_equivalent(pose_rt);
-  //       	core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
-  //       	resop = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
-	 //    	resname = d_resop -> name3();
-	 //    	pose.clear();
-	 //    	pose.append_residue_by_jump(*d_resop,1);   
-	 //    	runtime_assert( chi.size() == d_resop->nchi() ); 
-		// }
-		// std::cout << resname << std::endl;
-		// std::cout << "_______________________________" << std::endl;    	
-
 
 		for(int i = 0; i < chi.size(); ++i){
 			pose.set_chi( i+1, 1, chi[i] );
@@ -780,7 +763,8 @@ get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
 	bool extra_primary_rotamers,
-	bool use_d_aa
+	bool use_d_aa,
+	bool use_l_aa
 );
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
@@ -832,7 +816,8 @@ get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
 	bool extra_rotamers,
 	bool extra_primary_rotamers,
-	bool use_d_aa	
+	bool use_d_aa,
+	bool use_l_aa	
 ){
 	std::cout << "get_rotamer_index" << std::endl;
 
@@ -845,7 +830,7 @@ get_rotamer_spec_default(
 		resnames.push_back("PHE");
 		resnames.push_back("GLY");
 		resnames.push_back("HIS");
-		//resnames.push_back("HIS_D");
+		resnames.push_back("HIS_D");
 		resnames.push_back("ILE");
 		resnames.push_back("LYS");
 		resnames.push_back("LEU");
@@ -884,11 +869,11 @@ get_rotamer_spec_default(
 		use_d_rosetta_rots.push_back("ASN");
 		use_d_rosetta_rots.push_back("PRO");
 		use_d_rosetta_rots.push_back("GLN");
-		// use_d_rosetta_rots.push_back("ARG");
-		// use_d_rosetta_rots.push_back("SER");
-		// use_d_rosetta_rots.push_back("THR");
-		// use_d_rosetta_rots.push_back("VAL");
-		// use_d_rosetta_rots.push_back("TRP");
+		use_d_rosetta_rots.push_back("ARG");
+		use_d_rosetta_rots.push_back("SER");
+		use_d_rosetta_rots.push_back("THR");
+		use_d_rosetta_rots.push_back("VAL");
+		use_d_rosetta_rots.push_back("TRP");
 		use_d_rosetta_rots.push_back("TYR");
 
 
@@ -907,7 +892,7 @@ get_rotamer_spec_default(
 		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
 		size_t n_proton_chi = rtype.n_proton_chi();
 
-		if( std::count( use_rosetta_rots.begin(), use_rosetta_rots.end(), resname ) ){ // TYR now done through richardson rots
+		if( std::count( use_rosetta_rots.begin(), use_rosetta_rots.end(), resname ) && use_l_aa){ // TYR now done through richardson rots
 
 			core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
 			core::pose::Pose pose;
@@ -973,7 +958,9 @@ get_rotamer_spec_default(
 				// }
 				rot_index.add_rotamer( resname, chi, n_proton_chi );
 			}
-		} else {
+		} 
+		else if (!std::count( use_rosetta_rots.begin(), use_rosetta_rots.end(), resname ) && use_l_aa)
+		{
 
 			for( auto const & rrd : rrdata[resname] ){
 				int key = rot_index.add_rotamer( resname, rrd.get_chi(), n_proton_chi );
@@ -1112,24 +1099,30 @@ get_rotamer_spec_default(
 	// std::cerr << rot_index.size() << std::endl;
 
 	// for( int irot = 0; irot < rot_index.n_primary_rotamers(); ++irot ){
-	// 	utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
-	// 	rot_index.dump_pdb_with_children(out,irot);
-	// 	out.close();
+	// 	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 		utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 		rot_index.dump_pdb_with_children(out,irot);
+	// 		out.close();
+	// 	}
 	// }
 
 	// for( int irot = 0; irot < rot_index.size(); ++irot ){
-	//  	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
-	//  	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
-	//  	out.close();
+	//  	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 	 	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 	 	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
+	// 	 	out.close();
+	//  	}
 	// }
 
 	// for( int isp : rot_index.structural_parents_ ){
-	// 	utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
-	// 	rot_index.dump_pdb_by_structure(out,isp);
-	// 	out.close();
+	// 	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 		utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
+	// 		rot_index.dump_pdb_by_structure(out,isp);
+	// 		out.close();
+	// 	}
 	// }
 
-	// utility_exit_with_message("testing out extra rotamers");
+	//utility_exit_with_message("testing out extra rotamers");
 }
 
 

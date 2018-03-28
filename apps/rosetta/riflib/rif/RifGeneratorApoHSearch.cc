@@ -242,6 +242,15 @@ namespace rif {
 		abs_score_cut_by_res["TRP"] = -3.4;
 		abs_score_cut_by_res["LYS"] = -2.6;
 
+		abs_score_cut_by_res["DAL"] = -0.3;
+		abs_score_cut_by_res["DPH"] = -2.8;
+		abs_score_cut_by_res["DIL"] = -1.7;
+		abs_score_cut_by_res["DLE"] = -1.5;
+		abs_score_cut_by_res["DME"] = -1.7;
+		abs_score_cut_by_res["DVA"] = -1.0;
+		abs_score_cut_by_res["DTY"] = -3.4;
+		abs_score_cut_by_res["DLY"] = -2.6;
+
 		// #ifdef USE_OPENMP
 		// #pragma omp parallel for schedule(dynamic,1)
 		// #endif
@@ -249,6 +258,7 @@ namespace rif {
 
 			int irot = rots[ijob];
 			std::string resn = rot_index_p->rotamers_[irot].resname_;
+
 			runtime_assert_msg( abs_score_cut_by_res.find(resn) != abs_score_cut_by_res.end(), "unsupported res "+resn );
 			float const abs_score_cut_by_res_thisres = abs_score_cut_by_res[resn] * opts.score_cut_adjust;
 

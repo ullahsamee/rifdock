@@ -18,6 +18,7 @@
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/pose/PDBInfo.hh>
+#include <core/pose/util.hh>
 
 #include <string>
 #include <vector>
@@ -265,7 +266,24 @@ dump_rif_result_(
         int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
         int irot =                  selected_result.rotamers().at(ipr).second;
 
-        core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+        std::string myResName = rdd.rot_index_p->resname(irot);
+        auto myIt = rdd.rot_index_p -> d_l_map_.find(myResName);
+
+        core::conformation::ResidueOP newrsd;
+        if (myIt != rdd.rot_index_p -> d_l_map_.end()){
+            core::chemical::ResidueType const & rtype = rts.lock()->name_map( myIt -> second );
+            newrsd = core::conformation::ResidueFactory::create_residue( rtype );
+            core::pose::Pose pose;
+            pose.append_residue_by_jump(*newrsd,1);
+            core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+            core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, myIt -> second);
+            core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+            newrsd = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+        } else {
+            newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+        }
+        //core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+
         pose_from_rif.replace_residue( ires+1, *newrsd, true );
         resfile << ires+1 << " A NATRO" << std::endl;
         expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one

@@ -535,7 +535,7 @@ make_twobody_tables(
 									twob.twobody_[ir][jr][irotsel][jrotsel] += atomscore;
 								}
 							} else {
-								if( rot_index.resname(irot)!="ALA"&&rot_index.resname(irot)!="GLY" ){
+								if( rot_index.resname(irot)!="ALA"&&rot_index.resname(irot)!="GLY" && rot_index.resname(irot)!="DAL"){
 									utility_exit_with_message( "no rotrf table for "+str(irot)+" / "+ str(ir)+rot_index.resname(irot)
 									    + " other is" + str(jr)+rot_index.resname(jrot) );
 								}
@@ -556,7 +556,7 @@ make_twobody_tables(
 									twob.twobody_[ir][jr][irotsel][jrotsel] += atomscore;
 								}
 							} else {
-								if( rot_index.resname(jrot)!="ALA"&&rot_index.resname(jrot)!="GLY" ){
+								if( rot_index.resname(jrot)!="ALA"&&rot_index.resname(jrot)!="GLY" && rot_index.resname(jrot)!="DAL"){
 									utility_exit_with_message( "no rotrf table for "+str(jrot)+" / "+str(jr)+rot_index.resname(jrot)
 									    + " other is" + str(ir)+rot_index.resname(irot) );
 								}

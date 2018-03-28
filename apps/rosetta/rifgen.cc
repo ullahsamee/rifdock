@@ -114,6 +114,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
     OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
     OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -175,6 +176,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
         NEW_OPT(  rifgen::use_d_aa							, "" , false);
+        NEW_OPT(  rifgen::use_l_aa							, "" , true);
 
 
 
@@ -533,7 +535,7 @@ int main(int argc, char *argv[]) {
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	std::cout << "Preparing rotamer index spec..." << std::endl;
-	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa]());
+	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa](), option[rifgen::use_l_aa]());
 	// 	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
 	// 	utility::io::ozstream spec_out(rot_spec_fname);
 	// 	rot_index_spec.save(spec_out);
@@ -551,6 +553,34 @@ int main(int argc, char *argv[]) {
 
 	shared_ptr<RotamerIndex> rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec );
 		RotamerIndex & rot_index( *rot_index_p );
+
+	// std::cerr << rot_index.size() << std::endl;
+
+	// for( int irot = 0; irot < rot_index.n_primary_rotamers(); ++irot ){
+	// 	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 		utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 		rot_index.dump_pdb_with_children(out,irot);
+	// 		out.close();
+	// 	}
+	// }
+
+	// for( int irot = 0; irot < rot_index.size(); ++irot ){
+	//  	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 	 	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 	 	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
+	// 	 	out.close();
+	//  	}
+	// }
+
+	// for( int isp : rot_index.structural_parents_ ){
+	// 	if (rot_index.resname(isp) == "DTY" || rot_index.resname(isp) == "HIS" || rot_index.resname(isp) == "LYS") {
+	// 		utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
+	// 		rot_index.dump_pdb_by_structure(out,isp);
+	// 		out.close();
+	// 	}
+	// }
+
+	//utility_exit_with_message("testing out extra rotamers");
 
 		
 		// utility::io::ozstream riout( "trp_rots.pdb" );
