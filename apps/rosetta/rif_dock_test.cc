@@ -15,49 +15,47 @@
 	#include <boost/lexical_cast.hpp>
 	// #include <boost/random/mersenne_twister.hpp>
 
-	#include <core/id/AtomID.hh>
+	// #include <core/id/AtomID.hh>
 	#include <core/import_pose/import_pose.hh>
         #include <core/chemical/ChemicalManager.hh>
         #include <core/chemical/ResidueTypeSet.hh>
 	#include <core/pose/Pose.hh>
 	#include <core/pose/PDBInfo.hh>
 	#include <core/pose/util.hh>
-	#include <core/scoring/EnergyGraph.hh>
-	#include <core/scoring/ScoreFunction.hh>
-	#include <core/scoring/ScoreFunctionFactory.hh>
-	#include <core/scoring/hbonds/HBondOptions.hh>
-	#include <core/scoring/methods/EnergyMethodOptions.hh>
-	#include <core/conformation/ResidueFactory.hh>
-	#include <core/kinematics/MoveMap.hh>
-	#include <core/scoring/Energies.hh>
-        #include <protocols/minimization_packing/MinMover.hh>
+	// #include <core/scoring/EnergyGraph.hh>
+	// #include <core/scoring/ScoreFunction.hh>
+	// #include <core/scoring/ScoreFunctionFactory.hh>
+	// #include <core/scoring/hbonds/HBondOptions.hh>
+	// #include <core/scoring/methods/EnergyMethodOptions.hh>
+	// #include <core/conformation/ResidueFactory.hh>
+	// #include <core/kinematics/MoveMap.hh>
+	// #include <core/scoring/Energies.hh>
+ //    #include <protocols/minimization_packing/MinMover.hh>
 
 	#include <devel/init.hh>
-	#include <riflib/RotamerGenerator.hh>
-	#include <riflib/rosetta_field.hh>
+	// #include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
-	#include <riflib/rotamer_energy_tables.hh>
 
 	// #include <numeric/alignment/QCP_Kernel.hh>
 	#include <parallel/algorithm>
 	#include <exception>
 	#include <stdexcept>
 
-	#include <scheme/actor/Atom.hh>
-	#include <scheme/actor/BackboneActor.hh>
-	#include <scheme/actor/VoxelActor.hh>
+	// #include <scheme/actor/Atom.hh>
+	// #include <scheme/actor/BackboneActor.hh>
+	// #include <scheme/actor/VoxelActor.hh>
 	#include <scheme/kinematics/Director.hh>
-	#include <scheme/kinematics/SceneBase.hh>
-	#include <scheme/nest/pmap/OriTransMap.hh>
-	#include <scheme/numeric/rand_xform.hh>
-	// #include <scheme/objective/ObjectiveFunction.hh>
-	#include <scheme/objective/voxel/FieldCache.hh>
+	// #include <scheme/kinematics/SceneBase.hh>
+	// #include <scheme/nest/pmap/OriTransMap.hh>
+	// #include <scheme/numeric/rand_xform.hh>
+	// // #include <scheme/objective/ObjectiveFunction.hh>
+	// #include <scheme/objective/voxel/FieldCache.hh>
 	// #include <scheme/objective/voxel/VoxelArray.hh>
 	// #include <scheme/objective/hash/XformMap.hh>
 	// #include <scheme/objective/storage/RotamerScores.hh>
-	#include <scheme/util/StoragePolicy.hh>
-	#include <scheme/search/HackPack.hh>
-	#include <scheme/objective/integration/SceneObjective.hh>
+	// #include <scheme/util/StoragePolicy.hh>
+	// #include <scheme/search/HackPack.hh>
+	// #include <scheme/objective/integration/SceneObjective.hh>
 
 	#include <riflib/RifFactory.hh>
 
@@ -75,17 +73,20 @@
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
 
 
-// refactor
-	#include <riflib/rifdock_subroutines/util.hh>
-	
-	#include <riflib/rifdock_subroutines/HSearchFactory.hh>	
+// Task system
+	#include <riflib/task/TaskProtocol.hh>
+	#include <riflib/rifdock_tasks/HSearchTasks.hh>
+	#include <riflib/rifdock_tasks/SetFaModeTasks.hh>
+	#include <riflib/rifdock_tasks/HackPackTasks.hh>
+	#include <riflib/rifdock_tasks/RosettaScoreAndMinTasks.hh>
+	#include <riflib/rifdock_tasks/CompileAndFilterResultsTasks.hh>
+	#include <riflib/rifdock_tasks/OutputResultsTasks.hh>
+	#include <riflib/rifdock_tasks/UtilTasks.hh>
+	#include <riflib/rifdock_tasks/SeedingPositionTasks.hh>
+	#include <riflib/rifdock_tasks/MorphTasks.hh>
 
-	#include <riflib/rifdock_subroutines/hack_pack.hh>
-	#include <riflib/rifdock_subroutines/rosetta_rescore.hh>
-	#include <riflib/rifdock_subroutines/compile_and_filter_results.hh>
-	#include <riflib/rifdock_subroutines/output_results.hh>
+	#include <riflib/seeding_util.hh>
 
-	#include <riflib/HSearchConstraints.hh>
 
 
 
@@ -226,54 +227,19 @@ int main(int argc, char *argv[]) {
 		shared_ptr<RifFactory> rif_factory = ::devel::scheme::create_rif_factory( rif_factory_config );
 
 
-		// shared_ptr<RifFactory> rif_factory;
-		// if ( opt.scaffold_provider_type == "SingleFile" ) {
-		// 	rif_factory = ::devel::scheme::create_rif_factory<SingleFileScaffoldProvider>(rif_factory_config);
-		// } else if ( opt.scaffold_provider_type == "Alex" ) {
-		// 	rif_factory = ::devel::scheme::create_rif_factory<MorphingScaffoldProvider>(rif_factory_config);
-		// } else {
-		// 	utility_exit_with_message( "rif_dock_test: unknown scaffold provider type "+opt.scaffold_provider_type );
-		// }
-
-
-
-
 	print_header( "create rotamer index" );
 		
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file );
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies );
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		// {
-		// 	utility::io::ozstream out("test.rotidx.gz",std::ios_base::binary);
-		// 	rot_index.save(out);
-		// 	out.close();
-		// }
-		// {
-		// 	RotamerIndex ri2;
-		// 	utility::io::izstream in("test.rotidx.gz",std::ios_base::binary);
-		// 	ri2.load(in);
-		// 	in.close();
+		// Brian resurrects this thing. It's really useful for debugging
+		std::cout << "================ RotamerIndex ===================" << std::endl;\
+		std::cout << rot_index << std::endl;
+		std::cout << "=================================================" << std::endl;
 
-		// 	std::cout << rot_index << std::endl;
-		// 	std::cout << std::endl;
-		// 	std::cout << ri2 << std::endl;
-
-		// 	runtime_assert( ri2 == rot_index );
-		// 	utility_exit_with_message("test rot index load/save");
-		// }
-
-		// std::cout << "================ RotamerIndex ===================" << std::endl;
-		// std::cout << rot_index.size() << " " << rot_index.n_primary_rotamers() << std::endl;
-		// std::cout << rot_index << std::endl;
-		// {
-		// 	utility::io::ozstream out("rot_index.pdb");
-		// 	rot_index.dump_pdb( out );
-		// 	utility_exit_with_message("ortsdn");
-		// }
-		// std::cout << "=================================================" << std::endl;
 
 		RotamerRFOpts rotrfopts;
 		rotrfopts.oversample     = opt.rotrf_oversample;
@@ -286,7 +252,7 @@ int main(int argc, char *argv[]) {
 
 		MakeTwobodyOpts make2bopts;
 		// hacked by brian             VVVV
-		make2bopts.onebody_threshold = 30.0;
+		make2bopts.onebody_threshold = 4;
 		make2bopts.distance_cut = 15.0;
 		make2bopts.hbond_weight = packopts.hbond_weight;
 		make2bopts.favorable_2body_multiplier = opt.favorable_2body_multiplier;
@@ -367,6 +333,15 @@ int main(int argc, char *argv[]) {
 		// 	}
 		// }
 	}
+
+	std::vector<bool> resl_load_map(RESLS.size(), true);	// by default load all resls
+
+	if ( opt.only_load_highest_resl ) {
+		for ( int i = 0; i < resl_load_map.size() - 1; i++) {
+			resl_load_map[i] = false;
+		}
+	}
+
 	std::vector< VoxelArrayPtr > target_field_by_atype;
 	std::vector< std::vector< VoxelArrayPtr > > target_bounding_by_atype;
 	{
@@ -411,7 +386,8 @@ int main(int argc, char *argv[]) {
 				target_field_by_atype,
 				target_bounding_by_atype,
 				false,
-				cache_prefix
+				cache_prefix,
+				resl_load_map
 			);
 			runtime_assert( target_bounding_by_atype.size() == RESLS.size() );
 			// now scale down the any positive component by 1/RESL if RESL > 1
@@ -448,6 +424,20 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+
+#ifdef USEGRIDSCORE
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+	if ( opt.use_rosetta_grid_energies ) {
+		print_header( "preparing rosetta energy grids" );
+		grid_scorer = prepare_grid_scorer( target, target_res );
+	}
+#else
+	if ( opt.use_rosetta_grid_energies ) {
+		utility_exit_with_message( "You must build with -DUSEGRIDSCORE=1 to use -use_rosetta_grid_energies!!!");
+	}
+#endif
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	print_header( "read in RIFs" ); /////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -462,6 +452,7 @@ int main(int argc, char *argv[]) {
 		#endif
 		for( int i_readmap = 0; i_readmap < opt.rif_files.size(); ++i_readmap ){
 			if( exception ) continue;
+			if ( ! resl_load_map.at(i_readmap) ) continue;
 			try {
 				std::string const & rif_file = opt.rif_files[i_readmap];
 				std::string & rif_dscr = rif_descriptions[i_readmap];
@@ -544,6 +535,8 @@ int main(int argc, char *argv[]) {
 		utility::vector1<core::Size> scaffold_res;//, scaffold_res_all; // Seqposs of residues to design, default whole scaffold
 		try {
 
+			ProtocolData pd;
+
 			runtime_assert( rot_index_p );
 			std::string scafftag = utility::file_basename( utility::file::file_basename( scaff_fname ) );
 
@@ -554,32 +547,29 @@ int main(int argc, char *argv[]) {
 			std::cout << "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
 
-
+			bool needs_scaffold_director = false;
 
 			ScaffoldProviderOP scaffold_provider = get_scaffold_provider(
 				iscaff,
 				rot_index_p,
 				opt,
 				make2bopts,
-				rotrf_table_manager);
+				rotrf_table_manager,
+				needs_scaffold_director);
 
-			ScaffoldIndex rep_si = scaffold_provider->get_representative_scaffold_index();
-			ScaffoldDataCacheOP rep_data_cache = scaffold_provider->get_data_cache_slow( rep_si );
-			assert(rep_data_cache);
+			// General info about a generic scaffold for debugging, cout, and the director
+			ScaffoldDataCacheOP test_data_cache = scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
+			assert(test_data_cache);
+			scaffold_sequence_glob0 = *(test_data_cache->scaffold_sequence_glob0_p);
+			scaffold_res = *(test_data_cache->scaffold_res_p);
+			float test_scaff_radius = test_data_cache->scaff_radius;
+			float test_scaff_redundancy_filter_rg = test_data_cache->scaff_redundancy_filter_rg;
+			Eigen::Vector3f test_scaffold_center = test_data_cache->scaffold_center;
+			float test_redundancy_filter_rg = std::min( test_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
+			std::cout << "using redundancy_filter_rg: ~" << test_redundancy_filter_rg << std::endl;
 
-			// debugging info
-			scaffold_sequence_glob0 = *(rep_data_cache->scaffold_sequence_glob0_p);
-			scaffold_res = *(rep_data_cache->scaffold_res_p);
 
-			// needed for scene
-			float rep_scaff_radius = rep_data_cache->scaff_radius;
-
-			// needed for cout
-			float rep_scaff_redundancy_filter_rg = rep_data_cache->scaff_redundancy_filter_rg;
-			Eigen::Vector3f rep_scaffold_center = rep_data_cache->scaffold_center;
-
-			float rep_redundancy_filter_rg = std::min( rep_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
-			std::cout << "using redundancy_filter_rg: ~" << rep_redundancy_filter_rg << std::endl;
+			shared_ptr<std::vector<EigenXform>> seeding_positions = setup_seeding_positions( opt, pd, scaffold_provider, iscaff );
 
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -600,6 +590,10 @@ int main(int argc, char *argv[]) {
 				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
+#ifdef USEGRIDSCORE
+            	rso_config.grid_scorer = grid_scorer;
+            	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;
+#endif
 
 			
 			ScenePtr scene_prototype;
@@ -615,25 +609,39 @@ int main(int argc, char *argv[]) {
 			scene_minimal->add_actor( 0, VoxelActor(target_bounding_by_atype) );
 
 
-			// utility_exit_with_message("FOO");
-
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup director based on scaffold and target sizes" ); //////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			shared_ptr<RifDockNestDirector> nest_director;
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
-				float const body_radius = std::min( rep_scaff_radius, rif_radius );
-				double const cart_grid = opt.resl0*opt.hsearch_scale_factor/sqrt(3); // 1.5 is a big hack here.... 2 would be more "correct"
-				double const hackysin = std::min( 1.0, opt.resl0*opt.hsearch_scale_factor/2.0/ body_radius );
+				float body_radius = std::min( test_scaff_radius, rif_radius );
+
+				double resl0 = opt.resl0;
+				double hsearch_scale_factor = opt.hsearch_scale_factor;
+				double search_diameter = opt.search_diameter;
+
+				// Ideally one could read these in from the xform file
+				if ( opt.xform_fname.length() > 0 ) {
+					target_center = F3(0, 0, 0);
+	                body_radius = 15.0;
+					resl0 = 1;
+	                hsearch_scale_factor = 1.2;
+	                search_diameter = 4.0;
+				}
+
+				double cart_grid = resl0*hsearch_scale_factor/sqrt(3); // 1.5 is a big hack here.... 2 would be more "correct"
+				double hackysin = std::min( 1.0, resl0*hsearch_scale_factor/2.0/ body_radius );
+
 				runtime_assert( hackysin > 0.0 );
 				double const rot_resl_deg0 = asin( hackysin ) * 180.0 / M_PI;
-				int nside = std::ceil( opt.search_diameter / cart_grid );
-				std::cout << "search dia.    : " <<  opt.search_diameter << std::endl;
+				int nside = std::ceil( search_diameter / cart_grid );
+				std::cout << "search dia.    : " <<  search_diameter << std::endl;
 				std::cout << "nside          : " << nside        << std::endl;
-				std::cout << "resl0:           " << opt.resl0 << std::endl;
+				std::cout << "resl0:           " << resl0 << std::endl;
 				std::cout << "body_radius:     " << body_radius << std::endl;
 				std::cout << "rif_radius:      " << rif_radius << std::endl;
-				std::cout << "scaffold_radius: " << rep_scaff_radius << std::endl;
+				std::cout << "scaffold_radius: " << test_scaff_radius << std::endl;
 				std::cout << "cart_grid:       " << cart_grid  << std::endl;
 				std::cout << "rot_resl_deg0:   " << rot_resl_deg0 << std::endl;
 				I3 nc( nside, nside, nside );
@@ -643,47 +651,31 @@ int main(int argc, char *argv[]) {
 				std::cout << "cart grid lb " << lb << std::endl;
 				std::cout << "(ub-lb/nc) = " << ((ub-lb)/nc.template cast<float>()) << std::endl;
 				std::cout << "cartcen to corner (cart. covering radius): " << sqrt(3.0)*cart_grid/2.0 << std::endl;
-				shared_ptr<RifDockNestDirector> nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
+				nest_director = make_shared<RifDockNestDirector>( rot_resl_deg0, lb, ub, nc, 1 );
 				std::cout << "NestDirector:" << endl << *nest_director << endl;
 				std::cout << "nest size0:    " << nest_director->size(0, RifDockIndex()).nest_index << std::endl;
 				std::cout << "size of search space: ~" << float(nest_director->size(0, RifDockIndex()).nest_index)*1024.0*1024.0*1024.0 << " grid points" << std::endl;
 
-				shared_ptr<RifDockScaffoldDirector> scaff_director = make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 );
 
 				std::vector<DirectorBase> director_list;
 				director_list.push_back( nest_director );  // Nest director must come first!!!!
-				director_list.push_back( scaff_director );
+				if ( needs_scaffold_director ) {
+					director_list.push_back( make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 ) );
+				}
+				if ( seeding_positions ) {
+					director_list.push_back( make_shared<RifDockSeedingDirector>(seeding_positions, 1, -1 ) );
+				}
 
 				director = make_shared<RifDockDirector>(director_list);
 			}
 
-			// Longxing
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    		rep_data_cache->setup_onebody_tables( rot_index_p, opt);
-			cout << std::endl;
-			cout << "scores for scaffold in original position: " << std::endl;
-			{
-				EigenXform x(EigenXform::Identity());
-				x.translation() = rep_scaffold_center;
-				director->set_scene( RifDockIndex(0, 0 /* default seeding index */,rep_si), 0, *scene_minimal);
-				scene_minimal->set_position(1,x);
-				for(int i = 0; i < RESLS.size(); ++i){
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
-					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
-					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
-				}
-
-			}
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();
 
 			RifDockData rdd {
+						iscaff,
 						opt,
 						RESLS,
 						director,
@@ -704,100 +696,177 @@ int main(int argc, char *argv[]) {
  						rif_ptrs,
  						rso_config,
  						rif_factory,
+ 						nest_director->nest(),
+    					#ifdef USE_OPENMP
+ 							dump_lock,
+ 						#endif
+ 						dokout,
  						scaffold_provider
+#ifdef USEGRIDSCORE
+    				,   grid_scorer
+#endif
 			};
 
 
 
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			print_header( "perform test with scaffold in original position" ); //////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			std::vector< SearchPointWithRots > packed_results;
-			int64_t non0_space_size = 0;
-			int64_t npack = 0;
-			int64_t total_search_effort = 0;
+			global_set_fa_mode( false, rdd );
+    		test_data_cache->setup_onebody_tables( rot_index_p, opt);
+			cout << std::endl;
+			cout << "scores for scaffold in original position: " << std::endl;
 			{
-		        std::chrono::time_point<std::chrono::high_resolution_clock> start_rif = std::chrono::high_resolution_clock::now();
+				EigenXform x(EigenXform::Identity());
+				x.translation() = test_scaffold_center;
+				director->set_scene( RifDockIndex(), 0, *scene_minimal);
+				scene_minimal->set_position(1,x);
+				for(int i = 0; i < RESLS.size(); ++i){
+					if ( ! resl_load_map.at(i) ) continue;
+					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					     << F( 7, 3, sc[0]       ) << " "
+					     << F( 7, 3, sc[1]       ) << endl;
 
-				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				print_header( "perform hierarchical search" ); ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			    shared_ptr< std::vector< SearchPointWithRots > > hsearch_results_p; 
-
-				{
-					HSearchData data {
-						total_search_effort,
-						non0_space_size,
-					};
-
-
-					bool hsearch_success = call_hsearch_protocol( rdd, data, hsearch_results_p );
-					if ( ! hsearch_success ) continue;
 				}
 
-				std::chrono::duration<double> elapsed_seconds_rif = std::chrono::high_resolution_clock::now()-start_rif;
-				time_rif += elapsed_seconds_rif.count();
+			}
+			// std::cout << "scores for scaffold in original position: " << std::endl;
+   //          {
+
+   //  			test_data_cache->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
+   //              // EigenXform x(EigenXform::Identity());
+   //              // x.translation() = test_scaffold_center;
+   //              director->set_scene( RifDockIndex(4361221, 269, ScaffoldIndex()), 0, *scene_minimal);
+   //              // scene_minimal->set_position(1,x);
+   //              for(int i = 5; i < RESLS.size(); ++i){
+   //                  std::vector<float> sc = packing_objectives.back()->scores(*scene_minimal);
+   //                  std::cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
+   //                       << F( 7, 3, sc[0]+sc[1] ) << " "
+   //                       << F( 7, 3, sc[0]       ) << " "
+   //                       << F( 7, 3, sc[1]       ) << std::endl;
+
+   //              }
+
+   //                  devel::scheme::ScoreRotamerVsTarget<
+   //      VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+   //  > rot_tgt_scorer;
+   //  rot_tgt_scorer.rot_index_p_ = rot_index_p;
+   //  rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
+   //  rot_tgt_scorer.target_donors_ = target_donors;
+   //  rot_tgt_scorer.target_acceptors_ = target_acceptors;
+   //  rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
+   //  rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
+   //  rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
+			// 	BBActor bb = scene_minimal->template get_actor<BBActor>(1,6);
+			// 	float const recalc_rot_v_tgt = rot_tgt_scorer.score_rotamer_v_target( 277, bb.position(), 10.0, 4 );
+			// 	std::cout << recalc_rot_v_tgt << std::endl;
+
+   //          }
 
 
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				//////////////////////////////////////////////         HACK PACK           /////////////////////////////////////////////////////////////
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		        std::chrono::time_point<std::chrono::high_resolution_clock> start_pack = std::chrono::high_resolution_clock::now();
+			int final_resl = rdd.RESLS.size() - 1;
+
+			std::vector<shared_ptr<Task>> task_list;
+
+
+			if ( opt.xform_fname.length() > 0) {
+				create_rifine_task( task_list, rdd );
+			} else {
+				if ( opt.scaff_search_mode == "morph_dive_pop" ) {
+					create_dive_pop_hsearch_task( task_list, rdd); 
+				} else {
+
+
+					task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); // this is a no-op if there are no seeding positions
+					task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+
+					task_list.push_back(make_shared<HSearchInit>( ));
+					for ( int i = 0; i <= final_resl; i++ ) {
+						task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, i, opt.tether_to_input_position_cut ));
+
+						if (opt.hack_pack_during_hsearch) {
+							task_list.push_back(make_shared<SortByScoreTask>( ));
+							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+							task_list.push_back(make_shared<HackPackTask>( i, i, opt.global_score_cut )); 
+						}
+
+						task_list.push_back(make_shared<HSearchFilterSortTask>( i, opt.beam_size / opt.DIMPOW2, opt.global_score_cut, i < final_resl ));
+
+						if (opt.dump_x_frames_per_resl > 0) {
+							task_list.push_back(make_shared<DumpHSearchFramesTask>( i, i, opt.dump_x_frames_per_resl, opt.dump_only_best_frames, opt.dump_only_best_stride, 
+								                                                    opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%i) ));
+						}
+						if ( i < final_resl ) {
+							task_list.push_back(make_shared<HSearchScaleToReslTask>( i, i+1, opt.DIMPOW2, opt.global_score_cut )); 
+						} 
+					}
+					task_list.push_back(make_shared<HSearchFinishTask>( opt.global_score_cut )); 
+				}
+
+
+				task_list.push_back(make_shared<SetFaModeTask>( true ));
+
+				if ( opt.hack_pack ) {
+					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.global_score_cut )); 
+				}
+
+				bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
+				     do_rosetta_score = do_rosetta_score && opt.hack_pack;
+				bool do_rosetta_min   = rdd.opt.rosetta_min_fraction > 0.0 && do_rosetta_score;
+
+				if ( do_rosetta_score ) {
+					if (opt.rosetta_filter_before) {
+						task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, final_resl, opt.rosetta_filter_n_per_scaffold, opt.rosetta_filter_redundancy_mag, 
+																				      0, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
+					} 
+					else {
+						task_list.push_back(make_shared<FilterForRosettaScoreTask>( opt.rosetta_score_fraction,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
+							                                                        opt.rosetta_score_at_most, opt.rosetta_score_select_random )); 
+					}
+
+					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "hackpack_scores.dat")); 
+					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpRotScoresTask>( "hackpack_rot_scores.dat", false, final_resl)); 
+
+					task_list.push_back(make_shared<RosettaScoreTask>( final_resl, opt.rosetta_score_cut, do_rosetta_min, !do_rosetta_min)); 
+
+					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_scores.dat")); 
+				}
+
+				if ( do_rosetta_min ) {
+					task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+					task_list.push_back(make_shared<RosettaMinTask>( final_resl, opt.rosetta_score_cut, true )); 
+
+					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_min_scores.dat")); 
+				}
 				
-
-				scaffold_provider->set_fa_mode(true); // for legacy reasons this gets set here
-		        if (opt.hack_pack) {
-		        	hack_pack( hsearch_results_p, packed_results, rdd, RESLS.size()-1, total_search_effort, npack );
-		        } else {
-		        	packed_results = *hsearch_results_p;
-		        }
-
-
-				std::chrono::duration<double> elapsed_seconds_pack = std::chrono::high_resolution_clock::now()-start_pack;
-				time_pck += elapsed_seconds_pack.count();
-			}
-			// std::vector< SearchPointWithRots > & packed_results = *packed_results_p;
-
-
-			bool const do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
-
-			if( do_rosetta_score && opt.hack_pack ){
-
-				rosetta_rescore( packed_results, rdd, total_search_effort, time_ros );
-
+				task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, opt.force_output_if_close_to_input_num, 
+					                                                          opt.force_output_if_close_to_input, opt.filter_seeding_positions_separately, 
+					                                                          opt.filter_scaffolds_separately ));
+				task_list.push_back(make_shared<OutputResultsTask>( final_resl, final_resl));
 			}
 
 
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "compile and filter results" ); ///////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			
-			std::vector< RifDockResult > selected_results, allresults;
-			compile_and_filter_results( packed_results, selected_results, allresults, rdd, dump_lock );
+			TaskProtocol protocol( task_list );
+
+
+			shared_ptr<std::vector<SearchPoint>> starting_point = make_shared<std::vector<SearchPoint>>( );
+			starting_point->push_back(SearchPoint(RifDockIndex()));
+
+			ThreePointVectors input;
+			input.search_points = starting_point;
+			ThreePointVectors results = protocol.run( input, rdd, pd );
+
+			time_rif += pd.time_rif;
+			time_pck += pd.time_pck;
+			time_ros += pd.time_ros;
 
 
 
-			std::cout << "allresults.size(): " << allresults.size() << " selected_results.size(): " << selected_results.size() << std::endl;
 
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "timing info" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			std::cout<<"total RIF     time: "<<KMGT(time_rif)<<" fraction: "<<time_rif/(time_rif+time_pck+time_ros)<<std::endl;
-			std::cout<<"total Pack    time: "<<KMGT(time_pck)<<" fraction: "<<time_pck/(time_rif+time_pck+time_ros)<<std::endl;
-			std::cout<<"total Rosetta time: "<<KMGT(time_ros)<<" fraction: "<<time_ros/(time_rif+time_pck+time_ros)<<std::endl;			
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-			BOOST_FOREACH( RifDockResult const & r, allresults ){
-				; // nothing with all results ATM
-			}
-
-			output_results(selected_results, rdd, dokout, npack);
-			
-			
 
 		} catch( std::exception const & ex ) {
 			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;

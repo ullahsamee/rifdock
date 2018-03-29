@@ -83,6 +83,7 @@ public:
             scaffold_atom_coor = src.scaffold_atom_coor;
             resolution = src.resolution;
         }
+        return *this;
     }
     CstBaseOP clone() {
         return make_shared<AtomPairCst>(*this);
@@ -168,6 +169,7 @@ public:
             hashed_pose = src.hashed_pose;      // this might be a problem
             atom_on_target = src.atom_on_target;
         }
+        return *this;
     }
     CstBaseOP clone() {
         return make_shared<AtomToPoseCst>(*this);
@@ -285,6 +287,7 @@ public:
             hashed_pose = src.hashed_pose;      // this might be a problem
             atom_on_target = src.atom_on_target;
         }
+        return *this;
     }
     CstBaseOP clone() {
         return make_shared<RayToPoseCst>(*this);

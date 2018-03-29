@@ -18,28 +18,12 @@
 #include <numeric/xyzVector.hh>
 #include <vector>
 #include <Eigen/Dense>
+#include <riflib/rifdock_typedefs.hh>
 
 namespace devel {
 namespace scheme {
 
-typedef ::scheme::actor::Atom<
-	::Eigen::Vector3f
-> SchemeAtom;
-
-typedef ::scheme::chemical::ChemicalIndex<
-	::scheme::chemical::AtomData
-> ChemicalIndex;
-
-struct RosettaRotamerGenerator;
-
-typedef ::scheme::chemical::RotamerIndex<
-	SchemeAtom,
-	RosettaRotamerGenerator,
-	EigenXform
-> RotamerIndex;
-
 using ::scheme::chemical::HBondRay;
-
 
 struct RosettaRotamerGenerator {
 	typedef SchemeAtom Atom;
@@ -91,15 +75,17 @@ get_rotamer_spec_default(
 	bool extra_rotamers,
 	bool extra_primary_rotamers	
 );
-//new get_rotamer_index for rot_spec
-std::shared_ptr<RotamerIndex>
+
+shared_ptr<RotamerIndex>
 get_rotamer_index(
-	::scheme::chemical::RotamerIndexSpec const & rot_index
+	::scheme::chemical::RotamerIndexSpec const & rot_index,
+	bool build_per_thread_rotamers
 );
 
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
-	std::string cachefile
+	std::string cachefile,
+	bool build_per_thread_rotamers
 );
 
 

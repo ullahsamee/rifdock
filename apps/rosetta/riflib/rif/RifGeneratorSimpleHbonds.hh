@@ -30,6 +30,7 @@ struct RifGeneratorSimpleHbondsOpts {
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0;
 	bool debug = false;
+	bool dump_bindentate_hbonds = false;
 };
 
 struct RifGeneratorSimpleHbonds : public RifGenerator {

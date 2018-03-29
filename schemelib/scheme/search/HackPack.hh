@@ -94,7 +94,7 @@ struct HackPack
 		int seed_offset = 0 // mainly for threads
 	)
 		: nres_(0)
-		, rng( 0)//time(0)+seed_offset )
+		, rng( time(0)+seed_offset )
 		// , twob_( twob )
 		, opts_(opts)
 		, default_rot_num_( default_rot_num )
@@ -160,7 +160,7 @@ struct HackPack
 			rot_list_.push_back( std::make_pair( nres_-1, res_rots_.at(nres_-1).second.size() ) );
 			res_rots_.at(nres_-1).second.push_back( RotInfo( irotlocal, onebody_e ) );
 		} else {
-			std::cout << "Error!!!: Rotamer not in twobody energies " << irotglobal << " " << ires << std::endl;
+			// std::cout << "Error!!!: Rotamer not in twobody energies " << irotglobal << " " << ires << std::endl;
 			// static bool missingrotwarn = true;
 			// if( missingrotwarn ){
 			// 	#ifdef USE_OPENMP
