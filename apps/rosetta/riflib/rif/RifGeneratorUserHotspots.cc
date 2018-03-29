@@ -221,10 +221,27 @@ namespace rif {
 			
 			utility::vector1<std::vector<std::string>>myresname(pose.size()); 
 			for (int i = 1; i <= pose.size(); i++) {
-				if (pose.residue(i).name3() == "CA_") {
+                std::string rn(pose.residue(i).name3());
+				if (rn == "CA_") { // carboxamide
 					myresname[i].push_back("GLN");
 					myresname[i].push_back("ASN");
-				} else {
+                } else if (rn == "OH_") { // hydroxyl
+                    myresname[i].push_back("TYR");
+                    myresname[i].push_back("SER");
+                    myresname[i].push_back("THR");
+                } else if (rn == "G__") { // guanidium
+                    myresname[i].push_back("GLN");
+                } else if (rn == "I__") { // imidazole
+                    myresname[i].push_back("HIS");
+                } else if (rn == "ID_") { //imidazole_D
+                    // does this work?
+                    myresname[i].push_back("HIS_D");
+                } else if (rn == "A__") { // amine
+                    myresname[i].push_back("LYS");
+                } else if (rn == "C__") { // carboxylate
+                    myresname[i].push_back("GLU");
+                    myresname[i].push_back("ASP");
+                } else {
 					myresname[i].push_back(pose.residue(i).name3());
 				}
 			}
