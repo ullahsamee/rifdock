@@ -381,8 +381,8 @@ namespace rif {
 										building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
 									}
 
-									//EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
-									EigenXform x_position = x_2_orig_inverse * x_2_orig * building_x_position;
+									EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
+									//EigenXform x_position = x_2_orig_inverse * x_2_orig * building_x_position;
 										
 									// you can check their "energies" against the target like this, obviously substituting the real rot# and position
 									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
