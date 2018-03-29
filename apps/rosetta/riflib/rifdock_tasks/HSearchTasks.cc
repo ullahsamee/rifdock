@@ -21,7 +21,7 @@
 
 
 #include <ObjexxFCL/format.hh>
-
+#include <boost/format.hpp>
 
 
 namespace devel {
