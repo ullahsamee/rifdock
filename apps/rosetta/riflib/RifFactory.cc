@@ -35,6 +35,9 @@
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <complex>
 
+#include <random>
+#include<boost/random/uniform_real.hpp>
+
 #ifdef USEGRIDSCORE
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
 #endif
