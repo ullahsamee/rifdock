@@ -547,7 +547,7 @@ public:
             }
 
             int irot = rotscores.rotamer(i_rs);
-            char oneletter = rot_index_p->oneletter(irot);
+            std::string oneletter = rot_index_p->oneletter(irot);
             float score = rotscores.score(i_rs);
 
             std::vector<int> sats;
