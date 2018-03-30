@@ -35,6 +35,7 @@
 #include <core/pack/task/TaskFactory.hh>
 #include <utility/graph/Graph.hh>
 #include <core/pack/packer_neighbors.hh>
+#include <utility/file/file_sys_util.hh>
 #include <basic/options/keys/packing.OptionKeys.gen.hh>
 #include <basic/options/option.hh>
 
@@ -807,13 +808,15 @@ get_rotamer_index(
 
 	return rot_index;
 }
+// this returns a rot_index_spec
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
 	std::string cachefile,
-	bool build_per_thread_rotamers
+	bool build_per_thread_rotamers,
+	::scheme::chemical::RotamerIndexSpec & rot_index_spec
 ){
 
-	::scheme::chemical::RotamerIndexSpec rot_index_spec;
+	// ::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	//load rotamer spec from cache file
 	utility::io::izstream infile(cachefile);
 	if ( ! infile ) {
@@ -1147,10 +1150,22 @@ get_rotamer_spec_default(
 
 
 
-
 std::set<std::pair<int,int>>
-get_satisfied_atoms(core::pose::Pose pose, float ethresh){
+get_satisfied_atoms(core::pose::Pose const & pose, float ethresh){
  	std::set<std::pair<int,int>> sat;
+
+ 	std::vector<std::pair<int,int>> vector_sat = get_satisfied_atoms_vector( pose, ethresh );
+
+ 	for ( auto pair : vector_sat ) {
+ 		sat.insert( pair );
+ 	}
+
+ 	return sat;
+ }
+
+std::vector<std::pair<int,int>>
+get_satisfied_atoms_vector(core::pose::Pose pose, float ethresh){
+ 	std::vector<std::pair<int,int>> sat;
 
  	core::scoring::ScoreFunctionOP sf = core::scoring::get_score_function(true);
 	core::scoring::methods::EnergyMethodOptions myopt = sf->energy_method_options();
@@ -1167,14 +1182,13 @@ get_satisfied_atoms(core::pose::Pose pose, float ethresh){
 			int dh = hb.don_hatm();
 			int ar = hb.acc_res();
 			int aa = hb.acc_atm();
-			sat.insert(std::make_pair(dh,dr));
-			sat.insert(std::make_pair(aa,ar));
+			sat.push_back(std::make_pair(dh,dr)); // do not change the order of these!!!!!
+			sat.push_back(std::make_pair(aa,ar));
 		}
 	}
 
 	return sat;
 }
-
 
 
 void get_donor_rays(core::pose::Pose const& pose, int ir, HBRayOpts const & opt, std::vector<HBondRay>& donors )
@@ -1488,6 +1502,48 @@ void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool i
 		++rnum;
 	}
 }
+
+
+
+std::vector<HBondRay>
+load_hbond_rays( std::string fname ) {
+
+	if( ! utility::file::file_exists(fname) ){
+		utility_exit_with_message("load_hbond_rays missing file: " + fname );
+	}
+	utility::io::izstream in( fname );
+	if( !in.good() ) utility_exit_with_message("Can't open file: " + fname);
+
+	std::vector<HBondRay> rays;
+
+	while (true) {
+		Eigen::Vector3f base, pt;
+
+		std::string garbage;
+
+		if ( ! ( in >> garbage ) ) break;
+
+		for ( int i = 0; i < 6 - 1; i++ ) runtime_assert( in >> garbage );
+
+		runtime_assert( in >> pt[0] >> pt[1] >> pt[2] );
+
+		for ( int i = 0; i < 3 + 6; i++ ) runtime_assert( in >> garbage );
+
+		runtime_assert( in >> base[0] >> base[1] >> base[2] );
+
+		for ( int i = 0; i < 3; i++ ) runtime_assert( in >> garbage );
+
+		HBondRay ray;
+		ray.horb_cen = base;
+		ray.direction = pt - base;
+
+		rays.push_back( ray );
+
+	}
+
+	return rays;
+}
+
 
 
 

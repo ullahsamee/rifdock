@@ -910,6 +910,16 @@ get_rg_radius(
     radius = maxdis;
 }
 
+// in radians
+float
+angle_between_vectors(
+	Eigen::Vector3f const & vec1,
+	Eigen::Vector3f const & vec2
+) {
+	const float dot = vec1.dot(vec2);
+	const float norm_product = vec1.norm() * vec2.norm();
+	return std::acos( dot / norm_product );
+}
 
 void 
 xform_pose( 

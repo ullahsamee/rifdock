@@ -54,6 +54,7 @@ struct Baseline9AScaffoldProvider :
     void set_fa_mode( bool fa ) override;
 
     void setup_twobody_tables( ::scheme::scaffold::TreeIndex i ) override;
+    void setup_twobody_tables_per_thread( ::scheme::scaffold::TreeIndex i ) override;
 
 
 private:

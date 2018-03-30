@@ -30,6 +30,7 @@
   	#include <numeric/xyzMatrix.hh>
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 	#include <riflib/util.hh>
 	#include <scheme/numeric/rand_xform.hh>
 	#include <scheme/actor/Atom.hh>
@@ -67,44 +68,22 @@ namespace rif {
 
 			
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
-				std::string resn = pose.residue(i_hspot_res).name3();
-				int parent_key = -1;
-				
-				int n_proton_chi = 0;
-				if (resn == "CYS" || resn == "SER" || resn == "THR" || resn == "TYR"){
-					n_proton_chi = 1;
-				}
 
-				std::vector<float> mychi(pose.residue(i_hspot_res).nchi());
-				for (int n_chi = 0; n_chi < mychi.size(); n_chi++){
-					mychi.at(n_chi) = pose.chi(n_chi+1,i_hspot_res);
-				}
-				
-				//check if the rotamer exist in rot_spec
-				bool add_this_rotamer = false;
-				for( int irot = 0; irot < rot_spec.size(); ++irot ){
+				std::string resn;
+				std::vector<float> mychi;
+				int n_proton_chi;
+				int parent_key;
+				::scheme::chemical::get_residue_rotspec_params( pose.residue(i_hspot_res), resn, mychi, n_proton_chi, parent_key );
 
-					if( rot_spec.resname(irot) != resn ) continue;
-					bool duplicate_rotamer = true;
-					for (int n_chi = 0; n_chi < rot_spec.get_rotspec(irot).chi_.size(); ++n_chi){
-						//std::cout << "checking " << rot_spec.get_rotspec(irot).resname_ << " " << rot_spec.get_rotspec(irot).chi_.at(n_chi) << " " << resn <<" "<< mychi.at(n_chi) << std::endl;
-						duplicate_rotamer &= ::scheme::chemical::impl::angle_is_close( rot_spec.get_rotspec(irot).chi_.at(n_chi), mychi.at(n_chi), 5.0f );
-					}
+				int irot = rot_spec.get_matching_rot( resn, mychi, n_proton_chi, 5.0f );
 
-					if (duplicate_rotamer){
-						std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
-						add_this_rotamer = false;
-						break;
-					} 
-					else if (!duplicate_rotamer){
-						add_this_rotamer = true;
-					}					
-				}// end loop over all existing rot_spec rotamers
-
-				if (add_this_rotamer){
+				if ( irot == -1 ) {
 					std::cout << "Adding input rotamers: " << i_hspot_res << " " << resn << std::endl;
 					rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+				} else {
+					std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
 				}
+
 			}//end loop over all hotspot res within one hotspot file
 		}// end loop over all hotspot files
 		//rot_spec.load();

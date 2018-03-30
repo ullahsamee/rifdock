@@ -83,7 +83,7 @@ struct HackPack
 	std::vector< std::pair<int32_t,int32_t> > rot_list_; // list of ireslocal / irotlocal pairs
 	std::vector< int32_t > current_rots_, trial_best_rots_, global_best_rots_; // current rotamer in local numbering
 	std::mt19937 rng;
-	shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> twob_; 
+	shared_ptr<::scheme::objective::storage::TwoBodyTable<float>> twob_; 
 	float score_, trial_best_score_, global_best_score_;
 	HackPackOpts opts_;
 	int32_t default_rot_num_;
@@ -101,7 +101,7 @@ struct HackPack
 	{}
 
 	void reinitialize(
-		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> twob ){
+		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> > twob ){
 
 		// Brian
 
@@ -175,6 +175,7 @@ struct HackPack
 			// }
 		}
 	}
+
 
 	float
 	compute_energy_full(

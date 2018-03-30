@@ -34,6 +34,7 @@
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
 	#include <riflib/rif/make_hbond_geometries.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 
 	#include <map>
 
@@ -185,6 +186,7 @@ struct HBJob {
 			::devel::scheme::get_acceptor_rays( target, ir, params->hbopt, target_acceptors );
 		}
 		{
+			// these get used now. Don't change the names!!!
 			if( target_donors.size() ){
 				utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
 				::devel::scheme::dump_hbond_rays( donout, target_donors, true );

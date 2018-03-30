@@ -284,7 +284,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 		std::vector<float> & RESLS,
 		numeric::xyzVector<core::Real> target_center,
 		std::string outfile,
-		std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out
+		std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out,
+		bool & needs_donors_acceptors
 	){
 	using basic::options::option;
 		using namespace basic::options::OptionKeys;
@@ -325,7 +326,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			 do_hbond |= option[rifgen::accres]().size() > 0;
 			 do_hbond &= option[rifgen::hbond_weight]() > 0;
 		if( do_hbond ){
-
+			needs_donors_acceptors = rif->has_sat_data_slots();
 
 			devel::scheme::rif::RifGeneratorSimpleHbondsOpts hbgenopts;
 			hbgenopts.tip_tol_deg = option[ rifgen::tip_tol_deg ]();
@@ -548,8 +549,9 @@ int main(int argc, char *argv[]) {
 	// 	numeric::xyzVector<core::Real> target_center,
 	// 	std::string outfile,
 	// 	std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out
+	bool needs_donors_acceptors = false;
 	
-	shared_ptr<RifBase> rif = init_rif_and_generators(rif_factory, bounding_by_atype, RESLS, target_center, outfile, generators);
+	shared_ptr<RifBase> rif = init_rif_and_generators(rif_factory, bounding_by_atype, RESLS, target_center, outfile, generators, needs_donors_acceptors );
 
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
@@ -986,6 +988,10 @@ int main(int argc, char *argv[]) {
 	for( auto s : bounding_grid_fnames )
 		std::cout << "-rif_dock:target_bounding_xmaps " << s << std::endl;
 	std::cout <<     "-rif_dock:target_rif            " << outfile << std::endl;
+	if ( needs_donors_acceptors ) {
+		std::cout << "-rif_dock:target_donors         " << params->output_prefix + "donors.pdb.gz" << std::endl;
+		std::cout << "-rif_dock:target_acceptors      " << params->output_prefix + "acceptors.pdb.gz" << std::endl;
+	}
 	std::cout <<     "-rif_dock:extra_rotamers        " << option[rifgen::extra_rotamers]() << std::endl;
 	std::cout <<     "-rif_dock:extra_rif_rotamers    " << option[rifgen::extra_rif_rotamers]() << std::endl;
 	std::cout <<     "-rif_dock:rot_spec_fname        " << rot_spec_fname << std::endl;

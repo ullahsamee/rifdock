@@ -28,6 +28,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, target_rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, target_rf_oversample )
 	OPT_1GRP_KEY(  String      , rif_dock, target_rf_cache )
+	OPT_1GRP_KEY(  String      , rif_dock, target_donors )
+	OPT_1GRP_KEY(  String      , rif_dock, target_acceptors )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_rosetta_grid_energies )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, soft_rosetta_grid_energies )
@@ -93,6 +95,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
+	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -110,6 +114,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, lowres_sterics_cbonly )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
+	OPT_1GRP_KEY(  Integer     , rif_dock, num_hotspots )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
@@ -195,8 +200,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
     OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
 
+    OPT_1GRP_KEY(  Real        , rif_dock, unsat_orbital_penalty )
+    OPT_1GRP_KEY(  Real        , rif_dock, neighbor_distance_cutoff )
+    OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
 
-
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
  
 
@@ -226,6 +236,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
+			NEW_OPT(  rif_dock::target_donors, "", "" );
+			NEW_OPT(  rif_dock::target_acceptors, "", "" );
 			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
 			NEW_OPT(  rif_dock::use_rosetta_grid_energies, "Use Frank's grid energies for scoring", false );
 			NEW_OPT(  rif_dock::soft_rosetta_grid_energies, "Use soft option for grid energies", false );
@@ -287,6 +299,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", "");
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
+			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
+			NEW_OPT(  rif_dock::score_this_pdb, "Score residue 1 of this pdb using the rif scoring machinery", "" );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -304,6 +318,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::lowres_sterics_cbonly, "", true );
 
 			NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
+			NEW_OPT(  rif_dock::num_hotspots, "Number of hotspots found in Rifdock hotspots. If in doubt, set this to 1000", 0 );
 			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
 
 			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
@@ -387,6 +402,15 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
+            NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 0 );
+            NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
+            NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
+            NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
+            NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+
+
+            NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
+
 		}
 	#endif
 #endif
@@ -425,6 +449,8 @@ struct RifDockOpt
 	std::string dump_rifgen_near_pdb                 ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
+	bool        dump_rifgen_text                     ;
+	std::string score_this_pdb                       ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -437,6 +463,7 @@ struct RifDockOpt
 	bool        scaff2alaselonly                     ;
 	bool        replace_orig_scaffold_res            ;
 	int         require_satisfaction                 ;
+	int         num_hotspots                         ;
 	int         require_n_rifres                     ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -449,6 +476,8 @@ struct RifDockOpt
 	int         target_rf_oversample                 ;
 	float       max_rf_bounding_ratio                ;
 	std::string target_rf_cache                      ;
+	std::string target_donors                        ;
+	std::string target_acceptors                     ;
 	bool        only_load_highest_resl               ;
 	bool        use_rosetta_grid_energies            ;
 	bool        soft_rosetta_grid_energies           ;
@@ -563,6 +592,14 @@ struct RifDockOpt
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
 
+    float       unsat_orbital_penalty                ;
+    float       neighbor_distance_cutoff             ;
+    int         unsat_neighbor_cutoff                ;
+	bool        unsat_debug                          ;
+	bool        test_hackpack                        ;    
+
+    bool        dump_presatisfied_donors_acceptors   ;
+
 
     void init_from_cli();
 
@@ -607,6 +644,8 @@ struct RifDockOpt
 		dump_rifgen_near_pdb                   = option[rif_dock::dump_rifgen_near_pdb               ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
+		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
+		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -619,6 +658,7 @@ struct RifDockOpt
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
 		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
+		num_hotspots                           = option[rif_dock::num_hotspots                          ]();
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
@@ -631,6 +671,8 @@ struct RifDockOpt
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();
 		max_rf_bounding_ratio                  = option[rif_dock::max_rf_bounding_ratio                 ]();
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
+		target_donors                          = option[rif_dock::target_donors                         ]();
+		target_acceptors                       = option[rif_dock::target_acceptors                      ]();		
 		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
 		use_rosetta_grid_energies              = option[rif_dock::use_rosetta_grid_energies             ]();
 		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
@@ -735,7 +777,13 @@ struct RifDockOpt
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
         keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
 
+        unsat_orbital_penalty                   = option[rif_dock::unsat_orbital_penalty                ]();
+        neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
+        unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
+		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
+		test_hackpack                           = option[rif_dock::test_hackpack                        ]();        
 
+        dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
