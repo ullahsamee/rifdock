@@ -51,15 +51,15 @@ template<class C> void assert_is_sorted  ( C & v ){ runtime_assert( v.second.is_
 
 template<class XmapIter>
 struct XmapKeyIterHelper : public KeyIterHelperBase<typename RifBase::Key> {
-	typedef typename RifBase::Key Key;
-	XmapKeyIterHelper(XmapIter iter) : iter_(iter) {}
-	Key get_key() const override { return iter_->first; }
-	void next() override { ++iter_; }
-	bool equal(KeyIterHelperBase const & that) const override {
-		XmapKeyIterHelper const & concrete = static_cast<XmapKeyIterHelper const &>(that);
-		return iter_ == concrete.iter_;
-	}
-	XmapIter iter_;
+    typedef typename RifBase::Key Key;
+    XmapKeyIterHelper(XmapIter iter) : iter_(iter) {}
+    Key get_key() const override { return iter_->first; }
+    void next() override { ++iter_; }
+    bool equal(KeyIterHelperBase const & that) const override {
+        XmapKeyIterHelper const & concrete = static_cast<XmapKeyIterHelper const &>(that);
+        return iter_ == concrete.iter_;
+    }
+    XmapIter iter_;
 };
 
 template< class XMap >
@@ -110,33 +110,33 @@ public:
 	}
 
 
-	//Brian
-	virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
-		std::pair< int, int > sat1_sat2( -1, -1);
+    //Brian
+    virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
+    	std::pair< int, int > sat1_sat2( -1, -1);
 
-		Key k = get_bin_key(x);
+    	Key k = get_bin_key(x);
 
 
-		auto const & rs = (*xmap_ptr_)[k];
-		int const Nrots = XMap::Value::N;
-		for( int i = 0; i < Nrots; ++i ){
-			if( rs.empty(i) ) break;
-			if (rs.rotamer(i) != roti) continue; 
-			std::vector<int> sats;
-			rs.rotamer_sat_groups( i, sats );
-			if ( sats.size() == 0) {
-				return sat1_sat2;
-			}
-			sat1_sat2.first = sats[0];
-			if ( sats.size() == 1 ) {
-				return sat1_sat2;
-			}
-			sat1_sat2.second = sats[1];
-			return sat1_sat2;
-		}
+        auto const & rs = (*xmap_ptr_)[k];
+        int const Nrots = XMap::Value::N;
+        for( int i = 0; i < Nrots; ++i ){
+            if( rs.empty(i) ) break;
+            if (rs.rotamer(i) != roti) continue; 
+            std::vector<int> sats;
+        	rs.rotamer_sat_groups( i, sats );
+        	if ( sats.size() == 0) {
+        		return sat1_sat2;
+        	}
+        	sat1_sat2.first = sats[0];
+        	if ( sats.size() == 1 ) {
+        		return sat1_sat2;
+        	}
+        	sat1_sat2.second = sats[1];
+        	return sat1_sat2;
+        }
 
-		return sat1_sat2;
-	}
+        return sat1_sat2;
+    }
 
 	size_t size() const override { return xmap_ptr_->size(); }
 	float load_factor() const override { return xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count(); }
@@ -162,30 +162,30 @@ public:
 
 	}
 
-	Key get_bin_key( EigenXform const & x) const override {
-		return xmap_ptr_->get_key(x);
-	}
+    Key get_bin_key( EigenXform const & x) const override {
+        return xmap_ptr_->get_key(x);
+    }
 
-	EigenXform get_bin_center( Key const & k) const override {
-		return xmap_ptr_->get_center(k);
-	}
+    EigenXform get_bin_center( Key const & k) const override {
+        return xmap_ptr_->get_center(k);
+    }
 
-	void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const override{
-		typename XMap::Value const & rs = (*xmap_ptr_)[k];
-		int const Nrots = XMap::Value::N;
-		for( int i = 0; i < Nrots; ++i ){
-			if( rs.empty(i) ) break;
-			rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
-		}
-	}
+    void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const override{
+        typename XMap::Value const & rs = (*xmap_ptr_)[k];
+        int const Nrots = XMap::Value::N;
+        for( int i = 0; i < Nrots; ++i ){
+            if( rs.empty(i) ) break;
+            rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
+        }
+    }
 
 	void
 	get_rotamers_for_xform(
 		EigenXform const & x,
 		std::vector< std::pair< float, int > > & rotscores
 	) const override {
-		Key const & k = xmap_ptr_->get_key(x);
-		get_rotamers_for_key(k, rotscores);
+        Key const & k = xmap_ptr_->get_key(x);
+        get_rotamers_for_key(k, rotscores);
 	}
 
 	void finalize_rif() override {
@@ -238,53 +238,53 @@ public:
 
 	}
 
-	RifBaseKeyRange key_range() const override {
-		auto b = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
-			((typename XMap::Map const &)xmap_ptr_->map_).begin()  );
-		auto e = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
-			((typename XMap::Map const &)xmap_ptr_->map_).end()  );
-		return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
-	}
+    RifBaseKeyRange key_range() const override {
+        auto b = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+            ((typename XMap::Map const &)xmap_ptr_->map_).begin()  );
+        auto e = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+            ((typename XMap::Map const &)xmap_ptr_->map_).end()  );
+        return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
+    }
 
 
 
 
-	// This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
-	bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
-										float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
+    // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
+    bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
+                                        float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
 
-		std::string name3 = res.name3();
+        std::string name3 = res.name3();
 
 
-		std::pair<int, std::string> cb = ( name3 == "GLY" ? std::pair<int, std::string> {1, "CA"} : std::pair<int, std::string>{3, "CB"});
-		// rif-number, rosetta number
-		std::vector<std::pair<int, std::string>> align_pairs { 
-			{0, "N"},
-			{1, "CA"},
-			cb
-		};
+        std::pair<int, std::string> cb = ( name3 == "GLY" ? std::pair<int, std::string> {1, "CA"} : std::pair<int, std::string>{3, "CB"});
+        // rif-number, rosetta number
+        std::vector<std::pair<int, std::string>> align_pairs { 
+            {0, "N"},
+            {1, "CA"},
+            cb
+        };
 
-		// prepare listed atoms
-		std::vector<Eigen::Vector3f> scaff_atoms;
-		for ( int i = 0; i < align_pairs.size(); i++ ) {
-			std::pair<int, std::string> pair = align_pairs[i];
-			numeric::xyzVector<core::Real> xyz = res.xyz(pair.second);
-			Eigen::Vector3f vec;
-			vec[0] = xyz.x();
-			vec[1] = xyz.y();
-			vec[2] = xyz.z();
-			scaff_atoms.push_back(vec);
-		}
-		// prepare last atom
-		numeric::xyzVector<core::Real> xyz = res.xyz(res.natoms());
-		Eigen::Vector3f vec;
-		vec[0] = xyz.x();
-		vec[1] = xyz.y();
-		vec[2] = xyz.z();
-		scaff_atoms.push_back(vec);
+        // prepare listed atoms
+        std::vector<Eigen::Vector3f> scaff_atoms;
+        for ( int i = 0; i < align_pairs.size(); i++ ) {
+            std::pair<int, std::string> pair = align_pairs[i];
+            numeric::xyzVector<core::Real> xyz = res.xyz(pair.second);
+            Eigen::Vector3f vec;
+            vec[0] = xyz.x();
+            vec[1] = xyz.y();
+            vec[2] = xyz.z();
+            scaff_atoms.push_back(vec);
+        }
+        // prepare last atom
+        numeric::xyzVector<core::Real> xyz = res.xyz(res.natoms());
+        Eigen::Vector3f vec;
+        vec[0] = xyz.x();
+        vec[1] = xyz.y();
+        vec[2] = xyz.z();
+        scaff_atoms.push_back(vec);
 
-		std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
-		const RifBase * base = this;
+    	std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
+    	const RifBase * base = this;
 		shared_ptr<XMap const> from;
 		base->get_xmap_const_ptr( from );
 
@@ -305,45 +305,45 @@ public:
 
 			float dist_sq = (x.translation() - scaff_atoms[2]).squaredNorm();
 
-			if (dist_sq > coarse_dist_sq) continue;
+            if (dist_sq > coarse_dist_sq) continue;
 
-			typename XMap::Value const & rotscores = from->operator[]( x );
-			static int const Nrots = XMap::Value::N;
-			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-				if( rotscores.empty(i_rs) ) {
-					break;
-				}
+            typename XMap::Value const & rotscores = from->operator[]( x );
+            static int const Nrots = XMap::Value::N;
+            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                if( rotscores.empty(i_rs) ) {
+                    break;
+                }
 
-				int irot = rotscores.rotamer(i_rs);
-				if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
+                int irot = rotscores.rotamer(i_rs);
+                if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
 
-				// check listed atoms
-				bool all_good = true;
-				for ( int i = 0; i < align_pairs.size(); i++ ) {
-					int rif_atom_no = align_pairs[i].first;
-					Eigen::Vector3f scaff_vec = scaff_atoms[i];
+                // check listed atoms
+                bool all_good = true;
+                for ( int i = 0; i < align_pairs.size(); i++ ) {
+                    int rif_atom_no = align_pairs[i].first;
+                    Eigen::Vector3f scaff_vec = scaff_atoms[i];
 
 
-					SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_[rif_atom_no];
-					Eigen::Vector3f atom_vec = x * atom.position();
-					dist_sq = (atom_vec - scaff_vec).squaredNorm();
+                    SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_[rif_atom_no];
+                    Eigen::Vector3f atom_vec = x * atom.position();
+                    dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-					if (dist_sq > dump_dist_sq) {
-						all_good = false;
-						break;
-					}
-				}
+                    if (dist_sq > dump_dist_sq) {
+                        all_good = false;
+                        break;
+                    }
+                }
 
-				if ( ! all_good ) continue;
+                if ( ! all_good ) continue;
 
-				// check last atom
-				Eigen::Vector3f scaff_vec = scaff_atoms.back();
-				SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
-				Eigen::Vector3f atom_vec = x * atom.position();
-				dist_sq = (atom_vec - scaff_vec).squaredNorm();
+                // check last atom
+                Eigen::Vector3f scaff_vec = scaff_atoms.back();
+                SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
+                Eigen::Vector3f atom_vec = x * atom.position();
+                dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-				if (dist_sq > dump_dist_sq) continue;
-				
+                if (dist_sq > dump_dist_sq) continue;
+                
 
 				float score = rotscores.score(i_rs);
 
@@ -354,10 +354,10 @@ public:
 		}
 
 
-		if (to_dump.size() == 0) {
-			std::cout << "No rotamers found!!!!" << std::endl;
-			return false;
-		}
+        if (to_dump.size() == 0) {
+            std::cout << "No rotamers found!!!!" << std::endl;
+            return false;
+        }
 
 		uint64_t num_dump = to_dump.size() * dump_frac;
 		uint64_t dump_every = to_dump.size() / num_dump;
@@ -380,92 +380,14 @@ public:
 
 			out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
 
-			BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
-				a.set_position( x * a.position() ); 
-				a.nonconst_data().resnum = dumped;
-				a.nonconst_data().chain = 'A';
-				::scheme::actor::write_pdb( out, a, nullptr );
-			}
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
 
-			dumped ++;
-
-			out << std::string("ENDMDL") << std::endl;
-
-		}
-
-		out.close();
-
-
-		return true;
-
-	}
-
-	// dumps everything at this bin center that's the same residue type
-	void
-	dump_rotamers_at_bin_center( 
-		core::conformation::Residue const & res,
-		std::string const & file_name,
-		shared_ptr<RotamerIndex> rot_index_p
-	) const override {
-
-		std::string name3 = res.name3();
-		std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
-
-		std::cout << "Dumping residues of type " << name3 << " at bin center to " << file_name << std::endl;
-
-		BBActor bb( res );
-
-		const RifBase * base = this;
-		shared_ptr<XMap const> xmap;
-		base->get_xmap_const_ptr( xmap );
-
-		EigenXform center = xmap->get_center(xmap->get_key(bb.position()));
-
-		std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
-
-		typename XMap::Value const & rotscores = xmap->operator[]( center );
-		static int const Nrots = XMap::Value::N;
-		for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-			if( rotscores.empty(i_rs) ) {
-				continue;
-			}
-
-			int irot = rotscores.rotamer(i_rs);
-			if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
-
-			float score = rotscores.score(i_rs);
-
-			to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(center, std::pair<int, float>(irot, score)));
-
-		}
-
-		if (to_dump.size() == 0) {
-			std::cout << "No rotamers found!!!!" << std::endl;
-			return;
-		}
-
-		std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << to_dump.size() << " to " << file_name << " ..." << std::endl;
-
-		utility::io::ozstream out( file_name );
-		uint64_t dumped = 0;
-		for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
-
-			EigenXform x = to_dump[i].first;
-			auto inner_pair = to_dump[i].second;
-			int irot = inner_pair.first;
-			float score = inner_pair.second;
-
-
-			out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
-
-			BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
-				a.set_position( x * a.position() ); 
-				a.nonconst_data().resnum = dumped;
-				a.nonconst_data().chain = 'A';
-				::scheme::actor::write_pdb( out, a, nullptr );
-			}
-
-			dumped ++;
+            dumped ++;
 
 			out << std::string("ENDMDL") << std::endl;
 
@@ -474,101 +396,179 @@ public:
 		out.close();
 
 
-	}
+        return true;
 
-	void
-	dump_rifgen_text( EigenXform const & xform, shared_ptr< XMap const > rif, shared_ptr<RotamerIndex> rot_index_p ) const {
+    }
 
-		std::cout << xform.translation().transpose() << std::endl;
+    // dumps everything at this bin center that's the same residue type
+    void
+    dump_rotamers_at_bin_center( 
+        core::conformation::Residue const & res,
+        std::string const & file_name,
+        shared_ptr<RotamerIndex> rot_index_p
+    ) const override {
 
-		using ObjexxFCL::format::F;
-		using ObjexxFCL::format::I;
+        std::string name3 = res.name3();
+        std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
 
-		typename XMap::Value const & rotscores = rif->operator[]( xform );
-		static int const Nrots = XMap::Value::N;
-		for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-			if( rotscores.empty(i_rs) ) {
-				std::cout << I(2, i_rs) << std::endl;
-				continue;
-			}
+        std::cout << "Dumping residues of type " << name3 << " at bin center to " << file_name << std::endl;
 
-			int irot = rotscores.rotamer(i_rs);
-			char oneletter = rot_index_p->oneletter(irot);
-			float score = rotscores.score(i_rs);
+        BBActor bb( res );
 
-			std::vector<int> sats;
-			rotscores.rotamer_sat_groups(i_rs, sats);
-			int sat1 = -1;
-			int sat2 = -1;
-			if (sats.size() > 0) {
-				sat1 = sats[0];
-				if (sats.size() > 1) {
-					sat2 = sats[1];
-				}
-			}
+        const RifBase * base = this;
+        shared_ptr<XMap const> xmap;
+        base->get_xmap_const_ptr( xmap );
 
+        EigenXform center = xmap->get_center(xmap->get_key(bb.position()));
 
-			std::cout << I(2, i_rs) << " " << oneletter << " " << I(3, irot) << " " << F(6,1, score) << " sat1: " << I(4, sat1)
-						<< " sat2: " << I(4, sat2) << std::endl;
+        std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
 
-		}
-		std::cout << std::endl;
-	}
+        typename XMap::Value const & rotscores = xmap->operator[]( center );
+        static int const Nrots = XMap::Value::N;
+        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+            if( rotscores.empty(i_rs) ) {
+                continue;
+            }
 
+            int irot = rotscores.rotamer(i_rs);
+            if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
 
-	// This looks for rifgen bins that are within dump_distance of the res stub
-	bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
-										float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const override {
+            float score = rotscores.score(i_rs);
 
-		using ObjexxFCL::format::F;
+            to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(center, std::pair<int, float>(irot, score)));
 
-		// numeric::xyzVector<core::Real> _n  = res.xyz("N");
-		// numeric::xyzVector<core::Real> _ca = res.xyz("CA");
-		// numeric::xyzVector<core::Real> _c  = res.xyz("C");
+        }
 
-		// Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
-		// Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
-		// Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
+        if (to_dump.size() == 0) {
+            std::cout << "No rotamers found!!!!" << std::endl;
+            return;
+        }
 
+        std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << to_dump.size() << " to " << file_name << " ..." << std::endl;
 
-		BBActor bb( res );
+        utility::io::ozstream out( file_name );
+        uint64_t dumped = 0;
+        for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
 
-		std::cout << bb.position().translation().transpose() << std::endl;
-
-		const RifBase * base = this;
-		shared_ptr<XMap const> xmap;
-		base->get_xmap_const_ptr( xmap );
-
-		std::cout << "Distance 0.00:" << std::endl;
-
-		EigenXform stored_bin = xmap->get_center(xmap->get_key(bb.position()));
-
-		dump_rifgen_text(stored_bin, xmap , rot_index_p );
+            EigenXform x = to_dump[i].first;
+            auto inner_pair = to_dump[i].second;
+            int irot = inner_pair.first;
+            float score = inner_pair.second;
 
 
-		EigenXform bbinv = bb.position().inverse();
+            out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
 
-		int search_points = 0;
-		for( auto const & v : xmap->map_ ){
-			search_points ++;
-			EigenXform x = xmap->hasher_.get_center( v.first );
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
 
-			float dist = xform_magnitude( bbinv * x, 1 );
-			// float dist = (x.translation() - bb.position().translation()).norm();
+            dumped ++;
 
-			if ( dist > dump_dist ) {
-				continue;
-			}
+            out << std::string("ENDMDL") << std::endl;
 
-			std::cout << "Distance: " << F(5, 2, dist) << std::endl;
-			dump_rifgen_text( x, xmap , rot_index_p );
+        }
 
-		}
-
-		std::cout << "Searched " << search_points << " points" << std::endl;
+        out.close();
 
 
-	}
+    }
+
+    void
+    dump_rifgen_text( EigenXform const & xform, shared_ptr< XMap const > rif, shared_ptr<RotamerIndex> rot_index_p ) const {
+
+        std::cout << xform.translation().transpose() << std::endl;
+
+        using ObjexxFCL::format::F;
+        using ObjexxFCL::format::I;
+
+        typename XMap::Value const & rotscores = rif->operator[]( xform );
+        static int const Nrots = XMap::Value::N;
+        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+            if( rotscores.empty(i_rs) ) {
+                std::cout << I(2, i_rs) << std::endl;
+                continue;
+            }
+
+            int irot = rotscores.rotamer(i_rs);
+            char oneletter = rot_index_p->oneletter(irot);
+            float score = rotscores.score(i_rs);
+
+            std::vector<int> sats;
+            rotscores.rotamer_sat_groups(i_rs, sats);
+            int sat1 = -1;
+            int sat2 = -1;
+            if (sats.size() > 0) {
+                sat1 = sats[0];
+                if (sats.size() > 1) {
+                    sat2 = sats[1];
+                }
+            }
+
+
+            std::cout << I(2, i_rs) << " " << oneletter << " " << I(3, irot) << " " << F(6,1, score) << " sat1: " << I(4, sat1)
+                        << " sat2: " << I(4, sat2) << std::endl;
+
+        }
+        std::cout << std::endl;
+    }
+
+
+    // This looks for rifgen bins that are within dump_distance of the res stub
+    bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
+                                        float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+        using ObjexxFCL::format::F;
+
+        // numeric::xyzVector<core::Real> _n  = res.xyz("N");
+        // numeric::xyzVector<core::Real> _ca = res.xyz("CA");
+        // numeric::xyzVector<core::Real> _c  = res.xyz("C");
+
+        // Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
+        // Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
+        // Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
+
+
+        BBActor bb( res );
+
+        std::cout << bb.position().translation().transpose() << std::endl;
+
+        const RifBase * base = this;
+        shared_ptr<XMap const> xmap;
+        base->get_xmap_const_ptr( xmap );
+
+        std::cout << "Distance 0.00:" << std::endl;
+
+        EigenXform stored_bin = xmap->get_center(xmap->get_key(bb.position()));
+
+        dump_rifgen_text(stored_bin, xmap , rot_index_p );
+
+
+        EigenXform bbinv = bb.position().inverse();
+
+        int search_points = 0;
+        for( auto const & v : xmap->map_ ){
+            search_points ++;
+            EigenXform x = xmap->hasher_.get_center( v.first );
+
+            float dist = xform_magnitude( bbinv * x, 1 );
+            // float dist = (x.translation() - bb.position().translation()).norm();
+
+            if ( dist > dump_dist ) {
+                continue;
+            }
+
+            std::cout << "Distance: " << F(5, 2, dist) << std::endl;
+            dump_rifgen_text( x, xmap , rot_index_p );
+
+        }
+
+        std::cout << "Searched " << search_points << " points" << std::endl;
+
+
+    }
 
 
 
@@ -1068,11 +1068,11 @@ struct RifFactoryImpl :
 	create_rif( float cart_resl=0, float ang_resl=0, float cart_bound=0 ) const
 	{
 	   if( cart_resl != 0 && ang_resl != 0 && cart_bound != 0 ){
-		   return make_shared<RifWrapper<XMap> >( make_shared<XMap>( cart_resl, ang_resl, cart_bound ), this->config().rif_type );
+	       return make_shared<RifWrapper<XMap> >( make_shared<XMap>( cart_resl, ang_resl, cart_bound ), this->config().rif_type );
 	   } else if( cart_resl == 0 && ang_resl == 0 && cart_bound == 0 ){
-		   return make_shared<RifWrapper<XMap> >( make_shared<XMap>(), this->config().rif_type );
+	       return make_shared<RifWrapper<XMap> >( make_shared<XMap>(), this->config().rif_type );
 	   } else {
-			utility_exit_with_message("some XformMap constructor values specified, others not!");
+	   		utility_exit_with_message("some XformMap constructor values specified, others not!");
 	   }
 	}
 
@@ -1190,18 +1190,18 @@ struct RifFactoryImpl :
 		// objective->config = config.rif_ptrs.size()-1;
 		// objectives.push_back( objective );
 
-		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
-			shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
-			if( config.require_satisfaction > 0 ){
-				dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-					get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
-				dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-					get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
-			}
-			packing_objectives.push_back( packing_objective );
-		}
+        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+    		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
+    		if( config.require_satisfaction > 0 ){
+    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+    				get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
+    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+    				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
+    		}
+            packing_objectives.push_back( packing_objective );
+        }
 
 		for( auto op : objectives ){
 			// dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
@@ -1219,36 +1219,36 @@ struct RifFactoryImpl :
 
 		// use 4.0A vdw grid for CH3 atoms as proximity test
 
-		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
 
-			shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
+            shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
 
-			::scheme::search::HackPackOpts local_packopts = *config.packopts;
-			// Only rescore on the full resolution
-			local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
+            ::scheme::search::HackPackOpts local_packopts = *config.packopts;
+            // Only rescore on the full resolution
+            local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
 
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
-								.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
-				// *config.local_twobody,
-				config.rot_index_p,
-				*config.target_field_by_atype,
-				*config.target_donors,
-				*config.target_acceptors,
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
+    							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
+    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
+    			// *config.local_twobody,
+    			config.rot_index_p,
+    			*config.target_field_by_atype,
+    			*config.target_donors,
+    			*config.target_acceptors,
 #ifdef USEGRIDSCORE
-				config.grid_scorer,
-				config.soft_grid_energies,
+                config.grid_scorer,
+                config.soft_grid_energies,
 #endif
-				local_packopts
-			);
-		}
+    			local_packopts
+    		);
+        }
 
-		if ( config.burial_manager ) {
-			dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-							.init_for_burial( config.burial_manager, config.unsat_manager );
-			dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-							.init_for_burial( config.burial_manager, config.unsat_manager );
-		}
+        if ( config.burial_manager ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                            .init_for_burial( config.burial_manager, config.unsat_manager );
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                            .init_for_burial( config.burial_manager, config.unsat_manager );
+        }
 
 		return true;
 
@@ -1317,23 +1317,23 @@ create_rif_factory( RifFactoryConfig const & config )
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	} else if( config.rif_type == "RotScoreSat_2x16" )
-	{
-		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
-		typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -13, SatDatum> crfRotScore;
-		typedef ::scheme::objective::storage::RotamerScores< 19, crfRotScore > crfXMapValue;
-		// PRINT_SIZE_AS_ERROR<sizeof(crfXMapValue)>()();
-		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 114 );
-		typedef ::scheme::objective::hash::XformMap<
-				EigenXform,
-				crfXMapValue,
-				::scheme::objective::hash::XformHash_bt24_BCC6
-			> crfXMap;
+    {
+        using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
+        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -13, SatDatum> crfRotScore;
+        typedef ::scheme::objective::storage::RotamerScores< 19, crfRotScore > crfXMapValue;
+        // PRINT_SIZE_AS_ERROR<sizeof(crfXMapValue)>()();
+        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 114 );
+        typedef ::scheme::objective::hash::XformMap<
+                EigenXform,
+                crfXMapValue,
+                ::scheme::objective::hash::XformHash_bt24_BCC6
+            > crfXMap;
 
-		// PRINT_SIZE_AS_ERROR<sizeof(crfXMap::Map::value_type)>()();
-		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
+        // PRINT_SIZE_AS_ERROR<sizeof(crfXMap::Map::value_type)>()();
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
 
-		return make_shared< RifFactoryImpl<crfXMap> >( config );
-	}
+        return make_shared< RifFactoryImpl<crfXMap> >( config );
+    }
 	else if( config.rif_type == "RotScoreSat_1x16" )
 	{
 		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
