@@ -326,18 +326,6 @@ namespace rif {
 					// assign rif_res position by column
 					int hatoms = params -> rot_index_p -> nheavyatoms(irot);
                     
-                    // TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
-                    // Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
-                    // For TYR: the last two heavy atoms and 'HH'
-                    // For SER: the last two heavy atoms and 'HG'
-                    // For THR: the last two heavy atoms and 'HG1'
-					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
-					EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
-                    );
-
 					//for (auto const & it: myresname[i_hspot_res]){
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
@@ -345,6 +333,18 @@ namespace rif {
 							//std::cout << d_name[i] << std::endl;
 						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_name[i])
 						{
+							// TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
+                    		// Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
+                    		// For TYR: the last two heavy atoms and 'HH'
+                    		// For SER: the last two heavy atoms and 'HG'
+                    		// For THR: the last two heavy atoms and 'HG1'
+							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
+							EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
+		                    );
+
 							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
 							EigenXform impose; //transform for mapping the Rot to Rif
 							::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
