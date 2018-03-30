@@ -167,7 +167,11 @@ struct UnsatManager {
 
     UnsatManager() {} // used by clone()
 
-    UnsatManager( std::vector<std::vector<float>> const & unsat_penalties );
+    UnsatManager( 
+        std::vector<std::vector<float>> const & unsat_penalties, 
+        shared_ptr< RotamerIndex > rot_index_p, 
+        bool debug
+    );
 
     shared_ptr<UnsatManager>
     clone() const;
@@ -261,6 +265,8 @@ private:
     std::vector<hbond::HeavyAtom> target_heavy_atoms_;
     std::vector<bool> target_presatisfied_;
     std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
+    shared_ptr< RotamerIndex > rot_index_p;
+    bool debug_;
 
 // things that are resetable
     std::vector<ToPackRot> to_pack_rots_;

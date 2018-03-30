@@ -91,7 +91,8 @@ get_rotamer_index(
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
 	std::string cachefile,
-	bool build_per_thread_rotamers
+	bool build_per_thread_rotamers,
+	::scheme::chemical::RotamerIndexSpec & rot_index_spec
 );
 
 

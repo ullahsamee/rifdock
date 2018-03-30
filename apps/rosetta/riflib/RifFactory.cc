@@ -247,6 +247,8 @@ public:
     }
 
 
+
+
     // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
     bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
                                         float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
@@ -343,12 +345,6 @@ public:
                 if (dist_sq > dump_dist_sq) continue;
                 
 
-
-
-
-
-
-
 				float score = rotscores.score(i_rs);
 
 				to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(x, std::pair<int, float>(irot, score)));
@@ -404,14 +400,181 @@ public:
 
     }
 
+    // dumps everything at this bin center that's the same residue type
+    void
+    dump_rotamers_at_bin_center( 
+        core::conformation::Residue const & res,
+        std::string const & file_name,
+        shared_ptr<RotamerIndex> rot_index_p
+    ) const override {
+
+        std::string name3 = res.name3();
+        std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
+
+        std::cout << "Dumping residues of type " << name3 << " at bin center to " << file_name << std::endl;
+
+        BBActor bb( res );
+
+        const RifBase * base = this;
+        shared_ptr<XMap const> xmap;
+        base->get_xmap_const_ptr( xmap );
+
+        EigenXform center = xmap->get_center(xmap->get_key(bb.position()));
+
+        std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
+
+        typename XMap::Value const & rotscores = xmap->operator[]( center );
+        static int const Nrots = XMap::Value::N;
+        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+            if( rotscores.empty(i_rs) ) {
+                continue;
+            }
+
+            int irot = rotscores.rotamer(i_rs);
+            if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
+
+            float score = rotscores.score(i_rs);
+
+            to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(center, std::pair<int, float>(irot, score)));
+
+        }
+
+        if (to_dump.size() == 0) {
+            std::cout << "No rotamers found!!!!" << std::endl;
+            return;
+        }
+
+        std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << to_dump.size() << " to " << file_name << " ..." << std::endl;
+
+        utility::io::ozstream out( file_name );
+        uint64_t dumped = 0;
+        for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
+
+            EigenXform x = to_dump[i].first;
+            auto inner_pair = to_dump[i].second;
+            int irot = inner_pair.first;
+            float score = inner_pair.second;
+
+
+            out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
+
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
+
+            dumped ++;
+
+            out << std::string("ENDMDL") << std::endl;
+
+        }
+
+        out.close();
+
+
+    }
+
+    void
+    dump_rifgen_text( EigenXform const & xform, shared_ptr< XMap const > rif, shared_ptr<RotamerIndex> rot_index_p ) const {
+
+        std::cout << xform.translation().transpose() << std::endl;
+
+        using ObjexxFCL::format::F;
+        using ObjexxFCL::format::I;
+
+        typename XMap::Value const & rotscores = rif->operator[]( xform );
+        static int const Nrots = XMap::Value::N;
+        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+            if( rotscores.empty(i_rs) ) {
+                std::cout << I(2, i_rs) << std::endl;
+                continue;
+            }
+
+            int irot = rotscores.rotamer(i_rs);
+            char oneletter = rot_index_p->oneletter(irot);
+            float score = rotscores.score(i_rs);
+
+            std::vector<int> sats;
+            rotscores.rotamer_sat_groups(i_rs, sats);
+            int sat1 = -1;
+            int sat2 = -1;
+            if (sats.size() > 0) {
+                sat1 = sats[0];
+                if (sats.size() > 1) {
+                    sat2 = sats[1];
+                }
+            }
+
+
+            std::cout << I(2, i_rs) << " " << oneletter << " " << I(3, irot) << " " << F(6,1, score) << " sat1: " << I(4, sat1)
+                        << " sat2: " << I(4, sat2) << std::endl;
+
+        }
+        std::cout << std::endl;
+    }
+
+
+    // This looks for rifgen bins that are within dump_distance of the res stub
+    bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
+                                        float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+        using ObjexxFCL::format::F;
+
+        // numeric::xyzVector<core::Real> _n  = res.xyz("N");
+        // numeric::xyzVector<core::Real> _ca = res.xyz("CA");
+        // numeric::xyzVector<core::Real> _c  = res.xyz("C");
+
+        // Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
+        // Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
+        // Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
+
+
+        BBActor bb( res );
+
+        std::cout << bb.position().translation().transpose() << std::endl;
+
+        const RifBase * base = this;
+        shared_ptr<XMap const> xmap;
+        base->get_xmap_const_ptr( xmap );
+
+        std::cout << "Distance 0.00:" << std::endl;
+
+        EigenXform stored_bin = xmap->get_center(xmap->get_key(bb.position()));
+
+        dump_rifgen_text(stored_bin, xmap , rot_index_p );
+
+
+        EigenXform bbinv = bb.position().inverse();
+
+        int search_points = 0;
+        for( auto const & v : xmap->map_ ){
+            search_points ++;
+            EigenXform x = xmap->hasher_.get_center( v.first );
+
+            float dist = xform_magnitude( bbinv * x, 1 );
+            // float dist = (x.translation() - bb.position().translation()).norm();
+
+            if ( dist > dump_dist ) {
+                continue;
+            }
+
+            std::cout << "Distance: " << F(5, 2, dist) << std::endl;
+            dump_rifgen_text( x, xmap , rot_index_p );
+
+        }
+
+        std::cout << "Searched " << search_points << " points" << std::endl;
+
+
+    }
+
+
 
 
 
 };
-
-
-
-
 
 
 

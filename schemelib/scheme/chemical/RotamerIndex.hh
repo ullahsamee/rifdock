@@ -158,6 +158,9 @@ RotamerSpec{
 	int parent_key_, n_proton_chi_;
 };
 
+
+
+
 inline
 void
 residue_to_identity( core::conformation::ResidueOP & resop ) {
@@ -204,6 +207,28 @@ get_residue_at_identity(
 
 }
 
+inline
+void get_residue_rotspec_params(
+	core::conformation::Residue const & res,
+	std::string & resn,
+	std::vector<float> & chis,
+	int & n_proton_chi,
+	int & parent_key
+) {
+	resn = res.name3();
+	parent_key = -1;
+	n_proton_chi = 0;
+	if (resn == "CYS" || resn == "SER" || resn == "THR" || resn == "TYR"){
+		n_proton_chi = 1;
+	}
+	chis.clear();
+	chis.resize(res.nchi());
+	for (int n_chi = 0; n_chi < chis.size(); n_chi++){
+		chis.at(n_chi) = res.chi(n_chi+1);
+	}
+}
+
+
 //template<class _Atom, class RotamerGenerator, class Xform>
 struct
 RotamerIndexSpec
@@ -220,6 +245,38 @@ RotamerIndexSpec
 	void clear() {rot_specs.clear();}
 	std::string resname(size_t i) const { return rot_specs.at(i).resname_; }
 	scheme::chemical::RotamerSpec get_rotspec(int i) const {return rot_specs.at(i);}
+
+
+	int get_matching_rot(
+		std::string & resn,
+		std::vector<float> & chis,
+		int & n_proton_chi,
+		float tolerance=5.0f
+	) {
+		for( int irot = 0; irot < size(); ++irot ){
+
+			if( resname(irot) != resn ) continue;
+			bool match = true;
+			for (int n_chi = 0; n_chi < get_rotspec(irot).chi_.size(); ++n_chi){
+				match &= ::scheme::chemical::impl::angle_is_close( get_rotspec(irot).chi_.at(n_chi), chis.at(n_chi), tolerance );
+			}
+
+			if (match)
+				return irot;				
+		}// end loop over all existing rot_spec rotamers
+		return -1;
+	}
+
+	// returns irot
+	int get_matching_rot( core::conformation::Residue const & res, float tolerance=5.0f) {
+		std::string resn;
+		std::vector<float> chis;
+		int n_proton_chi;
+		int parent_key;
+		get_residue_rotspec_params( res, resn, chis, n_proton_chi, parent_key );
+
+		return get_matching_rot( resn, chis, n_proton_chi, tolerance );
+	}
 
 	int add_rotamer(std::string resname, std::vector<float> const & chi, int n_proton_chi, int parent_key = -1){
 		RotamerSpec S;

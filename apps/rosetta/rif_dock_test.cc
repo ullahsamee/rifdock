@@ -73,6 +73,7 @@
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
 	#include <riflib/BurialManager.hh>
 	#include <riflib/UnsatManager.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 
 
 // Task system
@@ -233,7 +234,9 @@ int main(int argc, char *argv[]) {
 		
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies );
+
+		::scheme::chemical::RotamerIndexSpec rot_index_spec;
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies, rot_index_spec );
 		RotamerIndex & rot_index( *rot_index_p );
 
 
@@ -319,6 +322,7 @@ int main(int argc, char *argv[]) {
 
 			target_donors = load_hbond_rays( opt.target_donors );
 			target_acceptors = load_hbond_rays( opt.target_acceptors );
+			
 
 		}
 
@@ -331,7 +335,7 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::DefaultUnsatPenalties );
+			unsat_manager = make_shared<UnsatManager>( hbond::DefaultUnsatPenalties, rot_index_p, opt.unsat_debug );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -569,12 +573,68 @@ int main(int argc, char *argv[]) {
 			float dump_frac = opt.dump_rifgen_near_pdb_frac;
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_rifgen_near_pdb));
 			core::conformation::Residue const & res = pose.residue(1);
-			numeric::xyzVector<core::Real> n_xyz = res.xyz("N");
 
 			std::stringstream fname;
 			fname << "rifgen_dump_" << opt.dump_rifgen_near_pdb << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
 
 			rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
+			if ( opt.dump_rifgen_text ) {
+				rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
+			}
+
+			std::stringstream fname2;
+			fname2 << "rifgen_dump_center_" << opt.dump_rifgen_near_pdb << ".pdb.gz";
+
+			rif_ptrs.back()->dump_rotamers_at_bin_center( res, fname2.str(), rot_index_p );
+
+		}
+
+		if ( opt.score_this_pdb.length() > 0) {
+			std::cout << "Loading " << opt.score_this_pdb << std::endl;
+			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.score_this_pdb));
+
+		    devel::scheme::ScoreRotamerVsTarget<
+			        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+			    > rot_tgt_scorer;
+			    rot_tgt_scorer.rot_index_p_ = rot_index_p;
+			    rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
+			    rot_tgt_scorer.target_donors_ = target_donors;
+			    rot_tgt_scorer.target_acceptors_ = target_acceptors;
+			    rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
+			    rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
+			    rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
+			#ifdef USEGRIDSCORE
+			    rot_tgt_scorer.grid_scorer_ = grid_scorer;
+			    rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
+			#endif
+
+			std::cout << "Scoring " << opt.score_this_pdb << " against target" << std::endl;
+
+
+			for ( int ires = 1; ires <= pose.size(); ires++ ) {
+
+
+				core::conformation::Residue const & res = pose.residue(ires);
+				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
+
+				if (irot == -1) {
+					std::cout << "Res: " << ires << " No matching rotamer (within 5 deg for all chi)" << std::endl;
+					continue;
+				} 
+
+				BBActor bb( res );
+
+	            int sat1 = -1, sat2 = -1, hbcount = 0;
+	            float score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb.position(), sat1, sat2, true, hbcount, 10.0, 4 );
+
+	            std::cout << "Res: " << ires
+	                      << " score: " << score
+	                      << " irot: " << irot
+	                      << " nhbonds: " << hbcount
+	                      << " sat1: " << sat1
+	                      << " sat2: " << sat2
+	                      << std::endl;
+	        }
 
 		}
 	}
@@ -814,6 +874,20 @@ int main(int argc, char *argv[]) {
 					     << F( 7, 3, sc[1]       ) << endl;
 
 				}
+				if ( opt.test_hackpack ) {
+					scaffold_provider->setup_twobody_tables( ScaffoldIndex() );
+					if ( opt.unsat_orbital_penalty > 0 ) {
+						scaffold_provider->setup_twobody_tables_per_thread( ScaffoldIndex() );
+					}
+
+					std::vector<float> sc = packing_objectives.back()->scores(*scene_minimal);
+					cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
+										     << F( 7, 3, sc[0]+sc[1] ) << " "
+										     << F( 7, 3, sc[0]       ) << " "
+										     << F( 7, 3, sc[1]       ) << endl;
+
+				}
+
 
 			}
 			// std::cout << "scores for scaffold in original position: " << std::endl;

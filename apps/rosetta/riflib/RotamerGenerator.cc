@@ -749,13 +749,15 @@ get_rotamer_index(
 
 	return rot_index;
 }
+// this returns a rot_index_spec
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
 	std::string cachefile,
-	bool build_per_thread_rotamers
+	bool build_per_thread_rotamers,
+	::scheme::chemical::RotamerIndexSpec & rot_index_spec
 ){
 
-	::scheme::chemical::RotamerIndexSpec rot_index_spec;
+	// ::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	//load rotamer spec from cache file
 	utility::io::izstream infile(cachefile);
 	if ( ! infile ) {
@@ -1344,11 +1346,11 @@ load_hbond_rays( std::string fname ) {
 
 		for ( int i = 0; i < 6 - 1; i++ ) runtime_assert( in >> garbage );
 
-		runtime_assert( in >> base[0] >> base[1] >> base[2] );
+		runtime_assert( in >> pt[0] >> pt[1] >> pt[2] );
 
 		for ( int i = 0; i < 3 + 6; i++ ) runtime_assert( in >> garbage );
 
-		runtime_assert( in >> pt[0] >> pt[1] >> pt[2] );
+		runtime_assert( in >> base[0] >> base[1] >> base[2] );
 
 		for ( int i = 0; i < 3; i++ ) runtime_assert( in >> garbage );
 

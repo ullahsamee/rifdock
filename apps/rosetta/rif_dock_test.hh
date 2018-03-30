@@ -95,6 +95,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
+	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -201,6 +203,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, unsat_orbital_penalty )
     OPT_1GRP_KEY(  Real        , rif_dock, neighbor_distance_cutoff )
     OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
@@ -295,6 +299,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", "");
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
+			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
+			NEW_OPT(  rif_dock::score_this_pdb, "Score residue 1 of this pdb using the rif scoring machinery", "" );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -399,6 +405,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 0 );
             NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
             NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
+            NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
+            NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
 
@@ -440,6 +449,8 @@ struct RifDockOpt
 	std::string dump_rifgen_near_pdb                 ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
+	bool        dump_rifgen_text                     ;
+	std::string score_this_pdb                       ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -584,6 +595,8 @@ struct RifDockOpt
     float       unsat_orbital_penalty                ;
     float       neighbor_distance_cutoff             ;
     int         unsat_neighbor_cutoff                ;
+	bool        unsat_debug                          ;
+	bool        test_hackpack                        ;    
 
     bool        dump_presatisfied_donors_acceptors   ;
 
@@ -631,6 +644,8 @@ struct RifDockOpt
 		dump_rifgen_near_pdb                   = option[rif_dock::dump_rifgen_near_pdb               ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
+		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
+		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -765,6 +780,8 @@ struct RifDockOpt
         unsat_orbital_penalty                   = option[rif_dock::unsat_orbital_penalty                ]();
         neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
         unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
+		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
+		test_hackpack                           = option[rif_dock::test_hackpack                        ]();        
 
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 

@@ -24,13 +24,31 @@
 namespace devel {
 namespace scheme {
 
+// on the donor:
+// horb_cen = H xyz
+// horb_cen - direction = O/N xyz
+
+// on the acceptor:
+// horb_cen = random point that is the orbital
+// horb_cen - direction * ORBLEN = N/O xyz
+
+// ORBLEN = 0.61
+
+// hbond_length(N/C - N/C) = (don.horb_cen - don.direction) - (acc.horb_cen - 0.61*direction)
+//                         
+
 template< class HBondRay >
 float score_hbond_rays(
     HBondRay const & don,
     HBondRay const & acc,
     float non_directional_fraction = 0.0 // 0.0 - 1.0
 ){
+
+    Eigen::Vector3f donor_O = don.horb_cen - don.direction;
+    Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
+    float dist = (donor_O - accep_O).norm();
     float diff = ( (don.horb_cen-acc.horb_cen).norm() - 1.05 );
+    float og_diff = diff;
     diff = diff < 0 ? diff*1.5 : diff; // increase dis pen if too close
     float const max_diff = 0.8;
     diff = diff >  max_diff ?  max_diff : diff;
@@ -43,6 +61,8 @@ float score_hbond_rays(
     dirscore = dirscore < 0 ? 0.0 : dirscore; // is positive
     float const nds = non_directional_fraction;
     score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
+
+    std::cout << "dist: " << dist << " diff: " << diff << " score: " << score << std::endl;
     return score;
 }
 
@@ -214,7 +234,14 @@ struct ScoreRotamerVsTarget {
         }
         return score * upweight_iface_;
     }
+
+
 };
+
+
+
+
+
 
 
 }

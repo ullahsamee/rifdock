@@ -8,6 +8,7 @@
 #include <utility/io/ozstream.hh>
 
 #include <ObjexxFCL/format.hh>
+#include <boost/format.hpp>
 
 using Eigen::Vector3f;
 
@@ -161,8 +162,14 @@ identify_acceptor( std::string const & aname, char one_letter, std::string & hea
 
 }
 
-UnsatManager::UnsatManager( std::vector<std::vector<float>> const & unsat_penalties
-) {
+UnsatManager::UnsatManager( 
+    std::vector<std::vector<float>> const & unsat_penalties,
+    shared_ptr< RotamerIndex > rot_index_p_in,
+    bool debug
+) :
+    rot_index_p( rot_index_p_in ),
+    debug_( debug )
+{
 
     using ObjexxFCL::format::F;
     std::cout << "Buried orbital/hydrogen penalties: " << std::endl;
@@ -236,7 +243,7 @@ UnsatManager::set_target_donors_acceptors(
             numeric::xyzVector<core::Real> xyz = target.residue(atom_pair.first).xyz(atom_pair.second);
             xyz_[0] = xyz[0]; xyz_[1] = xyz[1]; xyz_[2] = xyz[2];
 
-            float dist = ( xyz_ - ( ray.horb_cen + ray.direction ) ).norm();
+            float dist = ( xyz_ - ray.horb_cen ).norm();
 
             if (dist < 0.1) break;
 
@@ -272,7 +279,7 @@ UnsatManager::set_target_donors_acceptors(
             numeric::xyzVector<core::Real> xyz = target.residue(atom_pair.first).xyz(atom_pair.second);
             xyz_[0] = xyz[0]; xyz_[1] = xyz[1]; xyz_[2] = xyz[2];
 
-            float dist = ( xyz_ - ( ray.horb_cen + ray.direction*(1+ORBLEN) ) ).norm();
+            float dist = ( xyz_ - ( ray.horb_cen - ray.direction*ORBLEN ) ).norm();
 
             if (dist < 0.1) break;
             so_far++;
@@ -300,6 +307,16 @@ UnsatManager::set_target_donors_acceptors(
     target_donors_acceptors_ = target_donors;
     target_donors_acceptors_.insert( target_donors_acceptors_.end(), target_acceptors.begin(), target_acceptors.end());
     num_donors_ = target_donors.size();
+
+
+    if (debug_) {
+        for ( int i = 0; i < target_heavy_atoms_.size(); i++ ) {
+            hbond::HeavyAtom const & ha = target_heavy_atoms_[i];
+            std::cout << "Heavy Atom: " << i << " res: " << ha.resid << " name: " << ha.name 
+                      << " type: " << hbond::ATypeNames[ha.AType] << std::endl;
+        }
+    }
+
 
     runtime_assert( validate_heavy_atoms() );
 
@@ -423,7 +440,7 @@ UnsatManager::find_target_presatisfied(
                 fully_sat = false;
 
                 HBondRay const & ray = target_donors_acceptors_[sat];
-                const float dist = ( (ray.horb_cen + ray.direction) - xyz ).norm();
+                const float dist = ( ray.horb_cen - xyz ).norm();
                 if ( dist > 0.1 ) continue;
 
                 if ( found_sat != -1 ) std::cout << "Error: Overlapping hydrogens??? " << std::endl;
@@ -565,7 +582,7 @@ UnsatManager::calculate_nonpack_score(
         const float adding = calculate_unsat_score( penalties[0], penalties[1], wants, satisfied, weight );
         score += adding;
 
-        // std::cout << "iheavy: " << iheavy << " adding: " << adding << " score: " << score << std::endl;
+        if ( debug_ ) std::cout << "iheavy: " << iheavy << " adding: " << adding << " score: " << score << std::endl;
 
     }
 
@@ -657,6 +674,16 @@ UnsatManager::prepare_packer(
 ) {
     runtime_assert( burial_weights.size() == target_heavy_atoms_.size() );
 
+    if (debug_) {
+        for ( int i = 0; i < to_pack_rots_.size(); i++ ) {
+            std::cout << "ToPackRot: " << i << " " << rot_index_p->oneletter(to_pack_rots_[i].irot) 
+                << " ires: " << to_pack_rots_[i].ires << " irot: " << to_pack_rots_[i].irot 
+                << " score: " << to_pack_rots_[i].score 
+                << " sat1: " << to_pack_rots_[i].sat1 << " sat2: " << to_pack_rots_[i].sat2 
+                << std::endl;
+        }
+    }
+
 // data structures
 
     float zerobody_penalty = 0;
@@ -682,6 +709,8 @@ UnsatManager::prepare_packer(
     // 2.   Assign max penalty to each heavy atom
         zerobody_penalty += total_first_twob_[ha.AType][0] * weight;
 
+        if (debug_) std::cout << "0body unsat: " << total_first_twob_[ha.AType][0] * weight << " heavy atom: " << ih << std::endl;
+
     // 3. Find all orbitals of said heavy atoms
         for ( int sat : ha.sat_groups ) heavy_atom_per_sat[sat] = ih;
 
@@ -706,6 +735,9 @@ UnsatManager::prepare_packer(
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
                 zerobody_penalty += - total_first_twob_[heavy_atom_type][1] * weight;
+
+                if (debug_) std::cout << "0body self-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                                   << " heavy atom: " << heavy_atom_no << std::endl;
             }
         }
     }
@@ -723,6 +755,9 @@ UnsatManager::prepare_packer(
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
                 to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight;
+
+                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                                  << " heavy atom: " << heavy_atom_no << " ipack: " << ipack << std::endl;
             }
         }
 
@@ -734,11 +769,13 @@ UnsatManager::prepare_packer(
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
                 to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight;
+
+                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                                      << " heavy atom: " << heavy_atom_no << " ipack: " << ipack << std::endl;
             }
         }
     }
 
-std::cout << "A" << std::endl;
 
 
     for ( int ih = 0; ih < burial_weights.size(); ih++ ) {
@@ -753,19 +790,19 @@ std::cout << "A" << std::endl;
 
         const float P0 = total_first_twob_[ha.AType][1] * weight;
 
-
-std::cout << "A" << std::endl;
         for ( int isat : ha.sat_groups ) {
             std::vector<int> const & local_sat_satsifiers = sat_satsifiers[isat];
 
             // upper triangle for loop
-            for ( int ilocal = 0; ilocal < local_sat_satsifiers.size() - 1; ilocal ++ ) {
+            for ( int ilocal = 0; ilocal < (int)local_sat_satsifiers.size() - 1; ilocal ++ ) {
                 for ( int jlocal = ilocal + 1; jlocal < local_sat_satsifiers.size(); jlocal++ ) {
                     zerobody_penalty += handle_twobody( local_sat_satsifiers[ilocal], local_sat_satsifiers[jlocal], P0, packer );
+
+
+                    if (debug_) std::cout << "orbital clash: " << P0 << " heavy_atom: " << ih
+                                << " ipack1: " << local_sat_satsifiers[ilocal] << " ipack2: " << local_sat_satsifiers[jlocal] << std::endl;
                 }
             }
-
-std::cout << "C" << std::endl;
         }
 
 
@@ -776,18 +813,14 @@ std::cout << "C" << std::endl;
 
         const float twob_penalty = total_first_twob_[ha.AType][2] * weight;
 
-
-std::cout << "D" << std::endl;
         // upper triangle of orbitals
-        for ( int iorb = 0; iorb < ha.sat_groups.size() - 1; iorb ++) {
+        for ( int iorb = 0; iorb < (int)ha.sat_groups.size() - 1; iorb ++) {
 
-std::cout << "E" << std::endl;
             const int isat = ha.sat_groups[iorb];
             std::vector<int> const & iorb_satisfiers = sat_satsifiers[isat];
 
             for ( int jorb = iorb + 1; jorb < ha.sat_groups.size(); jorb++ ) {
 
-std::cout << "F" << std::endl;
                 const int jsat = ha.sat_groups[jorb];
                 std::vector<int> const & jorb_satisfiers = sat_satsifiers[jsat];
 
@@ -795,6 +828,9 @@ std::cout << "F" << std::endl;
                 for ( int ilocal = 0; ilocal < iorb_satisfiers.size(); ilocal++ ) {
                     for ( int jlocal = 0; jlocal < jorb_satisfiers.size(); jlocal++ ) {
                         zerobody_penalty += handle_twobody( iorb_satisfiers[ilocal], jorb_satisfiers[jlocal], twob_penalty, packer );
+
+                        if (debug_) std::cout << "heavy atom clash: " << twob_penalty << " heavy_atom: " << ih
+                                    << " ipack1: " << iorb_satisfiers[ilocal] << " ipack2: " << jorb_satisfiers[jlocal] << std::endl;
                     }
                 }
 
@@ -804,7 +840,6 @@ std::cout << "F" << std::endl;
             }
         }
 
-std::cout << "G" << std::endl;
 
     }
     return zerobody_penalty;
