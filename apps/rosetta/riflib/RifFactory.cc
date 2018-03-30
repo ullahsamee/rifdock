@@ -51,15 +51,15 @@ template<class C> void assert_is_sorted  ( C & v ){ runtime_assert( v.second.is_
 
 template<class XmapIter>
 struct XmapKeyIterHelper : public KeyIterHelperBase<typename RifBase::Key> {
-    typedef typename RifBase::Key Key;
-    XmapKeyIterHelper(XmapIter iter) : iter_(iter) {}
-    Key get_key() const override { return iter_->first; }
-    void next() override { ++iter_; }
-    bool equal(KeyIterHelperBase const & that) const override {
-        XmapKeyIterHelper const & concrete = static_cast<XmapKeyIterHelper const &>(that);
-        return iter_ == concrete.iter_;
-    }
-    XmapIter iter_;
+	typedef typename RifBase::Key Key;
+	XmapKeyIterHelper(XmapIter iter) : iter_(iter) {}
+	Key get_key() const override { return iter_->first; }
+	void next() override { ++iter_; }
+	bool equal(KeyIterHelperBase const & that) const override {
+		XmapKeyIterHelper const & concrete = static_cast<XmapKeyIterHelper const &>(that);
+		return iter_ == concrete.iter_;
+	}
+	XmapIter iter_;
 };
 
 template< class XMap >
@@ -110,33 +110,33 @@ public:
 	}
 
 
-    //Brian
-    virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
-    	std::pair< int, int > sat1_sat2( -1, -1);
+	//Brian
+	virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
+		std::pair< int, int > sat1_sat2( -1, -1);
 
-    	Key k = get_bin_key(x);
+		Key k = get_bin_key(x);
 
 
-        auto const & rs = (*xmap_ptr_)[k];
-        int const Nrots = XMap::Value::N;
-        for( int i = 0; i < Nrots; ++i ){
-            if( rs.empty(i) ) break;
-            if (rs.rotamer(i) != roti) continue; 
-            std::vector<int> sats;
-        	rs.rotamer_sat_groups( i, sats );
-        	if ( sats.size() == 0) {
-        		return sat1_sat2;
-        	}
-        	sat1_sat2.first = sats[0];
-        	if ( sats.size() == 1 ) {
-        		return sat1_sat2;
-        	}
-        	sat1_sat2.second = sats[1];
-        	return sat1_sat2;
-        }
+		auto const & rs = (*xmap_ptr_)[k];
+		int const Nrots = XMap::Value::N;
+		for( int i = 0; i < Nrots; ++i ){
+			if( rs.empty(i) ) break;
+			if (rs.rotamer(i) != roti) continue; 
+			std::vector<int> sats;
+			rs.rotamer_sat_groups( i, sats );
+			if ( sats.size() == 0) {
+				return sat1_sat2;
+			}
+			sat1_sat2.first = sats[0];
+			if ( sats.size() == 1 ) {
+				return sat1_sat2;
+			}
+			sat1_sat2.second = sats[1];
+			return sat1_sat2;
+		}
 
-        return sat1_sat2;
-    }
+		return sat1_sat2;
+	}
 
 	size_t size() const override { return xmap_ptr_->size(); }
 	float load_factor() const override { return xmap_ptr_->map_.size()*1.f/xmap_ptr_->map_.bucket_count(); }
@@ -162,30 +162,30 @@ public:
 
 	}
 
-    Key get_bin_key( EigenXform const & x) const override {
-        return xmap_ptr_->get_key(x);
-    }
+	Key get_bin_key( EigenXform const & x) const override {
+		return xmap_ptr_->get_key(x);
+	}
 
-    EigenXform get_bin_center( Key const & k) const override {
-        return xmap_ptr_->get_center(k);
-    }
+	EigenXform get_bin_center( Key const & k) const override {
+		return xmap_ptr_->get_center(k);
+	}
 
-    void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const override{
-        typename XMap::Value const & rs = (*xmap_ptr_)[k];
-        int const Nrots = XMap::Value::N;
-        for( int i = 0; i < Nrots; ++i ){
-            if( rs.empty(i) ) break;
-            rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
-        }
-    }
+	void get_rotamers_for_key( Key const & k, std::vector< std::pair< float, int > > & rotscores ) const override{
+		typename XMap::Value const & rs = (*xmap_ptr_)[k];
+		int const Nrots = XMap::Value::N;
+		for( int i = 0; i < Nrots; ++i ){
+			if( rs.empty(i) ) break;
+			rotscores.push_back( std::make_pair<float,int>( rs.score(i), rs.rotamer(i) ) );
+		}
+	}
 
 	void
 	get_rotamers_for_xform(
 		EigenXform const & x,
 		std::vector< std::pair< float, int > > & rotscores
 	) const override {
-        Key const & k = xmap_ptr_->get_key(x);
-        get_rotamers_for_key(k, rotscores);
+		Key const & k = xmap_ptr_->get_key(x);
+		get_rotamers_for_key(k, rotscores);
 	}
 
 	void finalize_rif() override {
@@ -238,53 +238,53 @@ public:
 
 	}
 
-    RifBaseKeyRange key_range() const override {
-        auto b = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
-            ((typename XMap::Map const &)xmap_ptr_->map_).begin()  );
-        auto e = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
-            ((typename XMap::Map const &)xmap_ptr_->map_).end()  );
-        return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
-    }
+	RifBaseKeyRange key_range() const override {
+		auto b = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+			((typename XMap::Map const &)xmap_ptr_->map_).begin()  );
+		auto e = std::make_shared<XmapKeyIterHelper<typename XMap::Map::const_iterator>>(
+			((typename XMap::Map const &)xmap_ptr_->map_).end()  );
+		return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
+	}
 
 
 
 
-    // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
-    bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
-                                        float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
+	// This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
+	bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
+										float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
 
-        std::string name3 = res.name3();
+		std::string name3 = res.name3();
 
 
-        std::pair<int, std::string> cb = ( name3 == "GLY" ? std::pair<int, std::string> {1, "CA"} : std::pair<int, std::string>{3, "CB"});
-        // rif-number, rosetta number
-        std::vector<std::pair<int, std::string>> align_pairs { 
-            {0, "N"},
-            {1, "CA"},
-            cb
-        };
+		std::pair<int, std::string> cb = ( name3 == "GLY" ? std::pair<int, std::string> {1, "CA"} : std::pair<int, std::string>{3, "CB"});
+		// rif-number, rosetta number
+		std::vector<std::pair<int, std::string>> align_pairs { 
+			{0, "N"},
+			{1, "CA"},
+			cb
+		};
 
-        // prepare listed atoms
-        std::vector<Eigen::Vector3f> scaff_atoms;
-        for ( int i = 0; i < align_pairs.size(); i++ ) {
-            std::pair<int, std::string> pair = align_pairs[i];
-            numeric::xyzVector<core::Real> xyz = res.xyz(pair.second);
-            Eigen::Vector3f vec;
-            vec[0] = xyz.x();
-            vec[1] = xyz.y();
-            vec[2] = xyz.z();
-            scaff_atoms.push_back(vec);
-        }
-        // prepare last atom
-        numeric::xyzVector<core::Real> xyz = res.xyz(res.natoms());
-        Eigen::Vector3f vec;
-        vec[0] = xyz.x();
-        vec[1] = xyz.y();
-        vec[2] = xyz.z();
-        scaff_atoms.push_back(vec);
+		// prepare listed atoms
+		std::vector<Eigen::Vector3f> scaff_atoms;
+		for ( int i = 0; i < align_pairs.size(); i++ ) {
+			std::pair<int, std::string> pair = align_pairs[i];
+			numeric::xyzVector<core::Real> xyz = res.xyz(pair.second);
+			Eigen::Vector3f vec;
+			vec[0] = xyz.x();
+			vec[1] = xyz.y();
+			vec[2] = xyz.z();
+			scaff_atoms.push_back(vec);
+		}
+		// prepare last atom
+		numeric::xyzVector<core::Real> xyz = res.xyz(res.natoms());
+		Eigen::Vector3f vec;
+		vec[0] = xyz.x();
+		vec[1] = xyz.y();
+		vec[2] = xyz.z();
+		scaff_atoms.push_back(vec);
 
-    	std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
-    	const RifBase * base = this;
+		std::cout << "Looking for rotamers within " << dump_dist << "A of in input pdb and of aa " << name3 << std::endl;
+		const RifBase * base = this;
 		shared_ptr<XMap const> from;
 		base->get_xmap_const_ptr( from );
 
@@ -305,45 +305,45 @@ public:
 
 			float dist_sq = (x.translation() - scaff_atoms[2]).squaredNorm();
 
-            if (dist_sq > coarse_dist_sq) continue;
+			if (dist_sq > coarse_dist_sq) continue;
 
-            typename XMap::Value const & rotscores = from->operator[]( x );
-            static int const Nrots = XMap::Value::N;
-            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-                if( rotscores.empty(i_rs) ) {
-                    break;
-                }
+			typename XMap::Value const & rotscores = from->operator[]( x );
+			static int const Nrots = XMap::Value::N;
+			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+				if( rotscores.empty(i_rs) ) {
+					break;
+				}
 
-                int irot = rotscores.rotamer(i_rs);
-                if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
+				int irot = rotscores.rotamer(i_rs);
+				if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
 
-                // check listed atoms
-                bool all_good = true;
-                for ( int i = 0; i < align_pairs.size(); i++ ) {
-                    int rif_atom_no = align_pairs[i].first;
-                    Eigen::Vector3f scaff_vec = scaff_atoms[i];
+				// check listed atoms
+				bool all_good = true;
+				for ( int i = 0; i < align_pairs.size(); i++ ) {
+					int rif_atom_no = align_pairs[i].first;
+					Eigen::Vector3f scaff_vec = scaff_atoms[i];
 
 
-                    SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_[rif_atom_no];
-                    Eigen::Vector3f atom_vec = x * atom.position();
-                    dist_sq = (atom_vec - scaff_vec).squaredNorm();
+					SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_[rif_atom_no];
+					Eigen::Vector3f atom_vec = x * atom.position();
+					dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-                    if (dist_sq > dump_dist_sq) {
-                        all_good = false;
-                        break;
-                    }
-                }
+					if (dist_sq > dump_dist_sq) {
+						all_good = false;
+						break;
+					}
+				}
 
-                if ( ! all_good ) continue;
+				if ( ! all_good ) continue;
 
-                // check last atom
-                Eigen::Vector3f scaff_vec = scaff_atoms.back();
-                SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
-                Eigen::Vector3f atom_vec = x * atom.position();
-                dist_sq = (atom_vec - scaff_vec).squaredNorm();
+				// check last atom
+				Eigen::Vector3f scaff_vec = scaff_atoms.back();
+				SchemeAtom atom = rot_index_p->rotamers_.at( irot ).atoms_.back();
+				Eigen::Vector3f atom_vec = x * atom.position();
+				dist_sq = (atom_vec - scaff_vec).squaredNorm();
 
-                if (dist_sq > dump_dist_sq) continue;
-                
+				if (dist_sq > dump_dist_sq) continue;
+				
 
 				float score = rotscores.score(i_rs);
 
@@ -354,10 +354,10 @@ public:
 		}
 
 
-        if (to_dump.size() == 0) {
-            std::cout << "No rotamers found!!!!" << std::endl;
-            return false;
-        }
+		if (to_dump.size() == 0) {
+			std::cout << "No rotamers found!!!!" << std::endl;
+			return false;
+		}
 
 		uint64_t num_dump = to_dump.size() * dump_frac;
 		uint64_t dump_every = to_dump.size() / num_dump;
@@ -380,14 +380,14 @@ public:
 
 			out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
 
-            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
-                a.set_position( x * a.position() ); 
-                a.nonconst_data().resnum = dumped;
-                a.nonconst_data().chain = 'A';
-                ::scheme::actor::write_pdb( out, a, nullptr );
-            }
+			BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+				a.set_position( x * a.position() ); 
+				a.nonconst_data().resnum = dumped;
+				a.nonconst_data().chain = 'A';
+				::scheme::actor::write_pdb( out, a, nullptr );
+			}
 
-            dumped ++;
+			dumped ++;
 
 			out << std::string("ENDMDL") << std::endl;
 
@@ -396,179 +396,179 @@ public:
 		out.close();
 
 
-        return true;
+		return true;
 
-    }
+	}
 
-    // dumps everything at this bin center that's the same residue type
-    void
-    dump_rotamers_at_bin_center( 
-        core::conformation::Residue const & res,
-        std::string const & file_name,
-        shared_ptr<RotamerIndex> rot_index_p
-    ) const override {
+	// dumps everything at this bin center that's the same residue type
+	void
+	dump_rotamers_at_bin_center( 
+		core::conformation::Residue const & res,
+		std::string const & file_name,
+		shared_ptr<RotamerIndex> rot_index_p
+	) const override {
 
-        std::string name3 = res.name3();
-        std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
+		std::string name3 = res.name3();
+		std::pair<int,int> index_bounds = rot_index_p->index_bounds( name3 );
 
-        std::cout << "Dumping residues of type " << name3 << " at bin center to " << file_name << std::endl;
+		std::cout << "Dumping residues of type " << name3 << " at bin center to " << file_name << std::endl;
 
-        BBActor bb( res );
+		BBActor bb( res );
 
-        const RifBase * base = this;
-        shared_ptr<XMap const> xmap;
-        base->get_xmap_const_ptr( xmap );
+		const RifBase * base = this;
+		shared_ptr<XMap const> xmap;
+		base->get_xmap_const_ptr( xmap );
 
-        EigenXform center = xmap->get_center(xmap->get_key(bb.position()));
+		EigenXform center = xmap->get_center(xmap->get_key(bb.position()));
 
-        std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
+		std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
 
-        typename XMap::Value const & rotscores = xmap->operator[]( center );
-        static int const Nrots = XMap::Value::N;
-        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-            if( rotscores.empty(i_rs) ) {
-                continue;
-            }
+		typename XMap::Value const & rotscores = xmap->operator[]( center );
+		static int const Nrots = XMap::Value::N;
+		for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+			if( rotscores.empty(i_rs) ) {
+				continue;
+			}
 
-            int irot = rotscores.rotamer(i_rs);
-            if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
+			int irot = rotscores.rotamer(i_rs);
+			if (irot < index_bounds.first || irot >= index_bounds.second ) continue;
 
-            float score = rotscores.score(i_rs);
+			float score = rotscores.score(i_rs);
 
-            to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(center, std::pair<int, float>(irot, score)));
+			to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(center, std::pair<int, float>(irot, score)));
 
-        }
+		}
 
-        if (to_dump.size() == 0) {
-            std::cout << "No rotamers found!!!!" << std::endl;
-            return;
-        }
+		if (to_dump.size() == 0) {
+			std::cout << "No rotamers found!!!!" << std::endl;
+			return;
+		}
 
-        std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << to_dump.size() << " to " << file_name << " ..." << std::endl;
+		std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << to_dump.size() << " to " << file_name << " ..." << std::endl;
 
-        utility::io::ozstream out( file_name );
-        uint64_t dumped = 0;
-        for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
+		utility::io::ozstream out( file_name );
+		uint64_t dumped = 0;
+		for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
 
-            EigenXform x = to_dump[i].first;
-            auto inner_pair = to_dump[i].second;
-            int irot = inner_pair.first;
-            float score = inner_pair.second;
-
-
-            out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
-
-            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
-                a.set_position( x * a.position() ); 
-                a.nonconst_data().resnum = dumped;
-                a.nonconst_data().chain = 'A';
-                ::scheme::actor::write_pdb( out, a, nullptr );
-            }
-
-            dumped ++;
-
-            out << std::string("ENDMDL") << std::endl;
-
-        }
-
-        out.close();
+			EigenXform x = to_dump[i].first;
+			auto inner_pair = to_dump[i].second;
+			int irot = inner_pair.first;
+			float score = inner_pair.second;
 
 
-    }
+			out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
 
-    void
-    dump_rifgen_text( EigenXform const & xform, shared_ptr< XMap const > rif, shared_ptr<RotamerIndex> rot_index_p ) const {
+			BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+				a.set_position( x * a.position() ); 
+				a.nonconst_data().resnum = dumped;
+				a.nonconst_data().chain = 'A';
+				::scheme::actor::write_pdb( out, a, nullptr );
+			}
 
-        std::cout << xform.translation().transpose() << std::endl;
+			dumped ++;
 
-        using ObjexxFCL::format::F;
-        using ObjexxFCL::format::I;
+			out << std::string("ENDMDL") << std::endl;
 
-        typename XMap::Value const & rotscores = rif->operator[]( xform );
-        static int const Nrots = XMap::Value::N;
-        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-            if( rotscores.empty(i_rs) ) {
-                std::cout << I(2, i_rs) << std::endl;
-                continue;
-            }
+		}
 
-            int irot = rotscores.rotamer(i_rs);
-            char oneletter = rot_index_p->oneletter(irot);
-            float score = rotscores.score(i_rs);
-
-            std::vector<int> sats;
-            rotscores.rotamer_sat_groups(i_rs, sats);
-            int sat1 = -1;
-            int sat2 = -1;
-            if (sats.size() > 0) {
-                sat1 = sats[0];
-                if (sats.size() > 1) {
-                    sat2 = sats[1];
-                }
-            }
+		out.close();
 
 
-            std::cout << I(2, i_rs) << " " << oneletter << " " << I(3, irot) << " " << F(6,1, score) << " sat1: " << I(4, sat1)
-                        << " sat2: " << I(4, sat2) << std::endl;
+	}
 
-        }
-        std::cout << std::endl;
-    }
+	void
+	dump_rifgen_text( EigenXform const & xform, shared_ptr< XMap const > rif, shared_ptr<RotamerIndex> rot_index_p ) const {
 
+		std::cout << xform.translation().transpose() << std::endl;
 
-    // This looks for rifgen bins that are within dump_distance of the res stub
-    bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
-                                        float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const override {
+		using ObjexxFCL::format::F;
+		using ObjexxFCL::format::I;
 
-        using ObjexxFCL::format::F;
+		typename XMap::Value const & rotscores = rif->operator[]( xform );
+		static int const Nrots = XMap::Value::N;
+		for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+			if( rotscores.empty(i_rs) ) {
+				std::cout << I(2, i_rs) << std::endl;
+				continue;
+			}
 
-        // numeric::xyzVector<core::Real> _n  = res.xyz("N");
-        // numeric::xyzVector<core::Real> _ca = res.xyz("CA");
-        // numeric::xyzVector<core::Real> _c  = res.xyz("C");
+			int irot = rotscores.rotamer(i_rs);
+			char oneletter = rot_index_p->oneletter(irot);
+			float score = rotscores.score(i_rs);
 
-        // Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
-        // Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
-        // Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
-
-
-        BBActor bb( res );
-
-        std::cout << bb.position().translation().transpose() << std::endl;
-
-        const RifBase * base = this;
-        shared_ptr<XMap const> xmap;
-        base->get_xmap_const_ptr( xmap );
-
-        std::cout << "Distance 0.00:" << std::endl;
-
-        EigenXform stored_bin = xmap->get_center(xmap->get_key(bb.position()));
-
-        dump_rifgen_text(stored_bin, xmap , rot_index_p );
+			std::vector<int> sats;
+			rotscores.rotamer_sat_groups(i_rs, sats);
+			int sat1 = -1;
+			int sat2 = -1;
+			if (sats.size() > 0) {
+				sat1 = sats[0];
+				if (sats.size() > 1) {
+					sat2 = sats[1];
+				}
+			}
 
 
-        EigenXform bbinv = bb.position().inverse();
+			std::cout << I(2, i_rs) << " " << oneletter << " " << I(3, irot) << " " << F(6,1, score) << " sat1: " << I(4, sat1)
+						<< " sat2: " << I(4, sat2) << std::endl;
 
-        int search_points = 0;
-        for( auto const & v : xmap->map_ ){
-            search_points ++;
-            EigenXform x = xmap->hasher_.get_center( v.first );
-
-            float dist = xform_magnitude( bbinv * x, 1 );
-            // float dist = (x.translation() - bb.position().translation()).norm();
-
-            if ( dist > dump_dist ) {
-                continue;
-            }
-
-            std::cout << "Distance: " << F(5, 2, dist) << std::endl;
-            dump_rifgen_text( x, xmap , rot_index_p );
-
-        }
-
-        std::cout << "Searched " << search_points << " points" << std::endl;
+		}
+		std::cout << std::endl;
+	}
 
 
-    }
+	// This looks for rifgen bins that are within dump_distance of the res stub
+	bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
+										float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+		using ObjexxFCL::format::F;
+
+		// numeric::xyzVector<core::Real> _n  = res.xyz("N");
+		// numeric::xyzVector<core::Real> _ca = res.xyz("CA");
+		// numeric::xyzVector<core::Real> _c  = res.xyz("C");
+
+		// Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
+		// Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
+		// Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
+
+
+		BBActor bb( res );
+
+		std::cout << bb.position().translation().transpose() << std::endl;
+
+		const RifBase * base = this;
+		shared_ptr<XMap const> xmap;
+		base->get_xmap_const_ptr( xmap );
+
+		std::cout << "Distance 0.00:" << std::endl;
+
+		EigenXform stored_bin = xmap->get_center(xmap->get_key(bb.position()));
+
+		dump_rifgen_text(stored_bin, xmap , rot_index_p );
+
+
+		EigenXform bbinv = bb.position().inverse();
+
+		int search_points = 0;
+		for( auto const & v : xmap->map_ ){
+			search_points ++;
+			EigenXform x = xmap->hasher_.get_center( v.first );
+
+			float dist = xform_magnitude( bbinv * x, 1 );
+			// float dist = (x.translation() - bb.position().translation()).norm();
+
+			if ( dist > dump_dist ) {
+				continue;
+			}
+
+			std::cout << "Distance: " << F(5, 2, dist) << std::endl;
+			dump_rifgen_text( x, xmap , rot_index_p );
+
+		}
+
+		std::cout << "Searched " << search_points << " points" << std::endl;
+
+
+	}
 
 
 
@@ -597,439 +597,439 @@ std::string get_rif_type_from_file( std::string fname )
 
 //////////////////////////////////// ScoreBBActorVsRIF ////////////////////////////////////////////
 
-    typedef int32_t intRot;
+	typedef int32_t intRot;
 
 
 
-    // should move to libraries somewhere
-    // empty class, serves only to position RIF in absolute space
-    // struct RIFAnchor {
-    //  RIFAnchor() {}
-    // };
-    std::ostream & operator<<( std::ostream & out, RIFAnchor const& va ){
-        return out << "RIFAnchor";
-    }
-    template< class MetaData >
-    void write_pdb( std::ostream & , RIFAnchor const &, MetaData const & ){}
+	// should move to libraries somewhere
+	// empty class, serves only to position RIF in absolute space
+	// struct RIFAnchor {
+	//  RIFAnchor() {}
+	// };
+	std::ostream & operator<<( std::ostream & out, RIFAnchor const& va ){
+		return out << "RIFAnchor";
+	}
+	template< class MetaData >
+	void write_pdb( std::ostream & , RIFAnchor const &, MetaData const & ){}
 
-    struct ScoreBBActorvsRIFResult {
-        float val_;
-        std::vector< std::pair<intRot,intRot> > rotamers_;
-        ScoreBBActorvsRIFResult() : val_(0) {}
-        ScoreBBActorvsRIFResult( float f ) : val_(f) {}
-        operator float() const { return val_; }
-        void operator=( float f ) { val_ = f; }
-        void operator+=( float f ) { val_ += f; }
-        bool operator<( ScoreBBActorvsRIFResult const & other ) const { return val_ < other.val_; }
-    };
-    struct ScoreBBActorvsRIFScratch {
-        shared_ptr< ::scheme::search::HackPack> hackpack_;
-        std::vector<bool> is_satisfied_;
-        std::vector<bool> has_rifrot_;
-        std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
-        std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
-        shared_ptr< BurialManager > burial_manager_;
-        shared_ptr< UnsatManager > unsat_manager_;
-        shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
-        // sat group vector goes here
-        //std::vector<float> is_satisfied_score_;
-    };
+	struct ScoreBBActorvsRIFResult {
+		float val_;
+		std::vector< std::pair<intRot,intRot> > rotamers_;
+		ScoreBBActorvsRIFResult() : val_(0) {}
+		ScoreBBActorvsRIFResult( float f ) : val_(f) {}
+		operator float() const { return val_; }
+		void operator=( float f ) { val_ = f; }
+		void operator+=( float f ) { val_ += f; }
+		bool operator<( ScoreBBActorvsRIFResult const & other ) const { return val_ < other.val_; }
+	};
+	struct ScoreBBActorvsRIFScratch {
+		shared_ptr< ::scheme::search::HackPack> hackpack_;
+		std::vector<bool> is_satisfied_;
+		std::vector<bool> has_rifrot_;
+		std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
+		std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
+		shared_ptr< BurialManager > burial_manager_;
+		shared_ptr< UnsatManager > unsat_manager_;
+		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
+		// sat group vector goes here
+		//std::vector<float> is_satisfied_score_;
+	};
 
-    template< class BBActor, class RIF, class VoxelArrayPtr >
-    struct ScoreBBActorVsRIF
-    {
-        typedef boost::mpl::true_ HasPre;
-        typedef boost::mpl::true_ HasPost;
-        typedef ScoreBBActorvsRIFScratch Scratch;
-        typedef ScoreBBActorvsRIFResult Result;
-        typedef std::pair<RIFAnchor,BBActor> Interaction;
-        bool packing_ = false;
-        ::scheme::search::HackPackOpts packopts_;
-        int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
-        std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
-        std::vector< shared_ptr< BurialManager> > burialperthread_;
-        std::vector< shared_ptr< UnsatManager > > unsatperthread_;
-    private:
-        shared_ptr<RIF const> rif_ = nullptr;
-    public:
-        VoxelArrayPtr target_proximity_test_grid_ = nullptr;
-        devel::scheme::ScoreRotamerVsTarget<
-                VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-            > rot_tgt_scorer_;
-        std::vector<int> always_available_rotamers_;
+	template< class BBActor, class RIF, class VoxelArrayPtr >
+	struct ScoreBBActorVsRIF
+	{
+		typedef boost::mpl::true_ HasPre;
+		typedef boost::mpl::true_ HasPost;
+		typedef ScoreBBActorvsRIFScratch Scratch;
+		typedef ScoreBBActorvsRIFResult Result;
+		typedef std::pair<RIFAnchor,BBActor> Interaction;
+		bool packing_ = false;
+		::scheme::search::HackPackOpts packopts_;
+		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
+		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
+		std::vector< shared_ptr< BurialManager> > burialperthread_;
+		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
+	private:
+		shared_ptr<RIF const> rif_ = nullptr;
+	public:
+		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
+		devel::scheme::ScoreRotamerVsTarget<
+				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+			> rot_tgt_scorer_;
+		std::vector<int> always_available_rotamers_;
 
-        ScoreBBActorVsRIF() {}
+		ScoreBBActorVsRIF() {}
 
-         void clear() {
-            packperthread_.clear();
-         }
+		 void clear() {
+			packperthread_.clear();
+		 }
 
-        static std::string name(){ return "ScoreBBActorVsRIF"; }
+		static std::string name(){ return "ScoreBBActorVsRIF"; }
 
-        void set_rif( shared_ptr< ::devel::scheme::RifBase const> rif_ptr ){
-            rif_ptr->get_xmap_const_ptr( rif_ );
-        }
+		void set_rif( shared_ptr< ::devel::scheme::RifBase const> rif_ptr ){
+			rif_ptr->get_xmap_const_ptr( rif_ );
+		}
 
-        void init_for_packing(
-            // ::scheme::objective::storage::TwoBodyTable<float> const & twob,
-            shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
-            std::vector<VoxelArrayPtr> const & target_field_by_atype,
-            std::vector< ::scheme::chemical::HBondRay > const & target_donors,
-            std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
+		void init_for_packing(
+			// ::scheme::objective::storage::TwoBodyTable<float> const & twob,
+			shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
+			std::vector<VoxelArrayPtr> const & target_field_by_atype,
+			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
+			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
 #ifdef USEGRIDSCORE
-            shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
-            bool soft_grid_energies,
+			shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
+			bool soft_grid_energies,
 #endif
-            ::scheme::search::HackPackOpts const & hackpackopts
-        ){
-            packing_ = true;
-            packperthread_.clear();
-            for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
-                shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
-                packperthread_.push_back( tmp );
-            }
-            rot_tgt_scorer_.rot_index_p_ = rot_index_p;
-            rot_tgt_scorer_.target_field_by_atype_ = target_field_by_atype;
-            rot_tgt_scorer_.target_donors_ = target_donors;
-            rot_tgt_scorer_.target_acceptors_ = target_acceptors;
-            rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
-            rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
-            rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+			::scheme::search::HackPackOpts const & hackpackopts
+		){
+			packing_ = true;
+			packperthread_.clear();
+			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
+				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
+				packperthread_.push_back( tmp );
+			}
+			rot_tgt_scorer_.rot_index_p_ = rot_index_p;
+			rot_tgt_scorer_.target_field_by_atype_ = target_field_by_atype;
+			rot_tgt_scorer_.target_donors_ = target_donors;
+			rot_tgt_scorer_.target_acceptors_ = target_acceptors;
+			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
+			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
+			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
 #ifdef USEGRIDSCORE
-            rot_tgt_scorer_.grid_scorer_ = grid_scorer;
-            rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
+			rot_tgt_scorer_.grid_scorer_ = grid_scorer;
+			rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
 #endif
-            packopts_ = hackpackopts;
-            always_available_rotamers_.clear();
-            for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
-                switch( packopts_.always_available_rotamers_level ){
-                    case 2:
-                        always_available_rotamers_.push_back(irot);
-                        break;
-                    case 1:
-                        if( rot_index_p->resname(irot) == "VAL" ) always_available_rotamers_.push_back(irot);
-                        if( rot_index_p->resname(irot) == "ILE" ) always_available_rotamers_.push_back(irot);
-                        if( rot_index_p->resname(irot) == "LEU" ) always_available_rotamers_.push_back(irot);
-                        if( rot_index_p->resname(irot) == "MET" ) always_available_rotamers_.push_back(irot);
-                        if( rot_index_p->resname(irot) == "PHE" ) always_available_rotamers_.push_back(irot);
-                        break;
-                    case 0:
-                        break;
-                    default:
-                        utility_exit_with_message("unknown always_available_rotamers level");
-                }
-            }
-        }
-        void init_for_burial(
-            shared_ptr< BurialManager > burial_manager,
-            shared_ptr< UnsatManager > unsat_manager
-        ) {
-            for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
-                burialperthread_.push_back( burial_manager->clone() );
-                unsatperthread_.push_back( unsat_manager->clone() );
-            }
-        }
+			packopts_ = hackpackopts;
+			always_available_rotamers_.clear();
+			for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
+				switch( packopts_.always_available_rotamers_level ){
+					case 2:
+						always_available_rotamers_.push_back(irot);
+						break;
+					case 1:
+						if( rot_index_p->resname(irot) == "VAL" ) always_available_rotamers_.push_back(irot);
+						if( rot_index_p->resname(irot) == "ILE" ) always_available_rotamers_.push_back(irot);
+						if( rot_index_p->resname(irot) == "LEU" ) always_available_rotamers_.push_back(irot);
+						if( rot_index_p->resname(irot) == "MET" ) always_available_rotamers_.push_back(irot);
+						if( rot_index_p->resname(irot) == "PHE" ) always_available_rotamers_.push_back(irot);
+						break;
+					case 0:
+						break;
+					default:
+						utility_exit_with_message("unknown always_available_rotamers level");
+				}
+			}
+		}
+		void init_for_burial(
+			shared_ptr< BurialManager > burial_manager,
+			shared_ptr< UnsatManager > unsat_manager
+		) {
+			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
+				burialperthread_.push_back( burial_manager->clone() );
+				unsatperthread_.push_back( unsat_manager->clone() );
+			}
+		}
 
-        template<class Scene, class Config>
-        void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
-        {
+		template<class Scene, class Config>
+		void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
+		{
 
-            // Added by brian ////////////////////////
-            ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
-            runtime_assert( data_cache );
-            scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
-            //////////////////////////////////////////
+			// Added by brian ////////////////////////
+			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
+			runtime_assert( data_cache );
+			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+			//////////////////////////////////////////
 
-            runtime_assert( rif_ );
-            runtime_assert( scratch.rotamer_energies_1b_ );
-            if( n_sat_groups_ > 0 && burialperthread_.size() == 0 ){
-                scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
-                for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-                //scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
-                //for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
-            }
-            scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
-            for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
+			runtime_assert( rif_ );
+			runtime_assert( scratch.rotamer_energies_1b_ );
+			if( n_sat_groups_ > 0 && burialperthread_.size() == 0 ){
+				scratch.is_satisfied_.resize(n_sat_groups_,false); // = new bool[n_sat_groups_];
+				for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
+				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
+			}
+			scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
+			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
 
-            if ( burialperthread_.size() > 0 ) {
-                scratch.burial_manager_ = burialperthread_.at( ::devel::scheme::omp_thread_num() );
-                scratch.burial_manager_->reset();
-                scratch.unsat_manager_ = unsatperthread_.at( ::devel::scheme::omp_thread_num() );
-                scratch.unsat_manager_->reset();
+			if ( burialperthread_.size() > 0 ) {
+				scratch.burial_manager_ = burialperthread_.at( ::devel::scheme::omp_thread_num() );
+				scratch.burial_manager_->reset();
+				scratch.unsat_manager_ = unsatperthread_.at( ::devel::scheme::omp_thread_num() );
+				scratch.unsat_manager_->reset();
 
-                scratch.is_satisfied_ = scratch.unsat_manager_->get_presatisfied();
-            }
+				scratch.is_satisfied_ = scratch.unsat_manager_->get_presatisfied();
+			}
 
-            if( !packing_ ) return;
+			if( !packing_ ) return;
 
-            // Added by brian ////////////////////////
-            scratch.scaffold_rotamers_ = data_cache->local_rotamers_p.get();
-            //////////////////////////////////////////
+			// Added by brian ////////////////////////
+			scratch.scaffold_rotamers_ = data_cache->local_rotamers_p.get();
+			//////////////////////////////////////////
 
-            runtime_assert( scratch.scaffold_rotamers_ );
-            runtime_assert( rot_tgt_scorer_.rot_index_p_ );
-            runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
-            scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
+			runtime_assert( scratch.scaffold_rotamers_ );
+			runtime_assert( rot_tgt_scorer_.rot_index_p_ );
+			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
+			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
 
-            if ( ! scratch.burial_manager_ ) {
-                scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
-            } else {
-                scratch.hackpack_->reinitialize( data_cache->local_twobody_per_thread.at(::devel::scheme::omp_thread_num()) );
-                scratch.reference_twobody_ = data_cache->local_twobody_p;
-            }
-        }
+			if ( ! scratch.burial_manager_ ) {
+				scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
+			} else {
+				scratch.hackpack_->reinitialize( data_cache->local_twobody_per_thread.at(::devel::scheme::omp_thread_num()) );
+				scratch.reference_twobody_ = data_cache->local_twobody_p;
+			}
+		}
 
-        template<class Config>
-        Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
-        {
-            if ( scratch.burial_manager_ ) scratch.burial_manager_->accumulate_neighbors( bb );
-            if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
-                return 0.0;
-            }
+		template<class Config>
+		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
+		{
+			if ( scratch.burial_manager_ ) scratch.burial_manager_->accumulate_neighbors( bb );
+			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
+				return 0.0;
+			}
 
-            const bool want_sats = scratch.burial_manager_;
+			const bool want_sats = scratch.burial_manager_;
 
-            typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
-            static int const Nrots = RIF::Value::N;
-            int const ires = bb.index_;
-            float bestsc = 0.0;
-            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
-                if( rotscores.empty(i_rs) ) {
-                    break;
-                }
-                int irot = rotscores.rotamer(i_rs);
-                float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-                float score_rot_v_target = rotscores.score(i_rs);
+			typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
+			static int const Nrots = RIF::Value::N;
+			int const ires = bb.index_;
+			float bestsc = 0.0;
+			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+				if( rotscores.empty(i_rs) ) {
+					break;
+				}
+				int irot = rotscores.rotamer(i_rs);
+				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+				float score_rot_v_target = rotscores.score(i_rs);
 
-                bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
 
-                if( packing_ && packopts_.packing_use_rif_rotamers ){
+				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
-                    if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
-                        
-                        int sat1 = -1, sat2 = -1, hbcount = 0;
-                        float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
-                                                        rot_tgt_scorer_.score_rotamer_v_target_sat( 
-                                                                irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
-                                                        score_rot_v_target;
+					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
+						
+						int sat1 = -1, sat2 = -1, hbcount = 0;
+						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+														rot_tgt_scorer_.score_rotamer_v_target_sat( 
+																irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
+														score_rot_v_target;
 
-                        score_rot_v_target = recalc_rot_v_tgt;
-                
-                        if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
-                              score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
+						score_rot_v_target = recalc_rot_v_tgt;
+				
+						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
+							  score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
 
-                            float sat_bonus = 0;
-                            if (rotamer_satisfies) {
-                                sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
-                                            packopts_.user_rotamer_bonus_constant;
-                            }
-                            if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
-                            else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
-                            
-                        }
-                    }
-                    if( packopts_.use_extra_rotamers ){
-                        auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
-                        for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
-                            float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
-                            if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
+							float sat_bonus = 0;
+							if (rotamer_satisfies) {
+								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
+											packopts_.user_rotamer_bonus_constant;
+							}
+							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
+							else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
+							
+						}
+					}
+					if( packopts_.use_extra_rotamers ){
+						auto child_rots = rot_tgt_scorer_.rot_index_p_->child_map_.at(irot);
+						for( int crot = child_rots.first; crot < child_rots.second; ++crot ){
+							float const crot1be = (*scratch.rotamer_energies_1b_).at(ires).at(crot);
+							if( crot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
 
-                            int sat1 = -1, sat2 = -1, hbcount = 0;
-                            float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
-                                                                rot_tgt_scorer_.score_rotamer_v_target_sat( 
-                                                                    crot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
-                                                                score_rot_v_target; // this is certainly the wrong score
+							int sat1 = -1, sat2 = -1, hbcount = 0;
+							float const recalc_crot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+																rot_tgt_scorer_.score_rotamer_v_target_sat( 
+																	crot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
+																score_rot_v_target; // this is certainly the wrong score
 
-                            if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
-                                recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
-                                if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
-                                else                    scratch.unsat_manager_->add_to_pack_rot( ires, crot, recalc_crot_v_tgt + crot1be, sat1, sat2 );
-                            }
-                        }
-                    }
-                }
+							if( recalc_crot_v_tgt + rot1be < packopts_.rotamer_inclusion_threshold &&
+								recalc_crot_v_tgt          < packopts_.rotamer_inclusion_threshold ){
+								if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, crot, recalc_crot_v_tgt + crot1be );
+								else                    scratch.unsat_manager_->add_to_pack_rot( ires, crot, recalc_crot_v_tgt + crot1be, sat1, sat2 );
+							}
+						}
+					}
+				}
 
-                float const score_rot_tot = score_rot_v_target + rot1be;
-                //TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
-                if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
-                    rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
-                }
-                if ( score_rot_tot < 0.0 ) {
-                    // std::cout << "Adding " << ires << std::endl;
-                    scratch.has_rifrot_[ires] = true;
-                }
+				float const score_rot_tot = score_rot_v_target + rot1be;
+				//TaYi change the score_rot_tot cutoff for mark_sat_groups to include not so good rotamers 
+				if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
+					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
+				}
+				if ( score_rot_tot < 0.0 ) {
+					// std::cout << "Adding " << ires << std::endl;
+					scratch.has_rifrot_[ires] = true;
+				}
 
-                bestsc = std::min( score_rot_tot , bestsc );
-                //}
-            }
+				bestsc = std::min( score_rot_tot , bestsc );
+				//}
+			}
 
-            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
-            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
-            // // add native scaffold rotamers TODO: this is bugged somehow?
-            if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
-                for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
-                    if( scratch.hackpack_->using_rotamer( ires, irot ) ){
-                        float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-                        int sat1 = -1, sat2 = -1, hbcount = 0;
-                        float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
-                                                            irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
-                        float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
-                        if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
-                            if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
-                            else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, rot_tot_1b, sat1, sat2 );
-                        }
-                    }
-                }
-            }
+			// This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+			//  Theoretically fixable, but correct rotamers may have been pushed out of the rif
+			// // add native scaffold rotamers TODO: this is bugged somehow?
+			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
+				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
+					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
+						float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+						int sat1 = -1, sat2 = -1, hbcount = 0;
+						float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+															irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
+						float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
+						if( rot_tot_1b < -1.0 && recalc_rot_v_tgt < -0.1 ){ // what's this logic??
+							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, rot_tot_1b );
+							else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, rot_tot_1b, sat1, sat2 );
+						}
+					}
+				}
+			}
 
-            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
-            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
-            if( packing_ ){
-                for( int irot : always_available_rotamers_ ){
-                    float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
-                    if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
-                    const bool want_sats = scratch.burial_manager_;
-                    int sat1 = -1, sat2 = -1, hbcount = 0;
-                    float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
-                                                                        irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
-                    if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
-                        recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
-                        if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
-                        else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, recalc_rot_v_tgt + irot1be, sat1, sat2 );
-                    }
-                }
-            }
+			// This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+			//  Theoretically fixable, but correct rotamers may have been pushed out of the rif
+			if( packing_ ){
+				for( int irot : always_available_rotamers_ ){
+					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+					if( irot1be > packopts_.rotamer_onebody_inclusion_threshold ) continue;
+					const bool want_sats = scratch.burial_manager_;
+					int sat1 = -1, sat2 = -1, hbcount = 0;
+					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+																		irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
+					if( recalc_rot_v_tgt + irot1be < packopts_.rotamer_inclusion_threshold &&
+						recalc_rot_v_tgt           < packopts_.rotamer_inclusion_threshold ){
+						if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, recalc_rot_v_tgt + irot1be );
+						else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, recalc_rot_v_tgt + irot1be, sat1, sat2 );
+					}
+				}
+			}
 
-            return bestsc;
-        }
+			return bestsc;
+		}
 
-        template<class Scene, class Config>
-        void post( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
-        {
-            if( packing_ ){
+		template<class Scene, class Config>
+		void post( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
+		{
+			if( packing_ ){
 
-                ::scheme::search::HackPack & packer( *scratch.hackpack_ );
+				::scheme::search::HackPack & packer( *scratch.hackpack_ );
 
-                float unsat_zerobody = 0;
-                if ( scratch.burial_manager_ ) {
-                    unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, scratch.burial_manager_->get_burial_weights() );
-                }
-                
-                result.val_ = packer.pack( result.rotamers_ );
-                result.val_ += unsat_zerobody;
+				float unsat_zerobody = 0;
+				if ( scratch.burial_manager_ ) {
+					unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, scratch.burial_manager_->get_burial_weights() );
+				}
+				
+				result.val_ = packer.pack( result.rotamers_ );
+				result.val_ += unsat_zerobody;
 
-                if ( scratch.burial_manager_ ) {scratch.unsat_manager_->fix_packer( packer, scratch.reference_twobody_ );
-                    // runtime_assert(scratch.reference_twobody_->check_equal(*packer.twob_));
-                }
-                
-
-
-                if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
-                for( int i = 0; i < result.rotamers_.size(); ++i ){
-                    BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
-                    int sat1=-1, sat2=-1, hbcount=0;
-                    float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
-                                    result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
-                    // todo: should do extra selection here?
-                    // if( recalc_rot_v_tgt < -1.0 ){
-                    //  selected_rotamers.push_back( result.rotamers_[i] );
-                    // }
-                    if( n_sat_groups_ > 0 ){
-                        if( sat1 >= 0 ) scratch.is_satisfied_[ sat1 ] = true;
-                        if( sat2 >= 0 ) scratch.is_satisfied_[ sat2 ] = true;
-                    }
-                }
-                // result.rotamers_ = selected_rotamers;
-
-            } else {
-
-                if ( scratch.burial_manager_ ) {
-                    std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights();
-                    result.val_ += scratch.unsat_manager_->calculate_nonpack_score( burial_weights, scratch.is_satisfied_ );
-                }
+				if ( scratch.burial_manager_ ) {scratch.unsat_manager_->fix_packer( packer, scratch.reference_twobody_ );
+					// runtime_assert(scratch.reference_twobody_->check_equal(*packer.twob_));
+				}
+				
 
 
-            }
+				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
+				for( int i = 0; i < result.rotamers_.size(); ++i ){
+					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
+					int sat1=-1, sat2=-1, hbcount=0;
+					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
+									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
+					// todo: should do extra selection here?
+					// if( recalc_rot_v_tgt < -1.0 ){
+					//  selected_rotamers.push_back( result.rotamers_[i] );
+					// }
+					if( n_sat_groups_ > 0 ){
+						if( sat1 >= 0 ) scratch.is_satisfied_[ sat1 ] = true;
+						if( sat2 >= 0 ) scratch.is_satisfied_[ sat2 ] = true;
+					}
+				}
+				// result.rotamers_ = selected_rotamers;
 
-            if( n_sat_groups_ > 0 ){
-                int nsat = 0;
-                
-                for( int i = 0; i < n_sat_groups_; ++i ){
-                    
-                    nsat += scratch.is_satisfied_[i];
-                    //result.val_ += scratch.is_satisfied_score_[i];
-                }
-                // if (nsat >= 4 ){
-                //  #pragma omp critical
-                //  {
-                //  std::cout << config << "     ";
-                    
-                //  for (int i = 0; i < 10; ++i){
-                //      std::cout << " "<< scratch.is_satisfied_[i];
+			} else {
 
-                //  }
-                //  std::cout << " " << std::endl;
-                //  }
-                // }
-                // std::cout << "here: " << nsat << std::endl;
-                // runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
+				if ( scratch.burial_manager_ ) {
+					std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights();
+					result.val_ += scratch.unsat_manager_->calculate_nonpack_score( burial_weights, scratch.is_satisfied_ );
+				}
 
-                if( nsat - require_satisfaction_ < 0 ){
-                    result.val_ = 9e9;
-                } //else {
-                    //result.val_ += -4.0f * nsat;
-                //}
 
-                // delete scratch.is_satisfied_;
-                // scratch.is_satisfied_.clear();
-            }
+			}
 
-            // this is yolo code by Brian. I have no idea if th is will always work
-            if ( require_n_rifres_ > 0 ) {
-                if ( packing_ ) {
-                    std::map<int, bool> used_positions;
-                    for( int i = 0; i < result.rotamers_.size(); ++i ){
-                        int position = result.rotamers_[i].first;
-                        if ( used_positions.count(position) == 0 ) {
-                            used_positions[position] = true;
-                        }
-                    }
-                    // std::cout << result.rotamers_.size() << " ";
-                    if (used_positions.size() < require_n_rifres_ ) {
-                        result.val_ = 9e9;
-                    }
-                } else {
-                    int count = 0;
-                    for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) {
-                        if ( scratch.has_rifrot_[i] ) {
-                            count ++;
-                        }
-                    }
-                    // std::cout << "Found " << count << std::endl;
-                    if (count < require_n_rifres_ ) {
-                        result.val_ = 9e9;
-                    }
-                }
-            }
+			if( n_sat_groups_ > 0 ){
+				int nsat = 0;
+				
+				for( int i = 0; i < n_sat_groups_; ++i ){
+					
+					nsat += scratch.is_satisfied_[i];
+					//result.val_ += scratch.is_satisfied_score_[i];
+				}
+				// if (nsat >= 4 ){
+				//  #pragma omp critical
+				//  {
+				//  std::cout << config << "     ";
+					
+				//  for (int i = 0; i < 10; ++i){
+				//      std::cout << " "<< scratch.is_satisfied_[i];
 
-                // #ifdef USE_OPENMP
-                // #pragma omp critical
-                // #endif
-                // std::cout << result.rotamers_.size() << " " << result.val_ << std::endl;
-            // if( result.rotamers_.size() == 0 ){
-            //  #ifdef USE_OPENMP
-            //  #pragma omp critical
-            //  #endif
-            //  std::cout << "no rotamers!" << std::endl;
-            // }
+				//  }
+				//  std::cout << " " << std::endl;
+				//  }
+				// }
+				// std::cout << "here: " << nsat << std::endl;
+				// runtime_assert( 0 <= nsat && nsat <= n_sat_groups_ );
 
-            // std::cout << "bound score: " << result.val_ << ", packscore: " << packscore << std::endl;
-            // for( int i = 0; i < result.rotamers_.size(); ++i ){
-            //  std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
-            // }
+				if( nsat - require_satisfaction_ < 0 ){
+					result.val_ = 9e9;
+				} //else {
+					//result.val_ += -4.0f * nsat;
+				//}
 
-        }
-    };
+				// delete scratch.is_satisfied_;
+				// scratch.is_satisfied_.clear();
+			}
+
+			// this is yolo code by Brian. I have no idea if th is will always work
+			if ( require_n_rifres_ > 0 ) {
+				if ( packing_ ) {
+					std::map<int, bool> used_positions;
+					for( int i = 0; i < result.rotamers_.size(); ++i ){
+						int position = result.rotamers_[i].first;
+						if ( used_positions.count(position) == 0 ) {
+							used_positions[position] = true;
+						}
+					}
+					// std::cout << result.rotamers_.size() << " ";
+					if (used_positions.size() < require_n_rifres_ ) {
+						result.val_ = 9e9;
+					}
+				} else {
+					int count = 0;
+					for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) {
+						if ( scratch.has_rifrot_[i] ) {
+							count ++;
+						}
+					}
+					// std::cout << "Found " << count << std::endl;
+					if (count < require_n_rifres_ ) {
+						result.val_ = 9e9;
+					}
+				}
+			}
+
+				// #ifdef USE_OPENMP
+				// #pragma omp critical
+				// #endif
+				// std::cout << result.rotamers_.size() << " " << result.val_ << std::endl;
+			// if( result.rotamers_.size() == 0 ){
+			//  #ifdef USE_OPENMP
+			//  #pragma omp critical
+			//  #endif
+			//  std::cout << "no rotamers!" << std::endl;
+			// }
+
+			// std::cout << "bound score: " << result.val_ << ", packscore: " << packscore << std::endl;
+			// for( int i = 0; i < result.rotamers_.size(); ++i ){
+			//  std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
+			// }
+
+		}
+	};
 	template< class B, class X, class V >
 	std::ostream & operator<<( std::ostream & out, ScoreBBActorVsRIF<B,X,V> const& si ){ return out << si.name(); }
 
@@ -1068,11 +1068,11 @@ struct RifFactoryImpl :
 	create_rif( float cart_resl=0, float ang_resl=0, float cart_bound=0 ) const
 	{
 	   if( cart_resl != 0 && ang_resl != 0 && cart_bound != 0 ){
-	       return make_shared<RifWrapper<XMap> >( make_shared<XMap>( cart_resl, ang_resl, cart_bound ), this->config().rif_type );
+		   return make_shared<RifWrapper<XMap> >( make_shared<XMap>( cart_resl, ang_resl, cart_bound ), this->config().rif_type );
 	   } else if( cart_resl == 0 && ang_resl == 0 && cart_bound == 0 ){
-	       return make_shared<RifWrapper<XMap> >( make_shared<XMap>(), this->config().rif_type );
+		   return make_shared<RifWrapper<XMap> >( make_shared<XMap>(), this->config().rif_type );
 	   } else {
-	   		utility_exit_with_message("some XformMap constructor values specified, others not!");
+			utility_exit_with_message("some XformMap constructor values specified, others not!");
 	   }
 	}
 
@@ -1190,18 +1190,18 @@ struct RifFactoryImpl :
 		// objective->config = config.rif_ptrs.size()-1;
 		// objectives.push_back( objective );
 
-        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
-    		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
-    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
-    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
-    		if( config.require_satisfaction > 0 ){
-    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-    				get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
-    			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
-    				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
-    		}
-            packing_objectives.push_back( packing_objective );
-        }
+		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+			shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
+			if( config.require_satisfaction > 0 ){
+				dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+					get_objective<MyScoreBBActorRIF>().n_sat_groups_ = config.n_sat_groups;
+				dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+					get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
+			}
+			packing_objectives.push_back( packing_objective );
+		}
 
 		for( auto op : objectives ){
 			// dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
@@ -1219,36 +1219,36 @@ struct RifFactoryImpl :
 
 		// use 4.0A vdw grid for CH3 atoms as proximity test
 
-        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
 
-            shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
+			shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
 
-            ::scheme::search::HackPackOpts local_packopts = *config.packopts;
-            // Only rescore on the full resolution
-            local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
+			::scheme::search::HackPackOpts local_packopts = *config.packopts;
+			// Only rescore on the full resolution
+			local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
 
-    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
-    							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
-    		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
-    			// *config.local_twobody,
-    			config.rot_index_p,
-    			*config.target_field_by_atype,
-    			*config.target_donors,
-    			*config.target_acceptors,
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
+								.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
+				// *config.local_twobody,
+				config.rot_index_p,
+				*config.target_field_by_atype,
+				*config.target_donors,
+				*config.target_acceptors,
 #ifdef USEGRIDSCORE
-                config.grid_scorer,
-                config.soft_grid_energies,
+				config.grid_scorer,
+				config.soft_grid_energies,
 #endif
-    			local_packopts
-    		);
-        }
+				local_packopts
+			);
+		}
 
-        if ( config.burial_manager ) {
-            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-                            .init_for_burial( config.burial_manager, config.unsat_manager );
-            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-                            .init_for_burial( config.burial_manager, config.unsat_manager );
-        }
+		if ( config.burial_manager ) {
+			dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+							.init_for_burial( config.burial_manager, config.unsat_manager );
+			dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+							.init_for_burial( config.burial_manager, config.unsat_manager );
+		}
 
 		return true;
 
@@ -1317,23 +1317,23 @@ create_rif_factory( RifFactoryConfig const & config )
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	} else if( config.rif_type == "RotScoreSat_2x16" )
-    {
-        using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
-        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -13, SatDatum> crfRotScore;
-        typedef ::scheme::objective::storage::RotamerScores< 19, crfRotScore > crfXMapValue;
-        // PRINT_SIZE_AS_ERROR<sizeof(crfXMapValue)>()();
-        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 114 );
-        typedef ::scheme::objective::hash::XformMap<
-                EigenXform,
-                crfXMapValue,
-                ::scheme::objective::hash::XformHash_bt24_BCC6
-            > crfXMap;
+	{
+		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
+		typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -13, SatDatum> crfRotScore;
+		typedef ::scheme::objective::storage::RotamerScores< 19, crfRotScore > crfXMapValue;
+		// PRINT_SIZE_AS_ERROR<sizeof(crfXMapValue)>()();
+		BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 114 );
+		typedef ::scheme::objective::hash::XformMap<
+				EigenXform,
+				crfXMapValue,
+				::scheme::objective::hash::XformHash_bt24_BCC6
+			> crfXMap;
 
-        // PRINT_SIZE_AS_ERROR<sizeof(crfXMap::Map::value_type)>()();
-        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
+		// PRINT_SIZE_AS_ERROR<sizeof(crfXMap::Map::value_type)>()();
+		BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 128 );
 
-        return make_shared< RifFactoryImpl<crfXMap> >( config );
-    }
+		return make_shared< RifFactoryImpl<crfXMap> >( config );
+	}
 	else if( config.rif_type == "RotScoreSat_1x16" )
 	{
 		using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint16_t>;
