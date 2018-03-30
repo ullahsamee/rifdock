@@ -116,17 +116,17 @@ create_dive_pop_hsearch_task(
     task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
     task_list.push_back(make_shared<HSearchInit>( ));
     for ( int i = 0; i <= rdd.opt.dive_resl-1; i++ ) {
-        task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, rdd.opt.tether_to_input_position_cut ));
+        task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, i, rdd.opt.tether_to_input_position_cut ));
 
         if (rdd.opt.hack_pack_during_hsearch) {
             task_list.push_back(make_shared<SortByScoreTask>( ));
             task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-            task_list.push_back(make_shared<HackPackTask>( i,  rdd.opt.global_score_cut )); }
+            task_list.push_back(make_shared<HackPackTask>( i, i, rdd.opt.global_score_cut )); }
 
         task_list.push_back(make_shared<HSearchFilterSortTask>( i, rdd.opt.beam_size / rdd.opt.DIMPOW2, rdd.opt.global_score_cut, i < rdd.opt.dive_resl-1 ));
 
         if (rdd.opt.dump_x_frames_per_resl > 0) {
-            task_list.push_back(make_shared<DumpHSearchFramesTask>( i, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
+            task_list.push_back(make_shared<DumpHSearchFramesTask>( i, i, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
                                                                     rdd.opt.dump_prefix + "_" + rdd.scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scafftag + boost::str(boost::format("_dp0_resl%i")%i) )); }
         if ( i < rdd.opt.dive_resl-1 ) {
             task_list.push_back(make_shared<HSearchScaleToReslTask>( i, i+1, rdd.opt.DIMPOW2, rdd.opt.global_score_cut )); } } 
@@ -144,17 +144,17 @@ create_dive_pop_hsearch_task(
 
     task_list.push_back(make_shared<HSearchInit>( ));
     for ( int i = rdd.opt.pop_resl-1; i <= rdd.RESLS.size()-1; i++ ) {
-        task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, rdd.opt.tether_to_input_position_cut ));
+        task_list.push_back(make_shared<HSearchScoreAtReslTask>( i, i, rdd.opt.tether_to_input_position_cut ));
 
         if (rdd.opt.hack_pack_during_hsearch) {
             task_list.push_back(make_shared<SortByScoreTask>( ));
             task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-            task_list.push_back(make_shared<HackPackTask>( i, rdd.opt.global_score_cut )); }
+            task_list.push_back(make_shared<HackPackTask>( i, i, rdd.opt.global_score_cut )); }
 
         task_list.push_back(make_shared<HSearchFilterSortTask>( i, rdd.opt.beam_size / rdd.opt.DIMPOW2, rdd.opt.global_score_cut, i < rdd.RESLS.size()-1 ));
 
         if (rdd.opt.dump_x_frames_per_resl > 0) {
-            task_list.push_back(make_shared<DumpHSearchFramesTask>( i, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
+            task_list.push_back(make_shared<DumpHSearchFramesTask>( i, i, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
                                                                     rdd.opt.dump_prefix + "_" + rdd.scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scafftag + boost::str(boost::format("_dp0_resl%i")%i) )); }
 
 

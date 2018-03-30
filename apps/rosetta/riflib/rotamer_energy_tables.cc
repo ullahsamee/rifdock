@@ -57,7 +57,8 @@ void get_onebody_rotamer_energies(
 	std::vector<std::string> const & cachepath,
 	std::string const & cachefile,
 	bool replace_with_ala,
-	float favorable_1be_multiplier
+	float favorable_1be_multiplier,
+	float favorable_1be_cutoff
 ){
 	utility::io::izstream in;
 	std::string cachefile_found = devel::scheme::open_for_read_on_path( cachepath, cachefile, in );
@@ -111,7 +112,7 @@ void get_onebody_rotamer_energies(
 	for( int ir = 1; ir <= scaffold_onebody_rotamer_energies.size(); ++ir ){
 		for( int jr = 0; jr < scaffold_onebody_rotamer_energies[ir-1].size(); ++jr ){
 			float _1be = scaffold_onebody_rotamer_energies[ir-1][jr];
-			if (_1be < 0) {
+			if (_1be < favorable_1be_cutoff) {
 				scaffold_onebody_rotamer_energies[ir-1][jr] = favorable_1be_multiplier * _1be;
 			}
 		}

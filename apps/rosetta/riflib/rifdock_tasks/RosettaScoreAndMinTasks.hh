@@ -29,12 +29,14 @@ struct FilterForRosettaScoreTask : public AnyPointTask {
         float rosetta_score_fraction,
         float rosetta_score_then_min_below_thresh,
         int rosetta_score_at_least,
-        int rosetta_score_at_most
+        int rosetta_score_at_most,
+        bool rosetta_select_random
         ) :
         rosetta_score_fraction_( rosetta_score_fraction ),
         rosetta_score_then_min_below_thresh_( rosetta_score_then_min_below_thresh ),
         rosetta_score_at_least_( rosetta_score_at_least ),
-        rosetta_score_at_most_( rosetta_score_at_most )
+        rosetta_score_at_most_( rosetta_score_at_most ),
+        rosetta_select_random_( rosetta_select_random )
         {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -68,13 +70,15 @@ private:
     float rosetta_score_then_min_below_thresh_;
     int rosetta_score_at_least_;
     int rosetta_score_at_most_;
+    bool rosetta_select_random_;
 
 };
 
 struct FilterForRosettaMinTask : public AnyPointTask {
 
-    FilterForRosettaMinTask( float rosetta_min_fraction ) :
-    rosetta_min_fraction_( rosetta_min_fraction )
+    FilterForRosettaMinTask( float rosetta_min_fraction, int rosetta_min_at_least ) :
+    rosetta_min_fraction_( rosetta_min_fraction ),
+    rosetta_min_at_least_( rosetta_min_at_least )
     {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -105,6 +109,7 @@ private:
 
 private:
     float rosetta_min_fraction_;
+    int rosetta_min_at_least_;
 
 };
 
@@ -112,9 +117,11 @@ private:
 
 struct RosettaScoreTask : public SearchPointWithRotsTask {
 
-    RosettaScoreTask( float rosetta_score_cut, bool will_do_min ) :
+    RosettaScoreTask( int director_resl, float rosetta_score_cut, bool will_do_min, bool store_pose ) :
+        director_resl_( director_resl ),
         rosetta_score_cut_( rosetta_score_cut ),
-        will_do_min_( will_do_min )
+        will_do_min_( will_do_min ),
+        store_pose_( store_pose )
         {}
 
     shared_ptr<std::vector<SearchPointWithRots>>
@@ -126,15 +133,19 @@ struct RosettaScoreTask : public SearchPointWithRotsTask {
 
 
 private:
+    int director_resl_;
     float rosetta_score_cut_;
     bool will_do_min_;
+    bool store_pose_;
 
 };
 
 struct RosettaMinTask : public SearchPointWithRotsTask {
 
-    RosettaMinTask( float rosetta_score_cut ) :
-    rosetta_score_cut_( rosetta_score_cut )
+    RosettaMinTask( int director_resl, float rosetta_score_cut, bool store_pose ) :
+    director_resl_( director_resl ),
+    rosetta_score_cut_( rosetta_score_cut ),
+    store_pose_( store_pose )
     {}
 
     shared_ptr<std::vector<SearchPointWithRots>>
@@ -145,7 +156,9 @@ struct RosettaMinTask : public SearchPointWithRotsTask {
 
 
 private:
+    int director_resl_;
     float rosetta_score_cut_;
+    bool store_pose_;
 
 };
 
@@ -155,9 +168,11 @@ rosetta_score_inner(
     shared_ptr<std::vector< SearchPointWithRots >>  packed_results,
     RifDockData & rdd,
     ProtocolData & pd,
+    int director_resl,
     float rosetta_score_cut,
     bool is_minimizing,
-    bool will_do_min
+    bool will_do_min,
+    bool store_pose
     );
 
 

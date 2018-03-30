@@ -19,6 +19,10 @@
 
 #include <utility/io/ozstream.hh>
 
+#ifdef USEGRIDSCORE
+#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+#endif
+
 #include <chrono>
 
 
@@ -154,6 +158,7 @@ typedef _SearchPoint<DirectorBase> SearchPoint;
 
 
 struct RifDockData {
+    int iscaff;
     RifDockOpt & opt;
     std::vector<float> & RESLS;
     DirectorBase & director;
@@ -181,6 +186,10 @@ struct RifDockData {
 
     utility::io::ozstream & dokout;
     ScaffoldProviderOP scaffold_provider;
+
+#ifdef USEGRIDSCORE
+    shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
+#endif
 };
 
 struct ProtocolData {

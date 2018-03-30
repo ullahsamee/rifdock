@@ -76,9 +76,11 @@ struct HSearchInit : public SearchPointTask {
 struct HSearchScoreAtReslTask : public SearchPointTask {
 
     HSearchScoreAtReslTask(
-        int resl,
+        int director_resl,
+        int rif_resl,
         float tether_to_input_position_cut ) :
-        resl_( resl ),
+        director_resl_( director_resl ),
+        rif_resl_( rif_resl ),
         tether_to_input_position_cut_( tether_to_input_position_cut )
         {}
 
@@ -89,7 +91,8 @@ struct HSearchScoreAtReslTask : public SearchPointTask {
         ProtocolData & pd ) override;
 
 private:
-    int resl_;
+    int director_resl_;
+    int rif_resl_;
     float tether_to_input_position_cut_;
 
 };
@@ -171,13 +174,15 @@ private:
 struct DumpHSearchFramesTask : public SearchPointTask {
 
     DumpHSearchFramesTask(
-        int resl,
+        int director_resl,
+        int rif_resl,
         int dump_x_frames_per_resl,
         bool dump_only_best_frames,
         int dump_only_best_stride,
         std::string prefix
          ) :
-        resl_( resl ),
+        director_resl_( director_resl ),
+        rif_resl_( rif_resl ),
         dump_x_frames_per_resl_( dump_x_frames_per_resl ),
         dump_only_best_frames_( dump_only_best_frames ),
         dump_only_best_stride_( dump_only_best_stride ),
@@ -190,8 +195,9 @@ struct DumpHSearchFramesTask : public SearchPointTask {
         RifDockData & rdd, 
         ProtocolData & pd ) override;
 
-private:        
-    int resl_;
+private:       
+    int director_resl_;
+    int rif_resl_;
     int dump_x_frames_per_resl_;
     bool dump_only_best_frames_;
     int dump_only_best_stride_;

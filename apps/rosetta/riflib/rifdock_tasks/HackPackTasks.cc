@@ -117,7 +117,7 @@ HackPackTask::return_search_point_with_rotss(
                 packed_results[ ipack ].index = isamp;
                 packed_results[ ipack ].prepack_rank = ipack;
                 tscene = ( rdd.scene_pt[omp_get_thread_num()] );
-                director_success = rdd.director->set_scene( isamp, resl_, *tscene );
+                director_success = rdd.director->set_scene( isamp, director_resl_, *tscene );
             }
 
             if ( ! director_success ) {
@@ -126,7 +126,7 @@ HackPackTask::return_search_point_with_rotss(
                 continue;
             }
 
-            packed_results[ ipack ].score = rdd.packing_objectives[resl_]->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+            packed_results[ ipack ].score = rdd.packing_objectives[rif_resl_]->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
 
         } catch( std::exception const & ex ) {
             #ifdef USE_OPENMP
@@ -154,7 +154,7 @@ HackPackTask::return_search_point_with_rotss(
         SearchPointWithRots const & packed_result = packed_results[i];
         if (packed_result.rotamers().size() == 0) continue;
         ScenePtr tscene( rdd.scene_pt[omp_get_thread_num()] );
-        sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene, resl_);
+        sanity_check_hackpack( rdd, packed_result.index, packed_result.rotamers_, tscene, director_resl_, rif_resl_);
     }
 
 
@@ -175,7 +175,8 @@ sanity_check_rots(
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene,
     bool original,
-    int resl 
+    int /*director_resl*/,
+    int rif_resl 
 ) {
 
     devel::scheme::ScoreRotamerVsTarget<
@@ -188,6 +189,10 @@ sanity_check_rots(
     rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
     rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+#ifdef USEGRIDSCORE
+    rot_tgt_scorer.grid_scorer_ = rdd.grid_scorer;
+    rot_tgt_scorer.soft_grid_energies_ = rdd.opt.soft_rosetta_grid_energies;
+#endif
 
 
     bool only_bad = true;
@@ -205,7 +210,7 @@ sanity_check_rots(
         }
 
         std::vector< std::pair< float, int > > rotscores;
-        rdd.rif_ptrs[resl]->get_rotamers_for_xform( bba.position(), rotscores );
+        rdd.rif_ptrs[rif_resl]->get_rotamers_for_xform( bba.position(), rotscores );
 
         bool exists = false;
         for ( std::pair<float,int> const & p : rotscores ) {
@@ -240,21 +245,22 @@ sanity_check_hackpack(
     RifDockIndex i,
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers,
     ScenePtr scene,
-    int resl ) {
+    int director_resl,
+    int rif_resl ) {
 
-    bool success = rdd.director->set_scene( i, resl, *scene );
+    bool success = rdd.director->set_scene( i, director_resl, *scene );
     if ( ! success ) {
         std::cout << "Bad index" << std::endl;
         return;
     }
-    sanity_check_rots(rdd, i, rotamers, scene, true, resl);
+    sanity_check_rots(rdd, i, rotamers, scene, true, director_resl, rif_resl);
 
-    rdd.director->set_scene( i, resl, *scene );
+    rdd.director->set_scene( i, director_resl, *scene );
     SearchPointWithRots temp;
 
-    rdd.packing_objectives[resl]->score_with_rotamers( *scene, temp.rotamers() );
+    rdd.packing_objectives[rif_resl]->score_with_rotamers( *scene, temp.rotamers() );
 
-    sanity_check_rots(rdd, i, temp.rotamers_, scene, false, resl);
+    sanity_check_rots(rdd, i, temp.rotamers_, scene, false, director_resl, rif_resl);
 
 
 }

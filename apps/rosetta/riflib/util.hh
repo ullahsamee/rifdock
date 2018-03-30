@@ -28,6 +28,11 @@
 #include <core/select/residue_selector/ResidueSelector.fwd.hh>
 #include <core/id/AtomID.hh>
 
+#ifdef USEGRIDSCORE
+#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+#include <protocols/ligand_docking/GALigandDock/RotamerData.hh>
+#endif
+
 namespace devel {
 namespace scheme {
 
@@ -91,6 +96,12 @@ std::string str(T const & t, core::Size N=0){
 	return s;
 }
 
+
+void
+apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform);
+
+void
+apply_xform_to_residue( core::conformation::Residue & residue, EigenXform const & xform);
 
 
 
@@ -291,6 +302,10 @@ struct ScoreRotamerVsTarget {
 	float upweight_multi_hbond_ = 0.0;
 	float min_hb_quality_for_multi_ = -0.5;
 	float min_hb_quality_for_satisfaction_ = -0.6;
+#ifdef USEGRIDSCORE
+	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer_;
+	bool soft_grid_energies_;
+#endif
 	ScoreRotamerVsTarget(){}
 
 	template< class Xform, class Int >
@@ -301,8 +316,8 @@ struct ScoreRotamerVsTarget {
 		float bad_score_thresh = 10.0, // hbonds won't get computed if grid score is above this
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
-		int tmp1=-12345, tmp2=-12345;
-		return score_rotamer_v_target_sat( irot, rbpos, tmp1, tmp2, bad_score_thresh, start_atom );
+		int tmp1=-12345, tmp2=-12345, hbcount=0;
+		return score_rotamer_v_target_sat( irot, rbpos, tmp1, tmp2, false, hbcount, bad_score_thresh, start_atom );
 	}
 
 	template< class Xform, class Int >
@@ -312,6 +327,8 @@ struct ScoreRotamerVsTarget {
 		Xform const & rbpos,
 		int & sat1,
 		int & sat2,
+		bool want_sats,	// need to do double score if we want_sats and grid scoring
+		int & hbcount, // how many hbonds? Requires (want_sat or ! grid_scorer_) and upweight_multi_hbond_
 		float bad_score_thresh = 10.0, // hbonds won't get computed if grid score is above this
 		int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
 	) const	{
@@ -320,17 +337,36 @@ struct ScoreRotamerVsTarget {
 		assert( target_field_by_atype_.size() == 22 );
 		float score = 0;
 		typedef typename RotamerIndex::Atom Atom;
-		// typedef typename RotamerIndex::Rotamer Rotamer;
-		for( int iatom = start_atom; iatom < rot_index_p_->nheavyatoms(irot); ++iatom )
-		{
-			Atom const & atom = rot_index_p_->rotamer(irot).atoms_.at(iatom);
-			typename Atom::Position pos = rbpos * atom.position();
-			score += target_field_by_atype_.at(atom.type())->at( pos );
+
+		bool use_grid_scorer = false;
+#ifdef USEGRIDSCORE
+		use_grid_scorer = (bool)grid_scorer_;
+#endif
+
+		if ( use_grid_scorer ) {
+#ifdef USEGRIDSCORE
+			core::conformation::ResidueOP residue = rot_index_p_->get_per_thread_rotamer_at_identity(omp_get_thread_num(), irot);
+			apply_xform_to_residue( *residue, rbpos );
+			core::scoring::lkball::LKB_ResidueInfoOP lkbrinfo = rot_index_p_->get_per_thread_lkbrinfo(omp_get_thread_num(), irot);
+			protocols::ligand_docking::ga_ligand_dock::ReweightableRepEnergy rerep_energy 
+				= grid_scorer_->get_1b_energy( *residue, lkbrinfo, soft_grid_energies_, true );
+			score += rerep_energy.score(1.0);
+#endif
+		} else {
+			for( int iatom = start_atom; iatom < rot_index_p_->nheavyatoms(irot); ++iatom )
+			{
+				Atom const & atom = rot_index_p_->rotamer(irot).atoms_.at(iatom);
+				typename Atom::Position pos = rbpos * atom.position();
+				score += target_field_by_atype_.at(atom.type())->at( pos );
+			}
 		}
+
+
+		bool calculate_hbonds = ( score < bad_score_thresh ) && ( ! use_grid_scorer || want_sats );
 		// in one test: 244m with this, 182m without... need to optimize...
-		if( score < bad_score_thresh ){
+		if( calculate_hbonds ){
 			float hbscore = 0;
-			int hbcount = 0;
+			// int hbcount = 0;
 			if( rot_index_p_->rotamer(irot).acceptors_.size() > 0 ||
 				rot_index_p_->rotamer(irot).donors_   .size() > 0 )
 			{
@@ -388,7 +424,6 @@ struct ScoreRotamerVsTarget {
 						}
 					}
 				}
-
 			}
 			// oh god, fix me..... what should the logic be??? probably "softer" thresh on thishb to count
 			if( upweight_multi_hbond_ != 0 ){
@@ -421,7 +456,7 @@ struct ScoreRotamerVsTarget {
 					hbscore += hbscore * multihb * upweight_multi_hbond_; // should multihb be additive or multiplicative?
 				}
 			}
-			if( hbscore < 0 ) score += hbscore;
+			if( hbscore < 0 && ! use_grid_scorer ) score += hbscore;
 		}
 		return score * upweight_iface_;
 	}
@@ -454,9 +489,6 @@ find_xform_from_identical_pose_to_pose(
 	core::pose::Pose const & pose2,
 	float align_error = 0.2 );
 
-
-void
-apply_xform_to_pose( core::pose::Pose & pose, EigenXform const & xform);
 
 void
 all_by_all_rmsd( 
@@ -522,6 +554,17 @@ xform_pose(
 	core::Size sres=1, 
 	core::Size eres=0
 );
+
+#ifdef USEGRIDSCORE
+shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer>
+prepare_grid_scorer(
+	core::pose::Pose const & target,
+	utility::vector1<core::Size> const & target_res,
+	std::string const & atype_aas = "ACDEFGHIKLMNPQRSTVWY"
+);
+#endif
+
+
 
 
 

@@ -29,6 +29,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, target_rf_oversample )
 	OPT_1GRP_KEY(  String      , rif_dock, target_rf_cache )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, use_rosetta_grid_energies )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, soft_rosetta_grid_energies )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, data_cache_dir )
 
@@ -51,6 +53,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, downscale_atr_by_hierarchy )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier )
+	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier_cutoff )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
@@ -114,6 +117,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
+	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_least )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_fix_target )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_scaffoldbb )
@@ -129,6 +133,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_before )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_filter_n_per_scaffold )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_filter_redundancy_mag )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_debug_dump_scores )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_select_random )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
@@ -182,6 +188,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
+	OPT_1GRP_KEY(  StringVector, rif_dock, seeding_pos )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, seeding_by_patchdock )
+    OPT_1GRP_KEY(  String      , rif_dock, xform_pos )
+    OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_each_seeding_at_least )
+    OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
+
 
 
 
@@ -208,11 +221,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_rf_resl, ""       , 0.25 );
 			NEW_OPT(  rif_dock::target_rf_oversample, "" , 2 );
 			NEW_OPT(  rif_dock::downscale_atr_by_hierarchy, "" , true );
-			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than 0 gets multiplied by this", 1 );
+			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than favorable_1body_cutoff gets multiplied by this", 1 );
+			NEW_OPT(  rif_dock::favorable_1body_multiplier_cutoff, "Anything with a one-body energy less than this gets multiplied by favorable_1body_multiplier", 0 );
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
+			NEW_OPT(  rif_dock::use_rosetta_grid_energies, "Use Frank's grid energies for scoring", false );
+			NEW_OPT(  rif_dock::soft_rosetta_grid_energies, "Use soft option for grid energies", false );
 
 			NEW_OPT(  rif_dock::data_cache_dir, "" , utility::vector1<std::string>(1,"./") );
 			NEW_OPT(  rif_dock::beam_size_M, "" , 10.000000 );
@@ -247,7 +263,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
-			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", false );
+			NEW_OPT(  rif_dock::filter_seeding_positions_separately, "Redundancy filter each seeding position separately", true );
 			NEW_OPT(  rif_dock::filter_scaffolds_separately, "Redundancy filter each scaffold separately", true );
 
 			NEW_OPT(  rif_dock::force_output_if_close_to_input, "" , 1.0 );
@@ -295,6 +311,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
+			NEW_OPT(  rif_dock::rosetta_min_at_least, "", -1 );
 			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
@@ -310,6 +327,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_filter_before, "redundancy filter results before rosetta score", false );
 			NEW_OPT(  rif_dock::rosetta_filter_n_per_scaffold, "use with rosetta_filter_before, num to save per scaffold", 300);
 			NEW_OPT(  rif_dock::rosetta_filter_redundancy_mag, "use with rosetta_filter_before, redundancy mag on the clustering", 0.5);
+			NEW_OPT(  rif_dock::rosetta_debug_dump_scores, "dump lists of scores around the rosetta score and min", false);
+			NEW_OPT(  rif_dock::rosetta_score_select_random, "Select random positions to score rather than best", false);
 
 			NEW_OPT(  rif_dock::extra_rotamers, "", true );
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
@@ -360,6 +379,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
+
+			NEW_OPT(  rif_dock::seeding_pos, "" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::seeding_by_patchdock, "The format of seeding file can be either Rosetta Xform or raw patchdock outputs", true );
+            NEW_OPT(  rif_dock::xform_pos, "" , "" );
+            NEW_OPT(  rif_dock::rosetta_score_each_seeding_at_least, "", -1 );
+            NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
+            NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
 		}
 	#endif
@@ -424,8 +450,11 @@ struct RifDockOpt
 	float       max_rf_bounding_ratio                ;
 	std::string target_rf_cache                      ;
 	bool        only_load_highest_resl               ;
+	bool        use_rosetta_grid_energies            ;
+	bool        soft_rosetta_grid_energies           ;
 	bool        downscale_atr_by_hierarchy           ;
 	float       favorable_1body_multiplier           ;
+	float       favorable_1body_multiplier_cutoff    ;
 	float       favorable_2body_multiplier           ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
@@ -462,6 +491,7 @@ struct RifDockOpt
 	float       rosetta_score_at_least               ;
 	float       rosetta_score_at_most                ;
 	float       rosetta_min_fraction                 ;
+	int         rosetta_min_at_least                 ;
 	bool        rosetta_min_fix_target               ;
 	bool        rosetta_min_targetbb                 ;
 	bool        rosetta_min_scaffoldbb               ;
@@ -479,6 +509,8 @@ struct RifDockOpt
 	bool        rosetta_filter_before                ;
 	int         rosetta_filter_n_per_scaffold        ;
 	float       rosetta_filter_redundancy_mag        ;
+	bool        rosetta_debug_dump_scores            ;
+	bool        rosetta_score_select_random                ;
 
     int         nfold_symmetry                       ;
     std::vector<float> symmetry_axis                 ;
@@ -523,6 +555,13 @@ struct RifDockOpt
 
 	std::vector<std::string> seed_with_these_pdbs    ;
 	bool        seed_include_input                   ;
+
+    std::vector<std::string> seeding_fnames          ;
+    std::string xform_fname                          ;
+    float       rosetta_score_each_seeding_at_least  ;
+    float       cluster_score_cut                    ;
+    float       keep_top_clusters_frac               ;
+    bool        seeding_by_patchdock                 ;
 
 
     void init_from_cli();
@@ -593,8 +632,11 @@ struct RifDockOpt
 		max_rf_bounding_ratio                  = option[rif_dock::max_rf_bounding_ratio                 ]();
 		target_rf_cache                        = option[rif_dock::target_rf_cache                       ]();
 		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
+		use_rosetta_grid_energies              = option[rif_dock::use_rosetta_grid_energies             ]();
+		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
+		favorable_1body_multiplier_cutoff      = option[rif_dock::favorable_1body_multiplier_cutoff     ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
@@ -631,6 +673,7 @@ struct RifDockOpt
   		rosetta_score_at_least                 = option[rif_dock::rosetta_score_at_least                ]();
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
   		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
+  		rosetta_min_at_least                   = option[rif_dock::rosetta_min_at_least                  ]();
   		rosetta_min_fix_target                 = option[rif_dock::rosetta_min_fix_target                ]();
   		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
   		rosetta_min_scaffoldbb                 = option[rif_dock::rosetta_min_scaffoldbb                ]();
@@ -649,6 +692,8 @@ struct RifDockOpt
 		rosetta_filter_redundancy_mag          = option[rif_dock::rosetta_filter_redundancy_mag         ]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
+		rosetta_debug_dump_scores              = option[rif_dock::rosetta_debug_dump_scores             ]();
+		rosetta_score_select_random                  = option[rif_dock::rosetta_score_select_random                 ]();
 
 		dump_x_frames_per_resl				   = option[rif_dock::dump_x_frames_per_resl                ]();
 		dump_only_best_frames				   = option[rif_dock::dump_only_best_frames                 ]();
@@ -683,6 +728,12 @@ struct RifDockOpt
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
 
 		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
+
+		seeding_by_patchdock                    = option[rif_dock::seeding_by_patchdock                 ]();
+        xform_fname                             = option[rif_dock::xform_pos                            ]();
+        rosetta_score_each_seeding_at_least     = option[rif_dock::rosetta_score_each_seeding_at_least  ]();
+        cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
+        keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
 
 
 
@@ -756,6 +807,7 @@ struct RifDockOpt
 
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
+        for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
 
 	}
 

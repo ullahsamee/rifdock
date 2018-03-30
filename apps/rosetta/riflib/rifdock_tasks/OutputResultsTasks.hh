@@ -23,7 +23,12 @@ namespace scheme {
 
 struct OutputResultsTask : public RifDockResultTask {
 
-    OutputResultsTask(  )  
+    OutputResultsTask( 
+        int director_resl,
+        int rif_resl
+    ) :
+        director_resl_( director_resl ),
+        rif_resl_( rif_resl )
     {}
 
     shared_ptr<std::vector<RifDockResult>>
@@ -35,7 +40,8 @@ struct OutputResultsTask : public RifDockResultTask {
 
 
 private:
-
+    int director_resl_;
+    int rif_resl_;
 
 };
 
@@ -44,7 +50,8 @@ dump_rif_result_(
     RifDockData & rdd,
     RifDockResult const & selected_result, 
     std::string const & pdboutfile, 
-    int iresl,
+    int director_resl,
+    int rif_resl,
     bool quiet = true,
     std::string const & resfileoutfile = "",
     std::string const & allrifrotsoutfile = ""
@@ -55,7 +62,8 @@ dump_search_point_(
     RifDockData & rdd,
     SearchPoint const & search_point, 
     std::string const & pdboutfile, 
-    int iresl,
+    int director_resl,
+    int rif_resl,
     bool quiet);
 
 

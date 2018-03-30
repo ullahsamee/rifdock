@@ -60,6 +60,7 @@
 
 	#include <boost/random/mersenne_twister.hpp>
 	#include <boost/random/uniform_real.hpp>
+	#include <boost/format.hpp>
 
 namespace devel {
 namespace scheme {
@@ -215,8 +216,13 @@ struct HBJob {
 			rot_tgt_scorer.target_donors_ = target_donors;
 			rot_tgt_scorer.target_acceptors_ = target_acceptors;
 			rot_tgt_scorer.hbond_weight_ = opts.hbond_weight;
-			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond;
+			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond || opts.dump_bindentate_hbonds;
 			rot_tgt_scorer.upweight_iface_ = 1.0;
+#ifdef USEGRIDSCORE
+			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
+			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
+#endif
+
 
 		}
 
@@ -480,6 +486,7 @@ struct HBJob {
 			if( override ) hbgeomtag += "__" + target_tag;
 
 			utility::io::ozstream *rif_hbond_vis_out = nullptr;
+			utility::io::ozstream *rif_bidentate_out = nullptr;
 
 			omp_set_lock( &hbond_io_locks[hbgeomtag] );
 			if( ! hbond_geoms_cache[hbgeomtag] ){
@@ -640,7 +647,10 @@ struct HBJob {
 
 
 						int sat1=-1, sat2=-1;
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 10.0, 0 );
+						int hbcount=0;
+						bool want_sats = n_sat_groups > 0;
+						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 
+																									want_sats, hbcount, 10.0, 0 );
 						if( positioned_rotamer_score > opts.score_threshold ) continue;
 
 						if( n_sat_groups > 0 ){
@@ -664,6 +674,25 @@ struct HBJob {
 						}
 
 						accumulator->insert( bbactor.position_, positioned_rotamer_score, irot, sat1, sat2 );
+
+						if ( opts.dump_bindentate_hbonds && hbcount >= 2 ) {
+							omp_set_lock(&io_lock);
+								if( rif_bidentate_out == nullptr ){
+									std::string outfilename = params->output_prefix+"RifGen_bidentate_"+boost::str(boost::format("%03i")%ir)+hbgeomtag+".pdb.gz";
+									// std::cout << "init1 " << outfilename << " " << runif << " " << opts.dump_fraction << std::endl;
+									rif_bidentate_out = new utility::io::ozstream( outfilename );
+								}
+								*rif_bidentate_out << "MODEL " << irot << "_" << hbcount << endl;
+								for( auto a : res_atoms ){
+									Vec tmp( a.position()[0]+dx, a.position()[1]+dy, a.position()[2]+dz );
+									tmp = xalign*tmp;
+									a.set_position( tmp );
+									::scheme::actor::write_pdb( *rif_bidentate_out, a, rot_index.chem_index_ );
+								}
+								*rif_bidentate_out << "ENDMDL" << endl;
+
+							omp_unset_lock(&io_lock);
+						}
 
 
 						// // shitty test output
@@ -788,6 +817,11 @@ struct HBJob {
 				}
 			}
 			// omp_unset_lock(&cout_lock);
+
+			if( rif_bidentate_out ){
+				rif_bidentate_out->close();
+				delete rif_bidentate_out;
+			}
 
 			if( rif_hbond_vis_out ){
 				rif_hbond_vis_out->close();

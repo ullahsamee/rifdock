@@ -6,8 +6,17 @@
 #include "scheme/chemical/AtomData.hh"
 #include "scheme/chemical/stub.hh"
 #include "scheme/io/dump_pdb_atom.hh"
+#include "scheme/actor/BackboneActor.hh"
 
 #include <boost/functional/hash.hpp>
+
+#include <numeric/xyzMatrix.hh>
+#include <numeric/xyzTransform.hh>
+#include <core/chemical/ChemicalManager.hh>
+#include <core/chemical/ResidueTypeSet.hh>
+#include <core/conformation/Residue.hh>
+#include <core/conformation/ResidueFactory.hh>
+#include <core/scoring/lkball/LK_BallInfo.hh>
 
 #include <cstdlib>
 #include <string>
@@ -147,8 +156,53 @@ RotamerSpec{
 	std::string resname_;
 	std::vector<float> chi_;
 	int parent_key_, n_proton_chi_;
-
 };
+
+inline
+void
+residue_to_identity( core::conformation::ResidueOP & resop ) {
+	typedef ::Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+
+	Eigen::Vector3f N ( resop->xyz("N" ).x(), resop->xyz("N" ).y(), resop->xyz("N" ).z() );
+	Eigen::Vector3f CA( resop->xyz("CA").x(), resop->xyz("CA").y(), resop->xyz("CA").z() );
+	Eigen::Vector3f C ( resop->xyz("C" ).x(), resop->xyz("C" ).y(), resop->xyz("C" ).z() );
+	// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+	::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
+
+	EigenXform xform = bbactor.position().inverse();
+
+	::numeric::xyzMatrix<float> m;
+	for(int i = 0; i < 3; ++i){
+		for(int j = 0; j < 3; ++j){
+			m(i+1,j+1) = xform.rotation()(i,j);
+		}
+	}
+	::numeric::xyzTransform<float> x(m);
+	x.t[0] = xform.translation()[0];
+	x.t[1] = xform.translation()[1];
+	x.t[2] = xform.translation()[2];
+
+	resop->apply_transform_Rx_plus_v( x.R, x.t );
+}
+
+inline
+core::conformation::ResidueOP
+get_residue_at_identity( 
+	core::chemical::ResidueType const & rtype,
+	std::vector<float> const & chi 
+) {
+
+	core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+	runtime_assert( chi.size() == resop->nchi() );
+	for(int i = 0; i < chi.size(); ++i){
+		resop->set_chi( i+1, chi[i] );
+	}
+
+	residue_to_identity( resop );
+
+	return resop;
+
+}
 
 //template<class _Atom, class RotamerGenerator, class Xform>
 struct
@@ -323,7 +377,11 @@ struct RotamerIndex {
 	std::vector<int> structural_parent_of_;
 	std::vector<Xform> to_structural_parent_frame_;
 
-
+	// this is egregious and is only used with GridScoring
+	// per_thread_rotamers_[thread][irot];
+	// TODO: probably broke it with d_aa code need to be fix
+	std::vector<std::vector<core::conformation::ResidueOP>> per_thread_rotamers_;
+	std::vector<std::vector<core::scoring::lkball::LKB_ResidueInfoOP>> per_thread_lkbrinfo_;
 
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
@@ -708,6 +766,57 @@ struct RotamerIndex {
 		}
 	}
 
+	void
+	build_per_thread_rotamers( int threads ) {
+		per_thread_rotamers_.resize(threads);
+		per_thread_lkbrinfo_.resize(threads);
+
+		for ( int i = 0; i < per_thread_rotamers_.size(); i++ ) {
+			per_thread_rotamers_[i].resize( size() );
+			per_thread_lkbrinfo_[i].resize( size() );
+		}
+
+
+		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+
+		for ( int irot = 0; irot < size(); irot++ ) {
+			// take care of d vs. l 
+			core::chemical::ResidueTypeOP rtypeOP;
+			if (d_l_map_.find(resname(irot)) != d_l_map_.end()) {
+				core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(d_l_map_.find(resname(irot))->second).get_self_ptr();
+ 				core::chemical::ResidueTypeCOP tmp_dcop = rts.lock() -> get_d_equivalent(rt_tmp);
+ 				rtypeOP = tmp_dcop -> clone();
+ 			} else {
+ 				core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(resname(irot)).get_self_ptr();
+ 				rtypeOP = rt_tmp -> clone();
+ 			}
+			//core::chemical::ResidueType const & rtype = rts.lock()->name_map(resname(irot));
+ 			core::chemical::ResidueType const & rtype = *rtypeOP;
+			core::conformation::ResidueOP rsd = get_residue_at_identity(rtype, chis(irot));
+			core::scoring::lkball::LKB_ResidueInfoOP lkbrinfo( new core::scoring::lkball::LKB_ResidueInfo( *rsd ));
+
+			for ( int i = 0; i < per_thread_rotamers_.size(); i++ ) {
+				per_thread_rotamers_[i].at(irot) = rsd->clone();
+				per_thread_lkbrinfo_[i].at(irot) = std::dynamic_pointer_cast<core::scoring::lkball::LKB_ResidueInfo>(lkbrinfo->clone());
+			}
+		}
+	}
+
+	core::conformation::ResidueOP
+	get_per_thread_rotamer( int thread, int irot ) const {
+		return per_thread_rotamers_.at(thread).at(irot);
+	}
+	core::conformation::ResidueOP
+	get_per_thread_rotamer_at_identity( int thread, int irot ) const {
+		core::conformation::ResidueOP resop = get_per_thread_rotamer( thread, irot );
+		residue_to_identity( resop );
+		return resop;
+	}
+	core::scoring::lkball::LKB_ResidueInfoOP
+	get_per_thread_lkbrinfo( int thread, int irot ) const {
+		return per_thread_lkbrinfo_.at(thread).at(irot);
+	}
+
 	std::vector<float> const & chis(int rotnum) const { return rotamers_.at(rotnum).chi_; }
 	std::vector<Atom> const & atoms(int rotnum) const { return rotamers_.at(rotnum).atoms_; }
 
@@ -1024,6 +1133,8 @@ std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG,X> const & ri
 	
  	return out;
 }
+
+
 
 
 

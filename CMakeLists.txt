@@ -112,6 +112,10 @@ if ( ${USEHDF5} )
     add_definitions("-DUSEHDF5")
 endif()
 
+if ( ${USEGRIDSCORE} )
+    add_definitions("-DUSEGRIDSCORE")
+endif()
+
 
 
 add_subdirectory(schemelib)

@@ -28,6 +28,8 @@
 
 #include <boost/mpl/vector.hpp>
 
+#include <unordered_map>
+
 namespace devel {
 namespace scheme {
 
@@ -122,7 +124,11 @@ struct RifDockIndex {
 
 };
 
-
+inline
+std::ostream & operator << ( std::ostream & out, RifDockIndex const & rdi ){
+    out << "RifDockIndex: " << rdi.nest_index << " " << rdi.seeding_index << " " << rdi.scaffold_index;
+    return out;
+}
 
 
 // Typedefs related to the Hierarchical Search Director
@@ -222,6 +228,10 @@ private:
     bool treat_seeds_differently_;
     bool treat_scaffolds_differently_;
 };
+
+
+template< class __AnyPoint >
+using _AnyPointVectorsMap = std::unordered_map< RifDockIndex, std::vector<__AnyPoint>, SelectiveRifDockIndexHasher, SelectiveRifDockIndexEquater >;
 
 
 

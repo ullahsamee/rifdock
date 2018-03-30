@@ -120,43 +120,68 @@ struct RichardsonRotData {
 		std::map<std::string, std::string> const & d_l_map
 	){
 		// std::map<std::string,std::string> d_l_map;
-		std::vector<int> atypemap = get_rif_atype_map();
+		//std::vector<int> atypemap = get_rif_atype_map();
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-		// am I D or L
-		auto it = d_l_map.find(resname);
-		//std::cout << "input: " << resname << std::endl;
-		// D residue
-		if (it != d_l_map.end()) {
-			resname = it -> second;
-		}
-		//std::cout << "output: " << resname << std::endl;
-		core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
-		core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+		core::chemical::ResidueTypeOP rtypeOP;
+		if (d_l_map.find(resname) != d_l_map.end()) {
+			core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(d_l_map.find(resname)->second).get_self_ptr();
+			core::chemical::ResidueTypeCOP tmp_dcop = rts.lock() -> get_d_equivalent(rt_tmp);
+			rtypeOP = tmp_dcop -> clone();
+			} else {
+				core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(resname).get_self_ptr();
+				rtypeOP = rt_tmp -> clone();
+			}
+		//core::chemical::ResidueType const & rtype = rts.lock()->name_map(resname(irot));
+		core::chemical::ResidueType const & rtype = *rtypeOP;
+		core::conformation::ResidueOP resop = ::scheme::chemical::get_residue_at_identity(rtype, chi);
 		core::pose::Pose pose;
 		pose.append_residue_by_jump(*resop,1);
-		//std::cerr << resname << ":" << chi.size() << " " << resop->name3() << ":" << resop->nchi() << std::endl;
-		runtime_assert( chi.size() == resop->nchi() );
-		// flip if D
-		if (it != d_l_map.end()) {
-			core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
-        	core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);
-        	core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
-        	resop = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
-	    	resname = resop -> name3();
-	    	pose.clear();
-	    	pose.append_residue_by_jump(*resop,1);   
-	    	runtime_assert( chi.size() == resop->nchi() );
-		}
+		// // am I D or L
+		// auto it = d_l_map.find(resname);
+		// //std::cout << "input: " << resname << std::endl;
+		// // D residue
+		// if (it != d_l_map.end()) {
+		// 	resname = it -> second;
+		// }
+		// //std::cout << "output: " << resname << std::endl;
+		// core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname );
+
+		// core::conformation::ResidueOP resop = ::scheme::chemical::get_residue_at_identity(rtype, chi );
+
+		// core::pose::Pose pose;
+		// pose.append_residue_by_jump(*resop,1);
+		// //std::cerr << resname << ":" << chi.size() << " " << resop->name3() << ":" << resop->nchi() << std::endl;
+		// runtime_assert( chi.size() == resop->nchi() );
+		// // flip if D
+		// if (it != d_l_map.end()) {
+		// 	core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+  //       	core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, resname);
+  //       	core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+  //       	resop = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+	 //    	resname = resop -> name3();
+	 //    	pose.clear();
+	 //    	pose.append_residue_by_jump(*resop,1);   
+	 //    	runtime_assert( chi.size() == resop->nchi() );
+		// }
 
 		for(int i = 0; i < chi.size(); ++i){
 			pose.set_chi( i+1, 1, chi[i] );
 		}
 
-		Eigen::Vector3f N ( resop->xyz("N" ).x(), resop->xyz("N" ).y(), resop->xyz("N" ).z() );
-		Eigen::Vector3f CA( resop->xyz("CA").x(), resop->xyz("CA").y(), resop->xyz("CA").z() );
-		Eigen::Vector3f C ( resop->xyz("C" ).x(), resop->xyz("C" ).y(), resop->xyz("C" ).z() );
-		// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
-		::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
+
+		{
+			core::conformation::Residue const & res = pose.residue(1);
+			Eigen::Vector3f N ( res.xyz("N" ).x(), res.xyz("N" ).y(), res.xyz("N" ).z() );
+			Eigen::Vector3f CA( res.xyz("CA").x(), res.xyz("CA").y(), res.xyz("CA").z() );
+			Eigen::Vector3f C ( res.xyz("C" ).x(), res.xyz("C" ).y(), res.xyz("C" ).z() );
+			// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
+			::scheme::actor::BackboneActor<EigenXform> bbactor( N, CA , C );
+
+			runtime_assert( xform_magnitude( bbactor.position(), 1) < 0.001 );	// double check that we are in fact at the identity
+		}
+
+
+		std::vector<int> atypemap = get_rif_atype_map();
 
 		nheavyatoms = resop->nheavyatoms()-1; // remove O
 		for(int ia = 1; ia <= resop->natoms(); ++ia){
@@ -166,7 +191,7 @@ struct RichardsonRotData {
 			p[0] = pose.residue(1).xyz(ia)[0];
 			p[1] = pose.residue(1).xyz(ia)[1];
 			p[2] = pose.residue(1).xyz(ia)[2];
-			p = bbactor.position().inverse() * p;
+
 				// Position const &    p,
 				// int                 type     = 0,
 				// std::string const & atomname = AtomData::default_atomname(),
@@ -206,14 +231,6 @@ struct RichardsonRotData {
 		get_acceptor_rays( pose, 1, hbopt, acceptors );
 		// std::cout << bbactor.position().rotation() << std::endl;
 		// std::cout << bbactor.position().translation().transpose() << std::endl;
-		for( int i = 0; i < donors.size(); ++i ){
-			donors[i].horb_cen  = bbactor.position().inverse()            * donors[i].horb_cen;
-			donors[i].direction = bbactor.position().inverse().rotation() * donors[i].direction;
-		}
-		for( int i = 0; i < acceptors.size(); ++i ){
-			acceptors[i].horb_cen  = bbactor.position().inverse()            * acceptors[i].horb_cen;
-			acceptors[i].direction = bbactor.position().inverse().rotation() * acceptors[i].direction;
-		}
 
 
 		// get acceptors
@@ -238,7 +255,6 @@ struct RichardsonRotData {
 					pa[0] = pose.residue(1).xyz(i)[0];
 					pa[1] = pose.residue(1).xyz(i)[1];
 					pa[2] = pose.residue(1).xyz(i)[2];
-					pa = bbactor.position().inverse() * pa;
 					SchemeAtom a(
 						pa, //pose.residue(1).xyz(i),          // Position const &    p,
 						atypemap[resop->atom_type_index(i)],  // int                 type     = 0,
@@ -256,7 +272,6 @@ struct RichardsonRotData {
 					po[0] = pose.residue(1).orbital_xyz(j)[0];
 					po[1] = pose.residue(1).orbital_xyz(j)[1];
 					po[2] = pose.residue(1).orbital_xyz(j)[2];
-					po = bbactor.position().inverse() * po;
 					SchemeAtom o(
 						po, //pose.residue(1).orbital_xyz(j),  // Position const &    p,
 						-1,                              // int                 type     = 0,
@@ -287,7 +302,6 @@ struct RichardsonRotData {
 			pb[0] = pose.residue(1).xyz(ib)[0];
 			pb[1] = pose.residue(1).xyz(ib)[1];
 			pb[2] = pose.residue(1).xyz(ib)[2];
-			pb = bbactor.position().inverse() * pb;
 			SchemeAtom b(
 				pb, //pose.residue(1).xyz(ib),         // Position const &    p,
 				atypemap[resop->atom_type_index(ib)], // int                 type     = 0,
@@ -305,7 +319,6 @@ struct RichardsonRotData {
 			ph[0] = pose.residue(1).xyz(i)[0];
 			ph[1] = pose.residue(1).xyz(i)[1];
 			ph[2] = pose.residue(1).xyz(i)[2];
-			ph = bbactor.position().inverse() * ph;
 			SchemeAtom h(
 				ph, //pose.residue(1).xyz(i),  // Position const &    p,
 				12345,  // int                 type     = 0,
@@ -326,6 +339,9 @@ struct RichardsonRotData {
 		}
 
 	}
+
+
+
 
 core::pack::rotamer_set::RotamerSetOP
 get_rosetta_rot_set(
@@ -757,6 +773,7 @@ get_richardson_rot_data(
 
 }
 
+//<<<<<<< HEAD
 //foward decleration
 void
 get_rotamer_spec_default(
@@ -766,37 +783,36 @@ get_rotamer_spec_default(
 	bool use_d_aa,
 	bool use_l_aa
 );
-std::shared_ptr<RotamerIndex>
+// std::shared_ptr<RotamerIndex>
+// get_rotamer_index(
+	
+// 	::scheme::chemical::RotamerIndexSpec const& rot_index_spec
+// =======
+// >>>>>>> master
+
+shared_ptr<RotamerIndex>
 get_rotamer_index(
-	
-	::scheme::chemical::RotamerIndexSpec const& rot_index_spec
-
+	::scheme::chemical::RotamerIndexSpec const & rot_index_spec,
+	bool build_per_thread_rotamers
 ){
-	std::shared_ptr<RotamerIndex> rot_index = std::make_shared<RotamerIndex>();
-
-	
-	//rot_index_spec.fill_rotamer_index(rot_index);
-	//std::cout << "finish fill rotamer index now try loading specific rotamers ...  " << std::endl;
-	
-	//utility::io::ozstream outfile("test_out.text");
-	//rot_index_spec.save(outfile);
-	//outfile.close();
-
-	//utility::io::izstream infile("test_in.text");
-	//rot_index_spec.load(infile);
-	//infile.close();
+	shared_ptr<RotamerIndex> rot_index = std::make_shared<RotamerIndex>();
 	
 	std::cout << "finish builidng rotamer_index now try fill rotamer index ... " << std::endl;
-
 	rot_index_spec.fill_rotamer_index(*rot_index);
+
+	if (build_per_thread_rotamers) {
+		std::cout << "Building per-thread rotamers for grid scoring..." << std::endl;
+		rot_index->build_per_thread_rotamers(omp_max_threads());
+	}
+
 	return rot_index;
 }
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
-	std::string cachefile
-
+	std::string cachefile,
+	bool build_per_thread_rotamers
 ){
-	std::shared_ptr<RotamerIndex> rot_index = std::make_shared<RotamerIndex>();
+
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	//load rotamer spec from cache file
 	utility::io::izstream infile(cachefile);
@@ -806,8 +822,7 @@ get_rotamer_index(
 			+ "-rif_dock:rot_spec_fname /home/bcov/sc/random/old_rif_rotamer_index_spec.txt");
 	}
 	rot_index_spec.load(infile);
-	rot_index_spec.fill_rotamer_index(*rot_index);
-	return rot_index;
+	return get_rotamer_index( rot_index_spec, build_per_thread_rotamers );
 }
 
 
@@ -1342,9 +1357,12 @@ void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts 
 		else // use lkball for sidechains
 		{
 			auto waters = lkbinfo.waters()[iacc];
+			int num_waters = lkbinfo.n_attached_waters()[iacc];
+
 			auto basexyz = rsd.xyz(iacc);
 			std::vector<HBondRay> rays_this_atom;
-			for( auto watxyz : waters ){
+            for ( int i_water = 1; i_water <= num_waters; ++i_water ) {
+            	auto watxyz = waters[i_water];
 				bool is_donor_wat = false;
 				for( core::Size ih = rsd.attached_H_begin(iacc); ih <= rsd.attached_H_end(iacc); ++ih){
 					auto hxyz = rsd.xyz(ih);

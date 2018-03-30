@@ -172,7 +172,10 @@ namespace rif {
 				rot_tgt_scorer.hbond_weight_ = this->opts.hbond_weight;
 				rot_tgt_scorer.upweight_multi_hbond_ = this->opts.upweight_multi_hbond;
 				rot_tgt_scorer.upweight_iface_ = 1.0;
-
+#ifdef USEGRIDSCORE
+				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
+				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
+#endif
 			}
 		}
 
@@ -259,7 +262,7 @@ namespace rif {
                 for (auto it : params -> rot_index_p -> d_l_map_) {
                 	 
                 	for (auto const & name_it: myresname[i_hspot_res]){
-                    	std::cout << it.second << " " << name_it << std::endl;
+                    	//std::cout << it.second << " " << name_it << std::endl;
                     	if (it.second == name_it){//pose.residue(i_hspot_res).name3()) {
                     		if (this->opts.use_d_aa) {
                     			d_name.push_back(it.first);
@@ -303,7 +306,7 @@ namespace rif {
         			if (iter == end +0){hot_atom3(0,0) = iter->xyz()[0];hot_atom3(1,0) = iter->xyz()[1];hot_atom3(2,0) = iter->xyz()[2];}
         			iter --;
       			}
-      			std::cout << "crash again" << std::endl;
+      			//std::cout << "crash again" << std::endl;
       			hot_atom1 = hot_atom1 - target_vec; 
 				hot_atom2 = hot_atom2 - target_vec; 
 				hot_atom3 = hot_atom3 - target_vec;	
@@ -328,11 +331,11 @@ namespace rif {
 					//for (auto const & it: myresname[i_hspot_res]){
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
-							std::cout << it << std::endl;
-							std::cout << d_name[i] << std::endl;
+							//std::cout << it << std::endl;
+							//std::cout << d_name[i] << std::endl;
 						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_name[i])
 						{
-							std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
+							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
 							EigenXform impose; //transform for mapping the Rot to Rif
 							::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
 							int latoms = params -> rot_index_p -> natoms(irot);

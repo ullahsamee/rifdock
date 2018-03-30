@@ -35,6 +35,13 @@
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <complex>
 
+#include <random>
+#include<boost/random/uniform_real.hpp>
+
+#ifdef USEGRIDSCORE
+#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
+#endif
+
 
 namespace devel {
 namespace scheme {
@@ -241,6 +248,56 @@ public:
         return RifBaseKeyRange(RifBaseKeyIter(b), RifBaseKeyIter(e));
     }
 
+        
+        // randomly dump rif residues defined by res_names, and "*" means all 20 amino acids.
+        bool random_dump_rotamers( std::vector< std::string > res_names, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const override
+        {
+            std::mt19937 rng(time(0));
+            boost::uniform_real<> uniform;
+            bool dump_all = false;
+            if ( std::find( res_names.begin(), res_names.end(), "*" ) != res_names.end() ) dump_all = true;
+            
+            const RifBase * base = this;
+            shared_ptr<XMap const> from;
+            base->get_xmap_const_ptr( from );
+            
+            
+            utility::io::ozstream fout( file_name );
+            int64_t count = 1;
+            for (auto const & v : from->map_ )
+            {
+                // this is the position of this grid, will not be used here.
+                EigenXform x = from->hasher_.get_center( v.first );
+                typename XMap::Value const & rotscores = v.second;
+                static int const Nrots = XMap::Value::N;
+                for( int i_rs = 0; i_rs < Nrots; ++i_rs )
+                {
+                    if( rotscores.empty(i_rs) ) {
+                        break;
+                    }
+                    int irot = rotscores.rotamer(i_rs);
+                    float score = rotscores.score(i_rs);
+                    if ( dump_all || std::find(res_names.begin(), res_names.end(), rot_index_p->rotamers_[irot].resname_) != res_names.end() )
+                    {
+                        if ( uniform(rng) <= dump_fraction )
+                        {
+                            fout << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
+                            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                                a.set_position( x * a.position() );
+                                a.nonconst_data().resnum = count;
+                                a.nonconst_data().chain = 'A';
+                                ::scheme::actor::write_pdb( fout, a, nullptr );
+                            }
+                            fout << std::string("ENDMDL") << std::endl;
+                            ++count;
+                        }
+                    }
+                }
+            }
+            fout.close();
+            
+        }
+        
 
     // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
     bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
@@ -501,6 +558,10 @@ std::string get_rif_type_from_file( std::string fname )
 			std::vector<VoxelArrayPtr> const & target_field_by_atype,
 			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
 			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
+#ifdef USEGRIDSCORE
+            shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
+            bool soft_grid_energies,
+#endif
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
 			packing_ = true;
@@ -516,6 +577,10 @@ std::string get_rif_type_from_file( std::string fname )
 			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
 			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
 			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+#ifdef USEGRIDSCORE
+            rot_tgt_scorer_.grid_scorer_ = grid_scorer;
+            rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
+#endif
 			packopts_ = hackpackopts;
 			always_available_rotamers_.clear();
 			for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
@@ -592,7 +657,6 @@ std::string get_rif_type_from_file( std::string fname )
 
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
 
-
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
@@ -601,10 +665,14 @@ std::string get_rif_type_from_file( std::string fname )
                                                         rot_tgt_scorer_.score_rotamer_v_target( irot, bb.position(), 10.0, 4 ) :
                                                         score_rot_v_target;
 
+                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
+
 						score_rot_v_target = recalc_rot_v_tgt;
 				
 						if (( score_rot_v_target + rot1be < packopts_.rotamer_inclusion_threshold &&
 						      score_rot_v_target          < packopts_.rotamer_inclusion_threshold ) || rotamer_satisfies){
+
+                        // std::cout << ires << " " << irot << " " << score_rot_v_target << " " << rot1be << " " << recalc_rot_v_tgt << std::endl;
 
 							float sat_bonus = 0;
 							if (rotamer_satisfies) {
@@ -693,9 +761,9 @@ std::string get_rif_type_from_file( std::string fname )
 				//std::vector< std::pair<intRot,intRot> > selected_rotamers;
 				for( int i = 0; i < result.rotamers_.size(); ++i ){
 					BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
-					int sat1=-1, sat2=-1;
+					int sat1=-1, sat2=-1, hbcount=0;
 					float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat(
-									result.rotamers_[i].second, bb.position(), sat1, sat2, 10.0, 4 );
+									result.rotamers_[i].second, bb.position(), sat1, sat2, n_sat_groups_ > 0, hbcount, 10.0, 4 );
 					// todo: should do extra selection here?
 					// if( recalc_rot_v_tgt < -1.0 ){
 					// 	selected_rotamers.push_back( result.rotamers_[i] );
@@ -993,6 +1061,10 @@ struct RifFactoryImpl :
     			*config.target_field_by_atype,
     			*config.target_donors,
     			*config.target_acceptors,
+#ifdef USEGRIDSCORE
+                config.grid_scorer,
+                config.soft_grid_energies,
+#endif
     			local_packopts
     		);
         }
