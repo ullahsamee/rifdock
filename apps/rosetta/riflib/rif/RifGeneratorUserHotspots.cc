@@ -282,8 +282,12 @@ namespace rif {
 
 				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
 
-				// possible name still OK 
+				// possible name still OK
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
+                if (input_nheavy < 3) { // this can happen for disembodied hydroxyls
+                    input_nheavy = 3;
+                }
+                
 				
 
 				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
@@ -321,6 +325,12 @@ namespace rif {
 						
 					// assign rif_res position by column
 					int hatoms = params -> rot_index_p -> nheavyatoms(irot);
+                    
+                    // TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
+                    // Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
+                    // For TYR: the last two heavy atoms and 'HH'
+                    // For SER: the last two heavy atoms and 'HG'
+                    // For THR: the last two heavy atoms and 'HG1'
 					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
 					EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
