@@ -29,13 +29,20 @@ namespace scheme {
 // horb_cen - direction = O/N xyz
 
 // on the acceptor:
-// horb_cen = random point that is the orbital
+// horb_cen = orbital by rosetta definition
 // horb_cen - direction * ORBLEN = N/O xyz
 
 // ORBLEN = 0.61
 
-// hbond_length(N/C - N/C) = (don.horb_cen - don.direction) - (acc.horb_cen - 0.61*direction)
-//                         
+// Notes from brian and longxing
+// This used to be based on the H -> orbital distance
+// This gave a pearsonr=0.1
+// After changing it to use the H -> acceptor distance
+//   the pearsonr=0.64
+//
+// The plot of rif energies vs rosetta eneriges now looks like a triangle
+//   Everything rif think is bad, rosetta agrees
+//   But rif accepts some things that rosetta does not    
 
 template< class HBondRay >
 float score_hbond_rays(
@@ -44,11 +51,8 @@ float score_hbond_rays(
     float non_directional_fraction = 0.0 // 0.0 - 1.0
 ){
 
-    Eigen::Vector3f donor_O = don.horb_cen - don.direction;
-    Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
-    float dist = (donor_O - accep_O).norm();
-    float diff = ( (don.horb_cen-acc.horb_cen).norm() - 1.05 );
-    float og_diff = diff;
+    const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
+    float diff = ( (don.horb_cen-accep_O).norm() - 2.00 );
     diff = diff < 0 ? diff*1.5 : diff; // increase dis pen if too close
     float const max_diff = 0.8;
     diff = diff >  max_diff ?  max_diff : diff;
@@ -62,7 +66,6 @@ float score_hbond_rays(
     float const nds = non_directional_fraction;
     score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
 
-    std::cout << "dist: " << dist << " diff: " << diff << " score: " << score << std::endl;
     return score;
 }
 
