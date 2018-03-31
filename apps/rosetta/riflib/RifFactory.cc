@@ -731,8 +731,8 @@ std::string get_rif_type_from_file( std::string fname )
 			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
 			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
 #ifdef USEGRIDSCORE
-			shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
-			bool soft_grid_energies,
+            shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
+            bool soft_grid_energies,
 #endif
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
@@ -749,9 +749,10 @@ std::string get_rif_type_from_file( std::string fname )
 			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
 			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
 			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+			rot_tgt_scorer_.min_hb_quality_for_satisfaction_ = hackpackopts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
-			rot_tgt_scorer_.grid_scorer_ = grid_scorer;
-			rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
+            rot_tgt_scorer_.grid_scorer_ = grid_scorer;
+            rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
 #endif
 			packopts_ = hackpackopts;
 			always_available_rotamers_.clear();
@@ -790,7 +791,7 @@ std::string get_rif_type_from_file( std::string fname )
 
 			// Added by brian ////////////////////////
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
-			runtime_assert( data_cache );
+            runtime_assert( data_cache );
 			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
 			//////////////////////////////////////////
 
@@ -908,18 +909,18 @@ std::string get_rif_type_from_file( std::string fname )
 				if( n_sat_groups_ > 0 && score_rot_tot < 5.0 ){
 					rotscores.mark_sat_groups( i_rs, scratch.is_satisfied_ );
 				}
-				if ( score_rot_tot < 0.0 ) {
-					// std::cout << "Adding " << ires << std::endl;
-					scratch.has_rifrot_[ires] = true;
-				}
+                if ( score_rot_tot < 0.0 ) {
+                    // std::cout << "Adding " << ires << std::endl;
+                    scratch.has_rifrot_[ires] = true;
+                }
 
 				bestsc = std::min( score_rot_tot , bestsc );
 				//}
 			}
 
-			// This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
-			//  Theoretically fixable, but correct rotamers may have been pushed out of the rif
-			// // add native scaffold rotamers TODO: this is bugged somehow?
+            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
+            // // add native scaffold rotamers TODO: this is bugged somehow?
 			if( packing_ && packopts_.add_native_scaffold_rots_when_packing ){
 				for( int irot = scratch.scaffold_rotamers_->at(ires).first; irot < scratch.scaffold_rotamers_->at(ires).second; ++irot ){
 					if( scratch.hackpack_->using_rotamer( ires, irot ) ){
@@ -936,8 +937,8 @@ std::string get_rif_type_from_file( std::string fname )
 				}
 			}
 
-			// This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
-			//  Theoretically fixable, but correct rotamers may have been pushed out of the rif
+            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
 			if( packing_ ){
 				for( int irot : always_available_rotamers_ ){
 					float const irot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);

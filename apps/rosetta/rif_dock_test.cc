@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
 		packopts.hbond_weight         = opt.hbond_weight;
 		packopts.upweight_iface       = opt.upweight_iface;
 		packopts.upweight_multi_hbond = opt.upweight_multi_hbond;
+		packopts.min_hb_quality_for_satisfaction = opt.min_hb_quality_for_satisfaction;
 		packopts.use_extra_rotamers   = opt.extra_rotamers;
 		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
@@ -603,6 +604,7 @@ int main(int argc, char *argv[]) {
 			    rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
 			    rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
 			    rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
+			    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
 			#ifdef USEGRIDSCORE
 			    rot_tgt_scorer.grid_scorer_ = grid_scorer;
 			    rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;

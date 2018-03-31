@@ -101,6 +101,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, downweight_hydrophobics )
 	OPT_1GRP_KEY(  Real         , rifgen, hbond_weight )
 	OPT_1GRP_KEY(  Real         , rifgen, upweight_multi_hbond )
+	OPT_1GRP_KEY( Real          , rifgen, min_hb_quality_for_satisfaction )
 	OPT_1GRP_KEY( IntegerVector , rifgen, repulsive_atoms )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
@@ -166,6 +167,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::downweight_hydrophobics          , "" , false );
 		NEW_OPT(  rifgen::hbond_weight                     , "" , 2.0 );
 		NEW_OPT(  rifgen::upweight_multi_hbond             , "" , 0.0 );
+		NEW_OPT(  rifgen::min_hb_quality_for_satisfaction  , "" , -0.6 );
 		NEW_OPT(  rifgen::repulsive_atoms                  , "" , utility::vector1<int>() );
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
@@ -339,6 +341,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.debug = false;
 			hbgenopts.hbond_weight = option[rifgen::hbond_weight]();
 			hbgenopts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			hbgenopts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 
 			rif_generators_out.push_back(
@@ -386,6 +389,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			hspot_opts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			rif_generators_out.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );

@@ -28,6 +28,7 @@ struct RifGeneratorUserHotspotsOpts {
     int   hotspot_nsamples = 10000;
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0.0;
+	float min_hb_quality_for_satisfaction = -0.6;
     int  dump_hotspot_samples = 0;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;

@@ -40,6 +40,7 @@ struct HackPackOpts
 	float hbond_weight = 2.0;
 	float upweight_iface = 1.0;
 	float upweight_multi_hbond = 0.0;
+	float min_hb_quality_for_satisfaction = -0.6;
 	bool  use_extra_rotamers = true;
 	int   always_available_rotamers_level = 0;
 	bool  packing_use_rif_rotamers = true;
