@@ -66,9 +66,6 @@ float score_hbond_rays(
     float const nds = non_directional_fraction;
     score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
 
-
-    std::cout << "dist: " << 0 << " diff: " << 0 << " score: " << score << std::endl;
-
     return score;
 }
 

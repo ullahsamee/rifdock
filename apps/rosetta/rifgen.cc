@@ -441,6 +441,9 @@ int main(int argc, char *argv[]) {
 	runtime_assert_msg( option[rifgen::rif_hbond_dump_fraction]() < 0.011 , "-rif_hbond_dump_fraction should be small, or you will be very sad..." );
 	runtime_assert_msg( option[rifgen::rif_apo_dump_fraction]()   < 0.011 , "-rif_apo_dump_fraction should be small, or you will be very sad..." );
 
+	runtime_assert_msg( option[rifgen::min_hb_quality_for_satisfaction]() < 0 && option[rifgen::min_hb_quality_for_satisfaction]() > -1, 
+		"-min_hb_quality_for_satisfaction must be between -1 and 0");
+
 	std::string outdir = option[ rifgen::outdir ]();
 	std::string outfile = outdir + "/" + option[ rifgen::outfile ]();
 	runtime_assert_msg( outfile != "", "rifgen::outfine is blank!");
