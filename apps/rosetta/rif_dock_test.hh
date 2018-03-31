@@ -806,7 +806,8 @@ struct RifDockOpt
 			rosetta_score_ddg_only = false;
 		}
 
-
+		runtime_assert_msg( min_hb_quality_for_satisfaction < 0 && min_hb_quality_for_satisfaction > -1, 
+			"-min_hb_quality_for_satisfaction must be between -1 and 0");
 
         nfold_symmetry = option[rif_dock::nfold_symmetry]();
         symmetry_axis.clear();
