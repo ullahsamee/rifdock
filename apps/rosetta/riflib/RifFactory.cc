@@ -695,6 +695,7 @@ std::string get_rif_type_from_file( std::string fname )
 			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
 			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
 			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
+			rot_tgt_scorer_.min_hb_quality_for_satisfaction_ = hackpackopts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
             rot_tgt_scorer_.grid_scorer_ = grid_scorer;
             rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
