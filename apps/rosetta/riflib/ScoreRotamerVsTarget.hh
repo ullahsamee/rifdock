@@ -40,9 +40,11 @@ namespace scheme {
 // After changing it to use the H -> acceptor distance
 //   the pearsonr=0.64
 //
-// The plot of rif energies vs rosetta eneriges now looks like a triangle
-//   Everything rif think is bad, rosetta agrees
-//   But rif accepts some things that rosetta does not    
+// Further improvements:
+//   Dirscore used to be based on the acceptor donor ray dot product
+//   A better way is to dot both against the A -> H ray
+//   Doing this and either averaging or multiplying the dots gives r=0.88
+//   Squaring the H term gives r=0.93
 
 template< class HBondRay >
 float score_hbond_rays(
@@ -61,7 +63,14 @@ float score_hbond_rays(
     // sigmoid -like shape on distance score
     float score = sqr( 1.0 - sqr( diff/max_diff ) ) * -1.0;
     assert( score <= 0.0 );
-    float dirscore = -don.direction.dot( acc.direction );
+
+    const Eigen::Vector3f h_to_a = ( accep_O - don.horb_cen ).normalized();
+    float const h_dirscore = std::max<float>( 0, don.direction.dot( h_to_a ) );
+    float const a_dirscore = std::max<float>( 0, acc.direction.dot( h_to_a ) * -1.0 );
+
+    float dirscore = h_dirscore * h_dirscore * a_dirscore;
+
+    // float dirscore = -don.direction.dot( acc.direction );
     dirscore = dirscore < 0 ? 0.0 : dirscore; // is positive
     float const nds = non_directional_fraction;
     score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
