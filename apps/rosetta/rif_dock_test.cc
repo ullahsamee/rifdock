@@ -71,6 +71,9 @@
 	#include <scheme/objective/hash/XformHash.hh>
 	#include <riflib/scaffold/ScaffoldDataCache.hh>
 	#include <riflib/scaffold/ScaffoldProviderFactory.hh>
+	#include <riflib/BurialManager.hh>
+	#include <riflib/UnsatManager.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 
 
 // Task system
@@ -143,6 +146,7 @@ int main(int argc, char *argv[]) {
 		packopts.hbond_weight         = opt.hbond_weight;
 		packopts.upweight_iface       = opt.upweight_iface;
 		packopts.upweight_multi_hbond = opt.upweight_multi_hbond;
+		packopts.min_hb_quality_for_satisfaction = opt.min_hb_quality_for_satisfaction;
 		packopts.use_extra_rotamers   = opt.extra_rotamers;
 		packopts.always_available_rotamers_level = opt.always_available_rotamers_level;
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
@@ -231,11 +235,12 @@ int main(int argc, char *argv[]) {
 		
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies );
+
+		::scheme::chemical::RotamerIndexSpec rot_index_spec;
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies, rot_index_spec );
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		// Brian resurrects this thing. It's really useful for debugging
 		std::cout << "================ RotamerIndex ===================" << std::endl;\
 		std::cout << rot_index << std::endl;
 		std::cout << "=================================================" << std::endl;
@@ -249,6 +254,7 @@ int main(int argc, char *argv[]) {
 		rotrfopts.scale_atr      = opt.rotrf_scale_atr;
 		::devel::scheme::RotamerRFTablesManager rotrf_table_manager( rot_index_p, rotrfopts );
 		// rotrf_table_manager.preinit_all();
+		
 
 		MakeTwobodyOpts make2bopts;
 		// hacked by brian             VVVV
@@ -268,6 +274,9 @@ int main(int argc, char *argv[]) {
 	utility::vector1<core::Size> target_res;
 	std::vector<HBondRay> target_donors, target_acceptors;
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
+	shared_ptr<BurialManager> burial_manager;
+	shared_ptr<UnsatManager> unsat_manager;
+	bool donor_acceptors_from_file = false;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
@@ -293,16 +302,68 @@ int main(int argc, char *argv[]) {
 		::devel::scheme::HBRayOpts hbopt;
 
 
-		hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
+		// hbopt.satisfied_atoms = ::devel::scheme::get_satisfied_atoms(target);
 
 		// utility_exit_with_message("MAKE SURE LKBALL STUFF ISN'T FUCKING UP!!!");
 
+		std::vector<std::pair<int,std::string>> donor_anames;
+		std::vector<std::pair<int,std::string>> acceptor_anames;
 
 		BOOST_FOREACH( core::Size ir, target_res ){
-			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors );
-			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors );
+			::devel::scheme::get_donor_rays   ( target, ir, hbopt, target_donors, donor_anames );
+			::devel::scheme::get_acceptor_rays( target, ir, hbopt, target_acceptors, acceptor_anames );
 		}
+
+		if ( opt.target_donors.length() > 0 || opt.target_acceptors.length() > 0 ) {
+			donor_acceptors_from_file = true;
+
+			if ( ! ( opt.target_donors.length() > 0 && opt.target_acceptors.length() > 0 ) ) {
+				utility_exit_with_message("Must specify both -rifgen:target_donors AND -rifgen:target_acceptors!!!");
+			}
+
+			target_donors = load_hbond_rays( opt.target_donors );
+			target_acceptors = load_hbond_rays( opt.target_acceptors );
+			
+
+		}
+
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+
+		if ( opt.unsat_orbital_penalty > 0 ) {
+			if ( ! donor_acceptors_from_file ) {
+				utility_exit_with_message("Must specify both -rifgen:target_donors and -rifgen:target_acceptors to use -unsat_orbital_penalty");
+			}
+
+
+
+			unsat_manager = make_shared<UnsatManager>( hbond::DefaultUnsatPenalties, rot_index_p, opt.unsat_debug );
+
+			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
+			unsat_manager->find_target_presatisfied( target );
+
+			if (opt.dump_presatisfied_donors_acceptors) {
+				unsat_manager->dump_presatisfied();
+			}
+
+
+			BurialOpts burial_opts;
+			burial_opts.neighbor_distance_cutoff = opt.unsat_neighbor_cutoff;
+			burial_opts.neighbor_count_weights.resize(0);
+			for ( int i = 0; i < 20; i++ ) {
+				float weight;
+				if ( i < opt.unsat_neighbor_cutoff ) {
+					weight = 0;
+				} else {
+					weight = opt.unsat_orbital_penalty;
+				}
+				burial_opts.neighbor_count_weights.push_back( weight );
+			}
+			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			burial_manager->set_target_neighbors( target );
+
+
+		}
 		// {
 		// 	{
 		// 		std::vector<HBondRay> tmpdon, tmpacc, tmpacclk;
@@ -513,12 +574,69 @@ int main(int argc, char *argv[]) {
 			float dump_frac = opt.dump_rifgen_near_pdb_frac;
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_rifgen_near_pdb));
 			core::conformation::Residue const & res = pose.residue(1);
-			numeric::xyzVector<core::Real> n_xyz = res.xyz("N");
 
 			std::stringstream fname;
 			fname << "rifgen_dump_" << opt.dump_rifgen_near_pdb << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
 
 			rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
+			if ( opt.dump_rifgen_text ) {
+				rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
+			}
+
+			std::stringstream fname2;
+			fname2 << "rifgen_dump_center_" << opt.dump_rifgen_near_pdb << ".pdb.gz";
+
+			rif_ptrs.back()->dump_rotamers_at_bin_center( res, fname2.str(), rot_index_p );
+
+		}
+
+		if ( opt.score_this_pdb.length() > 0) {
+			std::cout << "Loading " << opt.score_this_pdb << std::endl;
+			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.score_this_pdb));
+
+		    devel::scheme::ScoreRotamerVsTarget<
+			        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+			    > rot_tgt_scorer;
+			    rot_tgt_scorer.rot_index_p_ = rot_index_p;
+			    rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
+			    rot_tgt_scorer.target_donors_ = target_donors;
+			    rot_tgt_scorer.target_acceptors_ = target_acceptors;
+			    rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
+			    rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
+			    rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
+			    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
+			#ifdef USEGRIDSCORE
+			    rot_tgt_scorer.grid_scorer_ = grid_scorer;
+			    rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
+			#endif
+
+			std::cout << "Scoring " << opt.score_this_pdb << " against target" << std::endl;
+
+
+			for ( int ires = 1; ires <= pose.size(); ires++ ) {
+
+
+				core::conformation::Residue const & res = pose.residue(ires);
+				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
+
+				if (irot == -1) {
+					std::cout << "Res: " << ires << " No matching rotamer (within 5 deg for all chi)" << std::endl;
+					continue;
+				} 
+
+				BBActor bb( res );
+
+	            int sat1 = -1, sat2 = -1, hbcount = 0;
+	            float score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb.position(), sat1, sat2, true, hbcount, 10.0, 4 );
+
+	            std::cout << "Res: " << ires
+	                      << " score: " << score
+	                      << " irot: " << irot
+	                      << " nhbonds: " << hbcount
+	                      << " sat1: " << sat1
+	                      << " sat2: " << sat2
+	                      << std::endl;
+	        }
 
 		}
 	}
@@ -587,15 +705,42 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.target_donors = &target_donors;
 				rso_config.target_acceptors = &target_acceptors;
-				rso_config.n_sat_groups = 1000;//target_donors.size() + target_acceptors.size();
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
 #ifdef USEGRIDSCORE
             	rso_config.grid_scorer = grid_scorer;
             	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;
 #endif
+            	rso_config.burial_manager = burial_manager;
+            	rso_config.unsat_manager = unsat_manager;
 
+            if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
+            	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {
+            		utility_exit_with_message("New error message to fix an old bug!!! You can fix this error!!!"
+            			"\n1. If you are using hotspots, you need to add this flag (and convince Brian/TaYi to fix this)"
+            			"\n    -rif_dock:num_hotspots <number of hotspots>"
+            			"\n   Feel free to overestimate. 1000 is pretty safe if in doubt."
+            			"\n2. Otherwise you need to add these two flags"
+            			"\n    -rif_dock:target_donors    <target donors file .pdb.gz>"
+            			"\n    -rif_dock:target_acceptors <target acceptors file .pdb.gz>"
+            			"\n   These files are already in your rifgen folder. Type ls <rifgen folder> *donor* to find them."
+            			);
+            	}
+
+            	if ( opt.num_hotspots != 0 ) {
+            		rso_config.n_sat_groups = opt.num_hotspots;
+            	} else {
+            		rso_config.n_sat_groups = target_donors.size() + target_acceptors.size();
+            	}
+
+
+            } else {
+            	rso_config.n_sat_groups = 0;
+            }
 			
+
+				
+
 			ScenePtr scene_prototype;
 			std::vector< ObjectivePtr > objectives;
 			std::vector< ObjectivePtr > packing_objectives;
@@ -731,6 +876,20 @@ int main(int argc, char *argv[]) {
 					     << F( 7, 3, sc[1]       ) << endl;
 
 				}
+				if ( opt.test_hackpack ) {
+					scaffold_provider->setup_twobody_tables( ScaffoldIndex() );
+					if ( opt.unsat_orbital_penalty > 0 ) {
+						scaffold_provider->setup_twobody_tables_per_thread( ScaffoldIndex() );
+					}
+
+					std::vector<float> sc = packing_objectives.back()->scores(*scene_minimal);
+					cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
+										     << F( 7, 3, sc[0]+sc[1] ) << " "
+										     << F( 7, 3, sc[0]       ) << " "
+										     << F( 7, 3, sc[1]       ) << endl;
+
+				}
+
 
 			}
 			// std::cout << "scores for scaffold in original position: " << std::endl;

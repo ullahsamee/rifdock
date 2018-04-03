@@ -100,6 +100,11 @@ SingleFileScaffoldProvider::setup_twobody_tables( ::scheme::scaffold::TreeIndex 
     get_data_cache_slow( i )->setup_twobody_tables( rot_index_p, opt, make2bopts, rotrf_table_manager);
 }
 
+void 
+SingleFileScaffoldProvider::setup_twobody_tables_per_thread( ::scheme::scaffold::TreeIndex i ) {
+    get_data_cache_slow( i )->setup_twobody_tables_per_thread( );
+}
+
 
 
 }}

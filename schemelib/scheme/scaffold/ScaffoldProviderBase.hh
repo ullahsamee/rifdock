@@ -49,6 +49,8 @@ struct ScaffoldProviderBase {
 
     virtual void setup_twobody_tables( ScaffoldIndex i ) = 0;
 
+    virtual void setup_twobody_tables_per_thread( ScaffoldIndex i ) = 0;
+
     virtual void modify_pose_for_output( ScaffoldIndex i, core::pose::Pose & pose ) {}
 
 };

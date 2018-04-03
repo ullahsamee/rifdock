@@ -21,6 +21,7 @@ namespace scheme { namespace objective { namespace storage {
 template< class _Data = float >
 struct TwoBodyTable {
 	typedef _Data Data;
+	typedef TwoBodyTable<Data> This;
 	typedef boost::multi_array< Data, 2 > Array2D;
 	typedef boost::multi_array< Array2D, 2 > TwoBody;
 
@@ -30,7 +31,7 @@ struct TwoBodyTable {
 	std::vector<int> nsel_;
 	TwoBody twobody_;
 
-	TwoBodyTable() {} // for use with load()
+	TwoBodyTable() {} // for use with load() and clone()
 
 	TwoBodyTable( size_t nres, size_t nrots ) { init( nres, nrots); }
 
@@ -43,6 +44,29 @@ struct TwoBodyTable {
 		sel2all_.resize( boost::extents[nres][nrots] );
 		nsel_.resize( nres, 0 );
 		twobody_.resize( boost::extents[nres][nres] );
+	}
+
+	shared_ptr<This>
+	clone() {
+		shared_ptr<This> tbt = make_shared<This>();
+		tbt->nres_ = nres_;
+		tbt->nrot_ = nrot_;
+		tbt->init( nres_, nrot_ );
+		tbt->onebody_ = onebody_;
+		tbt->all2sel_ = all2sel_;
+		tbt->sel2all_ = sel2all_;
+		tbt->nsel_ = nsel_;
+
+
+  		for( int ir = 0; ir < nres_; ++ir ){
+  		for( int jr = 0; jr < nres_; ++jr ){
+  			if (twobody_[ir][jr].num_elements() == 0) continue;
+  			tbt->init_twobody(ir, jr);
+  			tbt->twobody_[ir][jr] = twobody_[ir][jr];
+  		}
+		}
+		runtime_assert( check_equal(*tbt));
+		return tbt;
 	}
 
 	Data const & onebody( int ires, int irot ) const {
@@ -96,6 +120,41 @@ struct TwoBodyTable {
 		}
 	}
 
+	void
+	upweight_edge( int ires, int jres, int irot, int jrot, Data upweight ) {
+		int const ir = ires > jres ? ires : jres;
+		int const jr = ires > jres ? jres : ires;
+		if( twobody_[ir][jr].num_elements() > 0 ){
+			int const irotlocal = all2sel_[ires][irot];
+			int const jrotlocal = all2sel_[jres][jrot];
+			if( irotlocal < 0 || jrotlocal < 0 ){
+				return;
+			}
+			// swap if jres > ires
+			int const irl = ires > jres ? irotlocal : jrotlocal;
+			int const jrl = ires > jres ? jrotlocal : irotlocal;
+			twobody_[ ir ][ jr ][ irl ][ jrl ] += upweight;
+		} 
+	}
+	void
+	restore_edge( int ires, int jres, int irot, int jrot, shared_ptr<TwoBodyTable<Data> const> twob )
+	{
+		int const ir = ires > jres ? ires : jres;
+		int const jr = ires > jres ? jres : ires;
+		if( twobody_[ir][jr].num_elements() > 0 ){
+			int const irotlocal = all2sel_[ires][irot];
+			int const jrotlocal = all2sel_[jres][jrot];
+			if( irotlocal < 0 || jrotlocal < 0 ){
+				return;
+			}
+			// swap if jres > ires
+			int const irl = ires > jres ? irotlocal : jrotlocal;
+			int const jrl = ires > jres ? jrotlocal : irotlocal;
+			twobody_[ ir ][ jr ][ irl ][ jrl ] = twob->twobody_[ ir ][ jr ][ irl ][ jrl ];
+		} 
+	}
+
+
 	// assumes onebody energies have been filled in at this point!
 	void init_onebody_filter( float thresh ){
 		all2sel_.resize( boost::extents[nres_][nrot_] );
@@ -136,24 +195,33 @@ struct TwoBodyTable {
 
 	bool check_equal( TwoBodyTable<Data> const & other ) const {
 		bool iseq = true;
+		
   		iseq &= nres_ == other.nres_;
   		iseq &= nrot_ == other.nrot_;
   		if( !iseq ) return false;
+
   		for( int i = 0; i < nres_*nrot_; ++i ){
 	  		iseq &= sel2all_.data()[i] == other.sel2all_.data()[i];
 	  		iseq &= all2sel_.data()[i] == other.all2sel_.data()[i];
 	  		iseq &= onebody_.data()[i] == other.onebody_.data()[i];
   		}
+  		if( !iseq ) return false;
+
   		for( int i = 0; i < nres_; ++i ){
 	  		iseq &= nsel_[i] == other.nsel_[i];
   		}
+  		if( !iseq ) return false;
+
   		for( int ir = 0; ir < nres_; ++ir ){
   		for( int jr = 0; jr < nres_; ++jr ){
+
   			iseq &= twobody_[ir][jr].num_elements() == other.twobody_[ir][jr].num_elements();
 	  		if( !iseq ) return false;
 	  		for( int k = 0; k < twobody_[ir][jr].num_elements(); ++k ){
 		  		iseq &= twobody_[ir][jr].data()[k] == other.twobody_[ir][jr].data()[k];
 	  		}
+
+
   		}}
   		return iseq;
 	}

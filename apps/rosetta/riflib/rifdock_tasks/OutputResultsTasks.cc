@@ -13,11 +13,13 @@
 #include <riflib/types.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/rifdock_tasks/HackPackTasks.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/pose/PDBInfo.hh>
+#include <core/pose/util.hh>
 #include <core/pose/Pose.hh>
 
 #include <string>
@@ -160,6 +162,7 @@ dump_rif_result_(
     rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
     rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = rdd.packopts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
     rot_tgt_scorer.grid_scorer_ = rdd.grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = rdd.opt.soft_rosetta_grid_energies;
@@ -179,7 +182,8 @@ dump_rif_result_(
     std::vector< std::pair< int, std::string > > brians_infolabels;
 
     std::ostringstream packout, allout;
-    std::map< int, std::string > pikaa;
+    // TYU change to vector of strings instead of string
+    std::map< int, std::vector<std::string> > pikaa;
     int chain_no = pose_from_rif.num_chains();   
     int res_num = pose_from_rif.size() + 1;
     const std::string chains = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -214,9 +218,10 @@ dump_rif_result_(
                         res_num++;
                         chain_no++;
                     }
-                    char oneletter = rdd.rot_index_p->oneletter(irot);
+                    // TYU change to std::string for expanded oneletter map
+                    std::string oneletter = rdd.rot_index_p->oneletter(irot);
                     if( std::find( pikaa[ires+1].begin(), pikaa[ires+1].end(), oneletter ) == pikaa[ires+1].end() ){
-                        pikaa[ires+1] += oneletter;
+                        pikaa[ires+1].push_back(oneletter);
                     }
 
 
@@ -268,7 +273,24 @@ dump_rif_result_(
         int ires = scaffres_l2g.at( selected_result.rotamers().at(ipr).first );
         int irot =                  selected_result.rotamers().at(ipr).second;
 
-        core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+        std::string myResName = rdd.rot_index_p->resname(irot);
+        auto myIt = rdd.rot_index_p -> d_l_map_.find(myResName);
+
+        core::conformation::ResidueOP newrsd;
+        if (myIt != rdd.rot_index_p -> d_l_map_.end()){
+            core::chemical::ResidueType const & rtype = rts.lock()->name_map( myIt -> second );
+            newrsd = core::conformation::ResidueFactory::create_residue( rtype );
+            core::pose::Pose pose;
+            pose.append_residue_by_jump(*newrsd,1);
+            core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+            core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, myIt -> second);
+            core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+            newrsd = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+        } else {
+            newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+        }
+        //core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+
         pose_from_rif.replace_residue( ires+1, *newrsd, true );
         resfile << ires+1 << " A NATRO" << std::endl;
         expdb << ires+1 << (ipr+1<selected_result.numrots()?",":""); // skip comma on last one
@@ -292,7 +314,14 @@ dump_rif_result_(
             for( auto p : pikaa ){
                 std::sort( p.second.begin(), p.second.end() );
                 pose_to_dump.pdb_info()->add_reslabel(p.first, "PIKAA" );
-                pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
+                // TYU create output string for reslabel
+                std::string out_string;
+                for (auto i : p.second) {
+                    out_string += i;
+                    out_string += ",";
+                }
+                pose_to_dump.pdb_info()->add_reslabel(p.first, out_string );
+                //pose_to_dump.pdb_info()->add_reslabel(p.first, p.second );
             }
         } else {
             std::sort(needs_RIFRES.begin(), needs_RIFRES.end());

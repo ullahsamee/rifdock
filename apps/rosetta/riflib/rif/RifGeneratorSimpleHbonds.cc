@@ -34,6 +34,7 @@
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
 	#include <riflib/rif/make_hbond_geometries.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 
 	#include <map>
 
@@ -185,6 +186,7 @@ struct HBJob {
 			::devel::scheme::get_acceptor_rays( target, ir, params->hbopt, target_acceptors );
 		}
 		{
+			// these get used now. Don't change the names!!!
 			if( target_donors.size() ){
 				utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
 				::devel::scheme::dump_hbond_rays( donout, target_donors, true );
@@ -218,6 +220,7 @@ struct HBJob {
 			rot_tgt_scorer.hbond_weight_ = opts.hbond_weight;
 			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond || opts.dump_bindentate_hbonds;
 			rot_tgt_scorer.upweight_iface_ = 1.0;
+			rot_tgt_scorer.min_hb_quality_for_satisfaction_ = opts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
 			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
@@ -239,7 +242,14 @@ struct HBJob {
 			HBJob j;
 			j.ires = ir;
 			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
+				std::string acc_resname = accresn_user[iacc];
+				if (params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) != params -> rot_index_p -> d_l_map_.end()) {
+					acc_resname = params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) -> second;
+				} 
+				// else {
+				// 	core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
+				// }
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(acc_resname);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << accresn_user[iacc] << " into rif, no N,CA,C" << std::endl;
 					continue;
@@ -258,7 +268,12 @@ struct HBJob {
 				}
 			}
 			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_user[idon]);
+				std::string don_resname = donresn_user[idon];
+				if (params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) != params -> rot_index_p -> d_l_map_.end()) {
+					don_resname = params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) -> second;
+				}
+				//std::cout << "----------"<<donresn_user[idon] << std::endl;
+				core::chemical::ResidueType const & rtype = rts.lock()->name_map(don_resname);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
 					continue;

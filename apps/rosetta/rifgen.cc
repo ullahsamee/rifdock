@@ -101,6 +101,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, downweight_hydrophobics )
 	OPT_1GRP_KEY(  Real         , rifgen, hbond_weight )
 	OPT_1GRP_KEY(  Real         , rifgen, upweight_multi_hbond )
+	OPT_1GRP_KEY( Real          , rifgen, min_hb_quality_for_satisfaction )
 	OPT_1GRP_KEY( IntegerVector , rifgen, repulsive_atoms )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
@@ -115,7 +116,9 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
-    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion) // added options
+    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -123,6 +126,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_ang_resls         )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_radii      )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_bounds     )
+
 
 
 	void register_options() {
@@ -163,6 +167,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::downweight_hydrophobics          , "" , false );
 		NEW_OPT(  rifgen::hbond_weight                     , "" , 2.0 );
 		NEW_OPT(  rifgen::upweight_multi_hbond             , "" , 0.0 );
+		NEW_OPT(  rifgen::min_hb_quality_for_satisfaction  , "" , -0.6 );
 		NEW_OPT(  rifgen::repulsive_atoms                  , "" , utility::vector1<int>() );
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
@@ -178,6 +183,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+        NEW_OPT(  rifgen::use_d_aa							, "" , false);
+        NEW_OPT(  rifgen::use_l_aa							, "" , true);
 
 
 
@@ -279,7 +286,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 		std::vector<float> & RESLS,
 		numeric::xyzVector<core::Real> target_center,
 		std::string outfile,
-		std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out
+		std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out,
+		bool & needs_donors_acceptors
 	){
 	using basic::options::option;
 		using namespace basic::options::OptionKeys;
@@ -320,7 +328,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			 do_hbond |= option[rifgen::accres]().size() > 0;
 			 do_hbond &= option[rifgen::hbond_weight]() > 0;
 		if( do_hbond ){
-
+			needs_donors_acceptors = rif->has_sat_data_slots();
 
 			devel::scheme::rif::RifGeneratorSimpleHbondsOpts hbgenopts;
 			hbgenopts.tip_tol_deg = option[ rifgen::tip_tol_deg ]();
@@ -333,6 +341,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.debug = false;
 			hbgenopts.hbond_weight = option[rifgen::hbond_weight]();
 			hbgenopts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			hbgenopts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 
 			rif_generators_out.push_back(
@@ -376,9 +385,11 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
             hspot_opts.hotspot_score_thresh = option[ rifgen::hotspot_score_thresh]();
             hspot_opts.dump_hotspot_samples = option[ rifgen::dump_hotspot_samples]();
+            hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
+			hspot_opts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			rif_generators_out.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );
@@ -429,6 +440,9 @@ int main(int argc, char *argv[]) {
 
 	runtime_assert_msg( option[rifgen::rif_hbond_dump_fraction]() < 0.011 , "-rif_hbond_dump_fraction should be small, or you will be very sad..." );
 	runtime_assert_msg( option[rifgen::rif_apo_dump_fraction]()   < 0.011 , "-rif_apo_dump_fraction should be small, or you will be very sad..." );
+
+	runtime_assert_msg( option[rifgen::min_hb_quality_for_satisfaction]() < 0 && option[rifgen::min_hb_quality_for_satisfaction]() > -1, 
+		"-min_hb_quality_for_satisfaction must be between -1 and 0");
 
 	std::string outdir = option[ rifgen::outdir ]();
 	std::string outfile = outdir + "/" + option[ rifgen::outfile ]();
@@ -542,14 +556,19 @@ int main(int argc, char *argv[]) {
 	// 	numeric::xyzVector<core::Real> target_center,
 	// 	std::string outfile,
 	// 	std::vector< ::scheme::shared_ptr<devel::scheme::rif::RifGenerator> > & rif_generators_out
+	bool needs_donors_acceptors = false;
 	
-	shared_ptr<RifBase> rif = init_rif_and_generators(rif_factory, bounding_by_atype, RESLS, target_center, outfile, generators);
+	shared_ptr<RifBase> rif = init_rif_and_generators(rif_factory, bounding_by_atype, RESLS, target_center, outfile, generators, needs_donors_acceptors );
 
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	std::cout << "Preparing rotamer index spec..." << std::endl;
-	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers]());
-
+	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa](), option[rifgen::use_l_aa]());
+	// 	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
+	// 	utility::io::ozstream spec_out(rot_spec_fname);
+	// 	rot_index_spec.save(spec_out);
+	// 	spec_out.close();
+	// utility_exit_with_message("exit check");
 	for( int igen = 0; igen < generators.size(); ++igen )
 	{
 		//cache the input 
@@ -562,6 +581,34 @@ int main(int argc, char *argv[]) {
 
 	shared_ptr<RotamerIndex> rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec, option[rifgen::use_rosetta_grid_energies]() );
 		RotamerIndex & rot_index( *rot_index_p );
+
+	// std::cerr << rot_index.size() << std::endl;
+
+	// for( int irot = 0; irot < rot_index.n_primary_rotamers(); ++irot ){
+	// 	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 		utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 		rot_index.dump_pdb_with_children(out,irot);
+	// 		out.close();
+	// 	}
+	// }
+
+	// for( int irot = 0; irot < rot_index.size(); ++irot ){
+	//  	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 	 	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 	 	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
+	// 	 	out.close();
+	//  	}
+	// }
+
+	// for( int isp : rot_index.structural_parents_ ){
+	// 	if (rot_index.resname(isp) == "DTY" || rot_index.resname(isp) == "HIS" || rot_index.resname(isp) == "LYS") {
+	// 		utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
+	// 		rot_index.dump_pdb_by_structure(out,isp);
+	// 		out.close();
+	// 	}
+	// }
+
+	//utility_exit_with_message("testing out extra rotamers");
 
 		
 		// utility::io::ozstream riout( "trp_rots.pdb" );
@@ -948,6 +995,10 @@ int main(int argc, char *argv[]) {
 	for( auto s : bounding_grid_fnames )
 		std::cout << "-rif_dock:target_bounding_xmaps " << s << std::endl;
 	std::cout <<     "-rif_dock:target_rif            " << outfile << std::endl;
+	if ( needs_donors_acceptors ) {
+		std::cout << "-rif_dock:target_donors         " << params->output_prefix + "donors.pdb.gz" << std::endl;
+		std::cout << "-rif_dock:target_acceptors      " << params->output_prefix + "acceptors.pdb.gz" << std::endl;
+	}
 	std::cout <<     "-rif_dock:extra_rotamers        " << option[rifgen::extra_rotamers]() << std::endl;
 	std::cout <<     "-rif_dock:extra_rif_rotamers    " << option[rifgen::extra_rif_rotamers]() << std::endl;
 	std::cout <<     "-rif_dock:rot_spec_fname        " << rot_spec_fname << std::endl;

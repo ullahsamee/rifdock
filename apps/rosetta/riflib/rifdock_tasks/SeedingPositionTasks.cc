@@ -154,7 +154,7 @@ create_rifine_task(
 
     RifDockOpt const & opt = rdd.opt;
     int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
-    int final_resl = rdd.RESLS.size() - 1;
+    int final_resl = rdd.rif_ptrs.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
     task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));

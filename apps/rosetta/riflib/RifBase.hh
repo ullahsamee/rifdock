@@ -100,9 +100,17 @@ struct RifBase
 	virtual void finalize_rif() = 0;
 
     virtual RifBaseKeyRange key_range() const = 0;
+    
+    // To randomly dump rif residues defined by res names, and "*" means all 20 amino acids.
+    virtual bool random_dump_rotamers( std::vector< std::string > res_names_dump, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     virtual bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
                                            float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
+
+    virtual void dump_rotamers_at_bin_center( core::conformation::Residue const & res, std::string const & file_name, 
+                                    shared_ptr<RotamerIndex> rot_index_p ) const = 0;
+    virtual bool dump_rifgen_text_near_res( core::conformation::Residue const & res, 
+                                           float dump_dist, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     // for convenience
     std::vector< std::pair< float, int > >
