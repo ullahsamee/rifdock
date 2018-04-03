@@ -342,31 +342,16 @@ namespace rif {
                             // TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
                             // Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
                             if (pose.residue(i_hspot_res).name3() == "OH_"){
-                                if (resname(irot) == "TYR") {
-                                    // For TYR: the last two heavy atoms and 'HH'
-                                    int atmno = 0; // tmp
-                                    Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
-                                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - atmno ).position()
-                                        );
-                                } else if (resname(irot) == "THR") {
-                                    // For SER: the last two heavy atoms and 'HG'
-                                    int atmno = 0; // tmp
-                                    Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - atmno ).position()
-                                         );
-                                } else if (resname(irot) == "SER") {
-                                    // For THR: the last two heavy atoms and 'HG1'
-                                    int atmno = 0; // tmp
-                                    Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
-                                         rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - atmno ).position()
-                                         );
-                                }
+                                // For TYR: the last two heavy atoms and 'HH' -- atom number 20
+                                // For SER: the last two heavy atoms and 'HG'
+                                // For THR: the last two heavy atoms and 'HG1'
+                                // both are atom number 10.
+                                int atmno = (resname(irot) == "TYR") ? 20 : 10;
+                                Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
+                                    rotamer_atoms.at( atmno ).position()
+                                );
                             }
 
 							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
