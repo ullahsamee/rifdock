@@ -139,6 +139,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_before )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_filter_n_per_scaffold )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_filter_redundancy_mag )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_even_if_no_score )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_debug_dump_scores )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_select_random )
 
@@ -344,6 +345,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_filter_before, "redundancy filter results before rosetta score", false );
 			NEW_OPT(  rif_dock::rosetta_filter_n_per_scaffold, "use with rosetta_filter_before, num to save per scaffold", 300);
 			NEW_OPT(  rif_dock::rosetta_filter_redundancy_mag, "use with rosetta_filter_before, redundancy mag on the clustering", 0.5);
+			NEW_OPT(  rif_dock::rosetta_filter_even_if_no_score, "Do the filtering for rosetta score and min even if you don't actually score/min", false );
 			NEW_OPT(  rif_dock::rosetta_debug_dump_scores, "dump lists of scores around the rosetta score and min", false);
 			NEW_OPT(  rif_dock::rosetta_score_select_random, "Select random positions to score rather than best", false);
 
@@ -541,6 +543,7 @@ struct RifDockOpt
 	bool        rosetta_filter_before                ;
 	int         rosetta_filter_n_per_scaffold        ;
 	float       rosetta_filter_redundancy_mag        ;
+	bool        rosetta_filter_even_if_no_score      ;
 	bool        rosetta_debug_dump_scores            ;
 	bool        rosetta_score_select_random                ;
 
@@ -736,6 +739,7 @@ struct RifDockOpt
 		rosetta_filter_before                  = option[rif_dock::rosetta_filter_before                 ]();
 		rosetta_filter_n_per_scaffold          = option[rif_dock::rosetta_filter_n_per_scaffold         ]();
 		rosetta_filter_redundancy_mag          = option[rif_dock::rosetta_filter_redundancy_mag         ]();
+		rosetta_filter_even_if_no_score        = option[rif_dock::rosetta_filter_even_if_no_score       ]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
 		rosetta_debug_dump_scores              = option[rif_dock::rosetta_debug_dump_scores             ]();
