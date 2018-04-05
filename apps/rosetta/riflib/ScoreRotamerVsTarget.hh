@@ -192,7 +192,7 @@ struct ScoreRotamerVsTarget {
                             } else if ( sat2 == -1 || sat2 == best_sat) {
                                 sat2 = best_sat;
                             }
-                        } else {
+                        } else if ( best_score < this->min_hb_quality_for_satisfaction_ ) {
                             if(      sat1==-1 ) sat1 = best_sat;
                             else if( sat2==-1 ) sat2 = best_sat;
                         }
@@ -234,7 +234,7 @@ struct ScoreRotamerVsTarget {
                             } else if ( sat2 == -1 || sat2 == best_sat) {
                                 sat2 = best_sat;
                             }
-                        } else {
+                        } else if ( best_score < this->min_hb_quality_for_satisfaction_ ) {
                             if(      sat1==-1 ) sat1 = best_sat;
                             else if( sat2==-1 ) sat2 = best_sat;
                         }
