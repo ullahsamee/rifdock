@@ -200,7 +200,7 @@ struct ScoreRotamerVsTarget {
                             if( used_tgt_donor[best_sat] >= min_hb_quality_for_multi_ ) ++hbcount;
                         }
                         // remove the double counting of hbond??? Do I need to do this, or ..........
-                        if ( used_tgt_donor[ best_sat ] != 9e9 ){
+                        if ( used_tgt_donor[ best_sat ] <= 9e9 ){
                             hbscore += ( best_score - used_tgt_donor[best_sat] ) * hbond_weight_;
                         } else {
                             hbscore += best_score * hbond_weight_;
@@ -242,7 +242,7 @@ struct ScoreRotamerVsTarget {
                             if( used_tgt_acceptor[best_sat] >= min_hb_quality_for_multi_ ) ++hbcount;
                         }
                         // remove the double counting of hbond??? Do I need to do this, or ..........
-                        if ( used_tgt_acceptor[ best_sat ] != 9e9 ){
+                        if ( used_tgt_acceptor[ best_sat ] <= 9e9 ){
                             hbscore += ( best_score - used_tgt_acceptor[best_sat] ) * hbond_weight_;
                         } else {
                             hbscore += best_score * hbond_weight_;
