@@ -157,7 +157,11 @@ create_rifine_task(
     int final_resl = rdd.rif_ptrs.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
-    task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+    if ( rdd.opt.xform_fname != "ALL" ) {
+        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+    } else {
+        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+    }
     
     task_list.push_back(make_shared<HSearchInit>( ));
     task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, final_resl, rdd.opt.tether_to_input_position_cut ));
