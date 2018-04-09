@@ -707,6 +707,7 @@ int main(int argc, char *argv[]) {
 				rso_config.target_acceptors = &target_acceptors;
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
+                rso_config.requirements = opt.requirements;
 #ifdef USEGRIDSCORE
             	rso_config.grid_scorer = grid_scorer;
             	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;

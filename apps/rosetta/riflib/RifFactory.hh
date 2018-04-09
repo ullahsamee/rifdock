@@ -107,6 +107,7 @@ struct RifSceneObjectiveConfig
 	int n_sat_groups;
 	int require_satisfaction;
 	int require_n_rifres;
+    std::vector< int > requirements;
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
     bool soft_grid_energies;
