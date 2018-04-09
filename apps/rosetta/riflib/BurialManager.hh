@@ -13,6 +13,8 @@
 #include <riflib/types.hh>
 #include <riflib/rifdock_typedefs.hh>
 
+#include <scheme/objective/voxel/VoxelArray.hh>
+
 #include <core/pose/Pose.hh>
 
 #include <string>
@@ -29,7 +31,10 @@ namespace scheme {
 struct BurialOpts {
     float neighbor_distance_cutoff = 6;
     std::vector<float> neighbor_count_weights;
+    float burial_grid_spacing = 0.5f;
 };
+
+typedef ::scheme::objective::voxel::VoxelArray< 3, float > BurialVoxelArray;
 
 
 struct BurialManager {
@@ -82,6 +87,9 @@ struct BurialManager {
     void
     accumulate_neighbors( BBActor const & bb );
 
+    void
+    dump_burial_grid( std::string const & fname );
+
 
 private:
 
@@ -92,6 +100,10 @@ private:
     std::vector< Eigen::Vector3f > target_burial_points_;
     std::vector<int> target_neighbor_counts_;
     std::vector<int> other_neighbor_counts_;
+
+
+    shared_ptr<BurialVoxelArray> target_burial_grid_;
+
 
 };
 

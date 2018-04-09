@@ -345,22 +345,47 @@ int main(int argc, char *argv[]) {
 				unsat_manager->dump_presatisfied();
 			}
 
+			for ( int distance = 3; distance < 7; distance++) {
+				for ( int cutoff = 5; cutoff < 14; cutoff++) {
 
-			BurialOpts burial_opts;
-			burial_opts.neighbor_distance_cutoff = opt.unsat_neighbor_cutoff;
-			burial_opts.neighbor_count_weights.resize(0);
-			for ( int i = 0; i < 20; i++ ) {
-				float weight;
-				if ( i < opt.unsat_neighbor_cutoff ) {
-					weight = 0;
-				} else {
-					weight = opt.unsat_orbital_penalty;
+					BurialOpts burial_opts;
+					burial_opts.neighbor_distance_cutoff = distance;
+					burial_opts.neighbor_count_weights.resize(0);
+					for ( int i = 0; i < 20; i++ ) {
+						float weight;
+						if ( i < cutoff ) {
+							weight = 0;
+						} else {
+							weight = opt.unsat_orbital_penalty;
+						}
+						burial_opts.neighbor_count_weights.push_back( weight );
+					}
+					std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+					burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+					burial_manager->set_target_neighbors( target );
+
+					burial_manager->dump_burial_grid( boost::str(boost::format("ncaccb_burial_nb_%i_dst_%.1f.pdb")%cutoff%distance) );
+
 				}
-				burial_opts.neighbor_count_weights.push_back( weight );
 			}
-			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
-			burial_manager->set_target_neighbors( target );
+
+				// BurialOpts burial_opts;
+				// burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
+				// burial_opts.neighbor_count_weights.resize(0);
+				// for ( int i = 0; i < 20; i++ ) {
+				// 	float weight;
+				// 	if ( i < opt.unsat_neighbor_cutoff ) {
+				// 		weight = 0;
+				// 	} else {
+				// 		weight = opt.unsat_orbital_penalty;
+				// 	}
+				// 	burial_opts.neighbor_count_weights.push_back( weight );
+				// }
+				// std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+				// burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+				// burial_manager->set_target_neighbors( target );
+
+				// burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff) );
 
 
 		}
