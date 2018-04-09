@@ -50,6 +50,9 @@
 	#include <vector>
 	#include <utility/vector1.hh> 
 
+    #include <riflib/rif/requirements_util.hh>
+
+
 
 namespace devel {
 namespace scheme {
@@ -103,6 +106,31 @@ namespace rif {
 		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 		typedef ::Eigen::Matrix<float,3,1> Pos;
+        
+        // requirements definitions
+        std::vector< RequirementDefinition > requirement_definitions = get_requirement_definitions( params->tuning_file );
+        bool const use_requirement_definition = !( requirement_definitions.empty() );
+        std::vector< int > hotspot_requirement_labels;
+        if ( use_requirement_definition ) {
+            // 20 is an arbitrary number, as I don't think there would be more than 20 hotspots.
+            hotspot_requirement_labels.resize( 20 );
+            for (int ii = 0; ii < hotspot_requirement_labels.size(); ++ii) {
+                hotspot_requirement_labels[ii] = -1;
+            }
+            // fill the hotspot definitions
+            for ( auto const & x : requirement_definitions ) {
+                if ( x.require == "HBOND" ) {
+                    //
+                } else if ( x.require == "BIDENTATE" ) {
+                    //
+                } else if ( x.require == "HOTSPOT" ) {
+                    int hotspot_num = utility::string2int( x.definition[0] );
+                    hotspot_requirement_labels[ hotspot_num ] = x.req_num;
+                } else {
+                    std::cout << "Unknown requirement definition, maybe you should define more." << std::endl;
+                }
+            }
+        }
 
 	
 		// some sanity checks
@@ -411,9 +439,13 @@ namespace rif {
 										BBActor bbact( atom_N, atom_CA, atom_C);
 										EigenXform new_x_position = bbact.position();
 
-										accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, 
-											this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group,
-											 -1 );
+                                        int sat1 = this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group;
+                                        int sat2 =-1;
+                                        if ( use_requirement_definition ) {
+                                            // as the numbering of i_hotspot_group starts from 0.
+                                            sat1 = hotspot_requirement_labels[ i_hotspot_group + 1 ];
+                                        }
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
 
 									 	if (opts.dump_hotspot_samples>=NSAMP){
 									 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";

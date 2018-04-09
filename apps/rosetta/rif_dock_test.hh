@@ -209,6 +209,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
+    OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
+
  
 
 		void register_options() {
@@ -412,6 +414,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
+            
+            NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
 
 		}
 	#endif
@@ -602,6 +606,8 @@ struct RifDockOpt
 	bool        test_hackpack                        ;    
 
     bool        dump_presatisfied_donors_acceptors   ;
+    
+    std::vector<int> requirements;
 
 
     void init_from_cli();
@@ -861,6 +867,8 @@ struct RifDockOpt
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
+        
+        for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 
 	}
 
