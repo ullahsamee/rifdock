@@ -20,7 +20,7 @@ BurialManager::clone() const {
 
 void
 BurialManager::reset() {
-    std::fill(other_neighbor_counts_.begin(), other_neighbor_counts_.end(), 0);
+    // std::fill(other_neighbor_counts_.begin(), other_neighbor_counts_.end(), 0);
 }
 
 
@@ -316,7 +316,7 @@ BurialManager::dump_burial_grid(
     for ( float z = lb[2] + step/2; z < ub[2]; z += step ) { worker[2] = z;
 
         float burial = burial_lookup( worker, target_burial_grid_, scaff_inv_transform, scaff_grid );
-        int value = int( burial + 0.1f );
+        int value = int( burial + 0.5f );
         char buf[128];
 
         if ( opts_.neighbor_count_weights[value] ) {
@@ -346,61 +346,90 @@ BurialManager::dump_burial_grid(
 }
 
 
+float
+BurialManager::get_burial_count( 
+    Eigen::Vector3f const & xyz,
+    EigenXform const & scaff_inv_transform,
+    shared_ptr<BurialVoxelArray> const & scaff_grid
+) const {
+    Eigen::Vector3f work = xyz;
+
+    // std::cout << work << " og" << std::endl;
+
+    float burial_count = 9e9;
+    for ( int dim = 0; dim < 3; dim++ ) {
+        for ( float dir = -1; dir < 2; dir += 2 ) {
+            work[dim] += dir * 2.0f;
+            const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid);
+            burial_count = std::min<float>(burial_count, this_burial_count);
+            // std::cout << work << std::endl;
+            work[dim] -= dir * 2.0f;
+        }
+    }
+
+    return burial_count;
+
+}
+
 std::vector<float>
 BurialManager::get_burial_weights( EigenXform const & scaff_transform, shared_ptr<BurialVoxelArray> const & scaff_grid) const {
 
-
     EigenXform const & scaff_inv_transform = scaff_transform.inverse();
-
-    std::vector<float> weights( target_neighbor_counts_.size() );
-
-
+    std::vector<float> weights( target_burial_points_.size() );
 
     for ( int i_pt = 0; i_pt < target_burial_points_.size(); i_pt ++ ) {
-        Eigen::Vector3f work = target_burial_points_[i_pt];
 
-        // std::cout << work << " og" << std::endl;
-
-        float burial_count = 9e9;
-        for ( int dim = 0; dim < 3; dim++ ) {
-            for ( float dir = -1; dir < 2; dir += 2 ) {
-                work[dim] += dir * 2.0f;
-                const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid);
-                burial_count = std::min<float>(burial_count, this_burial_count);
-                // std::cout << work << std::endl;
-                work[dim] -= dir * 2.0f;
-            }
-        }
-
-        // const float burial_count = target_burial_grid_->at(target_burial_points_[i_pt]);
-
-        const float burial = opts_.neighbor_count_weights[int(burial_count)];
+        const float burial_count = get_burial_count( target_burial_points_[i_pt], scaff_transform, scaff_grid ) 
+                                    + unburial_adjust_[i_pt];
+        const float burial = opts_.neighbor_count_weights[int(burial_count + 0.5f)];
         weights[i_pt] = burial;
     }
 
-    // for ( int i_pt = 0; i_pt < target_neighbor_counts_.size(); i_pt++ ) {
-    //     weights[i_pt] = opts_.neighbor_count_weights[ target_neighbor_counts_[i_pt] 
-    //                                                 + other_neighbor_counts_[i_pt]];
-    // }
+
     return weights;
 }
 
-void
-BurialManager::accumulate_neighbors( BBActor const & bb ) {
+// void
+// BurialManager::accumulate_neighbors( BBActor const & bb ) {
 
-    float cutoff_sq = opts_.neighbor_distance_cutoff*opts_.neighbor_distance_cutoff;
+//     float cutoff_sq = opts_.neighbor_distance_cutoff*opts_.neighbor_distance_cutoff;
 
-    Eigen::Vector3f CB_xyz = bb.position().translation();
+//     Eigen::Vector3f CB_xyz = bb.position().translation();
 
-    for ( int i_pt = 0; i_pt < target_burial_points_.size(); i_pt++ ) {
-        const float dist_sq = (target_burial_points_[i_pt] - CB_xyz).squaredNorm();
-        if ( dist_sq > cutoff_sq ) continue;
-        other_neighbor_counts_[i_pt]++;
-    }
+//     for ( int i_pt = 0; i_pt < target_burial_points_.size(); i_pt++ ) {
+//         const float dist_sq = (target_burial_points_[i_pt] - CB_xyz).squaredNorm();
+//         if ( dist_sq > cutoff_sq ) continue;
+//         other_neighbor_counts_[i_pt]++;
+//     }
+// }
+
+int
+BurialManager::remove_heavy_atom( int heavy_atom_no ) {
+    target_burial_points_.erase( target_burial_points_.begin() + heavy_atom_no );
+    unburial_adjust_.erase( unburial_adjust_.begin() + heavy_atom_no );
+
+    runtime_assert( target_burial_points_.size() == unburial_adjust_.size() );
+    return target_burial_points_.size();
 }
 
 
+void
+BurialManager::unbury_heavy_atom( int heavy_atom_no ) {
+    float count = get_burial_count( target_burial_points_[heavy_atom_no], EigenXform::Identity(), nullptr );
 
+    float unburial_amount = 0;
+
+    while ( count - unburial_amount >= 0 && opts_.neighbor_count_weights[int(count - unburial_amount + 0.5f)] > 0 ) {
+        unburial_amount += 1;
+    }
+
+    if ( count - unburial_amount < 0 ) {
+        utility_exit_with_message( "Weird error: You can't use a unsat_helper file if you make all atoms buried.");
+    }
+
+    unburial_adjust_[heavy_atom_no] = unburial_amount;
+
+}
 
 
 

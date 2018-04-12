@@ -66,10 +66,11 @@ struct BurialManager {
         target_burial_points_( burial_points )
     {
 
-        target_neighbor_counts_.resize( target_burial_points_.size(), 0 );
-        other_neighbor_counts_.resize( target_burial_points_.size(), 0 );
+        unburial_adjust_.resize( target_burial_points_.size(), 0 );
+        // target_neighbor_counts_.resize( target_burial_points_.size(), 0 );
+        // other_neighbor_counts_.resize( target_burial_points_.size(), 0 );
 
-        runtime_assert( opts_.neighbor_count_weights.size() >= 30 );
+        runtime_assert( opts_.neighbor_count_weights.size() >= 100 );
     }
 
     shared_ptr<BurialManager>
@@ -85,8 +86,15 @@ struct BurialManager {
     get_burial_weights( EigenXform const & scaff_transform, shared_ptr<BurialVoxelArray> const & scaff_grid) const;
 
 
-    void
-    accumulate_neighbors( BBActor const & bb );
+    float
+    get_burial_count( 
+        Eigen::Vector3f const & xyz,
+        EigenXform const & scaff_inv_transform,
+        shared_ptr<BurialVoxelArray> const & scaff_grid
+    ) const;
+
+    // void
+    // accumulate_neighbors( BBActor const & bb );
 
     void
     dump_burial_grid( 
@@ -98,7 +106,11 @@ struct BurialManager {
     shared_ptr<BurialVoxelArray>
     generate_burial_grid( core::pose::Pose const & pose );
 
+    void
+    unbury_heavy_atom( int heavy_atom_no );
 
+    int
+    remove_heavy_atom( int heavy_atom_no );
 
 // private:
 
@@ -107,11 +119,13 @@ struct BurialManager {
     // int num_donors_;
     // std::vector< HBondRay > donor_acceptors_;
     std::vector< Eigen::Vector3f > target_burial_points_;
-    std::vector<int> target_neighbor_counts_;
-    std::vector<int> other_neighbor_counts_;
+    std::vector< float > unburial_adjust_;
+    // std::vector<int> target_neighbor_counts_;
+    // std::vector<int> other_neighbor_counts_;
 
 
     shared_ptr<BurialVoxelArray> target_burial_grid_;
+
 
 
 };

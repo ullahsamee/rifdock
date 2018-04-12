@@ -41,6 +41,8 @@ struct RIFAnchor {
 struct ScaffoldDataCache;
 
 
+typedef int32_t intRot;
+
 // Typedefs that should never change
 
 typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
