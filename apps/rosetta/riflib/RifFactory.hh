@@ -16,6 +16,8 @@
 #include <riflib/RotamerGenerator.hh>
 #include <scheme/objective/storage/TwoBodyTable.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/BurialManager.hh>
+#include <riflib/UnsatManager.hh>
 
 #ifdef USEGRIDSCORE
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
@@ -105,10 +107,13 @@ struct RifSceneObjectiveConfig
 	int n_sat_groups;
 	int require_satisfaction;
 	int require_n_rifres;
+    std::vector< int > requirements;
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
     bool soft_grid_energies;
 #endif
+    shared_ptr<BurialManager> burial_manager;
+    shared_ptr<UnsatManager> unsat_manager;
 
 };
 

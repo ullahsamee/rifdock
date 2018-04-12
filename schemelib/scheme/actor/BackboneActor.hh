@@ -4,6 +4,9 @@
 #include <Eigen/Dense>
 #include <scheme/io/dump_pdb_atom.hh>
 
+#include <core/conformation/Residue.hh>
+#include <numeric/xyzVector.hh>
+
 namespace scheme {
 namespace actor {
 
@@ -26,6 +29,25 @@ namespace actor {
 		BackboneActor() : position_(Position::Identity()), aa_('-'), ss_('-'), index_(0) {}
 
 		BackboneActor(Position const & p, char aa, char ss, int i=0) : position_(p), aa_(aa), ss_(ss),index_(i) {}
+
+		BackboneActor( 
+			core::conformation::Residue const & res,
+			char aa='-', 
+			char ss='-', 
+			int i=0
+		)  : aa_(aa), ss_(ss), index_(i) {
+
+	        ::numeric::xyzVector<core::Real> _n  = res.xyz("N");
+	        ::numeric::xyzVector<core::Real> _ca = res.xyz("CA");
+	        ::numeric::xyzVector<core::Real> _c  = res.xyz("C");
+
+	        Eigen::Vector3f n;  n[0]  = _n[0];  n[1]  = _n[1];  n[2] =  _n[2];
+	        Eigen::Vector3f ca; ca[0] = _ca[0]; ca[1] = _ca[1]; ca[2] = _ca[2];
+	        Eigen::Vector3f c;  c[0]  = _c[0];  c[1]  = _c[1];  c[2] =  _c[2];
+
+			from_n_ca_c(n,ca,c);
+		}
+
 
 		template <class V>
 		BackboneActor(

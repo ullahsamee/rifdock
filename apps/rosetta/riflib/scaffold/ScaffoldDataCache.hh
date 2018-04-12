@@ -82,6 +82,8 @@ struct ScaffoldDataCache {
     shared_ptr<TBT> scaffold_twobody_p;                                        // twobody_rotamer_energies using global_seqpos
     shared_ptr<TBT> local_twobody_p;                                           // twobody_rotamer_energies using local_seqpos
 
+    std::vector<shared_ptr<TBT>> local_twobody_per_thread;                     // Used with BuriedUnsats, these can momentarily change but must be reset
+
 
     MultithreadPoseCloner mpc_both_pose;                                       // scaffold_centered_p + target
     MultithreadPoseCloner mpc_both_full_pose;                                  // scaffold_full_centered_p + target
@@ -410,6 +412,36 @@ struct ScaffoldDataCache {
         }
         std::cout << "rifdock: onebody Nallowed: " << onebody_n_allowed << std::endl;
         std::cout << "filt_2b memuse: " << (float)local_twobody_p->twobody_mem_use()/1000.0/1000.0 << "M" << std::endl;
+    }
+
+
+
+    // setup scaffold_twobody_p and local_twobody_p
+    void
+    setup_twobody_tables_per_thread( ) {
+        runtime_assert( local_twobody_p );
+
+        if ( local_twobody_per_thread.size() > 0 ) return;
+
+        local_twobody_per_thread.resize(::devel::scheme::omp_max_threads_1());
+
+        for ( int i = 0; i < local_twobody_per_thread.size(); i++ ) {
+            local_twobody_per_thread[i] = local_twobody_p->clone();
+        }
+    }
+
+    bool
+    check_twobody_tables_per_thread_integrity( ) {
+        runtime_assert( local_twobody_per_thread.size() > 0 );
+
+        local_twobody_per_thread.resize(::devel::scheme::omp_max_threads_1());
+
+        for ( int i = 0; i < local_twobody_per_thread.size(); i++ ) {
+            if ( ! local_twobody_per_thread[i]->check_equal( *local_twobody_p) ) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

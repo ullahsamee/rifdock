@@ -10,6 +10,7 @@
 #include <riflib/rotamer_energy_tables.hh>
 #include <riflib/util.hh>
 
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/ResidueTypeSet.hh>

@@ -13,6 +13,7 @@
 #include <riflib/types.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/rifdock_tasks/HackPackTasks.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/ResidueTypeSet.hh>
@@ -161,6 +162,7 @@ dump_rif_result_(
     rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
     rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
+    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = rdd.packopts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
     rot_tgt_scorer.grid_scorer_ = rdd.grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = rdd.opt.soft_rosetta_grid_energies;

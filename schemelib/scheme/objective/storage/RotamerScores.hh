@@ -169,12 +169,22 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 			}
 		}
 	}
+    
+    int get_requirement_num( ) const {
+        if( NSat >= 1 && sat_data_[0].not_empty() ){
+            return sat_data_[0].target_sat_num();
+        } else {
+            return -1;
+        }
+    }
+    
 	void mark_sat_groups( std::vector<bool> & sat_groups_mask ) const {
 		for( int isat = 0; isat < NSat; ++isat ){
 			if( sat_data_[isat].not_empty() ){
 				int val = sat_data_[isat].target_sat_num();
 				if (val < 0 || val >= sat_groups_mask.size()) {
-					std::cout << "Sat" << val << std::endl;
+					//std::cout << "Sat" << val << std::endl;
+                    return;
 				}
 				sat_groups_mask[ sat_data_[isat].target_sat_num() ] = true;
 			}
@@ -291,6 +301,9 @@ struct RotamerScores {
 	void get_sat_groups_raw( int irot, Array & a ) const	{
 		get_sat_groups_raw_impl< RotScore::UseSat, Array >( irot, a );
 	}
+    int get_requirement_num( int irot ) const {
+        return get_requirement_num_impl< RotScore::UseSat >( irot );
+    }
 	void add_rotamer( RotScore to_insert )
 	{
 		Data irot = to_insert.rotamer();
@@ -382,6 +395,10 @@ struct RotamerScores {
 	template< bool UseSat, class Array > typename boost::disable_if_c< UseSat, void >::type
 	get_sat_groups_raw_impl( int irot, Array &   ) const { return; }
 
+    template< bool UseSat > typename boost::enable_if_c< UseSat, int >::type
+    get_requirement_num_impl( int irot ) const { return rotscores_[irot].get_requirement_num( ); }
+    template< bool UseSat > typename boost::disable_if_c< UseSat, int >::type
+    get_requirement_num_impl( int irot ) const { return -1; }
 
 };
 

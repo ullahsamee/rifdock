@@ -30,6 +30,7 @@
   	#include <numeric/xyzMatrix.hh>
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
+	#include <riflib/ScoreRotamerVsTarget.hh>
 	#include <riflib/util.hh>
 	#include <scheme/numeric/rand_xform.hh>
 	#include <scheme/actor/Atom.hh>
@@ -49,6 +50,9 @@
 	#include <vector>
 	#include <utility/vector1.hh> 
 
+    #include <riflib/rif/requirements_util.hh>
+
+
 
 namespace devel {
 namespace scheme {
@@ -67,44 +71,22 @@ namespace rif {
 
 			
 			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
-				std::string resn = pose.residue(i_hspot_res).name3();
-				int parent_key = -1;
-				
-				int n_proton_chi = 0;
-				if (resn == "CYS" || resn == "SER" || resn == "THR" || resn == "TYR"){
-					n_proton_chi = 1;
-				}
 
-				std::vector<float> mychi(pose.residue(i_hspot_res).nchi());
-				for (int n_chi = 0; n_chi < mychi.size(); n_chi++){
-					mychi.at(n_chi) = pose.chi(n_chi+1,i_hspot_res);
-				}
-				
-				//check if the rotamer exist in rot_spec
-				bool add_this_rotamer = false;
-				for( int irot = 0; irot < rot_spec.size(); ++irot ){
+				std::string resn;
+				std::vector<float> mychi;
+				int n_proton_chi;
+				int parent_key;
+				::scheme::chemical::get_residue_rotspec_params( pose.residue(i_hspot_res), resn, mychi, n_proton_chi, parent_key );
 
-					if( rot_spec.resname(irot) != resn ) continue;
-					bool duplicate_rotamer = true;
-					for (int n_chi = 0; n_chi < rot_spec.get_rotspec(irot).chi_.size(); ++n_chi){
-						//std::cout << "checking " << rot_spec.get_rotspec(irot).resname_ << " " << rot_spec.get_rotspec(irot).chi_.at(n_chi) << " " << resn <<" "<< mychi.at(n_chi) << std::endl;
-						duplicate_rotamer &= ::scheme::chemical::impl::angle_is_close( rot_spec.get_rotspec(irot).chi_.at(n_chi), mychi.at(n_chi), 5.0f );
-					}
+				int irot = rot_spec.get_matching_rot( resn, mychi, n_proton_chi, 5.0f );
 
-					if (duplicate_rotamer){
-						std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
-						add_this_rotamer = false;
-						break;
-					} 
-					else if (!duplicate_rotamer){
-						add_this_rotamer = true;
-					}					
-				}// end loop over all existing rot_spec rotamers
-
-				if (add_this_rotamer){
+				if ( irot == -1 ) {
 					std::cout << "Adding input rotamers: " << i_hspot_res << " " << resn << std::endl;
 					rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+				} else {
+					std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
 				}
+
 			}//end loop over all hotspot res within one hotspot file
 		}// end loop over all hotspot files
 		//rot_spec.load();
@@ -124,6 +106,31 @@ namespace rif {
 		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 		typedef ::Eigen::Matrix<float,3,1> Pos;
+        
+        // requirements definitions
+        std::vector< RequirementDefinition > requirement_definitions = get_requirement_definitions( params->tuning_file );
+        bool const use_requirement_definition = !( requirement_definitions.empty() );
+        std::vector< int > hotspot_requirement_labels;
+        if ( use_requirement_definition ) {
+            // 20 is an arbitrary number, as I don't think there would be more than 20 hotspots.
+            hotspot_requirement_labels.resize( 20 );
+            for (int ii = 0; ii < hotspot_requirement_labels.size(); ++ii) {
+                hotspot_requirement_labels[ii] = -1;
+            }
+            // fill the hotspot definitions
+            for ( auto const & x : requirement_definitions ) {
+                if ( x.require == "HBOND" ) {
+                    //
+                } else if ( x.require == "BIDENTATE" ) {
+                    //
+                } else if ( x.require == "HOTSPOT" ) {
+                    int hotspot_num = utility::string2int( x.definition[0] );
+                    hotspot_requirement_labels[ hotspot_num ] = x.req_num;
+                } else {
+                    std::cout << "Unknown requirement definition, maybe you should define more." << std::endl;
+                }
+            }
+        }
 
 	
 		// some sanity checks
@@ -172,6 +179,7 @@ namespace rif {
 				rot_tgt_scorer.hbond_weight_ = this->opts.hbond_weight;
 				rot_tgt_scorer.upweight_multi_hbond_ = this->opts.upweight_multi_hbond;
 				rot_tgt_scorer.upweight_iface_ = 1.0;
+				rot_tgt_scorer.min_hb_quality_for_satisfaction_ = opts.min_hb_quality_for_satisfaction;
 #ifdef USEGRIDSCORE
 				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
@@ -450,9 +458,13 @@ namespace rif {
 										BBActor bbact( atom_N, atom_CA, atom_C);
 										EigenXform new_x_position = bbact.position();
 
-										accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, 
-											this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group,
-											 -1 );
+                                        int sat1 = this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group;
+                                        int sat2 =-1;
+                                        if ( use_requirement_definition ) {
+                                            // as the numbering of i_hotspot_group starts from 0.
+                                            sat1 = hotspot_requirement_labels[ i_hotspot_group + 1 ];
+                                        }
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
 
 									 	if (opts.dump_hotspot_samples>=NSAMP){
 									 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";

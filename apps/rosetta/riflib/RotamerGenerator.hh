@@ -25,6 +25,8 @@ namespace scheme {
 
 using ::scheme::chemical::HBondRay;
 
+const float ORBLEN = 0.61; // don't change this number!!!!!!!!!!
+
 struct RosettaRotamerGenerator {
 	typedef SchemeAtom Atom;
 
@@ -42,15 +44,18 @@ struct RosettaRotamerGenerator {
 
 };
 
-// makes copy of pose to score
 std::set<std::pair<int,int>>
-get_satisfied_atoms(core::pose::Pose pose, float ethresh=-0.1);
+get_satisfied_atoms(core::pose::Pose const & pose, float ethresh=-0.1);
+
+// makes copy of pose to score
+std::vector<std::pair<int,int>>
+get_satisfied_atoms_vector(core::pose::Pose pose, float ethresh=-0.1);
 
 struct HBRayOpts {
 	bool withbb = true;
 	bool lkball = true;
 	bool add_acceptor_mid = false;
-	float orblen = 0.61;
+	float orblen = ORBLEN;			// don't change this number!!!!!!!!!!
 	std::set<std::pair<int,int>> satisfied_atoms;
 };
 
@@ -64,6 +69,7 @@ void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const &
 
 void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor );
 
+std::vector<HBondRay> load_hbond_rays( std::string fname );
 
 core::pack::rotamer_set::RotamerSetOP
 get_rosetta_rot_set(
@@ -88,7 +94,8 @@ get_rotamer_index(
 std::shared_ptr<RotamerIndex>
 get_rotamer_index(
 	std::string cachefile,
-	bool build_per_thread_rotamers
+	bool build_per_thread_rotamers,
+	::scheme::chemical::RotamerIndexSpec & rot_index_spec
 );
 
 

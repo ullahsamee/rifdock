@@ -48,6 +48,7 @@ typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
 
 typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
+typedef ::scheme::chemical::HBondRay HBondRay;
 
 
 // Typedefs related to the Hierarchical Search Scene
