@@ -82,7 +82,10 @@ namespace rif {
 
 				if ( irot == -1 ) {
 					std::cout << "Adding input rotamers: " << i_hspot_res << " " << resn << std::endl;
-					rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+					bool am_i_normal(pose.residue(i_hspot_res).has("N") && pose.residue(i_hspot_res).has("CA")  && pose.residue(i_hspot_res).has("C"));
+					if (am_i_normal) {
+						rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+					}
 				} else {
 					std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
 				}
