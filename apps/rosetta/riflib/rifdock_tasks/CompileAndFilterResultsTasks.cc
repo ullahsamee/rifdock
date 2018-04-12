@@ -252,8 +252,6 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         EigenXform scaffold_perturb = sdc->scaffold_perturb;
         Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
-            std::cout << selected_xforms.size() << std::endl;
-
                                         
         awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
             isamp, director_resl_, packed_results, rdd.scene_pt, rdd.director,
@@ -265,7 +263,7 @@ CompileAndFilterResultsTask::return_rif_dock_results(
             rdd.objectives.at(rif_resl_), nclose, nclosemax, nclosethresh,
             scaffold_perturb
         );
-        
+
             std::cout << selected_xforms.size() << std::endl;
     }
     std::cout << std::endl;
