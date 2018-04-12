@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::DefaultUnsatPenalties, rot_index_p, opt.unsat_debug );
+			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_debug );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -345,47 +345,67 @@ int main(int argc, char *argv[]) {
 				unsat_manager->dump_presatisfied();
 			}
 
-			for ( int distance = 3; distance < 7; distance++) {
-				for ( int cutoff = 5; cutoff < 14; cutoff++) {
+			// for ( float test = 6.0f; test < 6.2f; test += 1.0f ) {
+			// 	for ( float distance = 4.0f; distance < 8.0f; distance+= 1.0f) {
+			// 		for ( int cutoff = 8; cutoff < 23; cutoff+=1) {
 
-					BurialOpts burial_opts;
-					burial_opts.neighbor_distance_cutoff = distance;
-					burial_opts.neighbor_count_weights.resize(0);
-					for ( int i = 0; i < 20; i++ ) {
-						float weight;
-						if ( i < cutoff ) {
-							weight = 0;
-						} else {
-							weight = opt.unsat_orbital_penalty;
-						}
-						burial_opts.neighbor_count_weights.push_back( weight );
-					}
-					std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-					burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
-					burial_manager->set_target_neighbors( target );
+			// 			BurialOpts burial_opts;
+			// 			burial_opts.neighbor_distance_cutoff = distance;
+			// 			burial_opts.neighbor_count_weights.resize(0);
+			// 			for ( int i = 0; i < 2000; i++ ) {
+			// 				float weight;
+			// 				if ( i < cutoff ) {
+			// 					weight = 0;
+			// 				} else {
+			// 					weight = opt.unsat_orbital_penalty;
+			// 				}
+			// 				burial_opts.neighbor_count_weights.push_back( weight );
+			// 			}
+			// 			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+			// 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			// 			burial_manager->set_target_neighbors( target );
 
-					burial_manager->dump_burial_grid( boost::str(boost::format("ncaccb_burial_nb_%i_dst_%.1f.pdb")%cutoff%distance) );
+			// 			burial_manager->dump_burial_grid( boost::str(boost::format("cacbcg_nb_%i_dst_%.2f.pdb")%cutoff%distance),
+			// 				EigenXform::Identity(), nullptr );
 
+			// 		}
+			// 	}
+			// }
+
+			BurialOpts burial_opts;
+			burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
+			burial_opts.neighbor_count_weights.resize(0);
+			for ( int i = 0; i < 30; i++ ) {
+				float weight;
+				if ( i < opt.unsat_neighbor_cutoff ) {
+					weight = 0;
+				} else {
+					weight = opt.unsat_orbital_penalty;
 				}
+				burial_opts.neighbor_count_weights.push_back( weight );
 			}
+			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			burial_manager->set_target_neighbors( target );
 
-				// BurialOpts burial_opts;
-				// burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
-				// burial_opts.neighbor_count_weights.resize(0);
-				// for ( int i = 0; i < 20; i++ ) {
-				// 	float weight;
-				// 	if ( i < opt.unsat_neighbor_cutoff ) {
-				// 		weight = 0;
-				// 	} else {
-				// 		weight = opt.unsat_orbital_penalty;
-				// 	}
-				// 	burial_opts.neighbor_count_weights.push_back( weight );
-				// }
-				// std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-				// burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
-				// burial_manager->set_target_neighbors( target );
+			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff),
+				EigenXform::Identity(), nullptr );
 
-				// burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff) );
+
+			std::vector<float> initial_burial = burial_manager->get_burial_weights( EigenXform::Identity(), nullptr );
+			std::vector<float> unsat_scores = unsat_manager->get_presatisfied_unsats( initial_burial );
+
+			for ( int iheavy = 0; iheavy < unsat_manager->target_heavy_atoms_.size(); iheavy++ ) {
+				if (initial_burial[iheavy] > 0) {
+					// std::cout << "Buried" << std::endl;
+				} 
+				float score = unsat_scores[iheavy];
+				 if ( score > 0 ) {
+
+        			hbond::HeavyAtom const & ha = unsat_manager->target_heavy_atoms_[iheavy];
+				 	std::cout << "Initial buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score) <<  score <<  std::endl;
+				 }
+			}
 
 
 		}
@@ -523,6 +543,21 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
+    RifScoreRotamerVsTarget rot_tgt_scorer;
+    rot_tgt_scorer.rot_index_p_ = rot_index_p;
+    rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
+    rot_tgt_scorer.target_donors_ = target_donors;
+    rot_tgt_scorer.target_acceptors_ = target_acceptors;
+    rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
+    rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
+    rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
+    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
+#ifdef USEGRIDSCORE
+    rot_tgt_scorer.grid_scorer_ = grid_scorer;
+    rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
+#endif
+
+
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	print_header( "read in RIFs" ); /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -593,7 +628,6 @@ int main(int argc, char *argv[]) {
 		}
 		std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 
-
 		if (opt.dump_rifgen_near_pdb.length() > 0) {
 			float dump_dist = opt.dump_rifgen_near_pdb_dist;
 			float dump_frac = opt.dump_rifgen_near_pdb_frac;
@@ -618,22 +652,6 @@ int main(int argc, char *argv[]) {
 		if ( opt.score_this_pdb.length() > 0) {
 			std::cout << "Loading " << opt.score_this_pdb << std::endl;
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.score_this_pdb));
-
-		    devel::scheme::ScoreRotamerVsTarget<
-			        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-			    > rot_tgt_scorer;
-			    rot_tgt_scorer.rot_index_p_ = rot_index_p;
-			    rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
-			    rot_tgt_scorer.target_donors_ = target_donors;
-			    rot_tgt_scorer.target_acceptors_ = target_acceptors;
-			    rot_tgt_scorer.hbond_weight_ = packopts.hbond_weight;
-			    rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
-			    rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
-			    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
-			#ifdef USEGRIDSCORE
-			    rot_tgt_scorer.grid_scorer_ = grid_scorer;
-			    rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
-			#endif
 
 			std::cout << "Scoring " << opt.score_this_pdb << " against target" << std::endl;
 
@@ -710,6 +728,7 @@ int main(int argc, char *argv[]) {
 			Eigen::Vector3f test_scaffold_center = test_data_cache->scaffold_center;
 			float test_redundancy_filter_rg = std::min( test_scaff_redundancy_filter_rg, target_redundancy_filter_rg );
 			std::cout << "using redundancy_filter_rg: ~" << test_redundancy_filter_rg << std::endl;
+			if ( burial_manager ) test_data_cache->setup_burial_grids( burial_manager );
 
 
 			shared_ptr<std::vector<EigenXform>> seeding_positions = setup_seeding_positions( opt, pd, scaffold_provider, iscaff );
@@ -726,16 +745,10 @@ int main(int argc, char *argv[]) {
 				rso_config.packopts = &packopts;
 				rso_config.rif_ptrs = rif_ptrs;
 				rso_config.target_bounding_by_atype = &target_bounding_by_atype;
-				rso_config.target_field_by_atype = &target_field_by_atype;
+				rso_config.rot_tgt_scorer = rot_tgt_scorer;
 				rso_config.rot_index_p = rot_index_p;
-				rso_config.target_donors = &target_donors;
-				rso_config.target_acceptors = &target_acceptors;
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
-#ifdef USEGRIDSCORE
-            	rso_config.grid_scorer = grid_scorer;
-            	rso_config.soft_grid_energies = opt.soft_rosetta_grid_energies;
-#endif
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
 
@@ -856,6 +869,7 @@ int main(int argc, char *argv[]) {
 						&target_bounding_by_atype,
 						&target_donors,
  						&target_acceptors,
+ 						rot_tgt_scorer,
  						target_redundancy_filter_rg,
  						target,
  						rot_index_p,
@@ -871,7 +885,8 @@ int main(int argc, char *argv[]) {
  							dump_lock,
  						#endif
  						dokout,
- 						scaffold_provider
+ 						scaffold_provider,
+ 						burial_manager
 #ifdef USEGRIDSCORE
     				,   grid_scorer
 #endif
@@ -907,13 +922,48 @@ int main(int argc, char *argv[]) {
 						scaffold_provider->setup_twobody_tables_per_thread( ScaffoldIndex() );
 					}
 
-					std::vector<float> sc = packing_objectives.back()->scores(*scene_minimal);
-					cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
-										     << F( 7, 3, sc[0]+sc[1] ) << " "
-										     << F( 7, 3, sc[0]       ) << " "
-										     << F( 7, 3, sc[1]       ) << endl;
+
+					SearchPointWithRots result;
+					float score = packing_objectives.back()->score_with_rotamers(*scene_minimal, result.rotamers());
+					// cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
+					// 					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					// 					     << F( 7, 3, sc[0]       ) << " "
+					// 					     << F( 7, 3, sc[1]       ) << endl;
+
+
+
+					test_data_cache->setup_burial_grids( burial_manager );
+
+
+					// for ( int cutoff = 5; cutoff < 22; cutoff ++ ) {
+
+					
+
+					// 	BurialOpts burial_opts;
+					// 	burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
+					// 	burial_opts.neighbor_count_weights.resize(0);
+					// 	for ( int i = 0; i < 30; i++ ) {
+					// 		float weight;
+					// 		if ( i < cutoff ) {
+					// 			weight = 0;
+					// 		} else {
+					// 			weight = opt.unsat_orbital_penalty;
+					// 		}
+					// 		burial_opts.neighbor_count_weights.push_back( weight );
+					// 	}
+
+					// 	burial_manager->opts_ = burial_opts;
+
+					// 	burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%cutoff%opt.neighbor_distance_cutoff), 
+					// 								scene_minimal->position(1), test_data_cache->burial_grid );
+					// }
+
+
+					burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
+													scene_minimal->position(1), test_data_cache->burial_grid );
 
 				}
+
 
 
 			}

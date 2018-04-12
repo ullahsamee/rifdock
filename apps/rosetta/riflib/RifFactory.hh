@@ -16,6 +16,7 @@
 #include <riflib/RotamerGenerator.hh>
 #include <scheme/objective/storage/TwoBodyTable.hh>
 #include <riflib/rifdock_typedefs.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 #include <riflib/BurialManager.hh>
 #include <riflib/UnsatManager.hh>
 
@@ -100,17 +101,11 @@ struct RifSceneObjectiveConfig
 	::scheme::search::HackPackOpts * packopts;
 	std::vector<RifPtr> rif_ptrs;
 	std::vector< std::vector< VoxelArrayPtr > > const * target_bounding_by_atype;
-	std::vector< VoxelArrayPtr > const * target_field_by_atype;
+	RifScoreRotamerVsTarget rot_tgt_scorer;
 	shared_ptr< ::devel::scheme::RotamerIndex> rot_index_p;
-	std::vector< ::scheme::chemical::HBondRay > * target_donors;
-	std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
 	int n_sat_groups;
 	int require_satisfaction;
 	int require_n_rifres;
-#ifdef USEGRIDSCORE
-    shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
-    bool soft_grid_energies;
-#endif
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
 

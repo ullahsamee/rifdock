@@ -167,6 +167,7 @@ UnsatManager::UnsatManager(
     shared_ptr< RotamerIndex > rot_index_p_in,
     bool debug
 ) :
+    unsat_penalties_( unsat_penalties ),
     rot_index_p( rot_index_p_in ),
     debug_( debug )
 {
@@ -174,11 +175,11 @@ UnsatManager::UnsatManager(
     using ObjexxFCL::format::F;
     std::cout << "Buried orbital/hydrogen penalties: " << std::endl;
     std::cout << "  # of unsats:   0    1    2    3  " << std::endl;
-    runtime_assert( unsat_penalties.size() == hbond::DefaultUnsatPenalties.size() );
-    total_first_twob_.resize(unsat_penalties.size(), std::vector<float>(3));
+    runtime_assert( unsat_penalties_.size() == hbond::DefaultUnsatPenalties.size() );
+    total_first_twob_.resize(unsat_penalties_.size(), std::vector<float>(3));
 
     for ( int i = 0; i < total_first_twob_.size(); i++ ) {
-        std::vector<float> const & penalties = hbond::DefaultUnsatPenalties[i];
+        std::vector<float> const & penalties = unsat_penalties_[i];
         
         const float P0 = penalties[0];
         const float P1 = penalties[1];
@@ -524,6 +525,67 @@ UnsatManager::dump_presatisfied() {
 
 }
 
+
+    std::vector<float>
+UnsatManager::get_presatisfied_unsats( std::vector<float> const & burial_weights ) {
+
+// std::vector<float>
+// UnsatManager::get_initial_unsats( 
+//     std::vector<float> const & burial_weights
+// ) {
+//     std::vector< std::pair<intRot,intRot> > rotamers;
+//     std::vector< EigenXform > bb_positions;
+//     RifScoreRotamerVsTarget rot_tgt_scorer;
+
+//     return get_buried_usats( buried_weights, rotamers, bb_positions, rot_tgt_scorer );
+// }
+
+// std::vector<float>
+// UnsatManager::get_buried_unsats( 
+//     std::vector<float> const & burial_weights,
+//     std::vector< std::pair<intRot,intRot> > const & rotamers,
+//     std::vector< EigenXform > const & bb_positions,
+//     RifScoreRotamerVsTarget const & rot_tgt_scorer
+// ) {
+
+    std::vector<bool> satisfied = target_presatisfied_;
+
+    // runtime_assert( rotamers.size() == bb_positions.size() );
+
+    // for ( int i = 0; i < rotamers.size(); i++ ) {
+    //     int ires = rotamers[i].first;
+    //     int irot = rotamers[i].second;
+
+    //     int sat1 = -1, sat2 = -1, hbcount = 0;
+    //     rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb_positions[i], sat1, sat2, true, hbcount, 10.0, 4 );
+
+    //     if ( sat1 > -1 ) satisfied[sat1] = true;
+    //     if ( sat2 > -1 ) satisfied[sat2] = true;
+    // }
+
+    std::vector<float> unsat_scores( target_heavy_atoms_.size() );
+    for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
+
+        const float weight = burial_weights[iheavy];
+        if ( weight == 0) continue;
+
+        hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
+        int sat_count = 0;
+        for ( int isat : ha.sat_groups ) {
+            if ( satisfied[isat] ) {
+                sat_count += 1;
+            }
+        }
+
+        const int wants = hbond::NumOrbitals[ha.AType];
+        std::vector<float> const & penalties = unsat_penalties_[ha.AType];
+        float score = calculate_unsat_score( penalties[0], penalties[1], wants, sat_count, weight );
+        unsat_scores[iheavy] = score * weight;
+    }
+
+    return unsat_scores;
+}
+
 std::vector<Eigen::Vector3f>
 UnsatManager::get_heavy_atom_xyzs() {
     std::vector<Eigen::Vector3f> xyzs( target_heavy_atoms_.size() );
@@ -577,7 +639,7 @@ UnsatManager::calculate_nonpack_score(
 
         if (satisfied == wants) continue;
 
-        std::vector<float> const & penalties = hbond::DefaultUnsatPenalties[ha.AType];
+        std::vector<float> const & penalties = unsat_penalties_[ha.AType];
 
         const float adding = calculate_unsat_score( penalties[0], penalties[1], wants, satisfied, weight );
         score += adding;

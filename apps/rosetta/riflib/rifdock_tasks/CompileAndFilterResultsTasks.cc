@@ -228,6 +228,8 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         }
     }
 
+    std::cout << "###$#$#$#$#$#$$#$ " << n_per_block_ << std::endl;
+
     ////////////////////
 
 

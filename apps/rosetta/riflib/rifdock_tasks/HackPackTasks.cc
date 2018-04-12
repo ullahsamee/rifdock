@@ -188,21 +188,6 @@ sanity_check_rots(
     int rif_resl 
 ) {
 
-    devel::scheme::ScoreRotamerVsTarget<
-        VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-    > rot_tgt_scorer;
-    rot_tgt_scorer.rot_index_p_ = rdd.rot_index_p;
-    rot_tgt_scorer.target_field_by_atype_ = rdd.target_field_by_atype;
-    rot_tgt_scorer.target_donors_ = *rdd.target_donors;
-    rot_tgt_scorer.target_acceptors_ = *rdd.target_acceptors;
-    rot_tgt_scorer.hbond_weight_ = rdd.packopts.hbond_weight;
-    rot_tgt_scorer.upweight_iface_ = rdd.packopts.upweight_iface;
-    rot_tgt_scorer.upweight_multi_hbond_ = rdd.packopts.upweight_multi_hbond;
-    rot_tgt_scorer.min_hb_quality_for_satisfaction_ = rdd.packopts.min_hb_quality_for_satisfaction;
-#ifdef USEGRIDSCORE
-    rot_tgt_scorer.grid_scorer_ = rdd.grid_scorer;
-    rot_tgt_scorer.soft_grid_energies_ = rdd.opt.soft_rosetta_grid_energies;
-#endif
 
 
     bool only_bad = true;
@@ -214,7 +199,7 @@ sanity_check_rots(
 
         BBActor bba = scene->template get_actor<BBActor>(1,rotamers->at(ipr).first);
 
-        float rescore = rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
+        float rescore = rdd.rot_tgt_scorer.score_rotamer_v_target( irot, bba.position(), 10.0, 4 );
         if (rescore >= 0) {
         } else {
         }

@@ -100,8 +100,13 @@ HSearchInit::return_search_points(
     pd.unique_scaffolds.clear();
     for ( std::pair<RifDockIndex, bool> pair : uniq_scaffolds ) {
         ScaffoldIndex si = pair.first.scaffold_index;
-        rdd.scaffold_provider->get_data_cache_slow(si)->setup_onebody_tables( rdd.rot_index_p, rdd.opt);
+        ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow(si);
+        sdc->setup_onebody_tables( rdd.rot_index_p, rdd.opt);
         pd.unique_scaffolds.push_back(si);
+
+        if ( rdd.burial_manager ) {
+            sdc->setup_burial_grids( rdd.burial_manager );
+        }
     }
 
 

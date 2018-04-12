@@ -188,6 +188,11 @@ parse_seeding_file(
                 }
     }
         
+
+    if (seeding_positions.size() == 0) {
+        utility_exit_with_message( "Error!!!!! Unable to parse seeding file: " + fname );
+    }
+
     return true;
 }
     
