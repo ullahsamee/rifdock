@@ -918,6 +918,8 @@ int main(int argc, char *argv[]) {
 
 
 			}
+
+
 			// std::cout << "scores for scaffold in original position: " << std::endl;
    //          {
 
@@ -1043,6 +1045,7 @@ int main(int argc, char *argv[]) {
 
 			ThreePointVectors input;
 			input.search_points = starting_point;
+			std::cout << "RUN!" << std::endl;
 			ThreePointVectors results = protocol.run( input, rdd, pd );
 
 			time_rif += pd.time_rif;
