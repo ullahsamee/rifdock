@@ -106,6 +106,7 @@ struct RifSceneObjectiveConfig
 	int n_sat_groups;
 	int require_satisfaction;
 	int require_n_rifres;
+    std::vector< int > requirements;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
 

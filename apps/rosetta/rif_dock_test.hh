@@ -118,6 +118,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, num_hotspots )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
+	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
+
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
@@ -209,6 +211,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
+
+    OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
 
  
 
@@ -324,6 +328,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::num_hotspots, "Number of hotspots found in Rifdock hotspots. If in doubt, set this to 1000", 0 );
 			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
 
+			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
+
 			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 			NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
@@ -414,6 +420,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
+            
+            NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
 
 		}
 	#endif
@@ -469,6 +477,7 @@ struct RifDockOpt
 	int         require_satisfaction                 ;
 	int         num_hotspots                         ;
 	int         require_n_rifres                     ;
+	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
@@ -605,6 +614,8 @@ struct RifDockOpt
 	bool        test_hackpack                        ;    
 
     bool        dump_presatisfied_donors_acceptors   ;
+    
+    std::vector<int> requirements;
 
 
     void init_from_cli();
@@ -666,6 +677,7 @@ struct RifDockOpt
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
 		num_hotspots                           = option[rif_dock::num_hotspots                          ]();
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
+		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
@@ -865,6 +877,8 @@ struct RifDockOpt
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
+        
+        for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 
 	}
 

@@ -241,7 +241,6 @@ int main(int argc, char *argv[]) {
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		// Brian resurrects this thing. It's really useful for debugging
 		std::cout << "================ RotamerIndex ===================" << std::endl;\
 		std::cout << rot_index << std::endl;
 		std::cout << "=================================================" << std::endl;
@@ -255,6 +254,7 @@ int main(int argc, char *argv[]) {
 		rotrfopts.scale_atr      = opt.rotrf_scale_atr;
 		::devel::scheme::RotamerRFTablesManager rotrf_table_manager( rot_index_p, rotrfopts );
 		// rotrf_table_manager.preinit_all();
+		
 
 		MakeTwobodyOpts make2bopts;
 		// hacked by brian             VVVV
@@ -749,6 +749,7 @@ int main(int argc, char *argv[]) {
 				rso_config.rot_index_p = rot_index_p;
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
+                rso_config.requirements = opt.requirements;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
 
@@ -967,6 +968,8 @@ int main(int argc, char *argv[]) {
 
 
 			}
+
+
 			// std::cout << "scores for scaffold in original position: " << std::endl;
    //          {
 
@@ -1092,6 +1095,7 @@ int main(int argc, char *argv[]) {
 
 			ThreePointVectors input;
 			input.search_points = starting_point;
+			std::cout << "RUN!" << std::endl;
 			ThreePointVectors results = protocol.run( input, rdd, pd );
 
 			time_rif += pd.time_rif;

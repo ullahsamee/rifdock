@@ -116,7 +116,9 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
-    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion) // added options
+    OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
+    OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
 
 	// bounding grids stuff
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_cart_resls        )
@@ -124,6 +126,11 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( RealVector        , rifgen, hash_ang_resls         )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_radii      )
 	OPT_1GRP_KEY( RealVector        , rifgen, lever_bounds     )
+
+
+  // the tuning file, finely control how the rifgen and rifdock works
+  OPT_1GRP_KEY( String        , rifgen, tuning_file )
+
 
 
 	void register_options() {
@@ -180,6 +187,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+        NEW_OPT(  rifgen::use_d_aa							, "" , false);
+        NEW_OPT(  rifgen::use_l_aa							, "" , true);
 
 
 
@@ -189,6 +198,9 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT( rifgen::hash_ang_resls,  "ang reslolution(s) of hash table(s) in degrees", utility::vector1<double>() );
 		NEW_OPT( rifgen::lever_radii      , ""                                      , utility::vector1<double>() );
 		NEW_OPT( rifgen::lever_bounds     , ""                                      , utility::vector1<double>() );
+
+
+		NEW_OPT(  rifgen::tuning_file                          , "precisely control how rifgen and rifdock work" , "" );
 	}
 
 
@@ -380,6 +392,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
             hspot_opts.hotspot_score_thresh = option[ rifgen::hotspot_score_thresh]();
             hspot_opts.dump_hotspot_samples = option[ rifgen::dump_hotspot_samples]();
+            hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
@@ -557,8 +570,12 @@ int main(int argc, char *argv[]) {
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
 	std::cout << "Preparing rotamer index spec..." << std::endl;
-	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers]());
-
+	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa](), option[rifgen::use_l_aa]());
+	// 	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
+	// 	utility::io::ozstream spec_out(rot_spec_fname);
+	// 	rot_index_spec.save(spec_out);
+	// 	spec_out.close();
+	// utility_exit_with_message("exit check");
 	for( int igen = 0; igen < generators.size(); ++igen )
 	{
 		//cache the input 
@@ -571,6 +588,34 @@ int main(int argc, char *argv[]) {
 
 	shared_ptr<RotamerIndex> rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec, option[rifgen::use_rosetta_grid_energies]() );
 		RotamerIndex & rot_index( *rot_index_p );
+
+	// std::cerr << rot_index.size() << std::endl;
+
+	// for( int irot = 0; irot < rot_index.n_primary_rotamers(); ++irot ){
+	// 	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 		utility::io::ozstream out( "rotamer_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 		rot_index.dump_pdb_with_children(out,irot);
+	// 		out.close();
+	// 	}
+	// }
+
+	// for( int irot = 0; irot < rot_index.size(); ++irot ){
+	//  	if (rot_index.resname(irot) == "DTY" || rot_index.resname(irot) == "HIS" || rot_index.resname(irot) == "LYS") {
+	// 	 	utility::io::ozstream out( "rotalnstruct_" + rot_index.resname(irot) + str(irot) + ".pdb" );
+	// 	 	rot_index.dump_pdb(out, irot, rot_index.to_structural_parent_frame_.at(irot) );
+	// 	 	out.close();
+	//  	}
+	// }
+
+	// for( int isp : rot_index.structural_parents_ ){
+	// 	if (rot_index.resname(isp) == "DTY" || rot_index.resname(isp) == "HIS" || rot_index.resname(isp) == "LYS") {
+	// 		utility::io::ozstream out( "rotstructgroup_" + rot_index.resname(isp) + str(isp) + ".pdb" );
+	// 		rot_index.dump_pdb_by_structure(out,isp);
+	// 		out.close();
+	// 	}
+	// }
+
+	//utility_exit_with_message("testing out extra rotamers");
 
 		
 		// utility::io::ozstream riout( "trp_rots.pdb" );
@@ -696,6 +741,7 @@ int main(int argc, char *argv[]) {
 		params->grid_scorer = grid_scorer;
 		params->soft_grid_energies = option[rifgen::soft_rosetta_grid_energies]();
 #endif
+		params->tuning_file = option[rifgen::tuning_file]();
 
 		for( int igen = 0; igen < generators.size(); ++igen )
 		{

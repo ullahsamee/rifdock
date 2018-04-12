@@ -240,6 +240,7 @@ RotamerIndexSpec
 	// 	this -> std::vector<RotamerSpec> rot_specs;
 	// }
 	std::vector<RotamerSpec> rot_specs;
+
 	
 	size_t size() const { return rot_specs.size(); }
 	void clear() {rot_specs.clear();}
@@ -293,7 +294,11 @@ RotamerIndexSpec
 		//std::cout << rot_specs.size() << std::endl;
 		for(auto rot_spec : rot_specs){
 			//std::cout << rot_spec.resname_ << std::endl;
-			rot_index.add_rotamer(rot_spec.resname_,rot_spec.chi_,rot_spec.n_proton_chi_,rot_spec.parent_key_);
+			if (rot_index.d_l_map_.find(rot_spec.resname_) == rot_index.d_l_map_.end()) {
+				rot_index.add_rotamer(rot_spec.resname_,rot_spec.chi_,rot_spec.n_proton_chi_,rot_spec.parent_key_);
+			} else {
+				rot_index.add_rotamer(rot_spec.resname_,rot_spec.chi_,rot_spec.n_proton_chi_,rot_spec.parent_key_, true);
+			}
 		}
 		std::cout << "start building rotamer index from fill rotamers" << std::endl;
 		rot_index.build_index();
@@ -387,7 +392,7 @@ struct RotamerIndex {
 	size_t size() const { return rotamers_.size(); }
 	size_t n_primary_rotamers() const { return n_primary_rotamers_; }
 	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
-	char oneletter(size_t i) const { return oneletter_map_.at(rotamers_.at(i).resname_); }
+	std::string oneletter(size_t i) const { return oneletter_map_.at(rotamers_.at(i).resname_); }
 	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
 	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
 	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }
@@ -399,10 +404,13 @@ struct RotamerIndex {
 	Atom const & hbond_atom1( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).first; }
 	Atom const & hbond_atom2( size_t i, size_t ihb ) const { return rotamers_.at(i).hbonders_.at(ihb).second; }
 	size_t parent_irot( size_t i ) const { return parent_rotamer_.at(i); }
-	int same_struct_start_chi(size_t irot) const { return (resname(irot)=="ILE") ? 1 : 2; }
+	int same_struct_start_chi(size_t irot) const { return (resname(irot)=="ILE" || resname(irot) == "DIL") ? 1 : 2; }
 	Rotamer const & rotamer( int irot ) const { return rotamers_.at(irot); }
 
-	std::map<std::string,char> oneletter_map_;
+	std::map<std::string,std::string> oneletter_map_;
+	// map between d and l version of aa
+	std::map<std::string,std::string> d_l_map_;
+	std::vector<bool> is_d_;
 
 	ChemicalIndex<AtomData> chem_index_;
 
@@ -429,11 +437,14 @@ struct RotamerIndex {
 
 	// this is egregious and is only used with GridScoring
 	// per_thread_rotamers_[thread][irot];
+	// TODO: probably broke it with d_aa code need to be fix
 	std::vector<std::vector<core::conformation::ResidueOP>> per_thread_rotamers_;
 	std::vector<std::vector<core::scoring::lkball::LKB_ResidueInfoOP>> per_thread_lkbrinfo_;
 
+
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
+		this->fill_d_l_map( d_l_map_ );
 	}
 
 	void clear(){
@@ -516,13 +527,15 @@ struct RotamerIndex {
 		std::string resname,
 		std::vector<float> const & chi,
 		int n_proton_chi,
-		int parent_key = -1
+		int parent_key = -1,
+		bool is_d_aa = false
 	){
 		ALWAYS_ASSERT_MSG( n_primary_rotamers_!=0 || parent_key == -1, "must add primary rotamers before children" )
 		ALWAYS_ASSERT_MSG( !seen_child_rotamer_ || parent_key != -1, "can't intsert primary rotamer after inserting child" )
 		ALWAYS_ASSERT( parent_key == -1 | parent_key < n_primary_rotamers_ );
 		Rotamer r;
-		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms, r.donors_, r.acceptors_ );
+
+		rotgen_.get_atoms( resname, chi, r.atoms_, r.hbonders_, r.nheavyatoms, r.donors_, r.acceptors_, d_l_map_ );
 		r.resname_ = resname;
 		r.chi_ = chi;
 		r.n_proton_chi_ = n_proton_chi;
@@ -541,6 +554,9 @@ struct RotamerIndex {
 	void
 	build_index()
 	{
+		std::cout << "n_p_rots: " << n_primary_rotamers_ << std::endl;
+		std::cout << "n_rots: " << rotamers_.size() << std::endl;
+		std::cout << "n_par_rots: " << parent_rotamer_.size() << std::endl;
 
 		// bounds
 		bounds_map_[ rotamers_.front().resname_ ].first = 0;
@@ -551,7 +567,7 @@ struct RotamerIndex {
 			}
 		}
 		bounds_map_[ rotamers_.back().resname_ ].second = n_primary_rotamers_;
-
+		//utility_exit_with_message("done?");
 		// primary rotamers
 		// for(int i = 0; i < rotamers_.size(); ++i){
 			// if( parent_rotamer_.at(i)==i ) primary_rotamers_.push_back(i);
@@ -563,11 +579,13 @@ struct RotamerIndex {
 		std::vector<int> child_count(n_primary_rotamers_,0);
 		for(int i = 0; i < rotamers_.size(); ++i){
 			if( is_primary(i) ) continue; // primary not in list of children
+
 			int ipri = parent_rotamer_.at(i);
 			child_count.at(ipri)++;
 			child_map_.at(ipri).first  = std::min( child_map_.at(ipri).first , i );
 			child_map_.at(ipri).second = std::max( child_map_.at(ipri).second, i );
 		}
+		//std::cout << "child_map size: " << child_map_.size() << std::endl;
 		for(int ipri = 0; ipri < child_map_.size(); ++ipri){
 			if( child_count.at(ipri) ){
 				++child_map_.at(ipri).second;
@@ -598,13 +616,14 @@ struct RotamerIndex {
 					protonchi_parent_of_.at(irot) = jrot;
 					// std::cerr << "pcp " << resname(irot) << " " << irot << " " << jrot;
 					// for( int ichi = 0; ichi < nchi(irot); ++ichi){
-						// std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
+					// 	std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
 					// }
 					// std::cerr << std::endl;
 					break;
 				}
 			}
 		}
+
 		{
 			for( int irot = 0; irot < size(); ++irot ){
 				ALWAYS_ASSERT( protonchi_parent_of_.at(irot) >= 0 && protonchi_parent_of_.at(irot) <= irot );
@@ -629,7 +648,7 @@ struct RotamerIndex {
 					structural_parent_of_.at(irot) = jrot;
 					// std::cerr << "chi34 " << resname(irot) << " " << irot << " " << jrot;
 					// for( int ichi = 0; ichi < nchi(irot); ++ichi){
-						// std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
+					// 	std::cerr << " " << chi(irot,ichi) << "/" << chi(jrot,ichi);
 					// }
 					// std::cerr << std::endl;
 					break;
@@ -685,6 +704,12 @@ struct RotamerIndex {
 				ala_rot_ = i;
 				break;
 			}
+		}
+
+		is_d_.resize( this->size() );
+		for ( size_t irot = 0; irot < this->size(); irot++ ) {
+			bool is_d =  d_l_map_.count(resname(irot)) != 0;
+			is_d_[irot] = is_d;
 		}
 
 		sanity_check();
@@ -820,8 +845,18 @@ struct RotamerIndex {
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 
 		for ( int irot = 0; irot < size(); irot++ ) {
-			core::chemical::ResidueType const & rtype = rts.lock()->name_map( resname(irot));
-
+			// take care of d vs. l 
+			core::chemical::ResidueTypeOP rtypeOP;
+			if (d_l_map_.find(resname(irot)) != d_l_map_.end()) {
+				core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(d_l_map_.find(resname(irot))->second).get_self_ptr();
+ 				core::chemical::ResidueTypeCOP tmp_dcop = rts.lock() -> get_d_equivalent(rt_tmp);
+ 				rtypeOP = tmp_dcop -> clone();
+ 			} else {
+ 				core::chemical::ResidueTypeCOP rt_tmp = rts.lock() -> name_map(resname(irot)).get_self_ptr();
+ 				rtypeOP = rt_tmp -> clone();
+ 			}
+			//core::chemical::ResidueType const & rtype = rts.lock()->name_map(resname(irot));
+ 			core::chemical::ResidueType const & rtype = *rtypeOP;
 			core::conformation::ResidueOP rsd = get_residue_at_identity(rtype, chis(irot));
 			core::scoring::lkball::LKB_ResidueInfoOP lkbrinfo( new core::scoring::lkball::LKB_ResidueInfo( *rsd ));
 
@@ -874,7 +909,7 @@ struct RotamerIndex {
 		return ::scheme::chemical::make_stub<Xform>(p0, p1, p2);
 	}
 
-	// bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
+	//bool is_primary( int irot ) const { return parent_rotamer_.at(irot)==irot; }
 	bool is_primary( int irot ) const { return irot < n_primary_rotamers_; }
 	bool is_structural_primary( int irot ) const { return structural_parent_of_.at(irot) == irot; }
 
@@ -956,7 +991,7 @@ struct RotamerIndex {
 	int structural_parent( int i ) const { return structural_parent_of_.at(i); }
 
 
-	void fill_oneletter_map( std::map<std::string,char> & oneletter_map ){
+	void fill_oneletter_map( std::map<std::string,std::string> & oneletter_map ){
 		oneletter_map["ALA"] = 'A';
 		oneletter_map["CYS"] = 'C';
 		oneletter_map["ASP"] = 'D';
@@ -1023,8 +1058,79 @@ struct RotamerIndex {
 		oneletter_map["unp"] = 'z';
 		oneletter_map["unk"] = 'Z';
 		oneletter_map["vrt"] = 'X';
-	}
+		// oneletter_map["DAL"] = 'a';
+		// oneletter_map["DCS"] = 'c';
+		// oneletter_map["DAS"] = 'd';
+		// oneletter_map["DGU"] = 'e';
+		// oneletter_map["DPH"] = 'f';
+		// oneletter_map["DHI"] = 'h';
+		// oneletter_map["DIL"] = 'i';
+		// oneletter_map["DLY"] = 'k';
+		// oneletter_map["DLE"] = 'l';
+		// oneletter_map["DME"] = 'm';
+		// oneletter_map["DAN"] = 'n';
+		// oneletter_map["DPR"] = 'p';
+		// oneletter_map["DGN"] = 'q';
+		// oneletter_map["DAR"] = 'r';
+		// oneletter_map["DSE"] = 's';
+		// oneletter_map["DTH"] = 't';
+		// oneletter_map["DVA"] = 'v';
+		// oneletter_map["DTR"] = 'w';
+		// oneletter_map["DTY"] = 'y';
 
+		oneletter_map["DAL"] = "DAL";
+		oneletter_map["DCS"] = "DCS";
+		oneletter_map["DAS"] = "DAS";
+		oneletter_map["DGU"] = "DGU";
+		oneletter_map["DPH"] = "DPH";
+		oneletter_map["DHI"] = "DHI";
+		oneletter_map["DIL"] = "DIL";
+		oneletter_map["DLY"] = "DLY";
+		oneletter_map["DLE"] = "DLE";
+		oneletter_map["DME"] = "DME";
+		oneletter_map["DAN"] = "DAN";
+		oneletter_map["DPR"] = "DPR";
+		oneletter_map["DGN"] = "DGN";
+		oneletter_map["DAR"] = "DAR";
+		oneletter_map["DSE"] = "DSE";
+		oneletter_map["DTH"] = "DTH";
+		oneletter_map["DVA"] = "DVA";
+		oneletter_map["DTR"] = "DTR";
+		oneletter_map["DTY"] = "DTY";
+	}
+	void fill_d_l_map( std::map<std::string,std::string> & d_l_map){
+		d_l_map.insert(std::make_pair("DAL","ALA"));
+		d_l_map.insert(std::make_pair("DCS","CYS"));
+		d_l_map.insert(std::make_pair("DAS","ASP"));
+		d_l_map.insert(std::make_pair("DGU","GLU"));
+		d_l_map.insert(std::make_pair("DPH","PHE"));
+		d_l_map.insert(std::make_pair("DHI","HIS"));
+		d_l_map.insert(std::make_pair("DIL","ILE"));
+		d_l_map.insert(std::make_pair("DLY","LYS"));
+		d_l_map.insert(std::make_pair("DLE","LEU"));
+		d_l_map.insert(std::make_pair("DME","MET"));
+		d_l_map.insert(std::make_pair("DAN","ASN"));
+		d_l_map.insert(std::make_pair("DPR","PRO"));
+		d_l_map.insert(std::make_pair("DGN","GLN"));
+		d_l_map.insert(std::make_pair("DAR","ARG"));
+		d_l_map.insert(std::make_pair("DSE","SER"));
+		d_l_map.insert(std::make_pair("DTH","THR"));
+		d_l_map.insert(std::make_pair("DVA","VAL"));
+		d_l_map.insert(std::make_pair("DTR","TRP"));
+		d_l_map.insert(std::make_pair("DTY","TYR"));
+		//d_l_map.insert(std::make_pair("DHI","HIS_D"));
+		//d_l_map.insert(std::make_pair("DGL","GLY"));
+	}
+	void d_l_map_reverse(std::string l_name, std::string &d_name) {
+        for (auto it : this -> d_l_map_) {
+        	if (it.second == l_name) {
+        		d_name = it.first;
+        		break;
+        	} else {
+        		d_name = l_name;
+        	}
+        }
+	}
 
 	bool operator==(THIS const & other) const {
 		return (
@@ -1069,6 +1175,27 @@ std::ostream & operator << ( std::ostream & out, RotamerIndex<A,RG,X> const & ri
 	ib=ridx.index_bounds("VAL"); out<<"    VAL "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
 	ib=ridx.index_bounds("TRP"); out<<"    TRP "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
 	ib=ridx.index_bounds("TYR"); out<<"    TYR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+
+	ib=ridx.index_bounds("DAL"); out<<"    DAL "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DCS"); out<<"    DCS "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DAS"); out<<"    DAS "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DGU"); out<<"    DGU "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DPH"); out<<"    DPH "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DHI"); out<<"    DHI "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DIL"); out<<"    DIL "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DLY"); out<<"    DLY "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DLE"); out<<"    DLE "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DME"); out<<"    DME "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DAN"); out<<"    DAN "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DPR"); out<<"    DPR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DGN"); out<<"    DGN "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DAR"); out<<"    DAR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DSE"); out<<"    DSE "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DTH"); out<<"    DTH "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DVA"); out<<"    DVA "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DTR"); out<<"    DTR "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	ib=ridx.index_bounds("DTY"); out<<"    DTY "<<(ib.second-ib.first)<<" "<<ib.first<<"-"<<ib.second-1<<" "<<ridx.nchi(ib.first)<<" "<<ridx.nprotonchi(ib.first)<<std::endl;
+	
  	return out;
 }
 

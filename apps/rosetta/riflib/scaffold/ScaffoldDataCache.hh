@@ -68,9 +68,11 @@ struct ScaffoldDataCache {
     shared_ptr<std::vector<std::string>> scaffold_sequence_glob0_p;            // Scaffold sequence in name3 space
     shared_ptr<std::vector< std::pair<int,int> > > local_rotamers_p;           // lower and upper bounds into rotamer_index for each local_seqpos
     std::string scaff_res_hashstr;
-
-
+    shared_ptr<std::vector<std::pair<core::Real,core::Real> > > scaffold_phi_psi_p; // Scaffold phi-psi
+    shared_ptr<std::vector<bool>> scaffold_d_pos_p;                                  // Scaffold allow d postion base on phi-psi
     uint64_t debug_sanity;
+
+    shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
 
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
@@ -121,12 +123,36 @@ struct ScaffoldDataCache {
         scaffres_l2g_p = make_shared<std::vector<int>>();
         scaffres_g2l_p = make_shared<std::vector<int>>(pose.size(), -1);
         scaffuseres_p = make_shared<std::vector<bool>>(pose.size(), false);
+        // scaffold_phi_psi_p = make_shared<std::vector< std::pair<core::Real,core::Real>>>();
+        // scaffold_d_pos_p = make_shared<std::vector<int>>();
+        if ( opt.use_dl_mix_bb ) {
+            allowed_irot_at_ires_p = make_shared<std::vector<std::vector<bool>>>();
+        }
+        
+
+        // setting up the d and l maps
+        std::vector<bool> d_map = rot_index_p->is_d_;
+        std::vector<bool> l_map( d_map.size() );
+        for ( int irot = 0; irot < l_map.size(); irot++ ) l_map[irot] = ! d_map[irot]; 
+
+        for ( int irot = 0; irot < l_map.size(); irot++ ) {
+            std::cout << irot << " " << ( l_map[irot] ? "L" : " " ) << ( d_map[irot] ? "D" : " " ) << rot_index_p->oneletter(irot) << std::endl;
+        }
+
 
 
         for ( core::Size ir : *scaffold_res_p) {
             (*scaffres_g2l_p)[ir-1] = count++;
             scaffres_l2g_p->push_back(ir-1);
             (*scaffuseres_p)[ir-1] = true;
+
+            if ( allowed_irot_at_ires_p ) {
+                if (pose.phi(ir) > 0) {
+                    allowed_irot_at_ires_p->push_back( d_map );
+                } else {
+                    allowed_irot_at_ires_p->push_back( l_map );
+                }
+            }
         }
 
         // This is setting scaff_redundancy_filter_rg and scaff_radius

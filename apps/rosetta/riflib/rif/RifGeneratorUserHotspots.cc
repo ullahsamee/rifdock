@@ -47,6 +47,11 @@
 	#include <scheme/objective/hash/XformMap.hh>
 	#include <scheme/objective/storage/RotamerScores.hh>
 	#include <scheme/actor/BackboneActor.hh>
+	#include <vector>
+	#include <utility/vector1.hh> 
+
+    #include <riflib/rif/requirements_util.hh>
+
 
 
 namespace devel {
@@ -101,6 +106,32 @@ namespace rif {
 		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 		typedef ::Eigen::Matrix<float,3,1> Pos;
+        
+        // requirements definitions
+        std::vector< RequirementDefinition > requirement_definitions = get_requirement_definitions( params->tuning_file );
+        bool const use_requirement_definition = !( requirement_definitions.empty() );
+        std::vector< int > hotspot_requirement_labels;
+        if ( use_requirement_definition ) {
+            // 20 is an arbitrary number, as I don't think there would be more than 20 hotspots.
+            hotspot_requirement_labels.resize( 20 );
+            for (int ii = 0; ii < hotspot_requirement_labels.size(); ++ii) {
+                hotspot_requirement_labels[ii] = -1;
+            }
+            // fill the hotspot definitions
+            for ( auto const & x : requirement_definitions ) {
+                if ( x.require == "HBOND" ) {
+                    //
+                } else if ( x.require == "BIDENTATE" ) {
+                    //
+                } else if ( x.require == "HOTSPOT" ) {
+                    int hotspot_num = utility::string2int( x.definition[0] );
+                    hotspot_requirement_labels[ hotspot_num ] = x.req_num;
+                } else {
+                    std::cout << "Unknown requirement definition, maybe you should define more." << std::endl;
+                }
+            }
+        }
+
 	
 		// some sanity checks
 		int const n_hspot_groups = this->opts.hotspot_files.size();
@@ -188,20 +219,83 @@ namespace rif {
 		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
+			
+
 			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
 			std::cout << "Hotspot group: " << i_hotspot_group << " - " << hotspot_file << std::endl;
+
+
 			
 			// read hotspot file into pose
 			core::pose::Pose pose;
 			core::import_pose::pose_from_file(pose,hotspot_file);
+			
+			utility::vector1<std::vector<std::string>>myresname(pose.size()); 
+			for (int i = 1; i <= pose.size(); i++) {
+                std::string rn(pose.residue(i).name3());
+				if (rn == "CA_") { // carboxamide
+					myresname[i].push_back("GLN");
+					myresname[i].push_back("ASN");
+                } else if (rn == "OH_") { // hydroxyl
+                    myresname[i].push_back("TYR");
+                    myresname[i].push_back("SER");
+                    myresname[i].push_back("THR");
+                } else if (rn == "G__") { // guanidium
+                    myresname[i].push_back("GLN");
+                } else if (rn == "I__") { // imidazole
+                    myresname[i].push_back("HIS");
+                } else if (rn == "ID_") { //imidazole_D
+                    // does this work?
+                    myresname[i].push_back("HIS_D");
+                } else if (rn == "A__") { // amine
+                    myresname[i].push_back("LYS");
+                } else if (rn == "C__") { // carboxylate
+                    myresname[i].push_back("GLU");
+                    myresname[i].push_back("ASP");
+                } else {
+					myresname[i].push_back(pose.residue(i).name3());
+				}
+			}
+
       		
+
       		std::cout << "Processing hotspots... " << std::flush; // No endl here!!!!
 			// read in pdb files # i_hotspot_group
-			for( int i_hspot_res = 1; i_hspot_res <= pose.size(); ++i_hspot_res ){
+			
+			for( int i_hspot_res = 1; i_hspot_res <= myresname.size(); ++i_hspot_res ){
+
+			    std::vector<std::string> d_name;
+			    // try to find matching d version if use_d_aa
+ 
+                for (auto it : params -> rot_index_p -> d_l_map_) {
+                	 
+                	for (auto const & name_it: myresname[i_hspot_res]){
+                    	//std::cout << it.second << " " << name_it << std::endl;
+                    	if (it.second == name_it){//pose.residue(i_hspot_res).name3()) {
+                    		if (this->opts.use_d_aa) {
+                    			d_name.push_back(it.first);
+                    		} else {
+                    			d_name.push_back(" ");
+                    		}
+                    	}
+                	}
+                }
+
+            	// if (this->opts.use_d_aa && d_name == " ") {
+             //   		std::cout << pose.residue(i_hspot_res).name3() << std::endl;
+             //   		utility_exit_with_message("can't find d version");
+            	// } else {
+            	// 	std::cout << d_name << std::endl;
+            	// }
 
 				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
 
+				// possible name still OK
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
+                if (input_nheavy < 3) { // this can happen for disembodied hydroxyls
+                    input_nheavy = 3;
+                }
+                
 				
 
 				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
@@ -224,6 +318,7 @@ namespace rif {
         			if (iter == end +0){hot_atom3(0,0) = iter->xyz()[0];hot_atom3(1,0) = iter->xyz()[1];hot_atom3(2,0) = iter->xyz()[2];}
         			iter --;
       			}
+      			//std::cout << "crash again" << std::endl;
       			hot_atom1 = hot_atom1 - target_vec; 
 				hot_atom2 = hot_atom2 - target_vec; 
 				hot_atom3 = hot_atom3 - target_vec;	
@@ -234,169 +329,164 @@ namespace rif {
 				// for each irot that is the right restype (can be had from rot_intex_p)
 				int irot_begin = 0, irot_end = params -> rot_index_p -> size();
 				for( int irot = irot_begin; irot < irot_end; ++irot ){
-
 					::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms matrix
 						
 					// assign rif_res position by column
 					int hatoms = params -> rot_index_p -> nheavyatoms(irot);
-					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
-					EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
-                    );
+                    
+					//for (auto const & it: myresname[i_hspot_res]){
+					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
+							auto it = myresname[i_hspot_res][i];
+							//std::cout << it << std::endl;
+							//std::cout << d_name[i] << std::endl;
+						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_name[i])
+						{
+							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
+							EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
+		                    );
+                            // TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
+                            // Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
+                            if (pose.residue(i_hspot_res).name3() == "OH_"){
+                                // For TYR: the last two heavy atoms and 'HH' -- atom number 20
+                                // For SER: the last two heavy atoms and 'HG'
+                                // For THR: the last two heavy atoms and 'HG1'
+                                // both are atom number 10.
+                                int atmno = (params -> rot_index_p -> resname(irot) == "TYR") ? 20 : 10;
+                                Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
+                                    rotamer_atoms.at( atmno ).position()
+                                );
+                            }
 
-					if (params -> rot_index_p -> resname(irot) == pose.residue(i_hspot_res).name3())
-					{
+							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
+							EigenXform impose; //transform for mapping the Rot to Rif
+							::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
+							int latoms = params -> rot_index_p -> natoms(irot);
+							rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
+		     	 			Pos rot_cen = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
+		     				
 						
-						EigenXform impose; //transform for mapping the Rot to Rif
-						::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
-						int latoms = params -> rot_index_p -> natoms(irot);
-						rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
-	     	 			Pos rot_cen = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
-         				
-					
-						
-	     // 	 			if (!this->opts.single_file_hotspots_insertion){
-      //     				//svd superimpose
-      //     				//matrix to be SVD decomposed
-      //     				::Eigen::Matrix<float,3,3> cov_mtx;										
-      //     				cov_mtx = (rif_res.col(0) - rot_cen)*(hot_atom1 - hot_cen).transpose() + (rif_res.col(1) - rot_cen)*(hot_atom2 - hot_cen).transpose() + (rif_res.col(2) - rot_cen)*(hot_atom3 - hot_cen).transpose();
-      //       			//Eigen SVD
-      //       			::Eigen::JacobiSVD<::Eigen::Matrix<float,3,3>> svd(cov_mtx, Eigen::ComputeFullU | Eigen::ComputeFullV);
-						// //Rotation Matrix
-						// ::Eigen::Matrix<float,3,3> R_mtx = svd.matrixV() * svd.matrixU().transpose();
-						// //Translation Matrix
-     	// 				::Eigen::Matrix<float,3,1> T_mtx = - R_mtx*rot_cen + hot_cen;
-      //   				//Puting R/T together
-      //   				::Eigen::Matrix<float,3,4> Tran_mtx;					
-				  // 		Tran_mtx.block<3,3>(0,0) = R_mtx;
-      //   				Tran_mtx.block<3,1>(0,3) = T_mtx;
-      //   				//Final superimpose EigenXform matrix
-						// //EigenXform impose;
-						// impose.matrix() = Tran_mtx;
-						// }
-						
-						impose = Xref * Xrotamer.inverse();						
-						//Additional matrix definition for manipulation
-						//Default Rot starting Xform
-						EigenXform x_orig_position = EigenXform::Identity();
-						//Xform to move rif to and from starting postion
-						EigenXform x_2_orig = EigenXform::Identity();
-         				x_2_orig.translation() = -hot_cen;
-         				EigenXform x_2_orig_inverse = x_2_orig.inverse();
-         				
-         				
+							impose = Xref * Xrotamer.inverse();						
+							//Additional matrix definition for manipulation
+							//Default Rot starting Xform
+							EigenXform x_orig_position = EigenXform::Identity();
+							//Xform to move rif to and from starting postion
+							EigenXform x_2_orig = EigenXform::Identity();
+		     				x_2_orig.translation() = -hot_cen;
+		     				EigenXform x_2_orig_inverse = x_2_orig.inverse();
 
-						//impose = Xref * Xrotamer.inverse();//working
-						//impose.matrix() = Tran_mtx;//not working
+							int passes = 1;
+							EigenXform O_2_orig = EigenXform::Identity();
+		     				EigenXform tyr_thing = EigenXform::Identity();	
+							if (pose.residue(i_hspot_res).name3() == "TYR" || d_name[i] == "DTY") {
 
+								Pos the_axis = (hot_atom1 - hot_atom2).normalized();
+								O_2_orig.translation() = -hot_atom1;	
+								tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
 
+								passes = 2;
 
-						//EigenXform O_2_orig = EigenXform::Identity();
-
-						int passes = 1;
-						EigenXform O_2_orig = EigenXform::Identity();
-         				EigenXform tyr_thing = EigenXform::Identity();	
-						if (pose.residue(i_hspot_res).name3() == "TYR") {
-
-							Pos the_axis = (hot_atom1 - hot_atom2).normalized();
-							O_2_orig.translation() = -hot_atom1;	
-							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
-
-							passes = 2;
-
-						} else if (pose.residue(i_hspot_res).name3() == "PHE") {
-							
-							Pos atom6;
-							atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
-							atom6(1,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[1];
-							atom6(2,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[2];
-							atom6 = atom6 - target_vec;
-
-							Pos the_axis = (hot_atom1 - atom6).normalized();
-							O_2_orig.translation() = -hot_atom1;	
-							tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
-
-							passes = 2;
-						}
-						
-
-						EigenXform O_2_orig_inverse = O_2_orig.inverse();
-
-
-
-						for ( int pass = 0; pass < passes; pass++) {
-							//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
-							//for( auto const & x_perturb : sample_position_deltas ){
-							int num_of_hotspot_inserted = 0;
-							//std::cout << "being parallel block" << std::endl;
-							#ifdef USE_OPENMP
-							#pragma omp parallel for schedule(dynamic,16)
-							#endif
-
-							for(int a = 0; a < NSAMP; ++a){							
-								EigenXform x_perturb;
-								::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
-
-								EigenXform building_x_position = impose * x_orig_position;
-								if ( pass == 1 ) {
-									building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
-								}
-
-								EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
-									
-								// you can check their "energies" against the target like this, obviously substituting the real rot# and position
-								float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+							} else if (pose.residue(i_hspot_res).name3() == "PHE" || d_name[i] == "DPH") {
 								
-								if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
+								Pos atom6;
+								atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
+								atom6(1,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[1];
+								atom6(2,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[2];
+								atom6 = atom6 - target_vec;
 
-									//num_of_hotspot_inserted += 1;
-									// EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
-								    // you can check their "energies" against the target like this, obviously substituting the real rot# and position
-									//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+								Pos the_axis = (hot_atom1 - atom6).normalized();
+								O_2_orig.translation() = -hot_atom1;	
+								tyr_thing.rotate( Eigen::AngleAxisf(M_PI, the_axis)); 
 
-
-									//target_pose.dump_pdb(s);
-									//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
-									//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
-
-									//std::cout << positioned_rotamer_score << std::endl;
-									//accumulator->insert( x_position, positioned_rotamer_score-100, irot, i_hotspot_group, -1 );
-									
-
-										//std::cout << "new :                  " << std::endl;
-									auto atom_N = x_position * rotamer_atoms[0].position();
-									auto atom_CA = x_position * rotamer_atoms[1].position();
-									auto atom_C = x_position * rotamer_atoms[2].position(); 
-
-									BBActor bbact( atom_N, atom_CA, atom_C);
-									EigenXform new_x_position = bbact.position();
-
-									accumulator->insert( new_x_position, positioned_rotamer_score-4, irot, 
-										this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group,
-										 -1 );
-
-								 	if (opts.dump_hotspot_samples>=NSAMP){
-								 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";
-										for( auto a : rotamer_atoms ){
-										 	a.set_position( x_position * a.position() );
-										 	::scheme::actor::write_pdb(hotspot_dump_file, a, params->rot_index_p->chem_index_ );
-										}
-										hotspot_dump_file <<"ENDMDL                                                                          \n";							
-									} //end dumping hotspot atoms
-
-														
-
-									// myfile.close();
-								} // end rotamer insertion score cutoff					
+								passes = 2;
+							}
 							
-							} // end NSAMP
-							//std::cout << "this is how many inserted: " << i_hotspot_group << " " << irot << " " << num_of_hotspot_inserted << std::endl;
+
+							EigenXform O_2_orig_inverse = O_2_orig.inverse();
+
+
+
+							for ( int pass = 0; pass < passes; pass++) {
+								//std::cout << Tran_mtx.block<3,3>(0,0)*rif_res+temp << std::endl;
+								//for( auto const & x_perturb : sample_position_deltas ){
+								int num_of_hotspot_inserted = 0;
+								//std::cout << "being parallel block" << std::endl;
+								#ifdef USE_OPENMP
+								#pragma omp parallel for schedule(dynamic,16)
+								#endif
+
+								for(int a = 0; a < NSAMP; ++a){							
+									EigenXform x_perturb;
+									::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
+
+									EigenXform building_x_position = impose * x_orig_position;
+									if ( pass == 1 ) {
+										building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
+									}
+
+									EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
+									//EigenXform x_position = x_2_orig_inverse * x_2_orig * building_x_position;
+										
+									// you can check their "energies" against the target like this, obviously substituting the real rot# and position
+									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+									
+									if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
+
+										//num_of_hotspot_inserted += 1;
+										// EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
+									    // you can check their "energies" against the target like this, obviously substituting the real rot# and position
+										//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+
+
+										//target_pose.dump_pdb(s);
+										//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
+										//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
+
+										//std::cout << positioned_rotamer_score << std::endl;
+										//accumulator->insert( x_position, positioned_rotamer_score-100, irot, i_hotspot_group, -1 );
+										
+
+											//std::cout << "new :                  " << std::endl;
+										auto atom_N = x_position * rotamer_atoms[0].position();
+										auto atom_CA = x_position * rotamer_atoms[1].position();
+										auto atom_C = x_position * rotamer_atoms[2].position(); 
+
+										BBActor bbact( atom_N, atom_CA, atom_C);
+										EigenXform new_x_position = bbact.position();
+
+                                        int sat1 = this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group;
+                                        int sat2 =-1;
+                                        if ( use_requirement_definition ) {
+                                            // as the numbering of i_hotspot_group starts from 0.
+                                            sat1 = hotspot_requirement_labels[ i_hotspot_group + 1 ];
+                                        }
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+
+									 	if (opts.dump_hotspot_samples>=NSAMP){
+									 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";
+											for( auto a : rotamer_atoms ){
+											 	a.set_position( x_position * a.position() );
+											 	::scheme::actor::write_pdb(hotspot_dump_file, a, params->rot_index_p->chem_index_ );
+											}
+											hotspot_dump_file <<"ENDMDL                                                                          \n";							
+										} //end dumping hotspot atoms
+
+															
+
+										// myfile.close();
+									} // end rotamer insertion score cutoff					
+								
+								} // end NSAMP
+								//std::cout << "this is how many inserted: " << i_hotspot_group << " " << irot << " " << num_of_hotspot_inserted << std::endl;
+							
+							} // end brian ring flip
 						
-						} // end brian ring flip
-					
-					} // end loop over rotamers which match hotspot res name
+						} // end loop over rotamers which match hotspot res name
+					} // loop over vector of input hotspot names 
 				
 				} //  end loop over rotamers library
 
