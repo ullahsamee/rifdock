@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
 			BurialOpts burial_opts;
 			burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
 			burial_opts.neighbor_count_weights.resize(0);
-			for ( int i = 0; i < 30; i++ ) {
+			for ( int i = 0; i < 100; i++ ) {
 				float weight;
 				if ( i < opt.unsat_neighbor_cutoff ) {
 					weight = 0;
@@ -391,21 +391,15 @@ int main(int argc, char *argv[]) {
 			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff),
 				EigenXform::Identity(), nullptr );
 
+			unsat_manager->apply_unsat_helper( opt.unsat_helper, burial_manager );
 
 			std::vector<float> initial_burial = burial_manager->get_burial_weights( EigenXform::Identity(), nullptr );
-			std::vector<float> unsat_scores = unsat_manager->get_presatisfied_unsats( initial_burial );
+			std::vector<float> unsat_scores = unsat_manager->get_initial_unsats( initial_burial );
 
-			for ( int iheavy = 0; iheavy < unsat_manager->target_heavy_atoms_.size(); iheavy++ ) {
-				if (initial_burial[iheavy] > 0) {
-					// std::cout << "Buried" << std::endl;
-				} 
-				float score = unsat_scores[iheavy];
-				 if ( score > 0 ) {
+			std::cout << "Inital buried unsats:" << std::endl;
+			unsat_manager->print_buried_unsats( unsat_scores );
+			unsat_manager->print_unsats_help( unsat_scores );
 
-        			hbond::HeavyAtom const & ha = unsat_manager->target_heavy_atoms_[iheavy];
-				 	std::cout << "Initial buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score) <<  score <<  std::endl;
-				 }
-			}
 
 
 		}
@@ -933,12 +927,9 @@ int main(int argc, char *argv[]) {
 
 
 
-					test_data_cache->setup_burial_grids( burial_manager );
 
 
 					// for ( int cutoff = 5; cutoff < 22; cutoff ++ ) {
-
-					
 
 					// 	BurialOpts burial_opts;
 					// 	burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
@@ -958,6 +949,19 @@ int main(int argc, char *argv[]) {
 					// 	burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%cutoff%opt.neighbor_distance_cutoff), 
 					// 								scene_minimal->position(1), test_data_cache->burial_grid );
 					// }
+
+
+					std::cout << "Input position buried unsats:" << std::endl;
+
+					std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
+
+					std::vector<EigenXform> bb_positions;
+					for ( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
+						bb_positions.push_back( scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+					}
+
+					std::vector<float> unsat_scores = unsat_manager->get_buried_unsats( initial_burial, result.rotamers(), bb_positions, rot_tgt_scorer );
+					unsat_manager->print_buried_unsats( unsat_scores );
 
 
 					burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 

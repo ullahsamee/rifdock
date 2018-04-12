@@ -46,7 +46,6 @@ CompileAndFilterResultsTask::return_rif_dock_results(
 }
 
 
-typedef int32_t intRot;
 
 template<class EigenXform, class ScaffoldIndex>
 struct tmplXRtriple {
@@ -263,8 +262,6 @@ CompileAndFilterResultsTask::return_rif_dock_results(
             rdd.objectives.at(rif_resl_), nclose, nclosemax, nclosethresh,
             scaffold_perturb
         );
-
-            std::cout << selected_xforms.size() << std::endl;
     }
     std::cout << std::endl;
 

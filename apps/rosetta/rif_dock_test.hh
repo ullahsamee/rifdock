@@ -209,6 +209,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
     OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
+    OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
@@ -417,6 +418,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
             NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+            NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
@@ -612,6 +614,7 @@ struct RifDockOpt
     int         unsat_neighbor_cutoff                ;
 	bool        unsat_debug                          ;
 	bool        test_hackpack                        ;    
+	std::string unsat_helper                         ;
 
     bool        dump_presatisfied_donors_acceptors   ;
     
@@ -801,7 +804,8 @@ struct RifDockOpt
         neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
         unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
 		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
-		test_hackpack                           = option[rif_dock::test_hackpack                        ]();        
+		test_hackpack                           = option[rif_dock::test_hackpack                        ]();  
+		unsat_helper                            = option[rif_dock::unsat_helper                         ]();      
 
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 
