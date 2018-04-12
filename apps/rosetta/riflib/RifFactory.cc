@@ -687,7 +687,8 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr< BurialManager > burial_manager_;
 		shared_ptr< UnsatManager > unsat_manager_;
 		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
-
+        //std::vector<std::vector<bool>> allowed_irots_;
+        shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 	};
