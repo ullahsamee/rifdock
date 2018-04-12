@@ -115,6 +115,24 @@ const std::vector<std::vector<float>> DefaultUnsatPenalties {
     std::vector<float> {4, 0},    // "HisH"
     std::vector<float> {0, 0}    // "Unknown"
 };
+const std::vector<std::vector<float>> ScottUnsatPenalties {
+    std::vector<float> {0, 0},    // "Hydroxyl",
+    std::vector<float> {0, 0},    // "TyrHydroxyl",
+    std::vector<float> {4, 0},    // "HydroxylH",
+    std::vector<float> {4, 0},    // "TyrHydroxylH",
+    std::vector<float> {4, 0},    // "BBAmide",
+    std::vector<float> {4, 0},    // "BBCarbonyl",
+    std::vector<float> {4, 0},    // "Amide",
+    std::vector<float> {4, 0},    // "AmideCarbonyl",
+    std::vector<float> {4, 0},    // "ArgNH",
+    std::vector<float> {4, 0},    // "ArgNE",
+    std::vector<float> {4, 0},    // "LysN",
+    std::vector<float> {4, 0},    // "Carboxylate",
+    std::vector<float> {4, 0},    // "TrypN",
+    std::vector<float> {0, 0},    // "HisN",
+    std::vector<float> {4, 0},    // "HisH"
+    std::vector<float> {0, 0}    // "Unknown"
+};
 
 
 // std::vector<std::vector<float>> DefaultUnsatPenalties {
@@ -195,6 +213,10 @@ struct UnsatManager {
     void
     dump_presatisfied();
 
+
+    std::vector<float>
+    get_presatisfied_unsats( std::vector<float> const & burial_weights );
+
     std::vector<Eigen::Vector3f>
     get_heavy_atom_xyzs();
 
@@ -231,7 +253,7 @@ struct UnsatManager {
         shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody
     );
 
-private:
+// private:
     int
     find_heavy_atom(
         int resid,
@@ -258,12 +280,13 @@ private:
     bool
     validate_heavy_atoms();
 
-private:
+// private:
 
     int num_donors_;
     std::vector<HBondRay> target_donors_acceptors_;
     std::vector<hbond::HeavyAtom> target_heavy_atoms_;
     std::vector<bool> target_presatisfied_;
+    std::vector<std::vector<float>> unsat_penalties_;
     std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
     shared_ptr< RotamerIndex > rot_index_p;
     bool debug_;

@@ -253,6 +253,11 @@ typedef ::scheme::chemical::RotamerIndex<
 > RotamerIndex;
 
 
+template< class VoxelArrayPtr, class HBondRay, class RotamerIndex >
+struct ScoreRotamerVsTarget;
+
+typedef devel::scheme::ScoreRotamerVsTarget< VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex > RifScoreRotamerVsTarget;
+
 
 }
 }

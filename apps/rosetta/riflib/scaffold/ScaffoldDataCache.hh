@@ -25,6 +25,7 @@
 #include <riflib/scaffold/MultithreadPoseCloner.hh>
 #include <riflib/scaffold/util.hh>
 #include <riflib/HSearchConstraints.hh>
+#include <riflib/BurialManager.hh>
 
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
@@ -90,6 +91,7 @@ struct ScaffoldDataCache {
 
     std::vector<CstBaseOP> csts;
 
+    shared_ptr<BurialVoxelArray> burial_grid;
 
 // Conformation state
     bool conformation_is_fa;
@@ -482,6 +484,12 @@ struct ScaffoldDataCache {
         ::devel::scheme::append_pose_to_pose( *__both_full_pose_p, target );
         add_pdbinfo_if_missing( *__both_full_pose_p );
         return __both_full_pose_p;
+    }
+
+
+    void
+    setup_burial_grids( shared_ptr<BurialManager> const & burial_manager ) {
+        burial_grid = burial_manager->generate_burial_grid( *scaffold_centered_p );
     }
 
 
