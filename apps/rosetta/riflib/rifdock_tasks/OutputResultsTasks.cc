@@ -235,8 +235,9 @@ dump_rif_result_(
                         std::cout << " 1-body:" << F(7, 2, onebody );
                         std::cout << " rif score:" << F(7, 2, p.first);
                         std::cout << " rif rescore:" << F(7, 2, rescore);
-                        std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second);
+                        std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second) << " ";
                         std::cout << std::endl;
+
                     }
 
                     if (sat1_sat2.first > -1) {
@@ -253,6 +254,13 @@ dump_rif_result_(
 
     }
 
+    // // TEMP debug:
+    // for (auto i: scaffold_phi_psi) {
+    //     std::cout << std::get<0>(i) << " " << std::get<1>(i) << std::endl;
+    // }
+    // for (auto i: scaffold_d_pos) {
+    //     std::cout << i << " ";
+    // }
 
 
     // Actually place the rotamers on the pose

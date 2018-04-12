@@ -112,6 +112,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
+	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
+
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
@@ -306,6 +308,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
 			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
 
+			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
+
 			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 			NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
@@ -438,6 +442,7 @@ struct RifDockOpt
 	bool        replace_orig_scaffold_res            ;
 	int         require_satisfaction                 ;
 	int         require_n_rifres                     ;
+	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
@@ -620,6 +625,7 @@ struct RifDockOpt
 		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
+		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();

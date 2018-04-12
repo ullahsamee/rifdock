@@ -346,7 +346,7 @@ namespace rif {
                                 // For SER: the last two heavy atoms and 'HG'
                                 // For THR: the last two heavy atoms and 'HG1'
                                 // both are atom number 10.
-                                int atmno = (resname(irot) == "TYR") ? 20 : 10;
+                                int atmno = (params -> rot_index_p -> resname(irot) == "TYR") ? 20 : 10;
                                 Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
                                     rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
                                     rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),

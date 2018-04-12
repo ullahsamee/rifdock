@@ -515,6 +515,8 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector<bool> has_rifrot_;
         std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
         std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
+        shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
+
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 	};
@@ -611,6 +613,7 @@ std::string get_rif_type_from_file( std::string fname )
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
             runtime_assert( data_cache );
 			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+            scratch.allowed_irots_ = data_cache->allowed_irot_at_ires_p;
 			//////////////////////////////////////////
 
 			runtime_assert( rif_ );
@@ -634,6 +637,7 @@ std::string get_rif_type_from_file( std::string fname )
 			runtime_assert( rot_tgt_scorer_.target_field_by_atype_.size() == 22 );
 			scratch.hackpack_ = packperthread_.at( ::devel::scheme::omp_thread_num() );
 			scratch.hackpack_->reinitialize( data_cache->local_twobody_p );
+
 		}
 
 		template<class Config>
@@ -651,7 +655,10 @@ std::string get_rif_type_from_file( std::string fname )
 				if( rotscores.empty(i_rs) ) {
 					break;
 				}
-				int irot = rotscores.rotamer(i_rs);
+				
+                int irot = rotscores.rotamer(i_rs);
+                if ( scratch.allowed_irots_ && ! scratch.allowed_irots_->at(ires)[irot] ) continue;
+
 				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
@@ -777,7 +784,7 @@ std::string get_rif_type_from_file( std::string fname )
 
 			}
 
-			if( n_sat_groups_ > 0 && !packing_ ){
+			if ( n_sat_groups_ > 0 && !packing_ ){
 				int nsat = 0;
 				
 				for( int i = 0; i < n_sat_groups_; ++i ){
@@ -809,6 +816,7 @@ std::string get_rif_type_from_file( std::string fname )
 				// delete scratch.is_satisfied_;
 				// scratch.is_satisfied_.clear();
 			}
+
 
 			// this is yolo code by Brian. I have no idea if th is will always work
 			if ( require_n_rifres_ > 0 ) {
@@ -1039,6 +1047,7 @@ struct RifFactoryImpl :
 			if (config.require_n_rifres > 0 ) {
 				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_n_rifres_ = config.require_n_rifres;
 			}
+
 		}
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
