@@ -74,6 +74,7 @@ struct HBJob {
 	std::string don, acc, don_or_acc;
 	int nrots;
 	int ires;
+    std::string hbgeomtag;
 	bool operator<( HBJob const & other ) const { return nrots > other.nrots; }
 };
 
@@ -402,6 +403,7 @@ struct HBJob {
 			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
 			override |= !target.residue(ir).is_protein();
 			if( override ) hbgeomtag += "__" + target_tag;
+            hb_jobs[ihbjob].hbgeomtag = hbgeomtag;
 			hbond_geoms_cache[ hbgeomtag ] = nullptr;
 			omp_lock_t tmplock;
 			hbond_io_locks[ hbgeomtag ] = tmplock;
@@ -419,7 +421,7 @@ struct HBJob {
 			std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
-			std::string hbgeomtag = don_or_acc + don + "-" + acc;
+			std::string hbgeomtag = hb_jobs[ihbjob].hbgeomtag; //don_or_acc + don + "-" + acc;
 
             // std::cout << hbgeomtag << std::endl;
             // continue;
@@ -442,7 +444,7 @@ struct HBJob {
 					core::pose::remove_variant_type_from_pose_residue(tmp, VIRTUAL_DNA_PHOSPHATE, 1);
 				}
 				omp_unset_lock(&pose_lock);
-				hbgeomtag += "__" + target_tag;
+				//hbgeomtag += "__" + target_tag;   // this has already been done since hbgeomtag is now cached
 			}
 
 			// seems init of hbond_geoms_cache is sloppy... check if exists and init if not
@@ -573,10 +575,10 @@ struct HBJob {
 			std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
-			std::string hbgeomtag = don_or_acc + don + "-" + acc;
-			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
-			override |= !target.residue(ir).is_protein();
-			if( override ) hbgeomtag += "__" + target_tag;
+			std::string hbgeomtag = hb_jobs.hbgeomtag; // don_or_acc + don + "-" + acc;
+			// bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
+			// override |= !target.residue(ir).is_protein();
+			// if( override ) hbgeomtag += "__" + target_tag;
 
 			utility::io::ozstream *rif_hbond_vis_out = nullptr;
 			utility::io::ozstream *rif_bidentate_out = nullptr;
