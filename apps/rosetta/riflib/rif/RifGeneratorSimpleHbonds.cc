@@ -156,8 +156,8 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
             need_to_init = ! hbond_geoms_cache[hbgeomtag];
             if ( need_to_init ) {
                 cache = new utility::vector1< RelRotPos >;
+                hbond_geoms_cache[hbgeomtag] = cache;
             }
-            hbond_geoms_cache[hbgeomtag] = cache;
         }
         omp_unset_lock( & hbond_geoms_cache_lock );
 
