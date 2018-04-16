@@ -606,10 +606,24 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
             }
 		}
 
-        // int num_to_cache = opts.
+        int num_to_cache;
+        if ( opts.hbgeom_max_cache < 0 ) {
+            num_to_cache = hbond_geoms_cache.size();
+        } else if ( opts.hbgeom_max_cache == 0 ) {
+            num_to_cache = 1;
+        } else if ( opts.hbgeom_max_cache < hbond_geoms_cache.size() ) {
+            num_to_cache = opts.hbgeom_max_cache;
+        } else {
+            num_to_cache = hbond_geoms_cache.size();
+        }
 
+        bool using_small_cache = num_to_cache != hbond_geoms_cache.size();
 
-        prepare_hbgeoms( hb_jobs, 0, hb_jobs.size(), hbond_geoms_cache, hbond_io_locks, cout_lock, io_lock, pose_lock, hacky_rpms_lock, hbond_geoms_cache_lock, params );
+        if ( ! using_small_cache ) {
+            prepare_hbgeoms( hb_jobs, 0, hb_jobs.size(), hbond_geoms_cache, hbond_io_locks, cout_lock, io_lock, pose_lock, hacky_rpms_lock, hbond_geoms_cache_lock, params );
+        } else {
+            std::sort( hb_jobs.begin(), hb_jobs.end(), hbjob_hbgeom_lessthan() );
+        }
 
 		std::cout << endl;
 
@@ -627,12 +641,34 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			utility::io::ozstream *rif_hbond_vis_out = nullptr;
 			utility::io::ozstream *rif_bidentate_out = nullptr;
 
-			omp_set_lock( &hbond_io_locks[hbgeomtag] );
+			// omp_set_lock( &hbond_io_locks[hbgeomtag] );
+
+
+            if( using_small_cache && ! hbond_geoms_cache[hbgeomtag] ){
+                // it's time to load the next set of geom files!!!
+                for( auto & i : hbond_geoms_cache ) {
+                    if ( i.second ) {
+                        delete i.second;
+                        i.second = nullptr;
+                    }
+                }
+                std::set<std::string> next_geom_tags;
+                int end_ihbjob = ihbjob;
+                for ( end_ihbjob = ihbjob; end_ihbjob < hb_jobs.size(); end_ihbjob++ ) {
+                    if ( next_geom_tags.size() >= num_to_cache ) break;
+                    next_geom_tags.insert( hb_jobs[end_ihbjob].hbgeomtag );
+                }
+                runtime_assert( ihbjob != end_ihbjob );
+                prepare_hbgeoms( hb_jobs, ihbjob, end_ihbjob, hbond_geoms_cache, hbond_io_locks, cout_lock, io_lock, pose_lock, hacky_rpms_lock, hbond_geoms_cache_lock, params );
+                std::cout << std::endl;
+
+            }
+
 			if( ! hbond_geoms_cache[hbgeomtag] ){
 				utility_exit_with_message( "hbond_geoms_cache missing for " + hbgeomtag );
 			}
 			utility::vector1< RelRotPos > const & hbond_geoms( *hbond_geoms_cache[hbgeomtag] );
-			omp_unset_lock( &hbond_io_locks[hbgeomtag] );
+			// omp_unset_lock( &hbond_io_locks[hbgeomtag] );
 
 			// loop over hbond geometries, then loop over residues which might have those geoms
 			// do in this order to reduce the numker of geom datasets in memory at once
@@ -1063,7 +1099,9 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 
 		// cleanup hbond_io_locks
 		for( auto & i : hbond_io_locks ) omp_destroy_lock( &(i.second) );
-		for( auto & i : hbond_geoms_cache ) delete i.second;
+		for( auto & i : hbond_geoms_cache ) {
+            if ( i.second ) delete i.second;
+        }
 
 
 		for( auto ozp: rif_hbond_vis_out_satgroups ){
