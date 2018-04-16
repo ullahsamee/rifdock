@@ -63,20 +63,213 @@
 	#include <boost/random/uniform_real.hpp>
 	#include <boost/format.hpp>
 
-  #include <riflib/rif/requirements_util.hh>
+    #include <riflib/rif/requirements_util.hh>
 
 namespace devel {
 namespace scheme {
 namespace rif {
 
 
-struct HBJob {
-	std::string don, acc, don_or_acc;
-	int nrots;
-	int ires;
-    std::string hbgeomtag;
-	bool operator<( HBJob const & other ) const { return nrots > other.nrots; }
+struct hbjob_hbgeom_lessthan {
+    inline bool operator() ( HBJob const & lhs, HBJob const & rhs ) {
+        if ( lhs.hbgeomtag == rhs.hbgeomtag ) {
+            return lhs < rhs;
+        }
+        return lhs.hbgeomtag < rhs.hbgeomtag;
+    }
 };
+
+
+        
+        
+void
+RifGeneratorSimpleHbonds::prepare_hbgeoms( 
+    std::vector<HBJob> const & hb_jobs,
+    int start_job,
+    int end_job,    // python style numbering. To do all jobs, specify 0, hb_jobs.size()
+    std::map< std::string, utility::vector1< RelRotPos > * > & hbond_geoms_cache,
+    std::map< std::string, omp_lock_t > & hbond_io_locks,
+    omp_lock_t & cout_lock,
+    omp_lock_t & io_lock,
+    omp_lock_t & pose_lock,
+    omp_lock_t & hacky_rpms_lock,
+    omp_lock_t & hbond_geoms_cache_lock,
+    RifGenParamsP const & params
+) {
+
+    using std::cout;
+    using std::endl;
+
+    core::pose::Pose const & target = *params->target;
+    std::string const & target_tag = params->target_tag;
+    utility::vector1<int> target_res = params->target_res;
+    shared_ptr<RotamerIndex const> rot_index_p = params->rot_index_p;
+    std::vector<std::string> const & cache_data_path = params->cache_data_path;
+    std::vector< VoxelArray* > & field_by_atype = params->field_by_atype;
+
+    // make sure hbond geometries exist and are loaded
+    std::cout << "preloading / generating hbond_geometry files" << std::endl;
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
+    for( int ihbjob = start_job; ihbjob < end_job; ++ihbjob ){
+        std::string don = hb_jobs[ihbjob].don;
+        std::string acc = hb_jobs[ihbjob].acc;
+        std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
+        int nrots = hb_jobs[ihbjob].nrots;
+        int ir =  hb_jobs[ihbjob].ires;
+        std::string hbgeomtag = hb_jobs[ihbjob].hbgeomtag; //don_or_acc + don + "-" + acc;
+
+        // std::cout << hbgeomtag << std::endl;
+        // continue;
+
+        std::map< std::string, core::pose::Pose > hbgeom_exemplars_rtype_override;
+        bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
+        override |= !target.residue(ir).is_protein();
+        if( override ){
+            std::cout << "add " << target.residue(ir).name() << " to hbgeom_exemplars_rtype_override" << std::endl;
+            omp_set_lock(&pose_lock);
+            core::pose::Pose tmp0;
+            tmp0.append_residue_by_jump(target.residue(ir),1);
+            hbgeom_exemplars_rtype_override[ target.residue(ir).name() ] = tmp0;
+            auto & tmp = hbgeom_exemplars_rtype_override[ target.residue(ir).name() ];
+            runtime_assert( tmp.size() == 1 );
+            if( tmp.residue(1).is_lower_terminus() ) core::pose::remove_lower_terminus_type_from_pose_residue( tmp, 1 );
+            if( tmp.residue(1).is_upper_terminus() ) core::pose::remove_upper_terminus_type_from_pose_residue( tmp, 1 );
+            using core::chemical::VIRTUAL_DNA_PHOSPHATE;
+            if( tmp.residue(1).has_variant_type(VIRTUAL_DNA_PHOSPHATE) ){
+                core::pose::remove_variant_type_from_pose_residue(tmp, VIRTUAL_DNA_PHOSPHATE, 1);
+            }
+            omp_unset_lock(&pose_lock);
+            //hbgeomtag += "__" + target_tag;   // this has already been done since hbgeomtag is now cached
+        }
+
+        // seems init of hbond_geoms_cache is sloppy... check if exists and init if not
+        if( hbond_geoms_cache.find(hbgeomtag) == hbond_geoms_cache.end() ){
+            utility_exit_with_message("hbond_geoms_cache key not found "  +hbgeomtag);
+        }
+
+        bool need_to_init = false;
+        utility::vector1< RelRotPos > * cache = nullptr;
+        omp_set_lock( & hbond_geoms_cache_lock );
+        {
+            need_to_init = ! hbond_geoms_cache[hbgeomtag];
+            if ( need_to_init ) {
+                cache = new utility::vector1< RelRotPos >;
+            }
+            hbond_geoms_cache[hbgeomtag] = cache;
+        }
+        omp_unset_lock( & hbond_geoms_cache_lock );
+
+
+        // load hbond geom data if needed
+        if( need_to_init ){
+
+            // likewise, init of locks is sloppy... check and init lock if necessary
+
+            runtime_assert( hbond_io_locks.count(hbgeomtag) != 0 );
+            omp_set_lock( &hbond_io_locks[hbgeomtag] ); // make sure nobody tries to use this while filling in...
+
+
+            std::string cachefile = "__HBOND_GEOMS";
+                cachefile += "__maxtip" + boost::lexical_cast<std::string>( opts.tip_tol_deg    ) ;
+                cachefile += "__resl"   + boost::lexical_cast<std::string>( opts.rot_samp_resl  ) ;
+                cachefile += "__range"  + boost::lexical_cast<std::string>( opts.rot_samp_range ) ;
+                cachefile += "__ex1_0";
+                cachefile += "__ex2_0";
+                cachefile += "__ex3_0";
+                cachefile += "__ex4_0";
+                cachefile += "__nrots"  + boost::lexical_cast<std::string>( nrots ) ;
+                cachefile += "__" + hbgeomtag + ".rel_rot_pos.gz";
+
+
+            bool failed_to_read = true;
+            utility::io::izstream instream;
+            std::string cachefile_found = devel::scheme::open_for_read_on_path( cache_data_path, cachefile, instream );
+            if( cachefile_found.size() ){
+
+                if( ihbjob==start_job ){
+                    omp_set_lock(&cout_lock);
+                    cout << "load hbgeom " << cachefile_found << endl;
+                    cout << "            (will not log rest)" << endl;
+                    omp_unset_lock(&cout_lock);
+                } else {
+                    std::cout << "*"; std::cout.flush();
+                }
+
+                size_t n;
+                runtime_assert( instream.good() );
+                instream.read( (char*)(&n), sizeof(size_t) );
+                cache->resize( n );
+                for(size_t i = 0; i < n; ++i){
+                    if( !instream.good() ) break;
+                    RelRotPos r;
+                    instream.read( (char*)(&r), sizeof(RelRotPos) );
+                    cache->at(i+1) = r;
+                }
+                instream.close();
+                runtime_assert( instream.good() );
+                failed_to_read = cache->size() != n;
+            }
+
+            if( failed_to_read ){
+
+                utility::vector1< RelRotPos > & hbond_geoms( *hbond_geoms_cache[hbgeomtag] );
+
+                omp_set_lock(&cout_lock);
+                cout << "GENERATING HBOND GEOMETRIES pair " << ihbjob+1 << " of " << hb_jobs.size()
+                     << " : " << don << "/" << acc << " -- FIX_" << don_or_acc << endl;
+                omp_unset_lock(&cout_lock);
+
+                devel::scheme::rif::MakeHbondGeomOpts mhbopts;
+                mhbopts.tip_tol_deg    = opts.tip_tol_deg;
+                mhbopts.rot_samp_resl  = opts.rot_samp_resl;
+                mhbopts.rot_samp_range = opts.rot_samp_range;
+                devel::scheme::rif::make_hbond_geometries(
+                    *rot_index_p,
+                    don,
+                    acc,
+                    don_or_acc=="DON_",
+                    don_or_acc=="ACC_",
+                    hbgeom_exemplars_rtype_override,
+                    hbond_geoms,
+                    mhbopts
+                );
+
+                // fixed now... cachefile will have target_tag iff any exemplar
+                // if( hbgeom_exemplars_rtype_override.size() != 0 ){
+                    // std::cout << "WARNING: storing exemplar to cache!!!" << std::endl;
+                // }
+
+                size_t n = hbond_geoms.size();
+                utility::io::ozstream out;
+                std::string cachefile_found = devel::scheme::open_for_write_on_path( cache_data_path, cachefile, out, true );
+                if( cachefile_found.size() ){
+                    omp_set_lock(&cout_lock);
+                        cout << "SAVING " << KMGT(n) << " HBOND GEOMETRIES TO " << cachefile_found << endl;
+                    omp_unset_lock(&cout_lock);
+                    runtime_assert( out.good() );
+                    out.write( (char*)(&n), sizeof(size_t) );
+                    cout << n << endl;
+                    for(size_t i = 0; i < n; ++i){
+                        out.write( (char*)( &hbond_geoms[i+1] ), sizeof(RelRotPos) );
+                    }
+                    out.close();
+                } else {
+                    std::cout << "WARNING: can't save HBOND GEOMETRIES for " << cachefile << ", they will be regenerated every time!" << std::endl;
+                }
+            }
+
+            omp_unset_lock( &hbond_io_locks[hbgeomtag] ); // now is ready
+
+
+        }
+        if( ! hbond_geoms_cache[hbgeomtag] ){
+            utility_exit_with_message( "hbond_geoms_cache missing for " + hbgeomtag );
+        }
+    }
+}
+
 
 
 	void
@@ -404,169 +597,20 @@ struct HBJob {
 			override |= !target.residue(ir).is_protein();
 			if( override ) hbgeomtag += "__" + target_tag;
             hb_jobs[ihbjob].hbgeomtag = hbgeomtag;
-			hbond_geoms_cache[ hbgeomtag ] = nullptr;
-			omp_lock_t tmplock;
-			hbond_io_locks[ hbgeomtag ] = tmplock;
-			omp_init_lock( & hbond_io_locks[ hbgeomtag ] );
+
+            if ( hbond_geoms_cache.count(hbgeomtag) == 0 ) {
+    			hbond_geoms_cache[ hbgeomtag ] = nullptr;
+    			omp_lock_t tmplock;
+    			hbond_io_locks[ hbgeomtag ] = tmplock;
+    			omp_init_lock( & hbond_io_locks[ hbgeomtag ] );
+            }
 		}
 
-		// make sure hbond geometries exist and are loaded
-		std::cout << "preloading / generating hbond_geometry files" << std::endl;
-		#ifdef USE_OPENMP
-		#pragma omp parallel for schedule(dynamic,1)
-		#endif
-		for( int ihbjob = 0; ihbjob < hb_jobs.size(); ++ihbjob ){
-			std::string don = hb_jobs[ihbjob].don;
-			std::string acc = hb_jobs[ihbjob].acc;
-			std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
-			int nrots = hb_jobs[ihbjob].nrots;
-			int ir =  hb_jobs[ihbjob].ires;
-			std::string hbgeomtag = hb_jobs[ihbjob].hbgeomtag; //don_or_acc + don + "-" + acc;
-
-            // std::cout << hbgeomtag << std::endl;
-            // continue;
-
-			std::map< std::string, core::pose::Pose > hbgeom_exemplars_rtype_override;
-			bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
-			override |= !target.residue(ir).is_protein();
-			if( override ){
-				std::cout << "add " << target.residue(ir).name() << " to hbgeom_exemplars_rtype_override" << std::endl;
-				omp_set_lock(&pose_lock);
-				core::pose::Pose tmp0;
-				tmp0.append_residue_by_jump(target.residue(ir),1);
-				hbgeom_exemplars_rtype_override[ target.residue(ir).name() ] = tmp0;
-				auto & tmp = hbgeom_exemplars_rtype_override[ target.residue(ir).name() ];
-				runtime_assert( tmp.size() == 1 );
-				if( tmp.residue(1).is_lower_terminus() ) core::pose::remove_lower_terminus_type_from_pose_residue( tmp, 1 );
-				if( tmp.residue(1).is_upper_terminus() ) core::pose::remove_upper_terminus_type_from_pose_residue( tmp, 1 );
-				using core::chemical::VIRTUAL_DNA_PHOSPHATE;
-				if( tmp.residue(1).has_variant_type(VIRTUAL_DNA_PHOSPHATE) ){
-					core::pose::remove_variant_type_from_pose_residue(tmp, VIRTUAL_DNA_PHOSPHATE, 1);
-				}
-				omp_unset_lock(&pose_lock);
-				//hbgeomtag += "__" + target_tag;   // this has already been done since hbgeomtag is now cached
-			}
-
-			// seems init of hbond_geoms_cache is sloppy... check if exists and init if not
-			if( hbond_geoms_cache.find(hbgeomtag) == hbond_geoms_cache.end() ){
-				utility_exit_with_message("hbond_geoms_cache key not found "  +hbgeomtag);
-			}
-
-			// load hbond geom data if needed
-			if( ! hbond_geoms_cache[hbgeomtag] ){
-
-				// likewise, init of locks is sloppy... check and init lock if necessary
-				if( hbond_io_locks.find(hbgeomtag) == hbond_io_locks.end() ){
-					#ifdef USE_OPENMP
-					#pragma omp critical
-					#endif
-					omp_init_lock( &hbond_io_locks[hbgeomtag] ); // inserts the lock and then inits
-					// std::cout << "hbond_io_locks missing " << hbgeomtag << std::endl;
-					// utility_exit_with_message("hbond_io_locks not initialized properly");
-				}
-
-				std::string cachefile = "__HBOND_GEOMS";
-					cachefile += "__maxtip" + boost::lexical_cast<std::string>( opts.tip_tol_deg    ) ;
-					cachefile += "__resl"   + boost::lexical_cast<std::string>( opts.rot_samp_resl  ) ;
-					cachefile += "__range"  + boost::lexical_cast<std::string>( opts.rot_samp_range ) ;
-					cachefile += "__ex1_0";
-					cachefile += "__ex2_0";
-					cachefile += "__ex3_0";
-					cachefile += "__ex4_0";
-					cachefile += "__nrots"  + boost::lexical_cast<std::string>( nrots ) ;
-					cachefile += "__" + hbgeomtag + ".rel_rot_pos.gz";
-
-				auto cache = new utility::vector1< RelRotPos >;
-				omp_set_lock( &hbond_io_locks[hbgeomtag] ); // make sure nobody tries to use this while filling in...
-				// runtime_assert( hbond_geoms_cache.find(hbgeomtag) != hbond_geoms_cache.end() )
-				hbond_geoms_cache[hbgeomtag] = cache;
-				omp_unset_lock( & hbond_geoms_cache_lock );
-
-				bool failed_to_read = true;
-				utility::io::izstream instream;
-				std::string cachefile_found = devel::scheme::open_for_read_on_path( cache_data_path, cachefile, instream );
-				if( cachefile_found.size() ){
-
-					if( ihbjob==0 ){
-						omp_set_lock(&cout_lock);
-						cout << "load hbgeom " << cachefile_found << endl;
-						cout << "            (will not log rest)" << endl;
-						omp_unset_lock(&cout_lock);
-					} else {
-						std::cout << "*"; std::cout.flush();
-					}
-
-					size_t n;
-					runtime_assert( instream.good() );
-					instream.read( (char*)(&n), sizeof(size_t) );
-					cache->resize( n );
-					for(size_t i = 0; i < n; ++i){
-						if( !instream.good() ) break;
-						RelRotPos r;
-						instream.read( (char*)(&r), sizeof(RelRotPos) );
-						cache->at(i+1) = r;
-					}
-					instream.close();
-					runtime_assert( instream.good() );
-					failed_to_read = cache->size() != n;
-				}
-
-				if( failed_to_read ){
-
-					utility::vector1< RelRotPos > & hbond_geoms( *hbond_geoms_cache[hbgeomtag] );
-
-					omp_set_lock(&cout_lock);
-					cout << "GENERATING HBOND GEOMETRIES pair " << ihbjob+1 << " of " << hb_jobs.size()
-					     << " : " << don << "/" << acc << " -- FIX_" << don_or_acc << endl;
-					omp_unset_lock(&cout_lock);
-
-					devel::scheme::rif::MakeHbondGeomOpts mhbopts;
-					mhbopts.tip_tol_deg    = opts.tip_tol_deg;
-					mhbopts.rot_samp_resl  = opts.rot_samp_resl;
-					mhbopts.rot_samp_range = opts.rot_samp_range;
-					devel::scheme::rif::make_hbond_geometries(
-						rot_index,
-						don,
-						acc,
-						don_or_acc=="DON_",
-						don_or_acc=="ACC_",
-						hbgeom_exemplars_rtype_override,
-						hbond_geoms,
-						mhbopts
-					);
-
-					// fixed now... cachefile will have target_tag iff any exemplar
-					// if( hbgeom_exemplars_rtype_override.size() != 0 ){
-						// std::cout << "WARNING: storing exemplar to cache!!!" << std::endl;
-					// }
-
-					size_t n = hbond_geoms.size();
-					utility::io::ozstream out;
-					std::string cachefile_found = devel::scheme::open_for_write_on_path( cache_data_path, cachefile, out, true );
-					if( cachefile_found.size() ){
-						omp_set_lock(&cout_lock);
-							cout << "SAVING " << KMGT(n) << " HBOND GEOMETRIES TO " << cachefile_found << endl;
-						omp_unset_lock(&cout_lock);
-						runtime_assert( out.good() );
-						out.write( (char*)(&n), sizeof(size_t) );
-						cout << n << endl;
-						for(size_t i = 0; i < n; ++i){
-							out.write( (char*)( &hbond_geoms[i+1] ), sizeof(RelRotPos) );
-						}
-						out.close();
-					} else {
-						std::cout << "WARNING: can't save HBOND GEOMETRIES for " << cachefile << ", they will be regenerated every time!" << std::endl;
-					}
-				}
-
-				omp_unset_lock( &hbond_io_locks[hbgeomtag] ); // now is ready
+        // int num_to_cache = opts.
 
 
-			}
-			if( ! hbond_geoms_cache[hbgeomtag] ){
-				utility_exit_with_message( "hbond_geoms_cache missing for " + hbgeomtag );
-			}
-		}
+        prepare_hbgeoms( hb_jobs, 0, hb_jobs.size(), hbond_geoms_cache, hbond_io_locks, cout_lock, io_lock, pose_lock, hacky_rpms_lock, hbond_geoms_cache_lock, params );
+
 		std::cout << endl;
 
 		for( int ihbjob = 0; ihbjob < hb_jobs.size(); ++ihbjob ){
@@ -575,7 +619,7 @@ struct HBJob {
 			std::string don_or_acc =  hb_jobs[ihbjob].don_or_acc;
 			int nrots = hb_jobs[ihbjob].nrots;
 			int ir =  hb_jobs[ihbjob].ires;
-			std::string hbgeomtag = hb_jobs.hbgeomtag; // don_or_acc + don + "-" + acc;
+			std::string hbgeomtag = hb_jobs[ihbjob].hbgeomtag; // don_or_acc + don + "-" + acc;
 			// bool override = target.size()==1 && ( target.residue(1).name()==don || target.residue(1).name()==acc );
 			// override |= !target.residue(ir).is_protein();
 			// if( override ) hbgeomtag += "__" + target_tag;

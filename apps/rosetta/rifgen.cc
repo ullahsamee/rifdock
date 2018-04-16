@@ -78,6 +78,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Real          , rifgen, rif_hbond_dump_fraction )
 	OPT_1GRP_KEY( Real          , rifgen, rif_apo_dump_fraction )
 	OPT_1GRP_KEY( StringVector  , rifgen, data_cache_dir )
+	OPT_1GRP_KEY( Integer       , rifgen, hbgeom_max_cache )
 	OPT_1GRP_KEY( Real          , rifgen, rosetta_field_resl )
 	OPT_1GRP_KEY( RealVector    , rifgen, search_resolutions )
 	OPT_1GRP_KEY( Real          , rifgen, hash_cart_resl )
@@ -149,6 +150,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::rif_hbond_dump_fraction          , "" , 0.0001 );
 		NEW_OPT(  rifgen::rif_apo_dump_fraction            , "" , 0.0001 );
 		NEW_OPT(  rifgen::data_cache_dir                   , "" , utility::vector1<std::string>(1,"./") );
+		NEW_OPT(  rifgen::hbgeom_max_cache                 , "max number of geom files to load at once", -1 );
 		NEW_OPT(  rifgen::rosetta_field_resl               , "" , 0.5 );
 		NEW_OPT(  rifgen::search_resolutions               , "" , utility::vector1<core::Real>() );
 		NEW_OPT(  rifgen::hash_cart_resl                   , "" , 0.2 );
@@ -353,6 +355,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 			hbgenopts.report_aa_count = option[ rifgen::report_aa_count ]();
+			hbgenopts.hbgeom_max_cache = option[ rifgen::hbgeom_max_cache ]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorSimpleHbonds>(
