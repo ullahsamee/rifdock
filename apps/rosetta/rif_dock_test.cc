@@ -385,7 +385,7 @@ int main(int argc, char *argv[]) {
 				burial_opts.neighbor_count_weights.push_back( weight );
 			}
 			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), opt.unsat_debug );
 			burial_manager->set_target_neighbors( target );
 
 			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff),

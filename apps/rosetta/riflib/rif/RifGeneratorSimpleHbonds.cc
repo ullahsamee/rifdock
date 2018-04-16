@@ -987,6 +987,11 @@ struct HBJob {
 				std::cout << "RifGenSimpHB: " << I(4,ir) << " " << ObjexxFCL::format::LJ(20,hbgeomtag) << " done, ngeom: "
 				          << KMGT(hbond_geoms.size()) << " job " << I(4,ihbjob) << " of " << hb_jobs.size() << "  ";
 				accumulator->checkpoint( cout );
+                if ( opts.report_aa_count ) {
+                    std::pair<int, int> bounds = rot_index_p->index_bounds(don);
+                    uint64_t count = accumulator->count_these_irots( bounds.first, bounds.second );
+                    std::cout << count << "  ";
+                }
 				if( ihbjob%1 == 0 ){
 					accumulator->report( cout );
 				}

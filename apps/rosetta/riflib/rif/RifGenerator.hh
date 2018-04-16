@@ -46,6 +46,7 @@ struct RifAccumulator {
 	virtual bool need_to_condense() const = 0;
 	virtual shared_ptr<RifBase> rif() const = 0;
 	virtual void clear() = 0; // seems to only clear temporary storage....
+	virtual uint64_t count_these_irots( int irot_low, int irot_high ) const = 0;
 };
 typedef shared_ptr<RifAccumulator> RifAccumulatorP;
 

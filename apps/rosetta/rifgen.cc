@@ -109,6 +109,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, use_rosetta_grid_energies )
 	OPT_1GRP_KEY( Boolean       , rifgen, soft_rosetta_grid_energies )
 	OPT_1GRP_KEY( Boolean       , rifgen, dump_bidentate_hbonds )
+	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
@@ -179,6 +180,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::use_rosetta_grid_energies        , "Use Frank's grid energies for scoring polar residues", false );
 		NEW_OPT(  rifgen::soft_rosetta_grid_energies       , "Use soft option for grid energies", false );
 		NEW_OPT(  rifgen::dump_bidentate_hbonds            , "Dump all bidentate hbonds", false );
+		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
@@ -350,6 +352,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
 			hbgenopts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
+			hbgenopts.report_aa_count = option[ rifgen::report_aa_count ]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorSimpleHbonds>(

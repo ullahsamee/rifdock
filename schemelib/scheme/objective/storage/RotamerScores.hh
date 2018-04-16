@@ -368,6 +368,17 @@ struct RotamerScores {
 		return true;
 	}
 
+	int count_these_irots( int irot_low, int irot_high ) {
+		int count = 0;
+		for( int i = 0; i < N; ++i ){
+			int rotamer = rotscores_[i].rotamer();
+			if (rotamer < irot_low) continue;
+			if (rotamer > irot_high) continue;
+			count++;
+		}
+		return count;
+	}
+
 	static std::string name() {
 		static std::string const name = std::string("RotamerScores< N=" )
 		     + boost::lexical_cast<std::string>(_N) + ", "

@@ -60,10 +60,12 @@ struct BurialManager {
 
     BurialManager( 
         BurialOpts const & opts,
-        std::vector< Eigen::Vector3f > burial_points
+        std::vector< Eigen::Vector3f > burial_points,
+        bool debug
     ) :
         opts_( opts ),
-        target_burial_points_( burial_points )
+        target_burial_points_( burial_points ),
+        debug_( debug )
     {
 
         unburial_adjust_.resize( target_burial_points_.size(), 0 );
@@ -126,6 +128,7 @@ struct BurialManager {
 
     shared_ptr<BurialVoxelArray> target_burial_grid_;
 
+    bool debug_;
 
 
 };

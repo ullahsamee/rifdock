@@ -32,6 +32,7 @@ struct RifGeneratorSimpleHbondsOpts {
 	float min_hb_quality_for_satisfaction = -0.6;
 	bool debug = false;
 	bool dump_bindentate_hbonds = false;
+	bool report_aa_count = false;
 };
 
 struct RifGeneratorSimpleHbonds : public RifGenerator {
