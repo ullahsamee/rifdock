@@ -103,6 +103,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY(  Real         , rifgen, hbond_weight )
 	OPT_1GRP_KEY(  Real         , rifgen, upweight_multi_hbond )
 	OPT_1GRP_KEY( Real          , rifgen, min_hb_quality_for_satisfaction )
+	OPT_1GRP_KEY( Real          , rifgen, long_hbond_fudge_distance )
 	OPT_1GRP_KEY( IntegerVector , rifgen, repulsive_atoms )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
@@ -175,6 +176,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::hbond_weight                     , "" , 2.0 );
 		NEW_OPT(  rifgen::upweight_multi_hbond             , "" , 0.0 );
 		NEW_OPT(  rifgen::min_hb_quality_for_satisfaction  , "" , -0.6 );
+		NEW_OPT(  rifgen::long_hbond_fudge_distance        , "Any hbond longer than 2A gets moved closer to 2A by this amount for scoring", 0.0 );
 		NEW_OPT(  rifgen::repulsive_atoms                  , "" , utility::vector1<int>() );
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
@@ -356,6 +358,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 			hbgenopts.report_aa_count = option[ rifgen::report_aa_count ]();
 			hbgenopts.hbgeom_max_cache = option[ rifgen::hbgeom_max_cache ]();
+			hbgenopts.long_hbond_fudge_distance = option[ rifgen::long_hbond_fudge_distance ]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorSimpleHbonds>(
@@ -404,6 +407,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
 			hspot_opts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
+			hspot_opts.long_hbond_fudge_distance = option[rifgen::long_hbond_fudge_distance]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			rif_generators_out.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );
 		}

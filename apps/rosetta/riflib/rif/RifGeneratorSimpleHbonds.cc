@@ -505,6 +505,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond || opts.dump_bindentate_hbonds;
 			rot_tgt_scorer.upweight_iface_ = 1.0;
 			rot_tgt_scorer.min_hb_quality_for_satisfaction_ = opts.min_hb_quality_for_satisfaction;
+            rot_tgt_scorer.long_hbond_fudge_distance_ = opts.long_hbond_fudge_distance;
 #ifdef USEGRIDSCORE
 			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;

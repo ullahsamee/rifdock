@@ -50,12 +50,13 @@ template< class HBondRay >
 float score_hbond_rays(
     HBondRay const & don,
     HBondRay const & acc,
-    float non_directional_fraction = 0.0 // 0.0 - 1.0
+    float non_directional_fraction = 0.0, // 0.0 - 1.0,
+    float long_hbond_fudge_distance = 0.0
 ){
 
     const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
     float diff = ( (don.horb_cen-accep_O).norm() - 2.00 );
-    diff = diff < 0 ? diff*1.5 : diff; // increase dis pen if too close
+    diff = diff < 0 ? diff*1.5 : std::max<float>( 0.0, diff - long_hbond_fudge_distance ); // increase dis pen if too close
     float const max_diff = 0.8;
     diff = diff >  max_diff ?  max_diff : diff;
     diff = diff < -max_diff ? -max_diff : diff;
@@ -88,6 +89,7 @@ struct ScoreRotamerVsTarget {
     float upweight_multi_hbond_ = 0.0;
     float min_hb_quality_for_multi_ = -0.5;
     float min_hb_quality_for_satisfaction_ = -0.6;
+    float long_hbond_fudge_distance_ = 0.0;
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer_;
     bool soft_grid_energies_;
@@ -178,7 +180,7 @@ struct ScoreRotamerVsTarget {
                     for( int i_hr_tgt_don = 0; i_hr_tgt_don < target_donors_.size(); ++i_hr_tgt_don )
                     {
                         HBondRay const & hr_tgt_don = target_donors_.at(i_hr_tgt_don);
-                        float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc );
+                        float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc, 0.0, long_hbond_fudge_distance_ );
                         if ( thishb < best_score ) {
                             best_score = thishb;
                             best_sat = i_hr_tgt_don;
@@ -220,7 +222,7 @@ struct ScoreRotamerVsTarget {
                     for( int i_hr_tgt_acc = 0; i_hr_tgt_acc < target_acceptors_.size(); ++i_hr_tgt_acc )
                     {
                         HBondRay const & hr_tgt_acc = target_acceptors_.at(i_hr_tgt_acc);
-                        float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc );
+                        float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc, 0.0, long_hbond_fudge_distance_ );
                         if ( thishb < best_score ) {
                             best_score = thishb;
                             best_sat = i_hr_tgt_acc + target_donors_.size();

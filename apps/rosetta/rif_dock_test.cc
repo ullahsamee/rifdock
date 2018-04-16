@@ -546,6 +546,7 @@ int main(int argc, char *argv[]) {
     rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
     rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
+    rot_tgt_scorer.long_hbond_fudge_distance_ = opt.long_hbond_fudge_distance;
 #ifdef USEGRIDSCORE
     rot_tgt_scorer.grid_scorer_ = grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
