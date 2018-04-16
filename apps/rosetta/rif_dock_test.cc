@@ -643,6 +643,44 @@ int main(int argc, char *argv[]) {
 
 		}
 
+		if ( opt.dump_pdb_at_bin_center.length() > 0 ) {
+			std::cout << "Loading " << opt.dump_pdb_at_bin_center << std::endl;
+			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_pdb_at_bin_center));
+
+			std::cout << "Dumping " << opt.dump_pdb_at_bin_center << " rotamers at their bin centers" << std::endl;
+
+
+			for ( int ires = 1; ires <= pose.size(); ires++ ) {
+
+				core::conformation::Residue const & res = pose.residue(ires);
+				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
+
+				if (irot == -1) {
+					std::cout << "Res: " << ires << " No matching rotamer (within 5 deg for all chi)" << std::endl;
+					continue;
+				} 
+
+				BBActor bb( res );
+				EigenXform bin_center = rif_ptrs.back()->get_bin_center( rif_ptrs.back()->get_bin_key( bb.position() ) );
+
+				std::stringstream fname;
+				fname << "bin_center_" << opt.dump_pdb_at_bin_center << "_res" << boost::str(boost::format("%i") % ires ) << ".pdb.gz";
+        		utility::io::ozstream out( fname.str() );
+
+				std::cout << "Dumping res " << ires << " at bin center to: " << fname.str() << std::endl;
+
+	            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+	                a.set_position( bin_center * a.position() ); 
+	                a.nonconst_data().resnum = 1;
+	                a.nonconst_data().chain = 'A';
+	                ::scheme::actor::write_pdb( out, a, nullptr );
+	            }
+
+	            out.close();
+			}
+
+		}
+
 		if ( opt.score_this_pdb.length() > 0) {
 			std::cout << "Loading " << opt.score_this_pdb << std::endl;
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.score_this_pdb));
@@ -651,7 +689,6 @@ int main(int argc, char *argv[]) {
 
 
 			for ( int ires = 1; ires <= pose.size(); ires++ ) {
-
 
 				core::conformation::Residue const & res = pose.residue(ires);
 				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
@@ -666,12 +703,22 @@ int main(int argc, char *argv[]) {
 	            int sat1 = -1, sat2 = -1, hbcount = 0;
 	            float score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb.position(), sat1, sat2, true, hbcount, 10.0, 4 );
 
+	            EigenXform bin_center = rif_ptrs.back()->get_bin_center( rif_ptrs.back()->get_bin_key( bb.position() ) );
+
+	            int c_sat1 = -1, c_sat2 = -1, c_hbcount = 0;
+	            float c_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bin_center, c_sat1, c_sat2, true, c_hbcount, 10.0, 4 );
+
 	            std::cout << "Res: " << ires
 	                      << " score: " << score
 	                      << " irot: " << irot
 	                      << " nhbonds: " << hbcount
 	                      << " sat1: " << sat1
 	                      << " sat2: " << sat2
+	                      << " | bin center:"
+	                      << " score: " << c_score
+	                      << " nhbonds: " << c_hbcount
+	                      << " sat1: " << c_sat1
+	                      << " sat2: " << c_sat2
 	                      << std::endl;
 	        }
 
