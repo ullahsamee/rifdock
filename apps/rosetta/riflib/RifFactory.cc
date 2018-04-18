@@ -1070,18 +1070,18 @@ std::string get_rif_type_from_file( std::string fname )
 			}
 
 
-			// this is yolo code by Brian. I have no idea if th is will always work
+			// Brian - this is closer to working during packing but still doesn't work
 			if ( require_n_rifres_ > 0 ) {
 				if ( packing_ ) {
-					std::map<int, bool> used_positions;
+                    int num_rots = 0;
 					for( int i = 0; i < result.rotamers_.size(); ++i ){
-						int position = result.rotamers_[i].first;
-						if ( used_positions.count(position) == 0 ) {
-							used_positions[position] = true;
-						}
+                        int irot = result.rotamers_[i].second;
+                        if ( irot > 0 ) {
+                            num_rots++;
+                        }
 					}
 					// std::cout << result.rotamers_.size() << " ";
-					if (used_positions.size() < require_n_rifres_ ) {
+					if ( num_rots < require_n_rifres_ ) {
 						result.val_ = 9e9;
 					}
 				} else {
@@ -1405,6 +1405,20 @@ create_rif_factory( RifFactoryConfig const & config )
 
 		return make_shared< RifFactoryImpl<crfXMap> >( config );
 	}
+    else if( config.rif_type == "RotScoreSat96" )
+    {
+        typedef ::scheme::objective::storage::RotamerScoreSat<uint16_t, 9, -4> crfRotScore;
+        typedef ::scheme::objective::storage::RotamerScores< 22, crfRotScore > crfXMapValue;
+        BOOST_STATIC_ASSERT( sizeof( crfXMapValue ) == 88 );
+        typedef ::scheme::objective::hash::XformMap<
+                EigenXform,
+                crfXMapValue,
+                ::scheme::objective::hash::XformHash_bt24_BCC6
+            > crfXMap;
+        BOOST_STATIC_ASSERT( sizeof( crfXMap::Map::value_type ) == 96 );
+
+        return make_shared< RifFactoryImpl<crfXMap> >( config );
+    }
     else if ( config.rif_type == "RotScoreReq" )
     {
         using SatDatum = ::scheme::objective::storage::SatisfactionDatum<uint8_t>;

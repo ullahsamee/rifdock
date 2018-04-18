@@ -169,10 +169,14 @@ identify_acceptor( std::string const & aname, char one_letter, std::string & hea
 UnsatManager::UnsatManager( 
     std::vector<std::vector<float>> const & unsat_penalties,
     shared_ptr< RotamerIndex > rot_index_p_in,
+    int require_burial,
+    float score_offset,
     bool debug
 ) :
     unsat_penalties_( unsat_penalties ),
     rot_index_p( rot_index_p_in ),
+    require_burial_( require_burial ),
+    score_offset_( score_offset ),
     debug_( debug )
 {
 
@@ -628,7 +632,12 @@ UnsatManager::get_buried_unsats(
         int irot = rotamers[i].second;
 
         int sat1 = -1, sat2 = -1, hbcount = 0;
-        rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb_positions.at(i), sat1, sat2, true, hbcount, 10.0, 4 );
+        rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb_positions.at(ires), sat1, sat2, true, hbcount, 10.0, 4 );
+
+        if ( debug_ ) {
+            std::cout << rot_index_p->oneletter(irot)  << " rotamer: " << i << " ires: " << ires << " irot: " << irot 
+                << " sats: " << sat1 << " " << sat2 << std::endl;
+        }
 
         if ( sat1 > -1 ) satisfied[sat1] = true;
         if ( sat2 > -1 ) satisfied[sat2] = true;
@@ -652,6 +661,12 @@ UnsatManager::get_buried_unsats(
         std::vector<float> const & penalties = unsat_penalties_[ha.AType];
         float score = calculate_unsat_score( penalties[0], penalties[1], wants, sat_count, weight );
         unsat_scores[iheavy] = score * weight;
+
+        if ( debug_ ) {
+            std::cout << "BuriedHeavy: " << iheavy << " res: " << ha.resid << " name: " << ha.name 
+                          << " type: " << hbond::ATypeNames[ha.AType] << " burial: " << weight 
+                          << " wants: " << wants << " has: " << sat_count << " raw_unsat_score: " << score << std::endl;
+        }
     }
 
     return unsat_scores;
@@ -666,7 +681,12 @@ UnsatManager::print_buried_unsats( std::vector<float> const & unsat_penalties) c
          if ( score > 0 ) {
 
             hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
-            std::cout << " Buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score) <<  score <<  std::endl;
+            std::cout << " Buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score);
+            std::cout << " satnos: ";
+            for ( int isat : ha.sat_groups ) {
+                std::cout << isat << ",";
+            }
+            std::cout << std::endl;
          }
     }
 
@@ -739,10 +759,14 @@ UnsatManager::calculate_nonpack_score(
     runtime_assert( is_satisfied.size() == target_donors_acceptors_.size() );
 
     float score = 0;
+    score += score_offset_;
+
+    int buried = 0;
 
     for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
 
         if ( burial_weights[iheavy] == 0 ) continue;
+        buried ++;
         float weight = burial_weights[iheavy];
 
         hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
@@ -762,6 +786,10 @@ UnsatManager::calculate_nonpack_score(
 
         if ( debug_ ) std::cout << "iheavy: " << iheavy << " adding: " << adding << " score: " << score << std::endl;
 
+    }
+
+    if (buried < require_burial_) {
+        score = 9e9;
     }
 
 
@@ -883,6 +911,7 @@ UnsatManager::prepare_packer(
 // data structures
 
     float zerobody_penalty = 0;
+    zerobody_penalty += score_offset_;
 
     // satisfiers are the index of a rotamer in to_pack_rots_
     // -1 is the target
@@ -1038,8 +1067,27 @@ UnsatManager::prepare_packer(
 
 
     }
+    insert_to_pack_rots_into_packer(packer);
+
     return zerobody_penalty;
 
+}
+
+void
+UnsatManager::insert_to_pack_rots_into_packer(::scheme::search::HackPack & packer) {
+    if ( debug_ ) std::cout << "Inserting into packer:" << std::endl;
+    for ( int i = 0; i < to_pack_rots_.size(); i++ ) {
+        ToPackRot const & rot = to_pack_rots_[i];
+        packer.add_tmp_rot( rot.ires, rot.irot, rot.score );
+
+        if ( debug_ ) {
+            std::cout << "ToPackRot: " << i << " " << rot_index_p->oneletter(rot.irot) 
+                << " ires: " << rot.ires << " irot: " << rot.irot 
+                << " score: " << rot.score 
+                << " sat1: " << rot.sat1 << " sat2: " << rot.sat2 
+                << std::endl;
+        }
+    }
 }
 
 float

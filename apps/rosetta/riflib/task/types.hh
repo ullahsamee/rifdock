@@ -188,6 +188,7 @@ struct RifDockData {
     utility::io::ozstream & dokout;
     ScaffoldProviderOP scaffold_provider;
     shared_ptr<BurialManager> burial_manager;
+    shared_ptr<UnsatManager> unsat_manager;
 
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;

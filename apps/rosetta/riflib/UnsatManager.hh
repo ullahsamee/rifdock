@@ -127,7 +127,7 @@ const std::vector<std::vector<float>> ScottUnsatPenalties {
     std::vector<float> {4, 0},    // "AmideCarbonyl",
     std::vector<float> {4, 0},    // "ArgNH",
     std::vector<float> {4, 0},    // "ArgNE",
-    std::vector<float> {4, 0},    // "LysN",
+    std::vector<float> {4, 0.5},    // "LysN",  // making this 0 is glitchy
     std::vector<float> {4, 0},    // "Carboxylate",
     std::vector<float> {4, 0},    // "TrypN",
     std::vector<float> {0, 0},    // "HisN",
@@ -194,7 +194,9 @@ struct UnsatManager {
 
     UnsatManager( 
         std::vector<std::vector<float>> const & unsat_penalties, 
-        shared_ptr< RotamerIndex > rot_index_p, 
+        shared_ptr< RotamerIndex > rot_index_p,
+        int require_burial, 
+        float score_offset,
         bool debug
     );
 
@@ -269,6 +271,9 @@ struct UnsatManager {
     );
 
     void
+    insert_to_pack_rots_into_packer( ::scheme::search::HackPack & packer );
+
+    void
     fix_packer( 
         ::scheme::search::HackPack & packer, 
         shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody
@@ -325,6 +330,8 @@ struct UnsatManager {
     std::vector<std::vector<float>> unsat_penalties_;
     std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
     shared_ptr< RotamerIndex > rot_index_p;
+    int require_burial_;
+    float score_offset_;
     bool debug_;
 
 // things that are resetable

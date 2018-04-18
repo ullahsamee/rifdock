@@ -79,6 +79,25 @@ OutputResultsTask::return_rif_dock_results(
 
 /////
 
+        std::vector<float> unsat_scores;
+        int unsats = -1;
+        int buried = -1;
+        if ( rdd.unsat_manager ) {
+            rdd.director->set_scene( selected_result.index, director_resl_, *rdd.scene_minimal );
+            std::vector<EigenXform> bb_positions;
+            for ( int i_actor = 0; i_actor < rdd.scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
+                bb_positions.push_back( rdd.scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+            }
+            std::vector<float> burial = rdd.burial_manager->get_burial_weights( rdd.scene_minimal->position(1), sdc->burial_grid );
+            unsat_scores =  rdd.unsat_manager->get_buried_unsats( burial, selected_result.rotamers(), bb_positions, rdd.rot_tgt_scorer );
+
+            buried = 0;
+            for ( float this_burial : burial ) if ( this_burial > 0 ) buried++;
+            unsats = 0;
+            for ( float this_unsat_score : unsat_scores ) if ( this_unsat_score > 0 ) unsats++;
+        }
+
+
         std::string pdboutfile = rdd.opt.outdir + "/" + use_scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
         if( rdd.opt.output_tag.size() ){
             pdboutfile = rdd.opt.outdir + "/" + use_scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
@@ -96,14 +115,18 @@ OutputResultsTask::return_rif_dock_results(
             // << " rif: "       << F(7,3,selected_result.rifscore)
             << " steric: "    << F(7,3,selected_result.stericscore)
             << " cluster: "   << I(7,selected_result.cluster_score)
-            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack)
-            << " " << pdboutfile
+            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack);
+        if ( rdd.unsat_manager ) {
+        oss << " buried:" << I(4,buried);
+        oss << " unsats:" << I(4, unsats);
+        }
+        oss << " " << pdboutfile
             << std::endl;
         std::cout << oss.str();
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
 
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
 
 
     }
@@ -122,7 +145,8 @@ dump_rif_result_(
     int rif_resl,
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
-    std::string const & allrifrotsoutfile /* = "" */
+    std::string const & allrifrotsoutfile, /* = "" */
+    std::vector<float> const & unsat_scores /* = std::vector<float>() */
     ) {
 
     using ObjexxFCL::format::F;
@@ -211,8 +235,17 @@ dump_rif_result_(
                     // Brian
                     std::pair< int, int > sat1_sat2 = rdd.rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
 
+                    bool rot_was_placed = false;
+                    for ( std::pair<intRot,intRot> const & placed_rot : selected_result.rotamers() ) {
+                        if ( placed_rot.first == bba.index_ && placed_rot.second == irot ) {
+                            rot_was_placed = true;
+                            break;
+                        }
+                    }
+
                     if ( ! quiet ) {
 
+                        std::cout << ( rot_was_placed ? "*" : " " );
                         std::cout << "seqpos:" << I(3, ires+1);
                         std::cout << " " << oneletter;
                         std::cout << " score:" << F(7, 2, sc);
@@ -222,6 +255,8 @@ dump_rif_result_(
                         std::cout << " rif rescore:" << F(7, 2, rescore);
                         std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second) << " ";
                         std::cout << std::endl;
+
+
 
                     }
 
@@ -239,6 +274,10 @@ dump_rif_result_(
 
     }
 
+    if ( unsat_scores.size() > 0 ) {
+        rdd.unsat_manager->print_buried_unsats( unsat_scores );
+    }
+
     // // TEMP debug:
     // for (auto i: scaffold_phi_psi) {
     //     std::cout << std::get<0>(i) << " " << std::get<1>(i) << std::endl;
@@ -246,7 +285,6 @@ dump_rif_result_(
     // for (auto i: scaffold_d_pos) {
     //     std::cout << i << " ";
     // }
-
 
     // Actually place the rotamers on the pose
     core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");

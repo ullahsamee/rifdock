@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_debug );
+			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_require_burial, opt.unsat_score_offset, opt.unsat_debug );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -929,7 +929,8 @@ int main(int argc, char *argv[]) {
  						#endif
  						dokout,
  						scaffold_provider,
- 						burial_manager
+ 						burial_manager,
+ 						unsat_manager
 #ifdef USEGRIDSCORE
     				,   grid_scorer
 #endif
@@ -968,6 +969,30 @@ int main(int argc, char *argv[]) {
 
 					SearchPointWithRots result;
 					float score = packing_objectives.back()->score_with_rotamers(*scene_minimal, result.rotamers());
+					std::cout << "Packing score: " << score << std::endl;
+
+					std::cout << "Packing rotamers: " << std::endl;
+					for ( std::pair<intRot,intRot> pair : result.rotamers() ) {
+						int l_ires = pair.first;
+						int irot = pair.second;
+						int g_ires = test_data_cache->scaffres_l2g_p->at( l_ires );
+						std::string oneletter = rdd.rot_index_p->oneletter(irot);
+						float one_body = test_data_cache->scaffold_onebody_glob0_p->at( g_ires ).at( irot );
+						BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,l_ires);
+
+						int resat1 = -1, resat2 = -1, rehbcount = 0;
+                		float const rescore = rdd.rot_tgt_scorer.score_rotamer_v_target_sat( 
+                										irot, bba.position(), resat1, resat2, true, rehbcount, 10.0, 4 );
+
+						std::cout << "*seqpos: " << I(3, g_ires+1);
+						std::cout << " " << oneletter;
+						std::cout << " irot:" << I(3, irot);
+						std::cout << " 1body:" << F(7, 2, one_body);
+						std::cout << " rescore:" << F(7, 2, rescore);
+						std::cout << " resats: " << I(3, resat1) << " " << I(3, resat2);
+						std::cout << std::endl;
+
+					}
 					// cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
 					// 					     << F( 7, 3, sc[0]+sc[1] ) << " "
 					// 					     << F( 7, 3, sc[0]       ) << " "
@@ -999,21 +1024,23 @@ int main(int argc, char *argv[]) {
 					// }
 
 
-					std::cout << "Input position buried unsats:" << std::endl;
+					if ( burial_manager ) {
+						std::cout << "Input position buried unsats:" << std::endl;
 
-					std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
+						std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
 
-					std::vector<EigenXform> bb_positions;
-					for ( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
-						bb_positions.push_back( scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+						std::vector<EigenXform> bb_positions;
+						for ( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
+							bb_positions.push_back( scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+						}
+
+						std::vector<float> unsat_scores = unsat_manager->get_buried_unsats( initial_burial, result.rotamers(), bb_positions, rot_tgt_scorer );
+						unsat_manager->print_buried_unsats( unsat_scores );
+
+
+						burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
+														scene_minimal->position(1), test_data_cache->burial_grid );
 					}
-
-					std::vector<float> unsat_scores = unsat_manager->get_buried_unsats( initial_burial, result.rotamers(), bb_positions, rot_tgt_scorer );
-					unsat_manager->print_buried_unsats( unsat_scores );
-
-
-					burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
-													scene_minimal->position(1), test_data_cache->burial_grid );
 
 				}
 
