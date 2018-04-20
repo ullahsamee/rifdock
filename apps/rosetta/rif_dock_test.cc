@@ -615,6 +615,10 @@ int main(int argc, char *argv[]) {
 		std::cout << "mem_use: " << ::devel::scheme::KMGT( rif_ptrs.back()->mem_use() ) << std::endl;
 		std::cout << "===================================================================================" << std::endl;
 
+		if (opt.only_load_highest_resl) {
+			for ( int i = 0; i < rif_ptrs.size(); i++ ) rif_ptrs[i] = rif_ptrs.back();
+		}
+
 		rif_using_rot.resize( rot_index_p->size(), false );
 		rif_using_rot[ rot_index.ala_rot() ] = true; // always include ala
 		rif_ptrs.back()->get_rotamer_ids_in_use( rif_using_rot );
