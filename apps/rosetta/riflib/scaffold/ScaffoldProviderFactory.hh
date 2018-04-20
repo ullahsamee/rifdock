@@ -40,6 +40,15 @@ get_scaffold_provider(
                 opt,
                 make2bopts,
                 rotrf_table_manager);
+    } else if (opt.scaff_search_mode == "morph") {
+
+        needs_scaffold_director = true;
+        return make_shared<MorphingScaffoldProvider>(
+                iscaff,
+                rot_index_p,
+                opt,
+                make2bopts,
+                rotrf_table_manager);
 
     } else if (opt.scaff_search_mode == "morph_dive_pop") {
 

@@ -214,6 +214,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
     OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_offset )
     OPT_1GRP_KEY(  Integer     , rif_dock, unsat_require_burial )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, report_common_unsats )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
@@ -370,8 +371,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
 	        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
 
-	        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
-			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
+	        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", 0 );
+			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", 0 );
 
 			NEW_OPT(  rif_dock::resl0, "", 16 );
 			NEW_OPT(  rif_dock::dump_x_frames_per_resl, "Use this to make a movie", 0 );
@@ -427,6 +428,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
             NEW_OPT(  rif_dock::unsat_score_offset, "This gets added to the score of all designs", 0.0 );
             NEW_OPT(  rif_dock::unsat_require_burial, "Require at least this many polar atoms be buried", 0 );
+            NEW_OPT(  rif_dock::report_common_unsats, "Show probability of burying every unsat", false );
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
@@ -627,6 +629,7 @@ struct RifDockOpt
 	std::string unsat_helper                         ;
 	float       unsat_score_offset                   ;
 	int         unsat_require_burial                 ;
+	bool        report_common_unsats                 ;
 
     bool        dump_presatisfied_donors_acceptors   ;
     
@@ -822,6 +825,7 @@ struct RifDockOpt
 		unsat_helper                            = option[rif_dock::unsat_helper                         ]();
 		unsat_score_offset                      = option[rif_dock::unsat_score_offset                   ]();
 		unsat_require_burial                    = option[rif_dock::unsat_require_burial                 ](); 
+		report_common_unsats                    = option[rif_dock::report_common_unsats                 ]();
 
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 

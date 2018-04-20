@@ -1184,6 +1184,7 @@ get_satisfied_atoms_vector(core::pose::Pose pose, float ethresh){
 			int aa = hb.acc_atm();
 			sat.push_back(std::make_pair(dh,dr)); // do not change the order of these!!!!!
 			sat.push_back(std::make_pair(aa,ar));
+
 		}
 	}
 

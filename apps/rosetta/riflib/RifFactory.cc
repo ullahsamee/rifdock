@@ -1343,6 +1343,12 @@ struct RifFactoryImpl :
 	}
 
 
+    std::vector<shared_ptr<UnsatManager>> &
+    get_unsatperthread( ObjectivePtr & objective ) const override {
+        return dynamic_cast<MySceneObjectiveRIF&>(*objective).objective.template get_objective<MyScoreBBActorRIF>().unsatperthread_;
+    }
+
+
 };
 
 

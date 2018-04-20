@@ -36,6 +36,8 @@ namespace scheme { namespace search { struct HackPackOpts; }}
 namespace devel {
 namespace scheme {
 
+// forward declaration. This is terrible
+struct UnsatManager;
 
 
 /////////////////////// RifFactory ////////////////////////////
@@ -85,7 +87,12 @@ struct RifFactory
 
 	RifFactoryConfig const &
 	config() const { return config_; }
+
+	// This should not be in here. Only here because of the typedefs
+	virtual std::vector<shared_ptr<UnsatManager>> &
+	get_unsatperthread( ObjectivePtr & objective ) const = 0;
 };
+
 
 shared_ptr<RifFactory>
 create_rif_factory( RifFactoryConfig const & config );

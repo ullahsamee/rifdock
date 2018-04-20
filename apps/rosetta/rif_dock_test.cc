@@ -336,7 +336,8 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_require_burial, opt.unsat_score_offset, opt.unsat_debug );
+			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_require_burial, opt.unsat_score_offset, 
+															opt.unsat_debug, opt.report_common_unsats );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -1087,6 +1088,10 @@ int main(int argc, char *argv[]) {
 
 			std::vector<shared_ptr<Task>> task_list;
 
+
+			if (opt.scaff_search_mode == "morph" ) {
+    			task_list.push_back(make_shared<TestMakeChildrenTask>( ));
+			}
 
 			if ( opt.xform_fname.length() > 0) {
 				create_rifine_task( task_list, rdd );

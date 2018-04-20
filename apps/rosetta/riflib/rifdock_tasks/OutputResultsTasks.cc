@@ -14,6 +14,7 @@
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <riflib/rifdock_tasks/HackPackTasks.hh>
 #include <riflib/ScoreRotamerVsTarget.hh>
+#include <riflib/RifFactory.hh>
 
 #include <core/chemical/ChemicalManager.hh>
 #include <core/chemical/ResidueTypeSet.hh>
@@ -55,7 +56,24 @@ OutputResultsTask::return_rif_dock_results(
 
     std::cout<<"total RIF     time: "<<KMGT(pd.time_rif)<<" fraction: "<<pd.time_rif/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;
     std::cout<<"total Pack    time: "<<KMGT(pd.time_pck)<<" fraction: "<<pd.time_pck/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;
-    std::cout<<"total Rosetta time: "<<KMGT(pd.time_ros)<<" fraction: "<<pd.time_ros/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;         
+    std::cout<<"total Rosetta time: "<<KMGT(pd.time_ros)<<" fraction: "<<pd.time_ros/(pd.time_rif+pd.time_pck+pd.time_ros)<<std::endl;   
+
+
+    if ( rdd.unsat_manager && rdd.opt.report_common_unsats ) {
+
+        std::vector<shared_ptr<UnsatManager>> & unsatperthread = rdd.rif_factory->get_unsatperthread( rdd.objectives.back() );
+
+        for ( shared_ptr<UnsatManager> const & man : unsatperthread ) {
+            rdd.unsat_manager->sum_unsat_counts( *man );
+        }
+
+        rdd.unsat_manager->print_unsat_counts();
+    }
+
+
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +129,7 @@ OutputResultsTask::return_rif_dock_results(
             << " rank "       << I(9,selected_result.isamp)
             << " dist0:    "  << F(7,2,selected_result.dist0)
             << " packscore: " << F(7,3,selected_result.score)
-            // << " score: "     << F(7,3,selected_result.nopackscore)
+            << " score: "     << F(7,3,selected_result.nopackscore)
             // << " rif: "       << F(7,3,selected_result.rifscore)
             << " steric: "    << F(7,3,selected_result.stericscore)
             << " cluster: "   << I(7,selected_result.cluster_score)

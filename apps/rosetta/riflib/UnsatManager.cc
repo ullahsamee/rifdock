@@ -171,13 +171,15 @@ UnsatManager::UnsatManager(
     shared_ptr< RotamerIndex > rot_index_p_in,
     int require_burial,
     float score_offset,
-    bool debug
+    bool debug,
+    bool store_common_unsats
 ) :
     unsat_penalties_( unsat_penalties ),
     rot_index_p( rot_index_p_in ),
     require_burial_( require_burial ),
     score_offset_( score_offset ),
-    debug_( debug )
+    debug_( debug ),
+    store_common_unsats_( store_common_unsats )
 {
 
     using ObjexxFCL::format::F;
@@ -205,6 +207,7 @@ UnsatManager::UnsatManager(
         }
         std::cout << std::endl;
     }
+
 
 }
 
@@ -327,7 +330,12 @@ UnsatManager::set_target_donors_acceptors(
     }
 
 
+    if ( store_common_unsats_ ) {
+        unsat_counts_.resize( target_heavy_atoms_.size(), 0 );
+    }
+
     runtime_assert( validate_heavy_atoms() );
+
 
 }
 
@@ -387,6 +395,9 @@ UnsatManager::validate_heavy_atoms() {
             std::cout << "Error: Residue " << ha.resid << " atom " << ha.name << " wrong number of acceptor/donors. Has " << ha.sat_groups.size()
                     << " wants " << hbond::NumOrbitals[ha.AType] << std::endl;
         }
+    }
+    if ( store_common_unsats_ ) {
+        runtime_assert( unsat_counts_.size() == target_heavy_atoms_.size() );
     }
     return good;
 }
@@ -547,6 +558,9 @@ UnsatManager::patch_heavy_atoms( int resid, std::string const & heavy_atom, hbon
     switch ( patch ) {
         case hbond::ACTUALLY_HBONDING: {
             target_heavy_atoms_.erase( target_heavy_atoms_.begin() + heavy_atom_no );
+            if ( store_common_unsats_ ) {
+                unsat_counts_.erase( unsat_counts_.begin() + heavy_atom_no );
+            }
             int remaining = burial_manager->remove_heavy_atom( heavy_atom_no );
             runtime_assert( target_heavy_atoms_.size() == remaining );
             break;
@@ -722,6 +736,66 @@ UnsatManager::print_unsats_help( std::vector<float> const & unsat_penalties) con
 
 }
 
+
+void
+UnsatManager::sum_unsat_counts( UnsatManager const & other ) {
+    runtime_assert( other.unsat_counts_.size() == unsat_counts_.size() );
+
+    for ( int i = 0; i < unsat_counts_.size(); i++ ) {
+        unsat_counts_[i] += other.unsat_counts_[i];
+    }
+}
+
+void
+UnsatManager::print_unsat_counts() const {
+    using ObjexxFCL::format::I;
+
+    runtime_assert( unsat_counts_.size() == target_heavy_atoms_.size() );
+
+    std::cout << std::endl;
+    std::cout << "Commonly buried unsatisfied polars" << std::endl;
+
+    uint64_t max = 0;
+    for ( int i = 0; i < unsat_counts_.size(); i++ ) max = std::max( max, unsat_counts_[i] );
+
+    const int width = 80;
+
+    uint64_t unsats_per_star = max / width;
+
+    for ( int iheavy = 0; iheavy < unsat_counts_.size(); iheavy++ ) {
+
+        uint64_t count = unsat_counts_[iheavy];
+        if ( count == 0 ) continue;
+
+        hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
+
+        // 13
+        //                                                 6  + 4 + 7  + 4  + 7  + 13 = 41
+        std::string to_print = boost::str(boost::format("resid:%4i name: %s type: %s")%ha.resid%ha.name%hbond::ATypeNames[ha.AType]);
+
+        while ( to_print.length() < 41 + 2 ) {
+            to_print = to_print + " ";
+        }
+
+        to_print += I(12, count );
+
+        uint64_t stars = count / unsats_per_star;
+
+        for ( uint64_t i = 0; i < stars; i++ ) {
+            to_print += "*";
+        }
+
+        std::cout << to_print << std::endl;
+
+    }
+
+
+}
+
+
+
+
+
 std::vector<Eigen::Vector3f>
 UnsatManager::get_heavy_atom_xyzs() {
     std::vector<Eigen::Vector3f> xyzs( target_heavy_atoms_.size() );
@@ -786,6 +860,9 @@ UnsatManager::calculate_nonpack_score(
 
         if ( debug_ ) std::cout << "iheavy: " << iheavy << " adding: " << adding << " score: " << score << std::endl;
 
+        if ( store_common_unsats_ && adding > 0 ) {
+            unsat_counts_[iheavy] ++;
+        }
     }
 
     if (buried < require_burial_) {

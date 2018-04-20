@@ -197,7 +197,8 @@ struct UnsatManager {
         shared_ptr< RotamerIndex > rot_index_p,
         int require_burial, 
         float score_offset,
-        bool debug
+        bool debug,
+        bool store_common_unsats
     );
 
     shared_ptr<UnsatManager>
@@ -293,6 +294,12 @@ struct UnsatManager {
         shared_ptr<BurialManager> const & burial_manager
     );
 
+    void
+    sum_unsat_counts( UnsatManager const & other );
+
+    void
+    print_unsat_counts() const;
+
 // private:
     int
     find_heavy_atom(
@@ -333,6 +340,9 @@ struct UnsatManager {
     int require_burial_;
     float score_offset_;
     bool debug_;
+
+    bool store_common_unsats_;
+    std::vector<uint64_t> unsat_counts_;
 
 // things that are resetable
     std::vector<ToPackRot> to_pack_rots_;
