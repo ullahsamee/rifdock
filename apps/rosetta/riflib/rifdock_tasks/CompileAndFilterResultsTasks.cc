@@ -46,7 +46,6 @@ CompileAndFilterResultsTask::return_rif_dock_results(
 }
 
 
-typedef int32_t intRot;
 
 template<class EigenXform, class ScaffoldIndex>
 struct tmplXRtriple {
@@ -228,6 +227,7 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         }
     }
 
+
     ////////////////////
 
 
@@ -250,6 +250,7 @@ CompileAndFilterResultsTask::return_rif_dock_results(
         float redundancy_filter_rg = sdc->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
         EigenXform scaffold_perturb = sdc->scaffold_perturb;
         Eigen::Vector3f scaffold_center = sdc->scaffold_center;
+
                                         
         awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
             isamp, director_resl_, packed_results, rdd.scene_pt, rdd.director,
@@ -284,6 +285,7 @@ CompileAndFilterResultsTask::return_rif_dock_results(
             EigenXform scaffold_perturb = sdc->scaffold_perturb;
             Eigen::Vector3f scaffold_center = sdc->scaffold_center;
 
+
             awful_compile_output_helper_< EigenXform, ScenePtr, ObjectivePtr >(
                 isamp, director_resl_, packed_results, rdd.scene_pt, rdd.director,
                 redundancy_filter_rg, redundancy_mag_, scaffold_center,
@@ -314,7 +316,6 @@ CompileAndFilterResultsTask::return_rif_dock_results(
     return selected_results_p;
 
 }
-
 
 
 

@@ -157,7 +157,11 @@ create_rifine_task(
     int final_resl = rdd.rif_ptrs.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
-    task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+    if ( rdd.opt.xform_fname != "ALL" ) {
+        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+    } else {
+        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+    }
     
     task_list.push_back(make_shared<HSearchInit>( ));
     task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, final_resl, rdd.opt.tether_to_input_position_cut ));
@@ -183,18 +187,18 @@ create_rifine_task(
     bool do_rosetta_score = opt.rosetta_score_fraction > 0;
     bool do_rosetta_min = do_rosetta_score && opt.rosetta_min_fraction > 0;
 
-    if ( opt.rosetta_score_fraction > 0 ) {
-        task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
-        task_list.push_back(make_shared<RosettaScoreTask>( 0, opt.rosetta_score_cut, do_rosetta_min, true));
+    if ( do_rosetta_score || opt.rosetta_filter_even_if_no_score ) {
+                              task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+        if (do_rosetta_score) task_list.push_back(make_shared<RosettaScoreTask>( 0, opt.rosetta_score_cut, do_rosetta_min, true));
     }
 
-    if ( do_rosetta_min ) {
-        task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
-        task_list.push_back(make_shared<RosettaMinTask>( 0, opt.rosetta_score_cut, false )); 
+    if ( do_rosetta_min || opt.rosetta_filter_even_if_no_score ) {
+                            task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+        if (do_rosetta_min) task_list.push_back(make_shared<RosettaMinTask>( 0, opt.rosetta_score_cut, false )); 
     }
 
     // dummy task to turn these into RifDockResults
-    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, 100000000, 0, 0, 0, 
+    task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, 0, 0, 
                                                                                       opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
 
     task_list.push_back(make_shared<OutputResultsTask>( 0, final_resl ));

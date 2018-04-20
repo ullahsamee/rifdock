@@ -118,6 +118,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, num_hotspots )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
 
+	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
+
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_fraction )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_score_then_min_below_thresh )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_least )
@@ -139,6 +141,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_before )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_filter_n_per_scaffold )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_filter_redundancy_mag )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_even_if_no_score )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_debug_dump_scores )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_select_random )
 
@@ -206,6 +209,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
     OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
+    OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
@@ -325,6 +329,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::num_hotspots, "Number of hotspots found in Rifdock hotspots. If in doubt, set this to 1000", 0 );
 			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
 
+			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
+
 			NEW_OPT(  rif_dock::rosetta_score_fraction  , "",  0.00 );
 			NEW_OPT(  rif_dock::rosetta_score_then_min_below_thresh, "", -9e9 );
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
@@ -346,6 +352,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_filter_before, "redundancy filter results before rosetta score", false );
 			NEW_OPT(  rif_dock::rosetta_filter_n_per_scaffold, "use with rosetta_filter_before, num to save per scaffold", 300);
 			NEW_OPT(  rif_dock::rosetta_filter_redundancy_mag, "use with rosetta_filter_before, redundancy mag on the clustering", 0.5);
+			NEW_OPT(  rif_dock::rosetta_filter_even_if_no_score, "Do the filtering for rosetta score and min even if you don't actually score/min", false );
 			NEW_OPT(  rif_dock::rosetta_debug_dump_scores, "dump lists of scores around the rosetta score and min", false);
 			NEW_OPT(  rif_dock::rosetta_score_select_random, "Select random positions to score rather than best", false);
 
@@ -411,6 +418,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
             NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+            NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
@@ -471,6 +479,7 @@ struct RifDockOpt
 	int         require_satisfaction                 ;
 	int         num_hotspots                         ;
 	int         require_n_rifres                     ;
+	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
 	bool        output_scaffold_only                 ;
@@ -545,6 +554,7 @@ struct RifDockOpt
 	bool        rosetta_filter_before                ;
 	int         rosetta_filter_n_per_scaffold        ;
 	float       rosetta_filter_redundancy_mag        ;
+	bool        rosetta_filter_even_if_no_score      ;
 	bool        rosetta_debug_dump_scores            ;
 	bool        rosetta_score_select_random                ;
 
@@ -604,6 +614,7 @@ struct RifDockOpt
     int         unsat_neighbor_cutoff                ;
 	bool        unsat_debug                          ;
 	bool        test_hackpack                        ;    
+	std::string unsat_helper                         ;
 
     bool        dump_presatisfied_donors_acceptors   ;
     
@@ -669,6 +680,7 @@ struct RifDockOpt
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
 		num_hotspots                           = option[rif_dock::num_hotspots                          ]();
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
+		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
@@ -742,6 +754,7 @@ struct RifDockOpt
 		rosetta_filter_before                  = option[rif_dock::rosetta_filter_before                 ]();
 		rosetta_filter_n_per_scaffold          = option[rif_dock::rosetta_filter_n_per_scaffold         ]();
 		rosetta_filter_redundancy_mag          = option[rif_dock::rosetta_filter_redundancy_mag         ]();
+		rosetta_filter_even_if_no_score        = option[rif_dock::rosetta_filter_even_if_no_score       ]();
 		user_rotamer_bonus_constant 		   = option[rif_dock::user_rotamer_bonus_constant 			]();
 		user_rotamer_bonus_per_chi 			   = option[rif_dock::user_rotamer_bonus_per_chi 			]();
 		rosetta_debug_dump_scores              = option[rif_dock::rosetta_debug_dump_scores             ]();
@@ -791,7 +804,8 @@ struct RifDockOpt
         neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
         unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
 		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
-		test_hackpack                           = option[rif_dock::test_hackpack                        ]();        
+		test_hackpack                           = option[rif_dock::test_hackpack                        ]();  
+		unsat_helper                            = option[rif_dock::unsat_helper                         ]();      
 
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 

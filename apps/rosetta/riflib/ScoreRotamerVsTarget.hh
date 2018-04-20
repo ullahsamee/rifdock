@@ -223,7 +223,7 @@ struct ScoreRotamerVsTarget {
                         float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc );
                         if ( thishb < best_score ) {
                             best_score = thishb;
-                            best_sat = i_hr_tgt_acc;
+                            best_sat = i_hr_tgt_acc + target_donors_.size();
                         }
                     }
                     if ( best_sat > -1 && used_tgt_acceptor[best_sat] > best_score ) {

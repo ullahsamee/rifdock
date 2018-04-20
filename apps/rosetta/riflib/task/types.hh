@@ -169,6 +169,7 @@ struct RifDockData {
     std::vector< std::vector< VoxelArrayPtr > > const * target_bounding_by_atype;
     std::vector< ::scheme::chemical::HBondRay > * target_donors;
     std::vector< ::scheme::chemical::HBondRay > * target_acceptors;
+    RifScoreRotamerVsTarget const & rot_tgt_scorer;
     float & target_redundancy_filter_rg;
     core::pose::Pose & target;
     shared_ptr< RotamerIndex > & rot_index_p;
@@ -186,6 +187,7 @@ struct RifDockData {
 
     utility::io::ozstream & dokout;
     ScaffoldProviderOP scaffold_provider;
+    shared_ptr<BurialManager> burial_manager;
 
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;

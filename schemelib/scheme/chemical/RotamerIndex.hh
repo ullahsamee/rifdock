@@ -410,6 +410,7 @@ struct RotamerIndex {
 	std::map<std::string,std::string> oneletter_map_;
 	// map between d and l version of aa
 	std::map<std::string,std::string> d_l_map_;
+	std::vector<bool> is_d_;
 
 	ChemicalIndex<AtomData> chem_index_;
 
@@ -439,6 +440,7 @@ struct RotamerIndex {
 	// TODO: probably broke it with d_aa code need to be fix
 	std::vector<std::vector<core::conformation::ResidueOP>> per_thread_rotamers_;
 	std::vector<std::vector<core::scoring::lkball::LKB_ResidueInfoOP>> per_thread_lkbrinfo_;
+
 
 	RotamerIndex(){
 		this->fill_oneletter_map( oneletter_map_ );
@@ -702,6 +704,12 @@ struct RotamerIndex {
 				ala_rot_ = i;
 				break;
 			}
+		}
+
+		is_d_.resize( this->size() );
+		for ( size_t irot = 0; irot < this->size(); irot++ ) {
+			bool is_d =  d_l_map_.count(resname(irot)) != 0;
+			is_d_[irot] = is_d;
 		}
 
 		sanity_check();

@@ -14,6 +14,7 @@
 #include <riflib/rifdock_typedefs.hh>
 
 #include <scheme/search/HackPack.hh>
+#include <riflib/BurialManager.hh>
 
 #include <core/pose/Pose.hh>
 
@@ -115,6 +116,24 @@ const std::vector<std::vector<float>> DefaultUnsatPenalties {
     std::vector<float> {4, 0},    // "HisH"
     std::vector<float> {0, 0}    // "Unknown"
 };
+const std::vector<std::vector<float>> ScottUnsatPenalties {
+    std::vector<float> {0, 0},    // "Hydroxyl",
+    std::vector<float> {0, 0},    // "TyrHydroxyl",
+    std::vector<float> {4, 0},    // "HydroxylH",
+    std::vector<float> {4, 0},    // "TyrHydroxylH",
+    std::vector<float> {4, 0},    // "BBAmide",
+    std::vector<float> {4, 0},    // "BBCarbonyl",
+    std::vector<float> {4, 0},    // "Amide",
+    std::vector<float> {4, 0},    // "AmideCarbonyl",
+    std::vector<float> {4, 0},    // "ArgNH",
+    std::vector<float> {4, 0},    // "ArgNE",
+    std::vector<float> {4, 0},    // "LysN",
+    std::vector<float> {4, 0},    // "Carboxylate",
+    std::vector<float> {4, 0},    // "TrypN",
+    std::vector<float> {0, 0},    // "HisN",
+    std::vector<float> {4, 0},    // "HisH"
+    std::vector<float> {0, 0}    // "Unknown"
+};
 
 
 // std::vector<std::vector<float>> DefaultUnsatPenalties {
@@ -149,6 +168,12 @@ identify_donor( std::string const & dname, std::string & heavy_atom_name );
 AType
 identify_acceptor( std::string const & aname, char one_letter, std::string & heavy_atom_name );
 
+
+enum Patch {
+    NONE,
+    NOT_BURIED,
+    ACTUALLY_HBONDING
+};
 
 
 }
@@ -195,6 +220,23 @@ struct UnsatManager {
     void
     dump_presatisfied();
 
+    std::vector<float>
+    get_initial_unsats( std::vector<float> const & burial_weights ) const;
+
+    std::vector<float>
+    get_buried_unsats( 
+        std::vector<float> const & burial_weights,
+        std::vector< std::pair<intRot,intRot> > const & rotamers,
+        std::vector< EigenXform > const & bb_positions,
+        RifScoreRotamerVsTarget const & rot_tgt_scorer
+    ) const;
+
+    void
+    print_buried_unsats( std::vector<float> const & unsat_penalties) const;
+
+    void
+    print_unsats_help( std::vector<float> const & unsat_penalties) const;
+
     std::vector<Eigen::Vector3f>
     get_heavy_atom_xyzs();
 
@@ -208,7 +250,8 @@ struct UnsatManager {
     );
 
     float
-    calculate_unsat_score( float P0, float P1, int wants, int satisfied, float weight );
+    calculate_unsat_score( float P0, float P1, int wants, int satisfied, float weight ) const;
+
 
     void
     add_to_pack_rot( 
@@ -231,11 +274,26 @@ struct UnsatManager {
         shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody
     );
 
-private:
+    bool
+    patch_heavy_atoms( 
+        int resid,
+        std::string const & heavy_atom,
+        hbond::Patch patch,
+        shared_ptr<BurialManager> const & burial_manager
+    );
+
+    void
+    apply_unsat_helper( 
+        std::string const & unsat_helper_fname,
+        shared_ptr<BurialManager> const & burial_manager
+    );
+
+// private:
     int
     find_heavy_atom(
         int resid,
-        std::string const & heavy_atom_name
+        std::string const & heavy_atom_name,
+        bool strict = false
     );
 
     void
@@ -258,12 +316,13 @@ private:
     bool
     validate_heavy_atoms();
 
-private:
+// private:
 
     int num_donors_;
     std::vector<HBondRay> target_donors_acceptors_;
     std::vector<hbond::HeavyAtom> target_heavy_atoms_;
     std::vector<bool> target_presatisfied_;
+    std::vector<std::vector<float>> unsat_penalties_;
     std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
     shared_ptr< RotamerIndex > rot_index_p;
     bool debug_;
