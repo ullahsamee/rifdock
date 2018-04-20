@@ -1266,6 +1266,7 @@ struct RifFactoryImpl :
 
 		for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
 			if( i_so <= config.rif_ptrs.size()-1 ){
+				if ( config.rif_ptrs[i_so] == nullptr ) continue;
 				shared_ptr< MySceneObjectiveRIF> objective = make_shared<MySceneObjectiveRIF>();
 				objective->objective.template get_objective< MyScoreBBActorRIF >().set_rif( config.rif_ptrs[i_so] );
 				if( i_so > 0 ){
@@ -1285,6 +1286,7 @@ struct RifFactoryImpl :
 		// objectives.push_back( objective );
 
         for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+				if ( config.rif_ptrs[i_so] == nullptr ) continue;
     		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
@@ -1294,7 +1296,10 @@ struct RifFactoryImpl :
     			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
     				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
     		}
-            packing_objectives.push_back( packing_objective );
+				if( config.requirements.size() > 0 ){
+						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
+				}
+        packing_objectives.push_back( packing_objective );
         }
 
 		for( auto op : objectives ){
@@ -1307,19 +1312,22 @@ struct RifFactoryImpl :
 			if (config.require_n_rifres > 0 ) {
 				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_n_rifres_ = config.require_n_rifres;
 			}
+			if ( config.requirements.size() > 0 ){
+			  dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
+			}
 		}
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
 
 		// use 4.0A vdw grid for CH3 atoms as proximity test
 
-        for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
+        for( int i_so = 0; i_so < packing_objectives.size(); ++i_so ){
 
             shared_ptr< MySceneObjectiveRIF> packing_objective = std::dynamic_pointer_cast<MySceneObjectiveRIF>(packing_objectives[i_so]);
 
             ::scheme::search::HackPackOpts local_packopts = *config.packopts;
             // Only rescore on the full resolution
-            local_packopts.rescore_rots_before_insertion = i_so == config.rif_ptrs.size() - 1;
+            local_packopts.rescore_rots_before_insertion = i_so == packing_objectives.size() - 1;
 
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>()
     							.target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
