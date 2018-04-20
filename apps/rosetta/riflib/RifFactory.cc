@@ -929,6 +929,11 @@ std::string get_rif_type_from_file( std::string fname )
                     // std::cout << "Adding " << ires << std::endl;
                     scratch.has_rifrot_[ires] = true;
                 }
+								// an arbitrary cutoff value.
+								if( requirements_.size() > 0 && score_rot_tot < 2 )
+								{
+										rotscores.mark_sat_groups( i_rs, scratch.requirements_satisfied_ );
+								}
 
 				bestsc = std::min( score_rot_tot , bestsc );
 				//}
@@ -1102,7 +1107,9 @@ std::string get_rif_type_from_file( std::string fname )
             if ( requirements_.size() > 0 )
             {
                 bool pass = true;
-                for ( auto const & x : requirements_ ) pass &= scratch.requirements_satisfied_[x];
+                for ( auto const & x : requirements_ ) {
+										pass &= scratch.requirements_satisfied_[x];
+								}
                 if ( !pass ) result.val_ = 9e9;
             }
 
