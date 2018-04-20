@@ -82,7 +82,10 @@ namespace rif {
 
 				if ( irot == -1 ) {
 					std::cout << "Adding input rotamers: " << i_hspot_res << " " << resn << std::endl;
-					rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+					bool am_i_normal(pose.residue(i_hspot_res).has("N") && pose.residue(i_hspot_res).has("CA")  && pose.residue(i_hspot_res).has("C"));
+					if (am_i_normal) {
+						rot_spec.add_rotamer(resn,mychi,n_proton_chi,parent_key);
+					}
 				} else {
 					std::cout << "duplicated rotamer, not adding: " << i_hotspot_group << " " << i_hspot_res << " " << resn << std::endl;
 				}
@@ -290,8 +293,12 @@ namespace rif {
 
 				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
 
-				// possible name still OK 
+				// possible name still OK
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
+                if (input_nheavy < 3) { // this can happen for disembodied hydroxyls
+                    input_nheavy = 3;
+                }
+                
 				
 
 				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
@@ -329,13 +336,7 @@ namespace rif {
 						
 					// assign rif_res position by column
 					int hatoms = params -> rot_index_p -> nheavyatoms(irot);
-					std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
-					EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
-                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
-                    );
-
+                    
 					//for (auto const & it: myresname[i_hspot_res]){
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
@@ -343,6 +344,27 @@ namespace rif {
 							//std::cout << d_name[i] << std::endl;
 						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_name[i])
 						{
+							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
+							EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 3 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+		                        rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position()
+		                    );
+                            // TODO: Swap out the last three heavy atoms for the appropriate atoms when superposing on a disembodied hydroxyl
+                            // Getting this right is going to be a little tricky -- all of the following is based on aligning to  OH_ (which needs to be checked)
+                            if (pose.residue(i_hspot_res).name3() == "OH_"){
+                                // For TYR: the last two heavy atoms and 'HH' -- atom number 20
+                                // For SER: the last two heavy atoms and 'HG'
+                                // For THR: the last two heavy atoms and 'HG1'
+                                // both are atom number 10.
+                                int atmno = (params -> rot_index_p -> resname(irot) == "TYR") ? 20 : 10;
+                                Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 2 ).position(),
+                                    rotamer_atoms.at( params->rot_index_p->nheavyatoms(irot) - 1 ).position(),
+                                    rotamer_atoms.at( atmno ).position()
+                                );
+                            }
+
 							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
 							EigenXform impose; //transform for mapping the Rot to Rif
 							::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms

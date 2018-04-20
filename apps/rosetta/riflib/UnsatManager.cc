@@ -4,16 +4,20 @@
 
 #include <riflib/RotamerGenerator.hh>
 #include <riflib/util.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <utility/io/ozstream.hh>
+#include <utility/file/file_sys_util.hh>
 
 #include <ObjexxFCL/format.hh>
 #include <boost/format.hpp>
+
 
 using Eigen::Vector3f;
 
 namespace devel {
 namespace scheme {
+
 
 
 namespace hbond {
@@ -167,6 +171,7 @@ UnsatManager::UnsatManager(
     shared_ptr< RotamerIndex > rot_index_p_in,
     bool debug
 ) :
+    unsat_penalties_( unsat_penalties ),
     rot_index_p( rot_index_p_in ),
     debug_( debug )
 {
@@ -174,11 +179,11 @@ UnsatManager::UnsatManager(
     using ObjexxFCL::format::F;
     std::cout << "Buried orbital/hydrogen penalties: " << std::endl;
     std::cout << "  # of unsats:   0    1    2    3  " << std::endl;
-    runtime_assert( unsat_penalties.size() == hbond::DefaultUnsatPenalties.size() );
-    total_first_twob_.resize(unsat_penalties.size(), std::vector<float>(3));
+    runtime_assert( unsat_penalties_.size() == hbond::DefaultUnsatPenalties.size() );
+    total_first_twob_.resize(unsat_penalties_.size(), std::vector<float>(3));
 
     for ( int i = 0; i < total_first_twob_.size(); i++ ) {
-        std::vector<float> const & penalties = hbond::DefaultUnsatPenalties[i];
+        std::vector<float> const & penalties = unsat_penalties_[i];
         
         const float P0 = penalties[0];
         const float P1 = penalties[1];
@@ -323,12 +328,16 @@ UnsatManager::set_target_donors_acceptors(
 }
 
 int
-UnsatManager::find_heavy_atom( int resid, std::string const & heavy_atom_name ) {
+UnsatManager::find_heavy_atom( int resid, std::string const & heavy_atom_name, bool strict /* =false */ ) {
     int heavy_atom_no = 0;
     for ( heavy_atom_no = 0; heavy_atom_no < target_heavy_atoms_.size(); heavy_atom_no++ ) {
         hbond::HeavyAtom const & ha = target_heavy_atoms_[heavy_atom_no];
         if ( ha.resid != resid ) continue;
-        if ( ha.name != heavy_atom_name ) continue;
+        if ( strict ) {
+            if ( ha.name != heavy_atom_name ) continue;
+        } else {
+            if ( utility::strip(ha.name) != utility::strip(heavy_atom_name) ) continue;
+        }
         break;
     }
 
@@ -524,6 +533,175 @@ UnsatManager::dump_presatisfied() {
 
 }
 
+
+bool
+UnsatManager::patch_heavy_atoms( int resid, std::string const & heavy_atom, hbond::Patch patch, shared_ptr<BurialManager> const & burial_manager ) {
+
+    int heavy_atom_no = find_heavy_atom( resid, heavy_atom, false );
+    if ( heavy_atom_no == -1 ) return false;
+    
+    switch ( patch ) {
+        case hbond::ACTUALLY_HBONDING: {
+            target_heavy_atoms_.erase( target_heavy_atoms_.begin() + heavy_atom_no );
+            int remaining = burial_manager->remove_heavy_atom( heavy_atom_no );
+            runtime_assert( target_heavy_atoms_.size() == remaining );
+            break;
+        }
+        case hbond::NOT_BURIED: {
+            burial_manager->unbury_heavy_atom( heavy_atom_no );
+            break;
+        }
+    }
+
+    return true;
+
+}
+
+void
+UnsatManager::apply_unsat_helper( 
+    std::string const & unsat_helper_fname,
+    shared_ptr<BurialManager> const & burial_manager
+) {
+    if ( unsat_helper_fname == "" ) return;
+
+    runtime_assert_msg(utility::file::file_exists( unsat_helper_fname ), "unsat helper file does not exits: " + unsat_helper_fname );
+
+    std::ifstream in;
+    in.open(unsat_helper_fname, std::ios::in);
+
+    std::string s;
+
+    while ( std::getline(in, s)){
+        if (s.empty()) continue;
+
+        utility::vector1<std::string> splt = utility::quoted_split( s );
+
+        if ( splt[1].find("#") == 0 ) continue;
+
+        runtime_assert_msg( splt.size() >= 3, "Bad line in unsat helper file: " + s );
+
+        int resid = stoi( splt[1] );
+        std::string heavy_atom = splt[2];
+        std::string flag = splt[3];
+
+        hbond::Patch patch = hbond::NONE;
+        if ( flag == "HB" ) patch = hbond::ACTUALLY_HBONDING;
+        if ( flag == "NB" ) patch = hbond::NOT_BURIED;
+        if ( patch == hbond::NONE ) {
+            utility_exit_with_message("Invalid patch operation: " + s );
+        }
+            std::cout << resid << " " << heavy_atom << " " << patch << std::endl;
+
+        if ( ! patch_heavy_atoms( resid, heavy_atom, patch, burial_manager ) ) {
+            utility_exit_with_message( "Heavy atom not found: " + s );
+        }
+
+    }
+}
+
+
+std::vector<float>
+UnsatManager::get_initial_unsats( 
+    std::vector<float> const & burial_weights
+) const {
+    std::vector< std::pair<intRot,intRot> > rotamers;
+    std::vector< EigenXform > bb_positions;
+    RifScoreRotamerVsTarget rot_tgt_scorer;
+
+    return get_buried_unsats( burial_weights, rotamers, bb_positions, rot_tgt_scorer );
+}
+
+std::vector<float>
+UnsatManager::get_buried_unsats( 
+    std::vector<float> const & burial_weights,
+    std::vector< std::pair<intRot,intRot> > const & rotamers,
+    std::vector< EigenXform > const & bb_positions,
+    RifScoreRotamerVsTarget const & rot_tgt_scorer
+) const {
+
+    std::vector<bool> satisfied = target_presatisfied_;
+
+    // runtime_assert( rotamers.size() == bb_positions.size() );   // this is false
+
+    for ( int i = 0; i < rotamers.size(); i++ ) {
+        int ires = rotamers[i].first;
+        int irot = rotamers[i].second;
+
+        int sat1 = -1, sat2 = -1, hbcount = 0;
+        rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb_positions.at(i), sat1, sat2, true, hbcount, 10.0, 4 );
+
+        if ( sat1 > -1 ) satisfied[sat1] = true;
+        if ( sat2 > -1 ) satisfied[sat2] = true;
+    }
+
+    std::vector<float> unsat_scores( target_heavy_atoms_.size() );
+    for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
+
+        const float weight = burial_weights[iheavy];
+        if ( weight == 0) continue;
+
+        hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
+        int sat_count = 0;
+        for ( int isat : ha.sat_groups ) {
+            if ( satisfied[isat] ) {
+                sat_count += 1;
+            }
+        }
+
+        const int wants = hbond::NumOrbitals[ha.AType];
+        std::vector<float> const & penalties = unsat_penalties_[ha.AType];
+        float score = calculate_unsat_score( penalties[0], penalties[1], wants, sat_count, weight );
+        unsat_scores[iheavy] = score * weight;
+    }
+
+    return unsat_scores;
+}
+
+void
+UnsatManager::print_buried_unsats( std::vector<float> const & unsat_penalties) const {
+
+    for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
+
+        float score = unsat_penalties[iheavy];
+         if ( score > 0 ) {
+
+            hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
+            std::cout << " Buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score) <<  score <<  std::endl;
+         }
+    }
+
+}
+
+void
+UnsatManager::print_unsats_help( std::vector<float> const & unsat_penalties) const {
+
+    bool any = false;
+    for ( float penalty : unsat_penalties ) {
+        any |= penalty > 0;
+    }
+
+    if ( !any ) return;
+
+    std::cout << "These initial unsats are going to cause problems with scoring." << std::endl;
+    std::cout << "You need to create a -unsat_helper file to address these." << std::endl;
+    std::cout << "HB - this atom is actually making an H-bond but rosetta missed it." << std::endl;
+    std::cout << "NB - this atom isn't actually buried (but could be)." << std::endl;
+    std::cout << "Template:" << std::endl << std::endl;
+
+    for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
+
+        float score = unsat_penalties[iheavy];
+         if ( score > 0 ) {
+
+            hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
+            std::cout << boost::str(boost::format("%i %s HB/NB ")%ha.resid%ha.name) <<  std::endl;
+         }
+    }
+
+    std::cout << std::endl;
+
+}
+
 std::vector<Eigen::Vector3f>
 UnsatManager::get_heavy_atom_xyzs() {
     std::vector<Eigen::Vector3f> xyzs( target_heavy_atoms_.size() );
@@ -536,7 +714,7 @@ UnsatManager::get_heavy_atom_xyzs() {
 
 // I encourage you to check my math. But this calculates the score based on the P0 P1 scheme.
 float
-UnsatManager::calculate_unsat_score( float P0, float P1, int wants, int satisfied, float weight ) {
+UnsatManager::calculate_unsat_score( float P0, float P1, int wants, int satisfied, float weight ) const {
 
     float penalty = P0;
     float score = 0;
@@ -577,7 +755,7 @@ UnsatManager::calculate_nonpack_score(
 
         if (satisfied == wants) continue;
 
-        std::vector<float> const & penalties = hbond::DefaultUnsatPenalties[ha.AType];
+        std::vector<float> const & penalties = unsat_penalties_[ha.AType];
 
         const float adding = calculate_unsat_score( penalties[0], penalties[1], wants, satisfied, weight );
         score += adding;
@@ -675,6 +853,24 @@ UnsatManager::prepare_packer(
     runtime_assert( burial_weights.size() == target_heavy_atoms_.size() );
 
     if (debug_) {
+
+        for ( int ih = 0; ih < burial_weights.size(); ih++ ) {
+
+            const float weight = burial_weights[ih];
+            hbond::HeavyAtom const & ha = target_heavy_atoms_[ih];
+
+            std::cout << "Heavy atom: " << ih << " resid: " << ha.resid << " heavy: " << ha.name << " type: " << hbond::ATypeNames[ha.AType] 
+                << " burial: " << weight << " sats: ";
+
+            for ( int sat : ha.sat_groups ) {
+                std::cout << sat << ",";
+            }
+            std::cout << std::endl;
+
+        }
+
+
+
         for ( int i = 0; i < to_pack_rots_.size(); i++ ) {
             std::cout << "ToPackRot: " << i << " " << rot_index_p->oneletter(to_pack_rots_[i].irot) 
                 << " ires: " << to_pack_rots_[i].ires << " irot: " << to_pack_rots_[i].irot 

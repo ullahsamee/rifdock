@@ -41,6 +41,8 @@ struct RIFAnchor {
 struct ScaffoldDataCache;
 
 
+typedef int32_t intRot;
+
 // Typedefs that should never change
 
 typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
@@ -252,6 +254,11 @@ typedef ::scheme::chemical::RotamerIndex<
     EigenXform
 > RotamerIndex;
 
+
+template< class VoxelArrayPtr, class HBondRay, class RotamerIndex >
+struct ScoreRotamerVsTarget;
+
+typedef devel::scheme::ScoreRotamerVsTarget< VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex > RifScoreRotamerVsTarget;
 
 
 }

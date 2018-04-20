@@ -1490,7 +1490,7 @@ void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool i
 				++anum,
 				aname.c_str(),
 				isdonor? "DON" : "ACC",
-				isdonor? "D" : "A",
+				isdonor? 'D' : 'A',
 				rnum,
 				x,y,z,
 				1.0,

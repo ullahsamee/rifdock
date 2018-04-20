@@ -680,12 +680,16 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr< ::scheme::search::HackPack> hackpack_;
 		std::vector<bool> is_satisfied_;
 		std::vector<bool> has_rifrot_;
+
         std::vector<bool> requirements_satisfied_;
 		std::vector<std::vector<float> > const * rotamer_energies_1b_ = nullptr;
 		std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
 		shared_ptr< BurialManager > burial_manager_;
 		shared_ptr< UnsatManager > unsat_manager_;
+        shared_ptr< BurialVoxelArray > scaff_burial_grid_;
 		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
+        //std::vector<std::vector<bool>> allowed_irots_;
+        shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 	};
@@ -711,9 +715,7 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
 		VoxelArrayPtr target_proximity_test_grid_ = nullptr;
-		devel::scheme::ScoreRotamerVsTarget<
-				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-			> rot_tgt_scorer_;
+		RifScoreRotamerVsTarget rot_tgt_scorer_;
 		std::vector<int> always_available_rotamers_;
 
 		ScoreBBActorVsRIF() {}
@@ -731,33 +733,17 @@ std::string get_rif_type_from_file( std::string fname )
 		void init_for_packing(
 			// ::scheme::objective::storage::TwoBodyTable<float> const & twob,
 			shared_ptr< ::devel::scheme::RotamerIndex > rot_index_p,
-			std::vector<VoxelArrayPtr> const & target_field_by_atype,
-			std::vector< ::scheme::chemical::HBondRay > const & target_donors,
-			std::vector< ::scheme::chemical::HBondRay > const & target_acceptors,
-#ifdef USEGRIDSCORE
-            shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer,
-            bool soft_grid_energies,
-#endif
+            RifScoreRotamerVsTarget const & rot_tgt_scorer,
 			::scheme::search::HackPackOpts const & hackpackopts
 		){
+            rot_tgt_scorer_ = rot_tgt_scorer;
 			packing_ = true;
 			packperthread_.clear();
 			for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
 				shared_ptr< ::scheme::search::HackPack> tmp = make_shared< ::scheme::search::HackPack>(hackpackopts,rot_index_p->ala_rot(),i);
 				packperthread_.push_back( tmp );
 			}
-			rot_tgt_scorer_.rot_index_p_ = rot_index_p;
-			rot_tgt_scorer_.target_field_by_atype_ = target_field_by_atype;
-			rot_tgt_scorer_.target_donors_ = target_donors;
-			rot_tgt_scorer_.target_acceptors_ = target_acceptors;
-			rot_tgt_scorer_.hbond_weight_ = hackpackopts.hbond_weight;
-			rot_tgt_scorer_.upweight_iface_ = hackpackopts.upweight_iface;
-			rot_tgt_scorer_.upweight_multi_hbond_ = hackpackopts.upweight_multi_hbond;
-			rot_tgt_scorer_.min_hb_quality_for_satisfaction_ = hackpackopts.min_hb_quality_for_satisfaction;
-#ifdef USEGRIDSCORE
-            rot_tgt_scorer_.grid_scorer_ = grid_scorer;
-            rot_tgt_scorer_.soft_grid_energies_ = soft_grid_energies;
-#endif
+
 			packopts_ = hackpackopts;
 			always_available_rotamers_.clear();
 			for( int irot = 0; irot < rot_index_p->n_primary_rotamers(); ++irot ){
@@ -797,6 +783,9 @@ std::string get_rif_type_from_file( std::string fname )
 			ScaffoldDataCacheOP data_cache = scene.conformation_ptr(1)->cache_data_;
             runtime_assert( data_cache );
 			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
+            scratch.scaff_burial_grid_ = data_cache->burial_grid;
+            scratch.allowed_irots_ = data_cache->allowed_irot_at_ires_p;
+
 			//////////////////////////////////////////
 
 			runtime_assert( rif_ );
@@ -843,12 +832,13 @@ std::string get_rif_type_from_file( std::string fname )
 				scratch.hackpack_->reinitialize( data_cache->local_twobody_per_thread.at(::devel::scheme::omp_thread_num()) );
 				scratch.reference_twobody_ = data_cache->local_twobody_p;
 			}
+
 		}
 
 		template<class Config>
 		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
 		{
-			if ( scratch.burial_manager_ ) scratch.burial_manager_->accumulate_neighbors( bb );
+
 			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
 				return 0.0;
 			}
@@ -863,7 +853,10 @@ std::string get_rif_type_from_file( std::string fname )
 				if( rotscores.empty(i_rs) ) {
 					break;
 				}
-				int irot = rotscores.rotamer(i_rs);
+				
+                int irot = rotscores.rotamer(i_rs);
+                if ( scratch.allowed_irots_ && ! scratch.allowed_irots_->at(ires)[irot] ) continue;
+
 				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
@@ -983,7 +976,9 @@ std::string get_rif_type_from_file( std::string fname )
 
 				float unsat_zerobody = 0;
 				if ( scratch.burial_manager_ ) {
-					unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, scratch.burial_manager_->get_burial_weights() );
+                    EigenXform scaffold_xform = scene.position(1);
+					unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, 
+                        scratch.burial_manager_->get_burial_weights( scaffold_xform, scratch.scaff_burial_grid_ ) );
 				}
 				
 				result.val_ = packer.pack( result.rotamers_ );
@@ -1031,14 +1026,17 @@ std::string get_rif_type_from_file( std::string fname )
 			} else {
 
 				if ( scratch.burial_manager_ ) {
-					std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights();
+                    EigenXform scaffold_xform = scene.position(1);
+					std::vector<float> burial_weights = scratch.burial_manager_->get_burial_weights( scaffold_xform, scratch.scaff_burial_grid_ );
 					result.val_ += scratch.unsat_manager_->calculate_nonpack_score( burial_weights, scratch.is_satisfied_ );
 				}
 
 
 			}
 
+
 			if( n_sat_groups_ > 0 ){
+
 				int nsat = 0;
 				
 				for( int i = 0; i < n_sat_groups_; ++i ){
@@ -1070,6 +1068,7 @@ std::string get_rif_type_from_file( std::string fname )
 				// delete scratch.is_satisfied_;
 				// scratch.is_satisfied_.clear();
 			}
+
 
 			// this is yolo code by Brian. I have no idea if th is will always work
 			if ( require_n_rifres_ > 0 ) {
@@ -1334,13 +1333,7 @@ struct RifFactoryImpl :
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().init_for_packing(
     			// *config.local_twobody,
     			config.rot_index_p,
-    			*config.target_field_by_atype,
-    			*config.target_donors,
-    			*config.target_acceptors,
-#ifdef USEGRIDSCORE
-                config.grid_scorer,
-                config.soft_grid_energies,
-#endif
+                config.rot_tgt_scorer,
     			local_packopts
     		);
         }
