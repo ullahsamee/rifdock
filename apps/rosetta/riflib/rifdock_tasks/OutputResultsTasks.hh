@@ -54,7 +54,8 @@ dump_rif_result_(
     int rif_resl,
     bool quiet = true,
     std::string const & resfileoutfile = "",
-    std::string const & allrifrotsoutfile = ""
+    std::string const & allrifrotsoutfile = "",
+    std::vector<float> const & unsat_scores = std::vector<float>()
     );
 
 void

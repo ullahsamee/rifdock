@@ -72,6 +72,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, hbond_weight )
 	OPT_1GRP_KEY(  Real        , rif_dock, upweight_multi_hbond )
 	OPT_1GRP_KEY(  Real        , rif_dock, min_hb_quality_for_satisfaction )
+	OPT_1GRP_KEY(  Real        , rif_dock, long_hbond_fudge_distance )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, redundancy_filter_mag )
@@ -98,6 +99,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
+	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -210,6 +212,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
     OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
+    OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_offset )
+    OPT_1GRP_KEY(  Integer     , rif_dock, unsat_require_burial )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, report_common_unsats )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
 
@@ -280,6 +285,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
 			NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
 			NEW_OPT(  rif_dock::min_hb_quality_for_satisfaction, "Minimum fraction of total hbond energy required for satisfaction. Scale -1 to 0", -0.6 );
+			NEW_OPT(  rif_dock::long_hbond_fudge_distance, "Any hbond longer than 2A gets moved closer to 2A by this amount for scoring", 0.0 );
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
@@ -308,7 +314,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
-			NEW_OPT(  rif_dock::score_this_pdb, "Score residue 1 of this pdb using the rif scoring machinery", "" );
+			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
+			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -364,8 +371,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
 	        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
 
-	        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", -2 );
-			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", -2 );
+	        NEW_OPT(  rif_dock::user_rotamer_bonus_constant, "", 0 );
+			NEW_OPT(  rif_dock::user_rotamer_bonus_per_chi, "", 0 );
 
 			NEW_OPT(  rif_dock::resl0, "", 16 );
 			NEW_OPT(  rif_dock::dump_x_frames_per_resl, "Use this to make a movie", 0 );
@@ -419,6 +426,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
             NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
+            NEW_OPT(  rif_dock::unsat_score_offset, "This gets added to the score of all designs", 0.0 );
+            NEW_OPT(  rif_dock::unsat_require_burial, "Require at least this many polar atoms be buried", 0 );
+            NEW_OPT(  rif_dock::report_common_unsats, "Show probability of burying every unsat", false );
 
 
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
@@ -465,6 +475,7 @@ struct RifDockOpt
 	float       dump_rifgen_near_pdb_frac            ;
 	bool        dump_rifgen_text                     ;
 	std::string score_this_pdb                       ;
+	std::string dump_pdb_at_bin_center               ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -520,6 +531,7 @@ struct RifDockOpt
 	float       upweight_iface                       ;
 	float       upweight_multi_hbond                 ;
 	float       min_hb_quality_for_satisfaction      ;
+	float       long_hbond_fudge_distance            ;
 	float       redundancy_filter_mag                ;
 	bool        filter_seeding_positions_separately  ;
 	bool        filter_scaffolds_separately          ;
@@ -615,6 +627,9 @@ struct RifDockOpt
 	bool        unsat_debug                          ;
 	bool        test_hackpack                        ;    
 	std::string unsat_helper                         ;
+	float       unsat_score_offset                   ;
+	int         unsat_require_burial                 ;
+	bool        report_common_unsats                 ;
 
     bool        dump_presatisfied_donors_acceptors   ;
     
@@ -666,6 +681,7 @@ struct RifDockOpt
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
+		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -723,6 +739,7 @@ struct RifDockOpt
 		upweight_iface                         = option[rif_dock::upweight_iface                        ]();
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
 		min_hb_quality_for_satisfaction        = option[rif_dock::min_hb_quality_for_satisfaction       ]();
+		long_hbond_fudge_distance              = option[rif_dock::long_hbond_fudge_distance             ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();
@@ -805,7 +822,10 @@ struct RifDockOpt
         unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
 		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
 		test_hackpack                           = option[rif_dock::test_hackpack                        ]();  
-		unsat_helper                            = option[rif_dock::unsat_helper                         ]();      
+		unsat_helper                            = option[rif_dock::unsat_helper                         ]();
+		unsat_score_offset                      = option[rif_dock::unsat_score_offset                   ]();
+		unsat_require_burial                    = option[rif_dock::unsat_require_burial                 ](); 
+		report_common_unsats                    = option[rif_dock::report_common_unsats                 ]();
 
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
 

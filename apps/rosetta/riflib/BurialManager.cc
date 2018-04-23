@@ -362,6 +362,7 @@ BurialManager::get_burial_count(
             work[dim] += dir * 2.0f;
             const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid);
             burial_count = std::min<float>(burial_count, this_burial_count);
+            // if (debug_) std::cout << this_burial_count;
             // std::cout << work << std::endl;
             work[dim] -= dir * 2.0f;
         }
@@ -379,8 +380,10 @@ BurialManager::get_burial_weights( EigenXform const & scaff_transform, shared_pt
 
     for ( int i_pt = 0; i_pt < target_burial_points_.size(); i_pt ++ ) {
 
-        const float burial_count = get_burial_count( target_burial_points_[i_pt], scaff_transform, scaff_grid ) 
-                                    + unburial_adjust_[i_pt];
+        const float burial_count = get_burial_count( target_burial_points_[i_pt], scaff_inv_transform, scaff_grid ) 
+                                    - unburial_adjust_[i_pt];
+
+        // if (debug_) std::cout << "Burial: iheavy: " << i_pt << " count: " << burial_count << std::endl;
         const float burial = opts_.neighbor_count_weights[int(burial_count + 0.5f)];
         weights[i_pt] = burial;
     }

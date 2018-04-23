@@ -14,6 +14,7 @@
 
 
 #include <riflib/rif/RifGenerator.hh>
+#include <riflib/rif/make_hbond_geometries.hh>
 
 namespace devel {
 namespace scheme {
@@ -30,9 +31,21 @@ struct RifGeneratorSimpleHbondsOpts {
 	float hbond_weight = 2.0;
 	float upweight_multi_hbond = 0;
 	float min_hb_quality_for_satisfaction = -0.6;
+	float long_hbond_fudge_distance = 0.0;
 	bool debug = false;
 	bool dump_bindentate_hbonds = false;
+	bool report_aa_count = false;
+	int hbgeom_max_cache = -1;
 };
+
+struct HBJob {
+	std::string don, acc, don_or_acc;
+	int nrots;
+	int ires;
+    std::string hbgeomtag;
+	bool operator<( HBJob const & other ) const { return nrots > other.nrots; }
+};
+
 
 struct RifGeneratorSimpleHbonds : public RifGenerator {
 
@@ -51,6 +64,21 @@ struct RifGeneratorSimpleHbonds : public RifGenerator {
 
 	, opts( opts )
 	{}
+
+	void
+	prepare_hbgeoms( 
+	    std::vector<HBJob> const & hb_jobs,
+	    int start_job,
+	    int end_job,    // python style numbering. To do all jobs, specify 0, hb_jobs.size()
+	    std::map< std::string, utility::vector1< RelRotPos > * > & hbond_geoms_cache,
+	    std::map< std::string, omp_lock_t > & hbond_io_locks,
+	    omp_lock_t & cout_lock,
+	    omp_lock_t & io_lock,
+	    omp_lock_t & pose_lock,
+	    omp_lock_t & hacky_rpms_lock,
+	    omp_lock_t & hbond_geoms_cache_lock,
+	    RifGenParamsP const & params
+	);
 
 	void generate_rif(
 		RifAccumulatorP accumulator,

@@ -415,12 +415,14 @@ apply_direct_segment_lookup_mover(
                 }
 
         // this doesn't handle insertions or deletion!!!!!!!!
-                core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
-                std::cout << "RMSD: " << rmsd << std::endl;
-                // std::cout << rmsd_region << std::endl;
-                if ( rmsd > max_rmsd ) {
-                    std::cout << "RMSD too high" << std::endl;
-                    continue;
+                if ( iresult->size() == pose_size ) {
+                    core::Real rmsd = subset_CA_rmsd(*iresult, *iin_pose, rmsd_region, false );
+                    std::cout << "RMSD: " << rmsd << std::endl;
+                    // std::cout << rmsd_region << std::endl;
+                    if ( rmsd > max_rmsd ) {
+                        std::cout << "RMSD too high" << std::endl;
+                        continue;
+                    }
                 }
 
 

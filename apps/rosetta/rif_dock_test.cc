@@ -336,7 +336,8 @@ int main(int argc, char *argv[]) {
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_debug );
+			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_require_burial, opt.unsat_score_offset, 
+															opt.unsat_debug, opt.report_common_unsats );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -385,7 +386,7 @@ int main(int argc, char *argv[]) {
 				burial_opts.neighbor_count_weights.push_back( weight );
 			}
 			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), opt.unsat_debug );
 			burial_manager->set_target_neighbors( target );
 
 			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff),
@@ -546,6 +547,7 @@ int main(int argc, char *argv[]) {
     rot_tgt_scorer.upweight_iface_ = packopts.upweight_iface;
     rot_tgt_scorer.upweight_multi_hbond_ = packopts.upweight_multi_hbond;
     rot_tgt_scorer.min_hb_quality_for_satisfaction_ = packopts.min_hb_quality_for_satisfaction;
+    rot_tgt_scorer.long_hbond_fudge_distance_ = opt.long_hbond_fudge_distance;
 #ifdef USEGRIDSCORE
     rot_tgt_scorer.grid_scorer_ = grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
@@ -646,6 +648,44 @@ int main(int argc, char *argv[]) {
 
 		}
 
+		if ( opt.dump_pdb_at_bin_center.length() > 0 ) {
+			std::cout << "Loading " << opt.dump_pdb_at_bin_center << std::endl;
+			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_pdb_at_bin_center));
+
+			std::cout << "Dumping " << opt.dump_pdb_at_bin_center << " rotamers at their bin centers" << std::endl;
+
+
+			for ( int ires = 1; ires <= pose.size(); ires++ ) {
+
+				core::conformation::Residue const & res = pose.residue(ires);
+				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
+
+				if (irot == -1) {
+					std::cout << "Res: " << ires << " No matching rotamer (within 5 deg for all chi)" << std::endl;
+					continue;
+				} 
+
+				BBActor bb( res );
+				EigenXform bin_center = rif_ptrs.back()->get_bin_center( rif_ptrs.back()->get_bin_key( bb.position() ) );
+
+				std::stringstream fname;
+				fname << "bin_center_" << opt.dump_pdb_at_bin_center << "_res" << boost::str(boost::format("%i") % ires ) << ".pdb.gz";
+        		utility::io::ozstream out( fname.str() );
+
+				std::cout << "Dumping res " << ires << " at bin center to: " << fname.str() << std::endl;
+
+	            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+	                a.set_position( bin_center * a.position() ); 
+	                a.nonconst_data().resnum = 1;
+	                a.nonconst_data().chain = 'A';
+	                ::scheme::actor::write_pdb( out, a, nullptr );
+	            }
+
+	            out.close();
+			}
+
+		}
+
 		if ( opt.score_this_pdb.length() > 0) {
 			std::cout << "Loading " << opt.score_this_pdb << std::endl;
 			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.score_this_pdb));
@@ -654,7 +694,6 @@ int main(int argc, char *argv[]) {
 
 
 			for ( int ires = 1; ires <= pose.size(); ires++ ) {
-
 
 				core::conformation::Residue const & res = pose.residue(ires);
 				int irot = rot_index_spec.get_matching_rot( res, 5.0f );
@@ -669,12 +708,22 @@ int main(int argc, char *argv[]) {
 	            int sat1 = -1, sat2 = -1, hbcount = 0;
 	            float score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bb.position(), sat1, sat2, true, hbcount, 10.0, 4 );
 
+	            EigenXform bin_center = rif_ptrs.back()->get_bin_center( rif_ptrs.back()->get_bin_key( bb.position() ) );
+
+	            int c_sat1 = -1, c_sat2 = -1, c_hbcount = 0;
+	            float c_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bin_center, c_sat1, c_sat2, true, c_hbcount, 10.0, 4 );
+
 	            std::cout << "Res: " << ires
 	                      << " score: " << score
 	                      << " irot: " << irot
 	                      << " nhbonds: " << hbcount
 	                      << " sat1: " << sat1
 	                      << " sat2: " << sat2
+	                      << " | bin center:"
+	                      << " score: " << c_score
+	                      << " nhbonds: " << c_hbcount
+	                      << " sat1: " << c_sat1
+	                      << " sat2: " << c_sat2
 	                      << std::endl;
 	        }
 
@@ -884,7 +933,8 @@ int main(int argc, char *argv[]) {
  						#endif
  						dokout,
  						scaffold_provider,
- 						burial_manager
+ 						burial_manager,
+ 						unsat_manager
 #ifdef USEGRIDSCORE
     				,   grid_scorer
 #endif
@@ -923,6 +973,30 @@ int main(int argc, char *argv[]) {
 
 					SearchPointWithRots result;
 					float score = packing_objectives.back()->score_with_rotamers(*scene_minimal, result.rotamers());
+					std::cout << "Packing score: " << score << std::endl;
+
+					std::cout << "Packing rotamers: " << std::endl;
+					for ( std::pair<intRot,intRot> pair : result.rotamers() ) {
+						int l_ires = pair.first;
+						int irot = pair.second;
+						int g_ires = test_data_cache->scaffres_l2g_p->at( l_ires );
+						std::string oneletter = rdd.rot_index_p->oneletter(irot);
+						float one_body = test_data_cache->scaffold_onebody_glob0_p->at( g_ires ).at( irot );
+						BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,l_ires);
+
+						int resat1 = -1, resat2 = -1, rehbcount = 0;
+                		float const rescore = rdd.rot_tgt_scorer.score_rotamer_v_target_sat( 
+                										irot, bba.position(), resat1, resat2, true, rehbcount, 10.0, 4 );
+
+						std::cout << "*seqpos: " << I(3, g_ires+1);
+						std::cout << " " << oneletter;
+						std::cout << " irot:" << I(3, irot);
+						std::cout << " 1body:" << F(7, 2, one_body);
+						std::cout << " rescore:" << F(7, 2, rescore);
+						std::cout << " resats: " << I(3, resat1) << " " << I(3, resat2);
+						std::cout << std::endl;
+
+					}
 					// cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
 					// 					     << F( 7, 3, sc[0]+sc[1] ) << " "
 					// 					     << F( 7, 3, sc[0]       ) << " "
@@ -954,21 +1028,23 @@ int main(int argc, char *argv[]) {
 					// }
 
 
-					std::cout << "Input position buried unsats:" << std::endl;
+					if ( burial_manager ) {
+						std::cout << "Input position buried unsats:" << std::endl;
 
-					std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
+						std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
 
-					std::vector<EigenXform> bb_positions;
-					for ( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
-						bb_positions.push_back( scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+						std::vector<EigenXform> bb_positions;
+						for ( int i_actor = 0; i_actor < scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
+							bb_positions.push_back( scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+						}
+
+						std::vector<float> unsat_scores = unsat_manager->get_buried_unsats( initial_burial, result.rotamers(), bb_positions, rot_tgt_scorer );
+						unsat_manager->print_buried_unsats( unsat_scores );
+
+
+						burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
+														scene_minimal->position(1), test_data_cache->burial_grid );
 					}
-
-					std::vector<float> unsat_scores = unsat_manager->get_buried_unsats( initial_burial, result.rotamers(), bb_positions, rot_tgt_scorer );
-					unsat_manager->print_buried_unsats( unsat_scores );
-
-
-					burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
-													scene_minimal->position(1), test_data_cache->burial_grid );
 
 				}
 
@@ -1015,6 +1091,10 @@ int main(int argc, char *argv[]) {
 
 			std::vector<shared_ptr<Task>> task_list;
 
+
+			if (opt.scaff_search_mode == "morph" ) {
+    			task_list.push_back(make_shared<TestMakeChildrenTask>( ));
+			}
 
 			if ( opt.xform_fname.length() > 0) {
 				create_rifine_task( task_list, rdd );

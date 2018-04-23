@@ -126,6 +126,15 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		    << " rif_mem: " << devel::scheme::KMGT(xmap_ptr_->mem_use()) << std::endl;
 	}
 
+	// inclusive on the ranges
+	uint64_t count_these_irots( int irot_low, int irot_high ) const {
+		uint64_t count = 0;
+		for ( auto pair : xmap_ptr_->map_ ) {
+			count += pair.second.count_these_irots( irot_low, irot_high );
+		}
+		return count;
+	}
+
 	uint64_t mem_use() const {
 		uint64_t mem = 0;
 		for( int i = 0; i < to_insert_.size(); ++i ){
