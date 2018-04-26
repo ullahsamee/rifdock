@@ -693,11 +693,14 @@ int main(int argc, char *argv[]) {
 		#endif
 		for( int i_readmap = 0; i_readmap < opt.rif_files.size(); ++i_readmap ){
 			if( exception ) continue;
-			if ( ! resl_load_map.at(i_readmap) ) continue;
 			try {
 				std::string const & rif_file = opt.rif_files[i_readmap];
 				std::string & rif_dscr = rif_descriptions[i_readmap];
 				shared_ptr<RifBase> & rif_ptr = rif_ptrs[i_readmap];
+				if ( ! resl_load_map.at(i_readmap) ){
+						rif_ptr = nullptr;
+						continue;
+				}
 				rif_ptr = rif_factory->create_rif_from_file( rif_file, rif_dscr );
 				runtime_assert_msg( rif_ptrs[i_readmap] , "rif creation from file failed! " + rif_file );
 				if( opt.VERBOSE ){
