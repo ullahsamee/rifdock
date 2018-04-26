@@ -489,7 +489,7 @@ struct ScaffoldDataCache {
 
     void
     setup_burial_grids( shared_ptr<BurialManager> const & burial_manager ) {
-        burial_grid = burial_manager->generate_burial_grid( *scaffold_centered_p );
+        burial_grid = burial_manager->get_scaffold_neighbors( *scaffold_centered_p );
     }
 
 

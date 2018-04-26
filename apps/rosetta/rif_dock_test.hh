@@ -100,6 +100,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -206,17 +207,20 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
     OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
 
-    OPT_1GRP_KEY(  Real        , rif_dock, unsat_orbital_penalty )
-    OPT_1GRP_KEY(  Real        , rif_dock, neighbor_distance_cutoff )
-    OPT_1GRP_KEY(  Integer     , rif_dock, unsat_neighbor_cutoff )
-    OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
-    OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
+    OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_scalar )
     OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
-    OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_offset )
-    OPT_1GRP_KEY(  Integer     , rif_dock, unsat_require_burial )
     OPT_1GRP_KEY(  Boolean     , rif_dock, report_common_unsats )
-
+    OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_offset )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, unsat_debug )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_presatisfied_donors_acceptors )
+
+    OPT_1GRP_KEY(  Real        , rif_dock, burial_target_distance_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, burial_target_neighbor_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, burial_scaffold_distance_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, burial_scaffold_neighbor_cut )
+    OPT_1GRP_KEY(  Integer     , rif_dock, require_burial )
+
+    OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
 
@@ -316,6 +320,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
+            NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -420,20 +425,26 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
-            NEW_OPT(  rif_dock::unsat_orbital_penalty, "temp", 0 );
-            NEW_OPT(  rif_dock::neighbor_distance_cutoff, "temp", 6.0 );
-            NEW_OPT(  rif_dock::unsat_neighbor_cutoff, "temp", 6 );
-            NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations", false );
-            NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+
+            NEW_OPT(  rif_dock::unsat_score_scalar, "The buried unsat weights get multiplied by this.", 0 );
             NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
-            NEW_OPT(  rif_dock::unsat_score_offset, "This gets added to the score of all designs", 0.0 );
-            NEW_OPT(  rif_dock::unsat_require_burial, "Require at least this many polar atoms be buried", 0 );
-            NEW_OPT(  rif_dock::report_common_unsats, "Show probability of burying every unsat", false );
-
-
+            NEW_OPT(  rif_dock::report_common_unsats, "Show probability of burying every unsat across all docks.", false );
+            NEW_OPT(  rif_dock::unsat_score_offset, "This gets added to the score of all designs.", 0.0 );
+            NEW_OPT(  rif_dock::unsat_debug, "Dump debug info from unsat calculations. Use with -test_hackpack", false );
             NEW_OPT(  rif_dock::dump_presatisfied_donors_acceptors, "Dump the presatisifed donors and acceptors", false );
-            
+
+
+            NEW_OPT(  rif_dock::burial_target_distance_cut, "Distance cutoff for target burial grid filling.", 4.0 );
+            NEW_OPT(  rif_dock::burial_target_neighbor_cut, "Num neighbors to be buried in target burial grid.", 22 );
+            NEW_OPT(  rif_dock::burial_scaffold_distance_cut, "Distance cutoff for scaffold burial grid filling.", 5.0 );
+            NEW_OPT(  rif_dock::burial_scaffold_neighbor_cut, "Num neighbors to be scaffold in target burial grid.", 17 );
+            NEW_OPT(  rif_dock::require_burial, "Require at least this many polar atoms be buried", 0 );
+
+            NEW_OPT(  rif_dock::buried_list, "temp", "" );
+
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
+
+
 
 		}
 	#endif
@@ -476,6 +487,7 @@ struct RifDockOpt
 	bool        dump_rifgen_text                     ;
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
+    bool        test_hackpack                        ;  
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -621,17 +633,20 @@ struct RifDockOpt
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
 
-    float       unsat_orbital_penalty                ;
-    float       neighbor_distance_cutoff             ;
-    int         unsat_neighbor_cutoff                ;
-	bool        unsat_debug                          ;
-	bool        test_hackpack                        ;    
-	std::string unsat_helper                         ;
-	float       unsat_score_offset                   ;
-	int         unsat_require_burial                 ;
-	bool        report_common_unsats                 ;
-
+    float       unsat_score_scalar                   ;
+    std::string unsat_helper                         ;
+    bool        report_common_unsats                 ;
+    float       unsat_score_offset                   ;
+    bool        unsat_debug                          ;
     bool        dump_presatisfied_donors_acceptors   ;
+
+    float       burial_target_distance_cut           ;
+    float       burial_target_neighbor_cut           ;
+    float       burial_scaffold_distance_cut         ;
+    float       burial_scaffold_neighbor_cut         ;
+    int         require_burial                       ;
+
+    std::string buried_list                          ;
     
     std::vector<int> requirements;
 
@@ -682,6 +697,7 @@ struct RifDockOpt
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
+        test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -817,17 +833,21 @@ struct RifDockOpt
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
         keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
 
-        unsat_orbital_penalty                   = option[rif_dock::unsat_orbital_penalty                ]();
-        neighbor_distance_cutoff                = option[rif_dock::neighbor_distance_cutoff             ]();
-        unsat_neighbor_cutoff                   = option[rif_dock::unsat_neighbor_cutoff                ]();
-		unsat_debug                             = option[rif_dock::unsat_debug                          ]();
-		test_hackpack                           = option[rif_dock::test_hackpack                        ]();  
-		unsat_helper                            = option[rif_dock::unsat_helper                         ]();
-		unsat_score_offset                      = option[rif_dock::unsat_score_offset                   ]();
-		unsat_require_burial                    = option[rif_dock::unsat_require_burial                 ](); 
-		report_common_unsats                    = option[rif_dock::report_common_unsats                 ]();
-
+        unsat_score_scalar                      = option[rif_dock::unsat_score_scalar                   ]();
+        unsat_helper                            = option[rif_dock::unsat_helper                         ]();
+        report_common_unsats                    = option[rif_dock::report_common_unsats                 ]();
+        unsat_score_offset                      = option[rif_dock::unsat_score_offset                   ]();
+        unsat_debug                             = option[rif_dock::unsat_debug                          ]();
         dump_presatisfied_donors_acceptors      = option[rif_dock::dump_presatisfied_donors_acceptors   ]();
+
+        burial_target_distance_cut              = option[rif_dock::burial_target_distance_cut           ]();
+        burial_target_neighbor_cut              = option[rif_dock::burial_target_neighbor_cut           ]();
+        burial_scaffold_distance_cut            = option[rif_dock::burial_scaffold_distance_cut         ]();
+        burial_scaffold_neighbor_cut            = option[rif_dock::burial_scaffold_neighbor_cut         ]();
+        require_burial                          = option[rif_dock::require_burial                       ]();
+
+        buried_list                             = option[rif_dock::buried_list                          ]();
+
 
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);

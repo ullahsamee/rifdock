@@ -329,15 +329,15 @@ int main(int argc, char *argv[]) {
 
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
 
-		if ( opt.unsat_orbital_penalty > 0 ) {
+		if ( opt.unsat_score_scalar > 0 ) {
 			if ( ! donor_acceptors_from_file ) {
-				utility_exit_with_message("Must specify both -rifgen:target_donors and -rifgen:target_acceptors to use -unsat_orbital_penalty");
+				utility_exit_with_message("Must specify both -rifgen:target_donors and -rifgen:target_acceptors to use -unsat_score_scalar");
 			}
 
 
 
-			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_require_burial, opt.unsat_score_offset, 
-															opt.unsat_debug, opt.report_common_unsats );
+			unsat_manager = make_shared<UnsatManager>( hbond::ScottUnsatPenalties, rot_index_p, opt.unsat_score_scalar, opt.require_burial,
+														opt.unsat_score_offset, opt.unsat_debug, opt.report_common_unsats );
 
 			unsat_manager->set_target_donors_acceptors( target, target_donors, target_acceptors, donor_anames, acceptor_anames );
 			unsat_manager->find_target_presatisfied( target );
@@ -346,50 +346,174 @@ int main(int argc, char *argv[]) {
 				unsat_manager->dump_presatisfied();
 			}
 
-			// for ( float test = 6.0f; test < 6.2f; test += 1.0f ) {
-			// 	for ( float distance = 4.0f; distance < 8.0f; distance+= 1.0f) {
-			// 		for ( int cutoff = 8; cutoff < 23; cutoff+=1) {
+			// if ( opt.buried_list.length() > 0 ) {
+
+			// 	utility::vector1<std::set<int>> buried_atoms( target.size() );
+			// 	std::set<int> disallowed_res;
+
+			//     std::ifstream in;
+			//     in.open(opt.buried_list, std::ios::in);
+			//     runtime_assert( in );
+
+			//     std::string s;
+			//     while (std::getline(in, s)) {
+			//         std::string save_s = s;
+			//         if (s.empty()) continue;
+
+			//         s = utility::replace_in( s, ":", " ");
+			//         s = utility::replace_in( s, "#", " #");
+			//         utility::vector1<std::string> comment_splt = utility::string_split_simple(s, ' ');
+			//         utility::vector1<std::string> splt;
+			//         for ( std::string item : comment_splt ) {
+			//             item = utility::strip(item, " \t\n");
+			//             if (item.empty()) continue;
+			//             if (item[0] == '#') break;
+			//             splt.push_back(item);
+			//         }
+			//         if (splt.size() == 0) continue;
+
+			//         if (splt[1][0] == '!') {
+			//         	std::string to_parse = utility::replace_in( splt[1], "!", "");
+			//         	int disallowed = std::stoi( to_parse );
+			//         	disallowed_res.insert(disallowed);
+			//         	std::cout << "Disallowed: " << disallowed << std::endl;
+			//         } else {
+
+			// 	        int resid = std::stoi( splt[1] );
+			// 	        int atno = std::stoi( splt[2] );
+
+			// 	        buried_atoms[resid].insert( atno );
+
+			// 	        std::cout << "Buried: " << resid << " " << atno << std::endl;
+			//         }
+
+
+			//     }
+			//     in.close();
+
+
+
+			//     std::ofstream tout(opt.buried_list + ".3_0.0all_atom_results");
+			// 	     tout << "distance cutoff scottburied_correct scottburied_incorrect scottnotburied_correct scottnotburied_incorrect" << std::endl;
+
+			// 	for ( float distance = 2.0f; distance < 6.6f; distance+= 0.25f) {
+			// 		for ( int cutoff = 5; cutoff < 90; cutoff+=1) {
+
+			// 			std::cout << distance << " " << cutoff << std::endl;
 
 			// 			BurialOpts burial_opts;
-			// 			burial_opts.neighbor_distance_cutoff = distance;
-			// 			burial_opts.neighbor_count_weights.resize(0);
-			// 			for ( int i = 0; i < 2000; i++ ) {
-			// 				float weight;
-			// 				if ( i < cutoff ) {
-			// 					weight = 0;
-			// 				} else {
-			// 					weight = opt.unsat_orbital_penalty;
-			// 				}
-			// 				burial_opts.neighbor_count_weights.push_back( weight );
-			// 			}
-			// 			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
-			// 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs() );
+			// 			burial_opts.target_method = burial::ALL_ATOMS;
+			// 			burial_opts.target_distance_cutoff = distance;
+			// 			burial_opts.target_burial_cutoff = cutoff;
+			// 			burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
+			// 			burial_opts.scaffold_distance_cutoff = opt.burial_scaffold_distance_cut;
+			// 			burial_opts.scaffold_burial_cutoff = opt.burial_scaffold_neighbor_cut;
+
+
+			// 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), false );
 			// 			burial_manager->set_target_neighbors( target );
 
-			// 			burial_manager->dump_burial_grid( boost::str(boost::format("cacbcg_nb_%i_dst_%.2f.pdb")%cutoff%distance),
-			// 				EigenXform::Identity(), nullptr );
+						int scottburied_correct = 0;
+						int scottburied_incorrect = 0;
+						int scottnotburied_correct = 0;
+						int scottnotburied_incorrect = 0;
+
+
+
+
+			// 			for ( int resid = 1; resid <= target.size(); resid++ ) {
+			// 				if ( disallowed_res.count(resid) > 0 ) {
+			// 					// std::cout << "CALC: Disallowed: " << resid << std::endl;
+			// 					continue;
+			// 				}
+
+			// 				core::conformation::Residue const & res = target.residue( resid );
+
+			// 				for ( int atno = 1; atno <= res.nheavyatoms(); atno += 1 ) {
+
+			//                     numeric::xyzVector<core::Real> _xyz = res.xyz( atno );
+			//                     Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+
+			// 					float burial = burial_manager->get_burial_count( xyz, EigenXform::Identity(), nullptr );
+
+			// 					bool is_buried = burial >= cutoff;
+
+			// 					bool is_scottburied = buried_atoms[resid].count(atno) == 1;
+
+			// 					if (          is_buried &&   is_scottburied ) { scottburied_correct += 1;
+			// 					} else if ( ! is_buried &&   is_scottburied ) { scottburied_incorrect += 1;
+			// 						// std::cout << << res.name3() << " " <<resid << " "  << res.atom_name(atno) << std::endl;
+			// 					} else if (   is_buried && ! is_scottburied ) { scottnotburied_incorrect += 1;
+			// 					} else if ( ! is_buried && ! is_scottburied ) { scottnotburied_correct += 1;
+			// 					} else {
+			// 						runtime_assert(false);
+			// 					}
+
+
+			// 				}
+
+
+			// 			}
+
+			// 			tout 
+			// 				<< distance << " " 
+			// 				<< cutoff << " "
+			// 				<< scottburied_correct << " "
+			// 				<< scottburied_incorrect << " "
+			// 				<< scottnotburied_correct << " "
+			// 				<< scottnotburied_incorrect << std::endl;
+
 
 			// 		}
+			// 	}
+
+			// 	tout.close();
+
+
+			// }
+
+			// for ( float distance = 2.0f; distance < 5.0f; distance+= 0.5f) {
+			// 	for ( int cutoff = 6; cutoff < 20; cutoff+=1) {
+
+			// 		BurialOpts burial_opts;
+			// 		burial_opts.target_method = burial::HEAVY_ATOMS;
+			// 		burial_opts.target_distance_cutoff = distance;
+			// 		burial_opts.target_burial_cutoff = cutoff;
+			// 		burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
+			// 		burial_opts.scaffold_distance_cutoff = opt.burial_scaffold_distance_cut;
+			// 		burial_opts.scaffold_burial_cutoff = opt.burial_scaffold_neighbor_cut;
+
+
+			// 		burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), false );
+			// 		burial_manager->set_target_neighbors( target );
+
+			// 		burial_manager->dump_burial_grid( boost::str(boost::format("allatom_nb_%i_dst_%.2f.pdb")%cutoff%distance),
+			// 			EigenXform::Identity(), nullptr );
+
 			// 	}
 			// }
 
 			BurialOpts burial_opts;
-			burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
-			burial_opts.neighbor_count_weights.resize(0);
-			for ( int i = 0; i < 100; i++ ) {
-				float weight;
-				if ( i < opt.unsat_neighbor_cutoff ) {
-					weight = 0;
-				} else {
-					weight = opt.unsat_orbital_penalty;
-				}
-				burial_opts.neighbor_count_weights.push_back( weight );
-			}
-			std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+			burial_opts.target_method = burial::ALL_ATOMS; //burial::HEAVY_ATOMS;
+			burial_opts.target_distance_cutoff = opt.burial_target_distance_cut;
+			burial_opts.target_burial_cutoff = opt.burial_target_neighbor_cut;
+			burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
+			burial_opts.scaffold_distance_cutoff = opt.burial_scaffold_distance_cut;
+			burial_opts.scaffold_burial_cutoff = opt.burial_scaffold_neighbor_cut;
+
+			std::cout << "Burial options: " << std::endl;
+			std::cout << "            target_method: " << burial::METHOD_NAMES[burial_opts.target_method] << std::endl;
+			std::cout << "   target_distance_cutoff: " << F(7,2,burial_opts.target_distance_cutoff) << std::endl;
+			std::cout << "   target_neighbor_cutoff: " << F(7,2,burial_opts.target_burial_cutoff) << std::endl;
+			std::cout << "          scaffold_method: " << burial::METHOD_NAMES[burial_opts.scaffold_method] << std::endl;
+			std::cout << " scaffold_distance_cutoff: " << F(7,2,burial_opts.scaffold_distance_cutoff) << std::endl;
+			std::cout << " scaffold_neighbor_cutoff: " << F(7,2,burial_opts.scaffold_burial_cutoff) << std::endl;
+
+			// std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), opt.unsat_debug );
 			burial_manager->set_target_neighbors( target );
 
-			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff),
+			burial_manager->dump_burial_grid( boost::str(boost::format("burial_nb_%i_dst_%.1f.pdb")%opt.burial_target_neighbor_cut%opt.burial_target_distance_cut),
 				EigenXform::Identity(), nullptr );
 
 			unsat_manager->apply_unsat_helper( opt.unsat_helper, burial_manager );
@@ -963,7 +1087,7 @@ int main(int argc, char *argv[]) {
 				}
 				if ( opt.test_hackpack ) {
 					scaffold_provider->setup_twobody_tables( ScaffoldIndex() );
-					if ( opt.unsat_orbital_penalty > 0 ) {
+					if ( unsat_manager ) {
 						scaffold_provider->setup_twobody_tables_per_thread( ScaffoldIndex() );
 					}
 
@@ -1025,7 +1149,7 @@ int main(int argc, char *argv[]) {
 					// }
 
 
-					if ( burial_manager ) {
+					if ( unsat_manager ) {
 						std::cout << "Input position buried unsats:" << std::endl;
 
 						std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );
@@ -1039,7 +1163,7 @@ int main(int argc, char *argv[]) {
 						unsat_manager->print_buried_unsats( unsat_scores );
 
 
-						burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.unsat_neighbor_cutoff%opt.neighbor_distance_cutoff), 
+						burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%opt.burial_target_neighbor_cut%opt.burial_target_distance_cut), 
 														scene_minimal->position(1), test_data_cache->burial_grid );
 					}
 

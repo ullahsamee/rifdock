@@ -195,7 +195,8 @@ struct UnsatManager {
     UnsatManager( 
         std::vector<std::vector<float>> const & unsat_penalties, 
         shared_ptr< RotamerIndex > rot_index_p,
-        int require_burial, 
+        float unsat_score_scalar,
+        int require_burial,
         float score_offset,
         bool debug,
         bool store_common_unsats
@@ -337,6 +338,7 @@ struct UnsatManager {
     std::vector<std::vector<float>> unsat_penalties_;
     std::vector<std::vector<float>> total_first_twob_;  // total penalty, P0, P0 * (1 - P1)
     shared_ptr< RotamerIndex > rot_index_p;
+    float unsat_score_scalar_;
     int require_burial_;
     float score_offset_;
     bool debug_;
