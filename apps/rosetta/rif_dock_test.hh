@@ -31,6 +31,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, target_donors )
 	OPT_1GRP_KEY(  String      , rif_dock, target_acceptors )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, only_load_highest_resl )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dont_load_any_resl )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_rosetta_grid_energies )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, soft_rosetta_grid_energies )
 
@@ -255,6 +256,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::target_donors, "", "" );
 			NEW_OPT(  rif_dock::target_acceptors, "", "" );
 			NEW_OPT(  rif_dock::only_load_highest_resl, "Only read in the highest resolution rif", false );
+            NEW_OPT(  rif_dock::dont_load_any_resl, "This will certainly crash", false );
 			NEW_OPT(  rif_dock::use_rosetta_grid_energies, "Use Frank's grid energies for scoring", false );
 			NEW_OPT(  rif_dock::soft_rosetta_grid_energies, "Use soft option for grid energies", false );
 
@@ -517,6 +519,7 @@ struct RifDockOpt
 	std::string target_donors                        ;
 	std::string target_acceptors                     ;
 	bool        only_load_highest_resl               ;
+    bool        dont_load_any_resl                   ;
 	bool        use_rosetta_grid_energies            ;
 	bool        soft_rosetta_grid_energies           ;
 	bool        downscale_atr_by_hierarchy           ;
@@ -727,6 +730,7 @@ struct RifDockOpt
 		target_donors                          = option[rif_dock::target_donors                         ]();
 		target_acceptors                       = option[rif_dock::target_acceptors                      ]();		
 		only_load_highest_resl                 = option[rif_dock::only_load_highest_resl                ]();
+        dont_load_any_resl                     = option[rif_dock::dont_load_any_resl                    ]();
 		use_rosetta_grid_energies              = option[rif_dock::use_rosetta_grid_energies             ]();
 		soft_rosetta_grid_energies             = option[rif_dock::soft_rosetta_grid_energies            ]();
 		downscale_atr_by_hierarchy             = option[rif_dock::downscale_atr_by_hierarchy            ]();

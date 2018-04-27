@@ -393,7 +393,7 @@ int main(int argc, char *argv[]) {
 
 
 
-			//     std::ofstream tout(opt.buried_list + ".3_0.0all_atom_results");
+			//     std::ofstream tout(opt.buried_list + ".4_0.0correct_all_atom_results");
 			// 	     tout << "distance cutoff scottburied_correct scottburied_incorrect scottnotburied_correct scottnotburied_incorrect" << std::endl;
 
 			// 	for ( float distance = 2.0f; distance < 6.6f; distance+= 0.25f) {
@@ -413,10 +413,10 @@ int main(int argc, char *argv[]) {
 			// 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), false );
 			// 			burial_manager->set_target_neighbors( target );
 
-						int scottburied_correct = 0;
-						int scottburied_incorrect = 0;
-						int scottnotburied_correct = 0;
-						int scottnotburied_incorrect = 0;
+			// 			int scottburied_correct = 0;
+			// 			int scottburied_incorrect = 0;
+			// 			int scottnotburied_correct = 0;
+			// 			int scottnotburied_incorrect = 0;
 
 
 
@@ -472,11 +472,11 @@ int main(int argc, char *argv[]) {
 
 			// }
 
-			// for ( float distance = 2.0f; distance < 5.0f; distance+= 0.5f) {
-			// 	for ( int cutoff = 6; cutoff < 20; cutoff+=1) {
+			// for ( float distance = 4.0f; distance < 4.8f; distance+= 0.25f) {
+			// 	for ( int cutoff = 20; cutoff < 53; cutoff+=2) {
 
 			// 		BurialOpts burial_opts;
-			// 		burial_opts.target_method = burial::HEAVY_ATOMS;
+			// 		burial_opts.target_method = burial::ALL_ATOMS;
 			// 		burial_opts.target_distance_cutoff = distance;
 			// 		burial_opts.target_burial_cutoff = cutoff;
 			// 		burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
@@ -563,6 +563,11 @@ int main(int argc, char *argv[]) {
 
 	if ( opt.only_load_highest_resl ) {
 		for ( int i = 0; i < resl_load_map.size() - 1; i++) {
+			resl_load_map[i] = false;
+		}
+	}
+	if ( opt.dont_load_any_resl ) {
+		for ( int i = 0; i < resl_load_map.size(); i++) {
 			resl_load_map[i] = false;
 		}
 	}
@@ -736,20 +741,23 @@ int main(int argc, char *argv[]) {
 		}
 		if( exception ) std::rethrow_exception(exception);
 
-		std::cout << "RIF description:" << std::endl << rif_descriptions.back() << std::endl;
-		std::cout << "load factor: " << rif_ptrs.back()->load_factor() << std::endl;
-		std::cout << "size of value-type: " << rif_ptrs.back()->sizeof_value_type() << std::endl;
-		std::cout << "mem_use: " << ::devel::scheme::KMGT( rif_ptrs.back()->mem_use() ) << std::endl;
-		std::cout << "===================================================================================" << std::endl;
-
 		rif_using_rot.resize( rot_index_p->size(), false );
-		rif_using_rot[ rot_index.ala_rot() ] = true; // always include ala
-		rif_ptrs.back()->get_rotamer_ids_in_use( rif_using_rot );
-		int Nusingrot = 0;
-		for( int i = 0; i < rif_using_rot.size(); ++i ){
-			Nusingrot += rif_using_rot[i] ? 1 : 0;
+
+		if ( rif_ptrs.back() ) {
+			std::cout << "RIF description:" << std::endl << rif_descriptions.back() << std::endl;
+			std::cout << "load factor: " << rif_ptrs.back()->load_factor() << std::endl;
+			std::cout << "size of value-type: " << rif_ptrs.back()->sizeof_value_type() << std::endl;
+			std::cout << "mem_use: " << ::devel::scheme::KMGT( rif_ptrs.back()->mem_use() ) << std::endl;
+			std::cout << "===================================================================================" << std::endl;
+
+			rif_using_rot[ rot_index.ala_rot() ] = true; // always include ala
+			rif_ptrs.back()->get_rotamer_ids_in_use( rif_using_rot );
+			int Nusingrot = 0;
+			for( int i = 0; i < rif_using_rot.size(); ++i ){
+				Nusingrot += rif_using_rot[i] ? 1 : 0;
+			}
+			std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 		}
-		std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 
 		if (opt.dump_rifgen_near_pdb.length() > 0) {
 			float dump_dist = opt.dump_rifgen_near_pdb_dist;
@@ -955,7 +963,9 @@ int main(int argc, char *argv[]) {
 			std::vector< ObjectivePtr > packing_objectives;
 			runtime_assert( rif_factory->create_objectives( rso_config, objectives, packing_objectives ) );
 			scene_prototype = rif_factory->create_scene();
-			runtime_assert_msg( objectives.front()->is_compatible( *scene_prototype ), "objective and scene types not compatible!" );
+			if ( objectives.size() ) {
+				runtime_assert_msg( objectives.front()->is_compatible( *scene_prototype ), "objective and scene types not compatible!" );
+			}
 
 
 
@@ -1096,30 +1106,33 @@ int main(int argc, char *argv[]) {
 
 
 					SearchPointWithRots result;
-					float score = packing_objectives.back()->score_with_rotamers(*scene_minimal, result.rotamers());
-					std::cout << "Packing score: " << score << std::endl;
 
-					std::cout << "Packing rotamers: " << std::endl;
-					for ( std::pair<intRot,intRot> pair : result.rotamers() ) {
-						int l_ires = pair.first;
-						int irot = pair.second;
-						int g_ires = test_data_cache->scaffres_l2g_p->at( l_ires );
-						std::string oneletter = rdd.rot_index_p->oneletter(irot);
-						float one_body = test_data_cache->scaffold_onebody_glob0_p->at( g_ires ).at( irot );
-						BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,l_ires);
+					if ( packing_objectives.size() ) {
+						float score = packing_objectives.back()->score_with_rotamers(*scene_minimal, result.rotamers());
+						std::cout << "Packing score: " << score << std::endl;
 
-						int resat1 = -1, resat2 = -1, rehbcount = 0;
-                		float const rescore = rdd.rot_tgt_scorer.score_rotamer_v_target_sat( 
-                										irot, bba.position(), resat1, resat2, true, rehbcount, 10.0, 4 );
+						std::cout << "Packing rotamers: " << std::endl;
+						for ( std::pair<intRot,intRot> pair : result.rotamers() ) {
+							int l_ires = pair.first;
+							int irot = pair.second;
+							int g_ires = test_data_cache->scaffres_l2g_p->at( l_ires );
+							std::string oneletter = rdd.rot_index_p->oneletter(irot);
+							float one_body = test_data_cache->scaffold_onebody_glob0_p->at( g_ires ).at( irot );
+							BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,l_ires);
 
-						std::cout << "*seqpos: " << I(3, g_ires+1);
-						std::cout << " " << oneletter;
-						std::cout << " irot:" << I(3, irot);
-						std::cout << " 1body:" << F(7, 2, one_body);
-						std::cout << " rescore:" << F(7, 2, rescore);
-						std::cout << " resats: " << I(3, resat1) << " " << I(3, resat2);
-						std::cout << std::endl;
+							int resat1 = -1, resat2 = -1, rehbcount = 0;
+	                		float const rescore = rdd.rot_tgt_scorer.score_rotamer_v_target_sat( 
+	                										irot, bba.position(), resat1, resat2, true, rehbcount, 10.0, 4 );
 
+							std::cout << "*seqpos: " << I(3, g_ires+1);
+							std::cout << " " << oneletter;
+							std::cout << " irot:" << I(3, irot);
+							std::cout << " 1body:" << F(7, 2, one_body);
+							std::cout << " rescore:" << F(7, 2, rescore);
+							std::cout << " resats: " << I(3, resat1) << " " << I(3, resat2);
+							std::cout << std::endl;
+
+						}
 					}
 					// cout << "input bounding score pack " << F(7,3,RESLS.back()) << " "
 					// 					     << F( 7, 3, sc[0]+sc[1] ) << " "
@@ -1127,32 +1140,164 @@ int main(int argc, char *argv[]) {
 					// 					     << F( 7, 3, sc[1]       ) << endl;
 
 
+			// if ( opt.buried_list.length() > 0 ) {
+
+			// 	int scaff_size = test_data_cache->scaffold_unmodified_p->size();
+
+			// 	utility::vector1<std::set<int>> buried_atoms( target.size() + scaff_size );
+			// 	std::set<int> disallowed_res;
+
+			//     std::ifstream in;
+			//     in.open(opt.buried_list, std::ios::in);
+			//     runtime_assert( in );
+
+			//     std::string s;
+			//     while (std::getline(in, s)) {
+			//         std::string save_s = s;
+			//         if (s.empty()) continue;
+
+			//         s = utility::replace_in( s, ":", " ");
+			//         s = utility::replace_in( s, "#", " #");
+			//         utility::vector1<std::string> comment_splt = utility::string_split_simple(s, ' ');
+			//         utility::vector1<std::string> splt;
+			//         for ( std::string item : comment_splt ) {
+			//             item = utility::strip(item, " \t\n");
+			//             if (item.empty()) continue;
+			//             if (item[0] == '#') break;
+			//             splt.push_back(item);
+			//         }
+			//         if (splt.size() == 0) continue;
+
+			//         if (splt[1][0] == '!') {
+			//         	std::string to_parse = utility::replace_in( splt[1], "!", "");
+			//         	int disallowed = std::stoi( to_parse );
+			//         	disallowed_res.insert(disallowed);
+			//         	std::cout << "Disallowed: " << disallowed << std::endl;
+			//         } else {
+
+			// 	        int resid = std::stoi( splt[1] );
+			// 	        int atno = std::stoi( splt[2] );
+
+			// 	        buried_atoms[resid].insert( atno );
+
+			// 	        std::cout << "Buried: " << resid << " " << atno << std::endl;
+			//         }
+
+
+			//     }
+			//     in.close();
 
 
 
-					// for ( int cutoff = 5; cutoff < 22; cutoff ++ ) {
+			//     std::ofstream tout(opt.buried_list + ".6_40all_atom_results");
+			// 	     tout << "distance cutoff scottburied_correct scottburied_incorrect scottnotburied_correct scottnotburied_incorrect" << std::endl;
 
-					// 	BurialOpts burial_opts;
-					// 	burial_opts.neighbor_distance_cutoff = opt.neighbor_distance_cutoff;
-					// 	burial_opts.neighbor_count_weights.resize(0);
-					// 	for ( int i = 0; i < 30; i++ ) {
-					// 		float weight;
-					// 		if ( i < cutoff ) {
-					// 			weight = 0;
-					// 		} else {
-					// 			weight = opt.unsat_orbital_penalty;
-					// 		}
-					// 		burial_opts.neighbor_count_weights.push_back( weight );
+			// 	for ( float distance = 4.0f; distance < 8.1f; distance+= 0.25f) {
+			// 		for ( int cutoff = 3; cutoff < 40; cutoff+=1) {
+
+			// 			std::cout << distance << " " << cutoff << std::endl;
+
+			// 			BurialOpts burial_opts;
+			// 			burial_opts.target_method = burial::ALL_ATOMS; //burial::HEAVY_ATOMS;
+			// 			burial_opts.target_distance_cutoff = opt.burial_target_distance_cut;
+			// 			burial_opts.target_burial_cutoff = opt.burial_target_neighbor_cut;
+			// 			burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
+			// 			burial_opts.scaffold_distance_cutoff = distance;
+			// 			burial_opts.scaffold_burial_cutoff = cutoff;
+
+
+			// 			burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), false );
+			// 			burial_manager->set_target_neighbors( target );
+			// 			test_data_cache->setup_burial_grids( burial_manager );
+
+			// 			int scottburied_correct = 0;
+			// 			int scottburied_incorrect = 0;
+			// 			int scottnotburied_correct = 0;
+			// 			int scottnotburied_incorrect = 0;
+
+
+
+
+			// 			for ( int resid = 1; resid <= target.size(); resid++ ) {
+			// 				int data_resid = resid + scaff_size;
+			// 				if ( disallowed_res.count(data_resid) > 0 ) {
+			// 					// std::cout << "CALC: Disallowed: " << resid << std::endl;
+			// 					continue;
+			// 				}
+
+			// 				core::conformation::Residue const & res = target.residue( resid );
+
+			// 				for ( int atno = 1; atno <= res.nheavyatoms(); atno += 1 ) {
+
+			//                     numeric::xyzVector<core::Real> _xyz = res.xyz( atno );
+			//                     Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+
+			// 					float burial = burial_manager->get_burial_count( xyz, scene_minimal->position(1), test_data_cache->burial_grid );
+
+			// 					bool is_buried = burial >= opt.burial_target_neighbor_cut;
+
+			// 					bool is_scottburied = buried_atoms[data_resid].count(atno) == 1;
+
+			// 					if (          is_buried &&   is_scottburied ) { scottburied_correct += 1;
+			// 					} else if ( ! is_buried &&   is_scottburied ) { scottburied_incorrect += 1;
+			// 						// std::cout << << res.name3() << " " <<resid << " "  << res.atom_name(atno) << std::endl;
+			// 					} else if (   is_buried && ! is_scottburied ) { scottnotburied_incorrect += 1;
+			// 					} else if ( ! is_buried && ! is_scottburied ) { scottnotburied_correct += 1;
+			// 					} else {
+			// 						runtime_assert(false);
+			// 					}
+
+
+			// 				}
+
+
+			// 			}
+
+			// 			tout 
+			// 				<< distance << " " 
+			// 				<< cutoff << " "
+			// 				<< scottburied_correct << " "
+			// 				<< scottburied_incorrect << " "
+			// 				<< scottnotburied_correct << " "
+			// 				<< scottnotburied_incorrect << std::endl;
+
+
+			// 		}
+			// 	}
+
+			// 	tout.close();
+
+			// }
+
+
+					// for ( float distance = 5.0; distance < 8.0f; distance += 0.24 ) {
+					// 	for ( int cutoff = 10; cutoff < 26; cutoff ++ ) {
+
+					// 		BurialOpts burial_opts;
+					// 		burial_opts.target_method = burial::ALL_ATOMS; //burial::HEAVY_ATOMS;
+					// 		burial_opts.target_distance_cutoff = opt.burial_target_distance_cut;
+					// 		burial_opts.target_burial_cutoff = opt.burial_target_neighbor_cut;
+					// 		burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
+					// 		burial_opts.scaffold_distance_cutoff = distance;
+					// 		burial_opts.scaffold_burial_cutoff = cutoff;
+
+
+					// 		burial_manager = make_shared<BurialManager>( burial_opts, unsat_manager->get_heavy_atom_xyzs(), false );
+					// 		burial_manager->set_target_neighbors( target );
+					// 		test_data_cache->setup_burial_grids( burial_manager );
+
+					// 		burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_40complex_burial_nb_%i_dst_%.1f.pdb")%cutoff%distance), 
+					// 									scene_minimal->position(1), test_data_cache->burial_grid );
 					// 	}
 
-					// 	burial_manager->opts_ = burial_opts;
-
-					// 	burial_manager->dump_burial_grid( scafftag + boost::str(boost::format("_burial_nb_%i_dst_%.1f.pdb")%cutoff%opt.neighbor_distance_cutoff), 
-					// 								scene_minimal->position(1), test_data_cache->burial_grid );
 					// }
 
-
 					if ( unsat_manager ) {
+
+
+
+
+
 						std::cout << "Input position buried unsats:" << std::endl;
 
 						std::vector<float> initial_burial = burial_manager->get_burial_weights( scene_minimal->position(1), test_data_cache->burial_grid );

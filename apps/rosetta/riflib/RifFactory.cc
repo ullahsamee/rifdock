@@ -1346,10 +1346,14 @@ struct RifFactoryImpl :
         }
 
         if ( config.burial_manager ) {
-            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-                            .init_for_burial( config.burial_manager, config.unsat_manager );
-            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
-                            .init_for_burial( config.burial_manager, config.unsat_manager );
+            if ( objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .init_for_burial( config.burial_manager, config.unsat_manager );
+            }
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .init_for_burial( config.burial_manager, config.unsat_manager );
+            }
         }
 
 		return true;

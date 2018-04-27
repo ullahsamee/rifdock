@@ -197,7 +197,7 @@ UnsatManager::UnsatManager(
         const float P1 = penalties[1];
         const int wants = hbond::NumOrbitals[i];
 
-        total_first_twob_[i][0] = calculate_unsat_score( P0, P1, wants, 0, 1 );
+        total_first_twob_[i][0] = calculate_unsat_score( P0, P1, wants, 0, 1 ) / unsat_score_scalar;
         total_first_twob_[i][1] = P0;
         total_first_twob_[i][2] = P0 * ( 1 - P1 );
 
