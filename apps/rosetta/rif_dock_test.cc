@@ -1089,13 +1089,15 @@ int main(int argc, char *argv[]) {
 				x.translation() = test_scaffold_center;
 				director->set_scene( RifDockIndex(), 0, *scene_minimal);
 				scene_minimal->set_position(1,x);
+				int used = 0;
 				for(int i = 0; i < RESLS.size(); ++i){
 					if ( ! resl_load_map.at(i) ) continue;
-					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
+					std::vector<float> sc = objectives[used++]->scores(*scene_minimal);
 					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
 					     << F( 7, 3, sc[0]+sc[1] ) << " "
 					     << F( 7, 3, sc[0]       ) << " "
 					     << F( 7, 3, sc[1]       ) << endl;
+
 
 				}
 				if ( opt.test_hackpack ) {
