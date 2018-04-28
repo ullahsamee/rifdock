@@ -1134,6 +1134,79 @@ std::string get_rif_type_from_file( std::string fname )
 	std::ostream & operator<<( std::ostream & out, ScoreBBActorVsRIF<B,X,V> const& si ){ return out << si.name(); }
 
 
+
+
+//////////////////////////////////// ScoreBBHBondActorVsRIF ////////////////////////////////////////////
+
+
+    struct ScoreBBHBondActorvsRIFResult {
+        float val_;
+        ScoreBBHBondActorvsRIFResult() : val_(0) {}
+        ScoreBBHBondActorvsRIFResult( float f ) : val_(f) {}
+        operator float() const { return val_; }
+        void operator=( float f ) { val_ = f; }
+        void operator+=( float f ) { val_ += f; }
+        bool operator<( ScoreBBHBondActorvsRIFResult const & other ) const { return val_ < other.val_; }
+    };
+
+    template< class BBHBondActor, class VoxelArrayPtr >
+    struct ScoreBBHBondActorVsRIF
+    {
+
+        typedef ScoreBBActorvsRIFScratch Scratch;       // IMPORTANT!! This is the same as ScoreBBActorVsRIF
+        typedef ScoreBBHBondActorvsRIFResult Result;
+        typedef std::pair<RIFAnchor,BBHBondActor> Interaction;
+        
+        VoxelArrayPtr target_proximity_test_grid_ = nullptr;
+        RifScoreRotamerVsTarget rot_tgt_scorer_;
+
+        ScoreBBHBondActorVsRIF() {}
+
+         void clear() {
+         }
+
+        static std::string name(){ return "ScoreBBHBondActorVsRIF"; }
+
+        void init(
+            RifScoreRotamerVsTarget const & rot_tgt_scorer
+        ){
+            rot_tgt_scorer_ = rot_tgt_scorer;
+        }
+
+        template<class Config>
+        Result operator()( RIFAnchor const &, BBHBondActor const & bbh, Scratch & scratch, Config const& c ) const
+        {
+
+            if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bbh.hbond_rays().front().horb_cen ) == 0.0 ){
+                return 0.0;
+            }
+
+            float score = 0;
+
+            int sat1 = -1, sat2 = -1, hbcount = 0;
+
+            if ( bbh.is_donor() ) {
+                score += rot_tgt_scorer_.score_donor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
+            } else {
+                score += rot_tgt_scorer_.score_acceptor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
+            }
+
+            if ( scratch.is_satisfied_.size() > 0 ) {
+                if ( sat1 > -1 ) scratch.is_satisfied_.at(sat1) = true;
+                if ( sat2 > -1 ) scratch.is_satisfied_.at(sat2) = true;
+            }
+
+            return score;
+        }
+
+    };
+    template< class B, class V >
+    std::ostream & operator<<( std::ostream & out, ScoreBBHBondActorVsRIF<B,V> const& si ){ return out << si.name(); }
+
+
+
+
+
 template< class XMap >
 struct RifFactoryImpl :
 	public RifFactory,

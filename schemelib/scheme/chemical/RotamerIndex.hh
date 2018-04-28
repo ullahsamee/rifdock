@@ -35,6 +35,13 @@ struct HBondRay {
 		float d2 = (direction-other.direction).norm();
 		return d1 < 0.0001 && d2 < 0.0001;
 	}
+
+	template< class Xform >
+	void apply_xform( Xform const & xform ) {
+		Eigen::Vector3f dirpos = horb_cen + direction;
+		horb_cen = xform * horb_cen;
+		direction = xform * dirpos - horb_cen;
+	}
 };
 
 template< class _AtomData >
