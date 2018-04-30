@@ -207,6 +207,7 @@ float xform_magnitude(
 void pose_to_ala( core::pose::Pose & pose );
 void pose_to_gly( core::pose::Pose & pose );
 void pose_to_ala( core::pose::Pose & pose, utility::vector1<core::Size> const & res_sel );
+void pose_to_val( core::pose::Pose & pose );
 
 
 std::string
