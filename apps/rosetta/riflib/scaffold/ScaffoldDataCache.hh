@@ -255,6 +255,7 @@ struct ScaffoldDataCache {
             }
         }
 
+        make_bbhbond_actors = opt.scaff_bb_hbond_weight > 0;
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
