@@ -81,6 +81,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	  core::pose::Pose pose
 	, bool noloops
 	, bool nocpg = true
+	, bool mutate_to_val = true
  );
 
 

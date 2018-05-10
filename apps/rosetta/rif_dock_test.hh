@@ -15,6 +15,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_res_use_best_guess )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, best_guess_mutate_to_val )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala_selonly )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
@@ -237,6 +238,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
+            NEW_OPT(  rif_dock::best_guess_mutate_to_val, "Mutate to polyvaline before making best guess", true );
 			NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 			NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
 			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
@@ -502,6 +504,7 @@ struct RifDockOpt
 	float       search_diameter                      ;
 	bool        use_scaffold_bounding_grids          ;
 	bool        scaffold_res_use_best_guess          ;
+    bool        best_guess_mutate_to_val             ;
 	bool        scaff2ala                            ;
 	bool        scaff2alaselonly                     ;
 	bool        replace_orig_scaffold_res            ;
@@ -715,6 +718,7 @@ struct RifDockOpt
 		search_diameter                        = option[rif_dock::search_diameter                       ]();
 		use_scaffold_bounding_grids            = option[rif_dock::use_scaffold_bounding_grids           ]();
 		scaffold_res_use_best_guess            = option[rif_dock::scaffold_res_use_best_guess           ]();
+        best_guess_mutate_to_val               = option[rif_dock::best_guess_mutate_to_val              ]();
 		scaff2ala                              = option[rif_dock::scaffold_to_ala                       ]();
 		scaff2alaselonly                       = option[rif_dock::scaffold_to_ala_selonly               ]();
 		replace_orig_scaffold_res              = option[rif_dock::replace_orig_scaffold_res             ]();
