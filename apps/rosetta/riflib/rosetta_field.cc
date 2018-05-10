@@ -157,7 +157,7 @@ get_rosetta_fields(
 	RosettaFieldOptions const & opts,
 	std::vector<
 		// shared_ptr<
-			::scheme::objective::voxel::VoxelArray<3,float> *
+			::scheme::objective::voxel::VoxelArray<3,float,float> *
 		// >
 	> & field_by_atype,
 	bool verbose
@@ -212,7 +212,7 @@ get_rosetta_fields_specified_cache_prefix(
 	RosettaFieldOptions const & opts,
 	std::vector<
 		// shared_ptr<
-			::scheme::objective::voxel::VoxelArray<3,float> *
+			::scheme::objective::voxel::VoxelArray<3,float,float> *
 		// >
 	> & field_by_atype,
 	bool verbose
@@ -233,7 +233,7 @@ get_rosetta_fields_specified_cache_prefix(
 	typedef ::scheme::util::SimpleArray<3,float> F3;
 
 	typedef ::scheme::objective::voxel::FieldCache3D<float> FieldCache;
-	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray<3,float,float> VoxelArray;
 
 	float field_resl = opts.field_resl;
 	int oversample = opts.oversample;
@@ -402,11 +402,11 @@ get_rosetta_bounding_fields(
 	core::pose::Pose const & target,
 	utility::vector1<core::Size> const & target_res,
 	RosettaFieldOptions const & opts,
-	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
-	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
+	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float,float> *   > & field_by_atype,
+	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float,float> *	> > & bounding_by_atype,
 	bool verbose
 ){
-	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray<3,float,float> VoxelArray;
 	typedef ::scheme::objective::voxel::BoundingFieldCache3D<float> BoundingGrid;
 
 	using ObjexxFCL::format::I;
@@ -443,14 +443,14 @@ get_rosetta_bounding_fields_from_fba(
 	core::pose::Pose const & target,
 	utility::vector1<core::Size> const & target_res,
 	RosettaFieldOptions const & opts,
-	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
-	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
+	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float,float> *   > & field_by_atype,
+	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float,float> *	> > & bounding_by_atype,
 	bool verbose,
 	std::string cache_prefix,
 	std::vector<bool> only_load_these /*= std::vector<bool>(0)*/
 ){
 
-	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray<3,float,float> VoxelArray;
 	typedef ::scheme::objective::voxel::BoundingFieldCache3D<float> BoundingGrid;
 
 	using ObjexxFCL::format::I;

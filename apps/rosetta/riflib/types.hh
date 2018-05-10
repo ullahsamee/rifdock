@@ -21,7 +21,7 @@ namespace devel {
 namespace scheme {
 
 	typedef ::Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
-	typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray<3,float,float> VoxelArray;
 	typedef VoxelArray* VoxelArrayPtr;
 	using ::scheme::shared_ptr;
 	using ::scheme::make_shared;

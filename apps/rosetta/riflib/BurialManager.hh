@@ -59,7 +59,7 @@ struct BurialOpts {
     float burial_grid_spacing = 0.5f;
 };
 
-typedef ::scheme::objective::voxel::VoxelArray< 3, float > BurialVoxelArray;
+typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > BurialVoxelArray;
 
 
 struct BurialManager {

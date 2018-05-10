@@ -63,7 +63,7 @@ void get_per_rotamer_rf_tables_one(
 	int const N_ATYPE,
 	std::vector< std::vector<
 		::scheme::shared_ptr<
-			::scheme::objective::voxel::VoxelArray< 3, float >
+			::scheme::objective::voxel::VoxelArray< 3, float, float >
 		>
 	> >	& fields_by_atype_per_rot,
 	bool verbose
@@ -75,14 +75,14 @@ void get_per_rotamer_rf_tables(
 	int const N_ATYPE,
 	std::vector< std::vector<
 		::scheme::shared_ptr<
-			::scheme::objective::voxel::VoxelArray< 3, float >
+			::scheme::objective::voxel::VoxelArray< 3, float, float >
 		>
 	> >	& fields_by_atype_per_rot
 );
 
 
 struct RotamerRFTablesManager {
-	typedef ::scheme::objective::voxel::VoxelArray< 3, float > VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > VoxelArray;
 
 	#ifdef USE_OPENMP
 	std::vector<omp_lock_t> locks_;

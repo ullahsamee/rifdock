@@ -19,10 +19,10 @@ struct Field3D {
 };
 
 template<class Float=float>
-struct FieldCache3D : public VoxelArray<3,Float> {
-	typedef VoxelArray<3,Float> BASE;
+struct FieldCache3D : public VoxelArray<3,Float,Float> {
+	typedef VoxelArray<3,Float,Float> BASE;
 	typedef typename BASE::Bounds Float3;
-	typedef typename VoxelArray<3,Float>::Indices Indices;
+	typedef typename VoxelArray<3,Float,Float>::Indices Indices;
 
 	std::string cache_loc_;
 
@@ -142,15 +142,15 @@ template<class Float> struct AggMax {
 };
 
 template<class Float=float,template<class> class AGG = AggMin>
-struct BoundingFieldCache3D : public VoxelArray<3,Float> {
-	typedef VoxelArray<3,Float> BASE;
+struct BoundingFieldCache3D : public VoxelArray<3,Float,Float> {
+	typedef VoxelArray<3,Float,Float> BASE;
 	typedef AGG<Float> Aggregator;
 	typedef typename BASE::Bounds Float3;
 	// Float spread_;
 	// std::string cache_loc_;
 	template<class F>
 	BoundingFieldCache3D(
-		VoxelArray<3,Float> const & ref,
+		VoxelArray<3,Float,Float> const & ref,
 		Float spread,
 		F const & cs,
 		std::string cache_loc="",
@@ -190,7 +190,7 @@ struct BoundingFieldCache3D : public VoxelArray<3,Float> {
 		#endif
 	}
 	Float calc_agg_val(
-		VoxelArray<3,Float> const & ref,
+		VoxelArray<3,Float,Float> const & ref,
 		float spread,
 		Float3 const & f3
 	) const {

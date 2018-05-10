@@ -1041,7 +1041,6 @@ int main(int argc, char *argv[]) {
 			}
 
 
-
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );
 			BOOST_FOREACH( ScenePtr & s, scene_pt ) s = scene_minimal->clone_deep();
 

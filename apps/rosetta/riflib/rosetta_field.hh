@@ -55,7 +55,7 @@ get_rosetta_fields(
 	RosettaFieldOptions const & opts,
 	std::vector<
 		// shared_ptr<
-			::scheme::objective::voxel::VoxelArray<3,float> *
+			::scheme::objective::voxel::VoxelArray<3,float,float> *
 		// >
 	> & field_by_atype,
 	bool verbose = true
@@ -70,7 +70,7 @@ get_rosetta_fields_specified_cache_prefix(
 	RosettaFieldOptions const & opts,
 	std::vector<
 		// shared_ptr<
-			::scheme::objective::voxel::VoxelArray<3,float> *
+			::scheme::objective::voxel::VoxelArray<3,float,float> *
 		// >
 	> & field_by_atype,
 	bool verbose = true
@@ -84,8 +84,8 @@ get_rosetta_bounding_fields(
 	core::pose::Pose const & target,
 	utility::vector1<core::Size> const & target_res,
 	RosettaFieldOptions const & opts,
-	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
-	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
+	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float,float> *   > & field_by_atype,
+	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float,float> *	> > & bounding_by_atype,
 	bool verbose = true
 );
 
@@ -96,8 +96,8 @@ get_rosetta_bounding_fields_from_fba(
 	core::pose::Pose const & target,
 	utility::vector1<core::Size> const & target_res,
 	RosettaFieldOptions const & opts,
-	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float> *   > & field_by_atype,
-	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float> *	> > & bounding_by_atype,
+	std::vector<              ::scheme::objective::voxel::VoxelArray<3,float,float> *   > & field_by_atype,
+	std::vector< std::vector< ::scheme::objective::voxel::VoxelArray<3,float,float> *	> > & bounding_by_atype,
 	bool verbose,
 	std::string cache_prefix,
 	std::vector<bool> only_load_these = std::vector<bool>(0)
