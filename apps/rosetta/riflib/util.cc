@@ -128,6 +128,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	  core::pose::Pose pose
 	, bool noloops
 	, bool nocgp
+	, bool mutate_to_val
  ){
  	core::scoring::dssp::Dssp dssp( pose );
  	dssp.insert_ss_into_pose( pose );
@@ -135,7 +136,7 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
  	core::pose::Pose allgly = pose;
 	core::pose::Pose allval = pose;
  	pose_to_gly(allgly);
-	pose_to_val(allval);
+ 	if (mutate_to_val) pose_to_val(allval);
 
  	core::scoring::ScoreFunctionOP sf = core::scoring::get_score_function(true);
  	sf->score(allgly);
