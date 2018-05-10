@@ -66,8 +66,11 @@ void get_donor_rays   ( core::pose::Pose const & pose, int ir, HBRayOpts const &
 	std::vector<HBondRay> & donors,std::vector<std::pair<int,std::string>> & anames );
 void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
 	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames );
+void get_acceptor_rays_lkball( core::pose::Pose const & pose, int ir, HBRayOpts const & opt,
+	std::vector<HBondRay> & acceptors, std::vector<std::pair<int,std::string>> & anames );
 
-void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor );
+void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor,
+						EigenXform const & xform = EigenXform::Identity() );
 
 std::vector<HBondRay> load_hbond_rays( std::string fname );
 

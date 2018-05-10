@@ -29,6 +29,7 @@
 
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
+#include <utility/io/ozstream.hh>
 
 
 
@@ -74,6 +75,7 @@ struct ScaffoldDataCache {
 
     shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
 
+
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
     shared_ptr<std::vector<std::vector<float> > > local_onebody_p;       //onebodies in local numbering
@@ -95,6 +97,11 @@ struct ScaffoldDataCache {
 
 // Conformation state
     bool conformation_is_fa;
+
+
+// Items that don't belong here but nontheless are here
+    bool make_bbhbond_actors;                                                  // needed in make_conformation_from_data_cache
+
 
 
     ScaffoldDataCache() {}
@@ -489,12 +496,50 @@ struct ScaffoldDataCache {
 
     void
     setup_burial_grids( shared_ptr<BurialManager> const & burial_manager ) {
-        burial_grid = burial_manager->generate_burial_grid( *scaffold_centered_p );
+        burial_grid = burial_manager->get_scaffold_neighbors( *scaffold_centered_p );
     }
 
 
-
 };
+
+
+inline
+void dump_bbhbond_actors_inner( shared_ptr<ScaffoldDataCache> const & cache, bool is_donor ) {
+    std::string type = is_donor ? "donor" : "acceptor";
+    std::string fname = cache->scafftag + "_BBHbondActor_" + type + "s.pdb.gz";
+
+    std::cout << "Dumping BBHBondActor " + type + "s to: " + fname << std::endl;
+
+    utility::io::ozstream out( fname );
+    std::vector<HBondRay> hbrays;
+
+    ParametricScene scene(1);
+    scene.replace_body( 0, make_conformation_from_data_cache( cache, false ) );
+
+    for ( int ihbactor = 0; ihbactor < scene.template num_actors<BBHBondActor>(0); ihbactor++ ) {
+        BBHBondActor bbh = scene.template get_actor<BBHBondActor>(0,ihbactor);
+
+        if ( bbh.is_donor() == is_donor ) {
+            for ( HBondRay const & hbray : bbh.hbond_rays() ) {
+                hbrays.push_back( hbray );
+            }
+        }   
+    }
+
+    EigenXform xform = EigenXform::Identity();
+    xform.translation() = cache->scaffold_center;
+    dump_hbond_rays( out, hbrays, is_donor, xform );
+}
+
+inline
+void dump_bbhbond_actors( shared_ptr<ScaffoldDataCache> const & cache ) {
+    dump_bbhbond_actors_inner( cache, true );
+    dump_bbhbond_actors_inner( cache, false );
+}
+
+
+
+
 
 
 typedef shared_ptr<ScaffoldDataCache> ScaffoldDataCacheOP;

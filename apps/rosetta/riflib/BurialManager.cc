@@ -158,12 +158,18 @@ fill_voxel_near_xyz_cone( BurialVoxelArray & grid, Eigen::Vector3f const & ca, E
 
 void
 BurialManager::set_target_neighbors( core::pose::Pose const & pose ) {
-    target_burial_grid_ = generate_burial_grid( pose );
+    target_burial_grid_ = generate_burial_grid( pose, opts_.target_method, opts_.target_distance_cutoff );
+}
+
+shared_ptr<BurialVoxelArray>
+BurialManager::get_scaffold_neighbors( core::pose::Pose const & pose ) const {
+    return generate_burial_grid( pose, opts_.scaffold_method, opts_.scaffold_distance_cutoff );
 }
 
 
+
 shared_ptr<BurialVoxelArray>
-BurialManager::generate_burial_grid( core::pose::Pose const & pose ) {
+BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::BurialMethod method, float distance_cut ) const {
 
     // float cutoff_sq = opts_.neighbor_distance_cutoff*opts_.neighbor_distance_cutoff;
 
@@ -179,7 +185,7 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose ) {
     //     }
     // }
 
-    std::cout << "Building burial grid" << std::endl;
+    std::cout << "Building burial grid using method: " << burial::METHOD_NAMES[method] << std::endl;
 
 
     using ObjexxFCL::format::F;
@@ -213,42 +219,80 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose ) {
     shared_ptr<BurialVoxelArray> burial_grid = make_shared<BurialVoxelArray>( lbs, ubs, resolution );
 
 
-    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-        numeric::xyzVector<core::Real> _xyz = pose.residue(resid).nbr_atom_xyz();
-        Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+    switch (method) {
+        case burial::N_CA_C_CB_CG: {
 
-        fill_voxel_near_xyz( *burial_grid, xyz, opts_.neighbor_distance_cutoff );
-    }
-    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-        numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("N");
-        Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).nbr_atom_xyz();
+                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-        fill_voxel_near_xyz( *burial_grid, xyz, opts_.neighbor_distance_cutoff );
-    }
-    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-        numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("CA");
-        Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+            }
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("N");
+                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-        fill_voxel_near_xyz( *burial_grid, xyz, opts_.neighbor_distance_cutoff );
-    }
-    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-        numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("C");
-        Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+            }
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("CA");
+                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-        fill_voxel_near_xyz( *burial_grid, xyz, opts_.neighbor_distance_cutoff );
-    }
-    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-        if ( ! pose.residue(resid).has("CB") ) continue;
+                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+            }
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("C");
+                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-        numeric::xyzVector<core::Real> _xyza = pose.residue(resid).xyz("CA");
-        Eigen::Vector3f xyza; xyza[0] = _xyza[0]; xyza[1] = _xyza[1]; xyza[2] = _xyza[2];
+                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+            }
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                if ( ! pose.residue(resid).has("CB") ) continue;
 
-        numeric::xyzVector<core::Real> _xyzb = pose.residue(resid).xyz("CB");
-        Eigen::Vector3f xyzb; xyzb[0] = _xyzb[0]; xyzb[1] = _xyzb[1]; xyzb[2] = _xyzb[2];
+                numeric::xyzVector<core::Real> _xyza = pose.residue(resid).xyz("CA");
+                Eigen::Vector3f xyza; xyza[0] = _xyza[0]; xyza[1] = _xyza[1]; xyza[2] = _xyza[2];
 
-        Eigen::Vector3f xyz = xyzb + (xyzb - xyza);
+                numeric::xyzVector<core::Real> _xyzb = pose.residue(resid).xyz("CB");
+                Eigen::Vector3f xyzb; xyzb[0] = _xyzb[0]; xyzb[1] = _xyzb[1]; xyzb[2] = _xyzb[2];
 
-        fill_voxel_near_xyz( *burial_grid, xyz, opts_.neighbor_distance_cutoff );
+                Eigen::Vector3f xyz = xyzb + (xyzb - xyza);
+
+                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+            }
+
+            break;
+
+        }
+        case burial::HEAVY_ATOMS: {
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+
+                core::conformation::Residue const & res = pose.residue( resid );
+
+                for ( core::Size atomno = 1; atomno <= res.nheavyatoms(); atomno++ ) {
+
+                    numeric::xyzVector<core::Real> _xyz = res.xyz( atomno );
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+            }
+            break;
+        }
+        case burial::ALL_ATOMS: {
+            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+
+                core::conformation::Residue const & res = pose.residue( resid );
+
+                for ( core::Size atomno = 1; atomno <= res.natoms(); atomno++ ) {
+
+                    numeric::xyzVector<core::Real> _xyz = res.xyz( atomno );
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+            }
+            break;
+        }
     }
 
     // for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
@@ -273,7 +317,8 @@ burial_lookup(
     Eigen::Vector3f const & pt,
     shared_ptr<BurialVoxelArray> const & target_grid, 
     EigenXform const & scaff_inv_transform,
-    shared_ptr<BurialVoxelArray> const & scaff_grid ) {
+    shared_ptr<BurialVoxelArray> const & scaff_grid,
+    float scaff_scale ) {
 
     float burial = target_grid->at( pt );
 
@@ -281,7 +326,7 @@ burial_lookup(
 
     Eigen::Vector3f scaff_pt = scaff_inv_transform * pt;
 
-    burial += scaff_grid->at( scaff_pt );
+    burial += scaff_grid->at( scaff_pt ) * scaff_scale;
 
     return burial;
 }
@@ -302,6 +347,7 @@ BurialManager::dump_burial_grid(
 
     BurialVoxelArray & grid = *target_burial_grid_;
     EigenXform const & scaff_inv_transform = scaff_transform.inverse();
+    const float scaff_scale = opts_.target_burial_cutoff / opts_.scaffold_burial_cutoff;
 
     Bounds lb = grid.lb_;
     Bounds ub = grid.ub_;
@@ -315,11 +361,10 @@ BurialManager::dump_burial_grid(
     for ( float y = lb[1] + step/2; y < ub[1]; y += step ) { worker[1] = y;
     for ( float z = lb[2] + step/2; z < ub[2]; z += step ) { worker[2] = z;
 
-        float burial = burial_lookup( worker, target_burial_grid_, scaff_inv_transform, scaff_grid );
-        int value = int( burial + 0.5f );
+        float burial = burial_lookup( worker, target_burial_grid_, scaff_inv_transform, scaff_grid, scaff_scale );
         char buf[128];
 
-        if ( opts_.neighbor_count_weights[value] ) {
+        if ( burial >= opts_.target_burial_cutoff ) {
             std::string aname;
             snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
                 "HETATM",
@@ -354,17 +399,17 @@ BurialManager::get_burial_count(
 ) const {
     Eigen::Vector3f work = xyz;
 
-    // std::cout << work << " og" << std::endl;
+    const float scaff_scale = opts_.target_burial_cutoff / opts_.scaffold_burial_cutoff;
 
     float burial_count = 9e9;
     for ( int dim = 0; dim < 3; dim++ ) {
         for ( float dir = -1; dir < 2; dir += 2 ) {
-            work[dim] += dir * 2.0f;
-            const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid);
+            work[dim] += dir * 0.0f;
+            const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid, scaff_scale);
             burial_count = std::min<float>(burial_count, this_burial_count);
             // if (debug_) std::cout << this_burial_count;
             // std::cout << work << std::endl;
-            work[dim] -= dir * 2.0f;
+            work[dim] -= dir * 1.0f;
         }
     }
 
@@ -378,13 +423,14 @@ BurialManager::get_burial_weights( EigenXform const & scaff_transform, shared_pt
     EigenXform const & scaff_inv_transform = scaff_transform.inverse();
     std::vector<float> weights( target_burial_points_.size() );
 
+
     for ( int i_pt = 0; i_pt < target_burial_points_.size(); i_pt ++ ) {
 
         const float burial_count = get_burial_count( target_burial_points_[i_pt], scaff_inv_transform, scaff_grid ) 
                                     - unburial_adjust_[i_pt];
 
         // if (debug_) std::cout << "Burial: iheavy: " << i_pt << " count: " << burial_count << std::endl;
-        const float burial = opts_.neighbor_count_weights[int(burial_count + 0.5f)];
+        const float burial = burial_count >= opts_.target_burial_cutoff ? 1.0 : 0.0; 
         weights[i_pt] = burial;
     }
 
@@ -421,13 +467,8 @@ BurialManager::unbury_heavy_atom( int heavy_atom_no ) {
     float count = get_burial_count( target_burial_points_[heavy_atom_no], EigenXform::Identity(), nullptr );
 
     float unburial_amount = 0;
-
-    while ( count - unburial_amount >= 0 && opts_.neighbor_count_weights[int(count - unburial_amount + 0.5f)] > 0 ) {
-        unburial_amount += 1;
-    }
-
-    if ( count - unburial_amount < 0 ) {
-        utility_exit_with_message( "Weird error: You can't use a unsat_helper file if you make all atoms buried.");
+    if ( count >= opts_.target_burial_cutoff ) {
+        unburial_amount = count + 1 - opts_.target_burial_cutoff;
     }
 
     unburial_adjust_[heavy_atom_no] = unburial_amount;

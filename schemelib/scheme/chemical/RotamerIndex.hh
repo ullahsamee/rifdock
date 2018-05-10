@@ -5,6 +5,7 @@
 #include "scheme/util/str.hh"
 #include "scheme/chemical/AtomData.hh"
 #include "scheme/chemical/stub.hh"
+#include "scheme/chemical/HBondRay.hh"
 #include "scheme/io/dump_pdb_atom.hh"
 #include "scheme/actor/BackboneActor.hh"
 
@@ -27,15 +28,6 @@
 
 namespace scheme { namespace chemical {
 
-struct HBondRay {
-	::Eigen::Vector3f horb_cen, direction;
-	int32_t id=1, group=-1;
-	bool operator==(HBondRay const & other) const {
-		float d1 = (horb_cen-other.horb_cen).norm();
-		float d2 = (direction-other.direction).norm();
-		return d1 < 0.0001 && d2 < 0.0001;
-	}
-};
 
 template< class _AtomData >
 struct ChemicalIndex {

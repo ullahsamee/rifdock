@@ -27,10 +27,35 @@
 namespace devel {
 namespace scheme {
 
+namespace burial {
+
+enum BurialMethod {
+    NONE = 0,
+    N_CA_C_CB_CG,
+    HEAVY_ATOMS,
+    ALL_ATOMS
+};
+
+std::vector<std::string> const METHOD_NAMES = {
+    "NONE",
+    "N_CA_C_CB_CG",
+    "HEAVY_ATOMS",
+    "ALL_ATOMS"
+};
+
+}
+
 
 struct BurialOpts {
-    float neighbor_distance_cutoff = 6;
-    std::vector<float> neighbor_count_weights;
+
+    burial::BurialMethod target_method = burial::HEAVY_ATOMS;
+    float target_distance_cutoff = 4.0;
+    float target_burial_cutoff = 22.0;
+
+    burial::BurialMethod scaffold_method = burial::N_CA_C_CB_CG;
+    float scaffold_distance_cutoff = 5.0;
+    float scaffold_burial_cutoff = 17.0;
+
     float burial_grid_spacing = 0.5f;
 };
 
@@ -72,7 +97,6 @@ struct BurialManager {
         // target_neighbor_counts_.resize( target_burial_points_.size(), 0 );
         // other_neighbor_counts_.resize( target_burial_points_.size(), 0 );
 
-        runtime_assert( opts_.neighbor_count_weights.size() >= 100 );
     }
 
     shared_ptr<BurialManager>
@@ -83,6 +107,9 @@ struct BurialManager {
 
     void
     set_target_neighbors( core::pose::Pose const & pose );
+
+    shared_ptr<BurialVoxelArray>
+    get_scaffold_neighbors( core::pose::Pose const & pose ) const;
 
     std::vector<float>
     get_burial_weights( EigenXform const & scaff_transform, shared_ptr<BurialVoxelArray> const & scaff_grid) const;
@@ -106,7 +133,7 @@ struct BurialManager {
 );
 
     shared_ptr<BurialVoxelArray>
-    generate_burial_grid( core::pose::Pose const & pose );
+    generate_burial_grid( core::pose::Pose const & pose, burial::BurialMethod method, float distance_cut ) const;
 
     void
     unbury_heavy_atom( int heavy_atom_no );

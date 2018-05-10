@@ -89,7 +89,7 @@ HackPackTask::return_search_point_with_rotss(
         rdd.scaffold_provider->setup_twobody_tables( si );
     }
 
-    if ( rdd.opt.unsat_orbital_penalty > 0 ) {
+    if ( rdd.unsat_manager ) {
         std::cout << "Building twobody tables per thread for unsats" << std::endl;
         for( int ipack = 0; ipack < pd.npack; ++ipack ) {
             ScaffoldIndex si = packed_results[ipack].index.scaffold_index;

@@ -45,6 +45,7 @@ if( ${U_CMAKE_BUILD_TYPE} MATCHES DEBUG )
     if (NOT $ENV{CMAKE_FINAL_ROSETTA_PATH} STREQUAL "")
         set( ROSETTA_BIN $ENV{CMAKE_FINAL_ROSETTA_PATH} )
     endif()
+    # add_definitions( -D_GLIBCXX_DEBUG )
 
 else()
     # set( ROSETTA_BIN $ENV{CMAKE_ROSETTA_PATH}/source/cmake/build_${CXX_DIR}_omp )

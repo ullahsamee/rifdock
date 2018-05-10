@@ -76,6 +76,9 @@ apply_direct_segment_lookup_mover(
     ApplyDSLMScratch & scratch   );
 #endif
 
+std::vector<BBHBondActor>
+get_bbhbond_actors( core::pose::Pose const & pose );
+
 void
 get_default_scaffold_res( core::pose::Pose const & pose,
     utility::vector1<core::Size> & scaffold_res);
@@ -98,8 +101,6 @@ extract_poses_from_silent_file( std::string const & filename );
 
 std::string
 pdb_name( std::string const & fname );
-
-
 
 
 

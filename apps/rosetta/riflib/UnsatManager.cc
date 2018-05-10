@@ -169,6 +169,7 @@ identify_acceptor( std::string const & aname, char one_letter, std::string & hea
 UnsatManager::UnsatManager( 
     std::vector<std::vector<float>> const & unsat_penalties,
     shared_ptr< RotamerIndex > rot_index_p_in,
+    float unsat_score_scalar,
     int require_burial,
     float score_offset,
     bool debug,
@@ -177,6 +178,7 @@ UnsatManager::UnsatManager(
     unsat_penalties_( unsat_penalties ),
     rot_index_p( rot_index_p_in ),
     require_burial_( require_burial ),
+    unsat_score_scalar_( unsat_score_scalar ),
     score_offset_( score_offset ),
     debug_( debug ),
     store_common_unsats_( store_common_unsats )
@@ -195,7 +197,7 @@ UnsatManager::UnsatManager(
         const float P1 = penalties[1];
         const int wants = hbond::NumOrbitals[i];
 
-        total_first_twob_[i][0] = calculate_unsat_score( P0, P1, wants, 0, 1 );
+        total_first_twob_[i][0] = calculate_unsat_score( P0, P1, wants, 0, 1 ) / unsat_score_scalar;
         total_first_twob_[i][1] = P0;
         total_first_twob_[i][2] = P0 * ( 1 - P1 );
 
@@ -674,7 +676,7 @@ UnsatManager::get_buried_unsats(
         const int wants = hbond::NumOrbitals[ha.AType];
         std::vector<float> const & penalties = unsat_penalties_[ha.AType];
         float score = calculate_unsat_score( penalties[0], penalties[1], wants, sat_count, weight );
-        unsat_scores[iheavy] = score * weight;
+        unsat_scores[iheavy] = score * weight * unsat_score_scalar_;
 
         if ( debug_ ) {
             std::cout << "BuriedHeavy: " << iheavy << " res: " << ha.resid << " name: " << ha.name 
@@ -816,7 +818,7 @@ UnsatManager::calculate_unsat_score( float P0, float P1, int wants, int satisfie
 
     while ( wants > 0 ) {
         satisfied --;
-        if ( satisfied < 0 ) score += penalty * weight;
+        if ( satisfied < 0 ) score += penalty * weight * unsat_score_scalar_;
         penalty -= subtracter;
         wants --;
     }
@@ -1009,9 +1011,10 @@ UnsatManager::prepare_packer(
         hbond::HeavyAtom const & ha = target_heavy_atoms_[ih];
 
     // 2.   Assign max penalty to each heavy atom
-        zerobody_penalty += total_first_twob_[ha.AType][0] * weight;
+        zerobody_penalty += total_first_twob_[ha.AType][0] * weight * unsat_score_scalar_;
 
-        if (debug_) std::cout << "0body unsat: " << total_first_twob_[ha.AType][0] * weight << " heavy atom: " << ih << std::endl;
+        if (debug_) std::cout << "0body unsat: " << total_first_twob_[ha.AType][0] * weight * unsat_score_scalar_ 
+                    << " heavy atom: " << ih << std::endl;
 
     // 3. Find all orbitals of said heavy atoms
         for ( int sat : ha.sat_groups ) heavy_atom_per_sat[sat] = ih;
@@ -1036,9 +1039,9 @@ UnsatManager::prepare_packer(
             if ( heavy_atom_no > -1 ) {
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
-                zerobody_penalty += - total_first_twob_[heavy_atom_type][1] * weight;
+                zerobody_penalty += - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_;
 
-                if (debug_) std::cout << "0body self-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                if (debug_) std::cout << "0body self-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_
                                    << " heavy atom: " << heavy_atom_no << std::endl;
             }
         }
@@ -1056,9 +1059,9 @@ UnsatManager::prepare_packer(
             if ( heavy_atom_no > -1 ) {
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
-                to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight;
+                to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_;
 
-                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_
                                   << " heavy atom: " << heavy_atom_no << " ipack: " << ipack << std::endl;
             }
         }
@@ -1070,9 +1073,9 @@ UnsatManager::prepare_packer(
             if ( heavy_atom_no > -1 ) {
                 const int heavy_atom_type = target_heavy_atoms_[heavy_atom_no].AType;
                 const float weight = burial_weights[heavy_atom_no];
-                to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight;
+                to_pack_rot.score += - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_;
 
-                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight 
+                if (debug_) std::cout << "1body rot-satisfy: " << - total_first_twob_[heavy_atom_type][1] * weight * unsat_score_scalar_
                                       << " heavy atom: " << heavy_atom_no << " ipack: " << ipack << std::endl;
             }
         }
@@ -1090,7 +1093,7 @@ UnsatManager::prepare_packer(
     // 6. For all pairs of satisfiers at one orbital
     // 7.   Assign P0 as a twobody penalty
 
-        const float P0 = total_first_twob_[ha.AType][1] * weight;
+        const float P0 = total_first_twob_[ha.AType][1] * weight * unsat_score_scalar_;
 
         for ( int isat : ha.sat_groups ) {
             std::vector<int> const & local_sat_satsifiers = sat_satsifiers[isat];
@@ -1113,7 +1116,7 @@ UnsatManager::prepare_packer(
     // 9.   Assign P0 * ( 1 - P1 ) as a twobody penalty
 
 
-        const float twob_penalty = total_first_twob_[ha.AType][2] * weight;
+        const float twob_penalty = total_first_twob_[ha.AType][2] * weight * unsat_score_scalar_;
 
         // upper triangle of orbitals
         for ( int iorb = 0; iorb < (int)ha.sat_groups.size() - 1; iorb ++) {
