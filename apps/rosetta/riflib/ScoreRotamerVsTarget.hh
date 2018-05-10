@@ -276,9 +276,9 @@ struct ScoreRotamerVsTarget {
                     best_sat = i_hr_tgt_acc + target_donors_.size();
                 }
             }
-            if ( best_sat > -1 && used_tgt_acceptor[best_sat] > best_score ) {
+            if ( best_sat > -1 && used_tgt_acceptor[best_sat - target_donors_.size()] > best_score ) {
                 // I don't think there is any need to use if ... else ..., but to make things more clear.
-                if ( used_tgt_acceptor[ best_sat ] < this->min_hb_quality_for_satisfaction_ ){
+                if ( used_tgt_acceptor[ best_sat - target_donors_.size() ] < this->min_hb_quality_for_satisfaction_ ){
                     if ( sat1 == -1 || sat1 == best_sat ){
                         sat1 = best_sat;
                     } else if ( sat2 == -1 || sat2 == best_sat) {
@@ -289,15 +289,15 @@ struct ScoreRotamerVsTarget {
                     else if( sat2==-1 ) sat2 = best_sat;
                 }
                 if( upweight_multi_hbond_ && best_score < min_hb_quality_for_multi_ ){
-                    if( used_tgt_acceptor[best_sat] >= min_hb_quality_for_multi_ ) ++hbcount;
+                    if( used_tgt_acceptor[best_sat - target_donors_.size()] >= min_hb_quality_for_multi_ ) ++hbcount;
                 }
                 // remove the double counting of hbond??? Do I need to do this, or ..........
-                if ( used_tgt_acceptor[ best_sat ] <= 9e5 ){
-                    hbscore += ( best_score - used_tgt_acceptor[best_sat] ) * hbond_weight_;
+                if ( used_tgt_acceptor[ best_sat - target_donors_.size() ] <= 9e5 ){
+                    hbscore += ( best_score - used_tgt_acceptor[best_sat - target_donors_.size()] ) * hbond_weight_;
                 } else {
                     hbscore += best_score * hbond_weight_;
                 }
-                used_tgt_acceptor[ best_sat ] = best_score;
+                used_tgt_acceptor[ best_sat - target_donors_.size() ] = best_score;
             }
             
         }

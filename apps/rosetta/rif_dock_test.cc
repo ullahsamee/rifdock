@@ -917,6 +917,7 @@ int main(int argc, char *argv[]) {
 
 			shared_ptr<std::vector<EigenXform>> seeding_positions = setup_seeding_positions( opt, pd, scaffold_provider, iscaff );
 
+			if ( opt.dump_scaff_bb_hbond_rays ) dump_bbhbond_actors( test_data_cache );
 
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			print_header( "setup scene from scaffold and target" );
@@ -1099,9 +1100,10 @@ int main(int argc, char *argv[]) {
 					if ( ! resl_load_map.at(i) ) continue;
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
 					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1] ) << " "
+					     << F( 7, 3, sc[0]+sc[1]+sc[2] ) << " "
 					     << F( 7, 3, sc[0]       ) << " "
-					     << F( 7, 3, sc[1]       ) << endl;
+					     << F( 7, 3, sc[1]       ) << " "
+					     << F( 7, 3, sc[2]       ) << endl;
 
 				}
 				if ( opt.test_hackpack ) {

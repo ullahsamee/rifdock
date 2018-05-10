@@ -12,8 +12,12 @@
 #include <riflib/rifdock_typedefs.hh>
 #include <scheme/scaffold/ScaffoldProviderBase.hh>
 #include <riflib/scaffold/ScaffoldDataCache.hh>
+#include <riflib/RotamerGenerator.hh>
 #include <scheme/numeric/rand_xform.hh>
 #include <core/pose/PDBInfo.hh>
+#include <core/conformation/Conformation.hh>
+#include <core/scoring/hbonds/HBondOptions.hh>
+#include <core/scoring/hbonds/hbonds.hh>
 
 // includes to emulate minimize_segment.xml
 #include <core/io/silent/SilentFileData.hh>
@@ -26,6 +30,9 @@
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
 #include <basic/options/option.hh>
 #include <protocols/moves/MoverStatus.hh>
+
+#include <core/scoring/methods/EnergyMethodOptions.hh>
+#include <core/scoring/hbonds/HBondSet.hh>
 
 #ifdef USEHDF5
 #include <basic/options/keys/indexed_structure_store.OptionKeys.gen.hh>
@@ -130,6 +137,143 @@ get_info_for_iscaff(
 
 }
 
+core::Size
+get_bb_donor_atom( core::conformation::Residue const & res ) {
+    core::chemical::ResidueType const & type = res.type();
+
+    core::chemical::AtomIndices const & h_indices = type.Hpos_polar();
+
+    for ( core::Size hindex : h_indices ) {
+        core::Size bindex = type.atom_base(hindex);
+        if ( res.atom_is_backbone( bindex ) ) {
+            return hindex;
+        }
+    }
+    utility_exit_with_message( boost::str( boost::format( "Residue %i has not backbone hydrogen bond donor!!!" ) % res.seqpos() ) );
+}
+
+core::Size
+get_bb_acceptor_heavy_atom( core::conformation::Residue const & res ) {
+    core::chemical::ResidueType const & type = res.type();
+
+    core::chemical::AtomIndices const & acc_indices = type.accpt_pos();
+
+    for ( core::Size aindex : acc_indices ) {
+        if ( res.atom_is_backbone( aindex ) ) {
+            return aindex;
+        }
+    }
+    utility_exit_with_message( boost::str( boost::format( "Residue %i has not backbone hydrogen bond acceptor!!!" ) % res.seqpos() ) );
+}
+
+std::vector<BBHBondActor>
+get_bbhbond_actors( core::pose::Pose const & pose ) {
+    std::cout << "Generating scaffold backbone hydrogen bonding actors" << std::endl;
+
+    core::pose::Pose pose_to_score = pose;
+
+    float ethresh = -0.01f;
+    ::devel::scheme::HBRayOpts hbopt;
+
+    std::vector<BBHBondActor> actors;
+
+    core::scoring::ScoreFunctionOP sf = make_shared<core::scoring::ScoreFunction>();
+    core::scoring::methods::EnergyMethodOptions myopt = sf->energy_method_options();
+    myopt.hbond_options().decompose_bb_hb_into_pair_energies(true);
+    myopt.hbond_options().bb_donor_acceptor_check(true);
+    sf->set_energy_method_options(myopt);
+    sf->set_weight( core::scoring::hbond_sr_bb, 1.0);
+    sf->set_weight( core::scoring::hbond_lr_bb, 1.0);
+    sf->score(pose_to_score);
+    core::scoring::hbonds::HBondSet hbset;
+    core::scoring::hbonds::fill_hbond_set(pose_to_score,false,hbset);
+
+    hbset.resize_bb_donor_acceptor_arrays( pose.size() );   // this is so stupid. Why do they do this?
+
+    std::set<int> n_termini;
+    std::set<int> c_termini;
+
+    for ( int ichain = 1; ichain <= pose.num_chains(); ichain++ ) {
+        n_termini.insert( pose.conformation().chain_begin(ichain) );
+        c_termini.insert( pose.conformation().chain_end(ichain) );
+    }
+
+    for ( int ires = 1; ires <= pose.size(); ires++ ) {
+        core::conformation::Residue const & res = pose.residue(ires);
+
+
+        bool allow_nh = true;
+        bool allow_co = true;
+
+        if ( n_termini.count(ires) > 0 ) allow_nh = false;
+        if ( c_termini.count(ires) > 0 ) allow_co = false;
+
+        if ( hbset.don_bbg_in_bb_bb_hbond( ires ) ) allow_nh = false;
+        if ( hbset.acc_bbg_in_bb_bb_hbond( ires ) ) allow_co = false;
+
+        if ( res.name3() == "PRO" ) allow_nh = false;
+
+        if ( allow_nh ) {
+            std::vector<HBondRay> donors;
+            std::vector<std::pair<int,std::string>> anames;
+            get_donor_rays( pose, ires, hbopt, donors, anames );
+
+            std::string bb_donor_name = res.atom_name(get_bb_donor_atom( res ) );
+            std::vector<HBondRay> nh_donors;
+            for ( int i = 0; i < donors.size(); i++ ) {
+                if ( anames[i].second == bb_donor_name ) nh_donors.push_back( donors[i] );
+            }
+            if ( nh_donors.size() != 1 ) {
+                utility_exit_with_message(boost::str(boost::format("Found %i backbone donor atoms for residue %i")%nh_donors.size()%ires));
+            }
+
+            actors.emplace_back( nh_donors, true, ires );
+        }
+
+        if ( allow_co ) {
+            std::vector<HBondRay> acceptors;
+            std::vector<std::pair<int,std::string>> anames;
+            get_acceptor_rays_lkball( pose, ires, hbopt, acceptors, anames );
+
+            std::string bb_heavy_acceptor_name = res.atom_name(get_bb_acceptor_heavy_atom( res ));
+            std::vector<HBondRay> co_acceptors;
+            for ( int i = 0; i < acceptors.size(); i++ ) {
+                if ( anames[i].second == bb_heavy_acceptor_name ) co_acceptors.push_back( acceptors[i] );
+            }
+            if ( co_acceptors.size() != 2 ) {
+                utility_exit_with_message(boost::str(boost::format("Found %i backbone acceptor atoms for residue %i")%co_acceptors.size()%ires));
+            }
+
+            actors.emplace_back( co_acceptors, false, ires );
+        }
+
+    }
+
+    std::cout << "Scaffold backbone donors: ";
+    bool first = true;
+    for ( BBHBondActor const & actor : actors ) {
+        if ( actor.is_donor() ) {
+            if ( !first ) std::cout << ",";
+            std::cout << actor.index();
+            first = false;
+        }
+    }
+    std::cout << std::endl;
+
+    std::cout << "Scaffold backbone acceptors: ";
+    first = true;
+    for ( BBHBondActor const & actor : actors ) {
+        if ( ! actor.is_donor() ) {
+            if ( !first ) std::cout << ",";
+            std::cout << actor.index();
+            first = false;
+        }
+    }
+    std::cout << std::endl;
+
+    return actors;
+}
+
 
 void
 get_default_scaffold_res( core::pose::Pose const & pose,
@@ -166,6 +310,13 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
 
         if( std::find(scaffold_res.begin(),scaffold_res.end(),ir)!=scaffold_res.end() ){
             scene.add_actor(0,bbactor);
+        }
+    }
+
+    if ( cache->make_bbhbond_actors ) {
+        std::vector<BBHBondActor> bbhbond_actors = get_bbhbond_actors( scaffold_centered );
+        for ( BBHBondActor const & bbhbond_actor : bbhbond_actors ) {
+            scene.add_actor(0, bbhbond_actor );
         }
     }
 
@@ -589,7 +740,6 @@ pdb_name( std::string const & fname ) {
     if (utility::endswith( name, ".pdb" ) ) name = name.substr(0, name.length() - 4);
     return name;
 }
-
 
 
 }}

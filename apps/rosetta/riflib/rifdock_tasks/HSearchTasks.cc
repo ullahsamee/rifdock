@@ -152,7 +152,7 @@ HSearchScoreAtReslTask::return_search_points(
 
 
     cout << "HSearsh stage " << rif_resl_+1 << " resl " << F(5,2,rdd.RESLS[rif_resl_]) << " begin threaded sampling, " << KMGT(search_points.size()) << " samples: ";
-    int64_t const out_interval = search_points.size()/50;
+    int64_t const out_interval = std::max<int64_t>(search_points.size()/50, 1);
     std::exception_ptr exception = nullptr;
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
     start = std::chrono::high_resolution_clock::now();

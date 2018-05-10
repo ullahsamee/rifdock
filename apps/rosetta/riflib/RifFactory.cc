@@ -1159,6 +1159,7 @@ std::string get_rif_type_from_file( std::string fname )
         
         VoxelArrayPtr target_proximity_test_grid_ = nullptr;
         RifScoreRotamerVsTarget rot_tgt_scorer_;
+        bool initialized_ = false;
 
         ScoreBBHBondActorVsRIF() {}
 
@@ -1168,14 +1169,19 @@ std::string get_rif_type_from_file( std::string fname )
         static std::string name(){ return "ScoreBBHBondActorVsRIF"; }
 
         void init(
-            RifScoreRotamerVsTarget const & rot_tgt_scorer
+            RifScoreRotamerVsTarget const & rot_tgt_scorer,
+            float scaff_bb_hbond_weight
         ){
-            rot_tgt_scorer_ = rot_tgt_scorer;
+            rot_tgt_scorer_ = rot_tgt_scorer;   // This must make a copy!!!!!!
+            rot_tgt_scorer_.hbond_weight_ = scaff_bb_hbond_weight;
+            initialized_ = true;
         }
 
         template<class Config>
         Result operator()( RIFAnchor const &, BBHBondActor const & bbh, Scratch & scratch, Config const& c ) const
         {
+
+            if ( ! initialized_ ) return 0.0;
 
             if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bbh.hbond_rays().front().horb_cen ) == 0.0 ){
                 return 0.0;
@@ -1221,10 +1227,16 @@ struct RifFactoryImpl :
 			VoxelArrayPtr
 		> MyScoreBBActorRIF;
 
+    typedef ScoreBBHBondActorVsRIF<
+            BBHBondActor,
+            VoxelArrayPtr
+        > MyScoreBBHBondActorRIF;
+
 	typedef ::scheme::objective::ObjectiveFunction<
 			boost::mpl::vector<
 				MyScoreBBActorRIF,
-				MyClashScore
+				MyClashScore,
+                MyScoreBBHBondActorRIF
 			>,
 			int // Config type, just resl
 		> MyRIFObjective;
@@ -1417,6 +1429,21 @@ struct RifFactoryImpl :
     			local_packopts
     		);
         }
+
+        // Only want to do BBHbonds at highest resl otherwise they are meaningless
+        if ( objectives.size() ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight );
+        }
+        if ( packing_objectives.back() ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight );
+        }
+
 
         if ( config.burial_manager ) {
             if ( objectives.size() ) {

@@ -1475,9 +1475,11 @@ void get_acceptor_rays( core::pose::Pose const & pose, int ir, HBRayOpts const &
 }
 
 
-void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor ){
+void dump_hbond_rays( std::ostream & out, std::vector<HBondRay> hbonders, bool isdonor, EigenXform const & xform ){
 	int anum=0, rnum=0;
-	for( auto hbr : hbonders ){
+	for( auto _hbr : hbonders ){
+		HBondRay hbr = _hbr;
+		hbr.apply_xform( xform );
 		for( int ibase = 0; ibase < 2; ibase++ ){
 			float x = hbr.horb_cen[0] + ( ibase? 0.0f : hbr.direction[0] );
 			float y = hbr.horb_cen[1] + ( ibase? 0.0f : hbr.direction[1] );

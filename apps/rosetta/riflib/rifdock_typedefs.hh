@@ -15,6 +15,7 @@
 #include <scheme/types.hh>
 
 #include <scheme/actor/BackboneActor.hh>
+#include <scheme/actor/BackboneHBondActor.hh>
 #include <scheme/actor/VoxelActor.hh>
 #include <scheme/actor/Atom.hh>
 #include <scheme/kinematics/Scene.hh>
@@ -46,6 +47,7 @@ typedef int32_t intRot;
 // Typedefs that should never change
 
 typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
+typedef ::scheme::actor::BackboneHBondActor BBHBondActor;
 
 typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
 
@@ -65,6 +67,7 @@ typedef boost::mpl::vector<
             BBActor,
             SimpleAtom,
             VoxelActor,
+            BBHBondActor,
             RIFAnchor
         > ParametricSceneContainers;
 
