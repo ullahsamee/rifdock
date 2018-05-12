@@ -1183,9 +1183,9 @@ std::string get_rif_type_from_file( std::string fname )
 
             if ( ! initialized_ ) return 0.0;
 
-            if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bbh.hbond_rays().front().horb_cen ) == 0.0 ){
-                return 0.0;
-            }
+            // if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bbh.hbond_rays().front().horb_cen ) == 0.0 ){
+            //     return 0.0;
+            // }
 
             float score = 0;
 

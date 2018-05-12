@@ -77,6 +77,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, upweight_multi_hbond )
 	OPT_1GRP_KEY(  Real        , rif_dock, min_hb_quality_for_satisfaction )
 	OPT_1GRP_KEY(  Real        , rif_dock, long_hbond_fudge_distance )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, test_donor_acceptor_cache )
 	OPT_1GRP_KEY(  Real        , rif_dock, global_score_cut )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, redundancy_filter_mag )
@@ -298,6 +299,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::upweight_multi_hbond, "" , 0.0 );
 			NEW_OPT(  rif_dock::min_hb_quality_for_satisfaction, "Minimum fraction of total hbond energy required for satisfaction. Scale -1 to 0", -0.6 );
 			NEW_OPT(  rif_dock::long_hbond_fudge_distance, "Any hbond longer than 2A gets moved closer to 2A by this amount for scoring", 0.0 );
+            NEW_OPT(  rif_dock::test_donor_acceptor_cache, "Ensure that the DonorAcceptorCache is actually working", false );
 			NEW_OPT(  rif_dock::global_score_cut, "" , 0.0 );
 
 			NEW_OPT(  rif_dock::redundancy_filter_mag, "" , 1.0 );
@@ -556,6 +558,7 @@ struct RifDockOpt
 	float       upweight_multi_hbond                 ;
 	float       min_hb_quality_for_satisfaction      ;
 	float       long_hbond_fudge_distance            ;
+    bool        test_donor_acceptor_cache            ;
 	float       redundancy_filter_mag                ;
 	bool        filter_seeding_positions_separately  ;
 	bool        filter_scaffolds_separately          ;
@@ -772,6 +775,7 @@ struct RifDockOpt
 		upweight_multi_hbond                   = option[rif_dock::upweight_multi_hbond                  ]();
 		min_hb_quality_for_satisfaction        = option[rif_dock::min_hb_quality_for_satisfaction       ]();
 		long_hbond_fudge_distance              = option[rif_dock::long_hbond_fudge_distance             ]();
+        test_donor_acceptor_cache              = option[rif_dock::test_donor_acceptor_cache             ]();
 		redundancy_filter_mag                  = option[rif_dock::redundancy_filter_mag                 ]();
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();

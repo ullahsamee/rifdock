@@ -74,6 +74,7 @@
 	#include <riflib/BurialManager.hh>
 	#include <riflib/UnsatManager.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
+	#include <numeric/random/random_xyz.hh>
 
 
 // Task system
@@ -667,6 +668,13 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
+/// Prepare DonorAcceptorCaches
+							 // ideal length - orbital position + max extension + extra extension + resl + safety
+	const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + opt.long_hbond_fudge_distance + 1.0 + 1.0 );
+	shared_ptr<DonorAcceptorCache> target_donor_cache = make_shared<DonorAcceptorCache>( target_donors, max_hbond_interaction );
+	shared_ptr<DonorAcceptorCache> target_acceptor_cache = make_shared<DonorAcceptorCache>( target_acceptors, max_hbond_interaction );
+
+
     RifScoreRotamerVsTarget rot_tgt_scorer;
     rot_tgt_scorer.rot_index_p_ = rot_index_p;
     rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
@@ -681,7 +689,54 @@ int main(int argc, char *argv[]) {
     rot_tgt_scorer.grid_scorer_ = grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
 #endif
+    // rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
+    // rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 
+
+    if ( opt.test_donor_acceptor_cache ) {
+
+    	RifScoreRotamerVsTarget rot_tgt_scorer_original = rot_tgt_scorer;
+    	rot_tgt_scorer_original.target_donor_cache_ = nullptr;
+    	rot_tgt_scorer_original.target_acceptor_cache_ = nullptr;
+
+
+    	size_t test_count = 10000000;
+    	size_t nonzero_count = 0;
+    	for ( size_t i = 0; i < test_count; i++ ) {
+
+    		numeric::xyzVector<core::Real> position = numeric::random::random_vector_spherical().normalized();
+    		position *= 2 * target_redundancy_filter_rg * numeric::random::uniform();
+
+    		numeric::xyzVector<core::Real> direction = numeric::random::random_vector_spherical().normalized();
+
+    		HBondRay ray;
+    		ray.horb_cen[0] = position[0]; ray.horb_cen[1] = position[1]; ray.horb_cen[1] = position[1];
+    		ray.direction[0] = direction[0]; ray.direction[1] = direction[1]; ray.direction[1] = direction[1];
+
+    		std::vector<HBondRay> rays { ray };
+
+    		// Test Acceptors
+    		{
+    			int sat1 = -1, sat2 = -1, hbcount = 0;
+    			float score = rot_tgt_scorer.score_acceptor_rays_v_target( rays, sat1, sat2, hbcount );
+
+    			int og_sat1 = -1, og_sat2 = -1, og_hbcount = 0;
+    			float og_score = rot_tgt_scorer_original.score_acceptor_rays_v_target( rays, og_sat1, og_sat2, og_hbcount );
+
+    			if ( sat1 != og_sat1 || sat2 != og_sat2 || score != og_score ) {
+    				std::cout << "acceptors: " << score << " " << sat1 << " " << sat2 << " " << og_score << " " << og_sat1 << " " << og_sat2 << std::endl;
+    			}
+
+    			if (score != 0) {
+    				nonzero_count += 1;
+    			}
+    		}
+
+    	}
+
+    	std::cout << nonzero_count << " nonzero out of " << test_count << std::endl;
+
+    }
 
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
