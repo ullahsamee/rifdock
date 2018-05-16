@@ -670,7 +670,7 @@ int main(int argc, char *argv[]) {
 
 /// Prepare DonorAcceptorCaches
 							 // ideal length - orbital position + max extension + extra extension + resl + safety
-	const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + opt.long_hbond_fudge_distance + 1.0 + 1.0 );
+	const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + opt.long_hbond_fudge_distance + 1.0 + 0.3 );
 	shared_ptr<DonorAcceptorCache> target_donor_cache = make_shared<DonorAcceptorCache>( target_donors, max_hbond_interaction );
 	shared_ptr<DonorAcceptorCache> target_acceptor_cache = make_shared<DonorAcceptorCache>( target_acceptors, max_hbond_interaction );
 
@@ -689,8 +689,8 @@ int main(int argc, char *argv[]) {
     rot_tgt_scorer.grid_scorer_ = grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
 #endif
-    // rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
-    // rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
+    rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
+    rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 
 
     if ( opt.test_donor_acceptor_cache ) {
@@ -702,6 +702,7 @@ int main(int argc, char *argv[]) {
 
     	size_t test_count = 10000000;
     	size_t nonzero_count = 0;
+    	size_t ok_count = 0;
     	for ( size_t i = 0; i < test_count; i++ ) {
 
     		numeric::xyzVector<core::Real> position = numeric::random::random_vector_spherical().normalized();
@@ -723,18 +724,24 @@ int main(int argc, char *argv[]) {
     			int og_sat1 = -1, og_sat2 = -1, og_hbcount = 0;
     			float og_score = rot_tgt_scorer_original.score_acceptor_rays_v_target( rays, og_sat1, og_sat2, og_hbcount );
 
+    			if ( score < -0.05) {
     			if ( sat1 != og_sat1 || sat2 != og_sat2 || score != og_score ) {
     				std::cout << "acceptors: " << score << " " << sat1 << " " << sat2 << " " << og_score << " " << og_sat1 << " " << og_sat2 << std::endl;
+    			}
     			}
 
     			if (score != 0) {
     				nonzero_count += 1;
+    			}
+    			if (score < -0.1) {
+    				ok_count += 1;
     			}
     		}
 
     	}
 
     	std::cout << nonzero_count << " nonzero out of " << test_count << std::endl;
+    	std::cout << ok_count << " -0.1 hbonds out of " << test_count << std::endl;
 
     }
 

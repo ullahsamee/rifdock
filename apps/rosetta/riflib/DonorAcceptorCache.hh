@@ -145,7 +145,7 @@ struct DonorAcceptorCache {
         for ( Sat isat = 0; isat < rays.size(); isat++ ) {
             HBondRay const & ray = rays[isat];
 
-            Eigen::Vector3f xyz = ray.horb_cen;
+            Eigen::Vector3f xyz = ray.horb_cen + ray.direction * 0.5;
 
             Eigen::Vector3f lbs( xyz[0] - max_interaction_range_, xyz[1] - max_interaction_range_, xyz[2] - max_interaction_range_ );
             Eigen::Vector3f ubs( xyz[0] + max_interaction_range_, xyz[1] + max_interaction_range_, xyz[2] + max_interaction_range_ );

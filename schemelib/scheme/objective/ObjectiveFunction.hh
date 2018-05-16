@@ -128,7 +128,8 @@ namespace impl {
 			typedef typename f::result_of::value_at_key<Results,Objective>::type Result;
 			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
 			Result result;// = objective( interaction, config );
-			call_objective( result, objective, interaction, scratches.template get<Objective>(), config );
+			// call_objective( result, objective, interaction, scratches.template get<Objective>(), config );
+			call_objective( result, objective, interaction, scratches.template get<typename impl::get_Scratch_NullScratch<Objective>::type>(), config );
 			results.template get<Objective>() += weight*result;
 		}
 	};
@@ -167,7 +168,9 @@ namespace impl {
 			typedef typename f::result_of::value_at_key<Results,Objective>::type Result;
 			/// TODO: unpack args to allow for tuples of std::ref, would avoid extra copy
 			Result result;// = objective( actor_1, actor_2, config );
-			call_objective( result, objective, actor_1, actor_2, scratches.template get<Objective>(), config );
+			// call_objective( result, objective, actor_1, actor_2, scratches.template get<Objective>(), config );
+			call_objective( result, objective, actor_1, actor_2, scratches.template get<typename impl::get_Scratch_NullScratch<Objective>::type>(), config );
+
 			results.template get<Objective>() += weight*result;
 		}
 	};
@@ -278,7 +281,8 @@ namespace impl {
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjectivePost:     Objective " << Objective::name() << std::endl;
 			#endif
-			eval_objective_pre( source_, objective, results.template get<Objective>(), scratches.template get<Objective>(), config );
+			// eval_objective_pre( source_, objective, results.template get<Objective>(), scratches.template get<Objective>(), config );
+			eval_objective_pre( source_, objective, results.template get<Objective>(), scratches.template get<typename impl::get_Scratch_NullScratch<Objective>::type>(), config );
 		}
 	};
 
@@ -295,7 +299,8 @@ namespace impl {
 			#ifdef DEBUG_IO
 			std::cout << "    EvalObjectivePost:     Objective " << Objective::name() << std::endl;
 			#endif
-			eval_objective_post( source_, objective, results.template get<Objective>(), scratches.template get<Objective>(), config );
+			// eval_objective_post( source_, objective, results.template get<Objective>(), scratches.template get<Objective>(), config );
+			eval_objective_post( source_, objective, results.template get<Objective>(), scratches.template get<typename impl::get_Scratch_NullScratch<Objective>::type>(), config );
 		}
 	};
 
@@ -604,11 +609,30 @@ struct ObjectiveFunction {
 		impl::get_Result_double<m::_1>
 	> Results;
 
+	///@typedef unique InteractionTypes types
+	typedef typename
+		m::copy< typename // copy back into mpl::vector;
+			m::copy< typename // copy to mpl::set so unique
+				m::transform< // all InteractionTypes Type from Obectives
+					Objectives,
+					impl::get_Scratch_NullScratch<m::_1>
+					>::type,
+				m::inserter<m::set<>,m::insert<m::_1,m::_2> >
+				>::type,
+			m::back_inserter<m::vector<> >
+		>::type
+	ScratchTypes;
+
 	///@typedef Scratches
 	typedef util::meta::InstanceMap<
-		Objectives,
-		impl::get_Scratch_NullScratch<m::_1>
+		ScratchTypes
 	> Scratches;
+
+	///@typedef Scratches
+	// typedef util::meta::InstanceMap<
+	// 	Objectives,
+	// 	impl::get_Scratch_NullScratch<m::_1>
+	// > Scratches;
 
 	///@typedef Weights
 	typedef util::meta::NumericInstanceMap<
