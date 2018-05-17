@@ -269,7 +269,8 @@ struct UnsatManager {
     float
     prepare_packer( 
         ::scheme::search::HackPack & packer, 
-        std::vector<float> const & burial_weights 
+        std::vector<float> const & burial_weights,
+        std::vector<bool> const & pre_and_bb_satisfied
     );
 
     void

@@ -999,6 +999,7 @@ int main(int argc, char *argv[]) {
                 rso_config.requirements = opt.requirements;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
+            	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
 
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
             	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {

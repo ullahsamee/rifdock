@@ -866,6 +866,8 @@ std::string get_rif_type_from_file( std::string fname )
 
 					if( rot1be <= packopts_.rotamer_onebody_inclusion_threshold || rotamer_satisfies){
 						
+                        // Very important!!! Do not fill in scratch.is_satisfied_ here!!!
+                        //  It needs to collect the BBHbond sats which are unconditionally satisifed
 						int sat1 = -1, sat2 = -1, hbcount = 0;
 						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
 														rot_tgt_scorer_.score_rotamer_v_target_sat( 
@@ -983,7 +985,8 @@ std::string get_rif_type_from_file( std::string fname )
 				if ( scratch.burial_manager_ ) {
                     EigenXform scaffold_xform = scene.position(1);
 					unsat_zerobody = scratch.unsat_manager_->prepare_packer( packer, 
-                        scratch.burial_manager_->get_burial_weights( scaffold_xform, scratch.scaff_burial_grid_ ) );
+                        scratch.burial_manager_->get_burial_weights( scaffold_xform, scratch.scaff_burial_grid_ ),
+                        scratch.is_satisfied_ );
 				}
 				
 				result.val_ = packer.pack( result.rotamers_ );
@@ -1208,7 +1211,6 @@ std::string get_rif_type_from_file( std::string fname )
     };
     template< class B, class V >
     std::ostream & operator<<( std::ostream & out, ScoreBBHBondActorVsRIF<B,V> const& si ){ return out << si.name(); }
-
 
 
 
