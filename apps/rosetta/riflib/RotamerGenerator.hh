@@ -25,7 +25,6 @@ namespace scheme {
 
 using ::scheme::chemical::HBondRay;
 
-const float ORBLEN = 0.61; // don't change this number!!!!!!!!!!
 
 struct RosettaRotamerGenerator {
 	typedef SchemeAtom Atom;
@@ -55,7 +54,7 @@ struct HBRayOpts {
 	bool withbb = true;
 	bool lkball = true;
 	bool add_acceptor_mid = false;
-	float orblen = ORBLEN;			// don't change this number!!!!!!!!!!
+	float orblen = ::scheme::chemical::ORBLEN;			// don't change this number!!!!!!!!!!
 	std::set<std::pair<int,int>> satisfied_atoms;
 };
 

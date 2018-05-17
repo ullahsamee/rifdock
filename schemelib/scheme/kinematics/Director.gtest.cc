@@ -45,8 +45,8 @@ TEST( Director, test_NestDirector ){
 	scene.add_position(0);
 	scene.add_position(0);
 
-	NestDirector< Nest1D > d0(0);
-	NestDirector< Nest1D > d2(2);
+	NestDirector< Nest1D, typename Nest1D::Index > d0(0);
+	NestDirector< Nest1D, typename Nest1D::Index > d2(2);
 
 	d0.set_scene( 7, 3, scene );
 	ASSERT_EQ( Nest1D().set_and_get(7,3) , scene.position(0) );
@@ -96,7 +96,7 @@ TEST( Director, test_TreeDirector ){
 	int count = 0;
 	for( int resl = 0; resl < 8; ++resl ){
 		// cout << "================== resl " << resl << " ======================" << endl;
-		for( uint64_t i = 0; i < director.size(resl); ++i){
+		for( uint64_t i = 0; i < director.size(resl, (typename TreeDirector< numeric::X1dim >::BigIndex)(0)); ++i){
 			util::SimpleArray<2> tmp = refnest.set_and_get(i,resl);
 			// scene.set_position( 0, tmp[0] );
 			// scene.set_position( 1, tmp[1] );

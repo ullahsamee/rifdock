@@ -32,6 +32,7 @@
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
 	#include <riflib/util.hh>
+    #include <riflib/util_complex.hh>
 	#include <scheme/numeric/rand_xform.hh>
 	#include <scheme/actor/Atom.hh>
 	#include <scheme/actor/BackboneActor.hh>
@@ -163,6 +164,7 @@ namespace rif {
 		}
 
 
+
 		// setup the hacky but fast scorer
 		devel::scheme::ScoreRotamerVsTarget<
 				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
@@ -174,6 +176,8 @@ namespace rif {
 				::devel::scheme::get_acceptor_rays( *params->target, ir, params->hbopt, target_acceptors );
 			}
 			std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+
+
 			{
 				rot_tgt_scorer.rot_index_p_ = params->rot_index_p;
 				rot_tgt_scorer.target_field_by_atype_ = params->field_by_atype;
@@ -188,6 +192,11 @@ namespace rif {
 				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
 #endif
+                shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+                prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
+
+                rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
+                rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 			}
 		}
 

@@ -17,13 +17,14 @@ namespace scheme { namespace objective { namespace voxel {
 
 
 
-template< size_t _DIM, class _Float=float >
-struct VoxelArray : boost::multi_array<_Float,_DIM> {
+template< size_t _DIM, class _Float=float, class _Value=float >
+struct VoxelArray : boost::multi_array<_Value,_DIM> {
 	BOOST_STATIC_ASSERT((_DIM>0));
-	typedef boost::multi_array<_Float,_DIM> BASE;
-	typedef VoxelArray<_DIM,_Float> THIS;
+	typedef boost::multi_array<_Value,_DIM> BASE;
+	typedef VoxelArray<_DIM,_Float,_Value> THIS;
 	static size_t const DIM = _DIM;
 	typedef _Float Float;
+    typedef _Value Value;
 	typedef util::SimpleArray<DIM,typename BASE::size_type> Indices;
 	typedef util::SimpleArray<DIM,Float> Bounds;
 	Bounds lb_,ub_,cs_;
@@ -57,26 +58,26 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 	}
 
 	template<class Floats>
-	typename boost::disable_if< boost::is_arithmetic<Floats>, Float const & >::type
+	typename boost::disable_if< boost::is_arithmetic<Floats>, Value const & >::type
 	operator[](Floats const & floats) const { return this->operator()(floats_to_index(floats)); }
 
 	template<class Floats>
-	typename boost::disable_if< boost::is_arithmetic<Floats>, Float & >::type
+	typename boost::disable_if< boost::is_arithmetic<Floats>, Value & >::type
 	operator[](Floats const & floats){ return this->operator()(floats_to_index(floats)); }
 
-	Float at( Float f, Float g, Float h ) const {
+	Value at( Float f, Float g, Float h ) const {
 		Indices idx = floats_to_index( Bounds( f, g, h ) );
 		if( idx[0] < this->shape()[0] && idx[1] < this->shape()[1] && idx[2] < this->shape()[2] )
 			return this->operator()(idx);
-		else return 0.0;
+		else return Value(0);
 	}
 
 	template<class V>
-	Float at( V const & v ) const {
+	Value at( V const & v ) const {
 		Indices idx = floats_to_index( Bounds( v[0], v[1], v[2] ) );
 		if( idx[0] < this->shape()[0] && idx[1] < this->shape()[1] && idx[2] < this->shape()[2] )
 			return this->operator()(idx);
-		else return 0.0;
+		else return Value(0);
 	}
 
 	// void write(std::ostream & out) const {
@@ -152,9 +153,9 @@ struct VoxelArray : boost::multi_array<_Float,_DIM> {
 
 };
 
-template< size_t D, class F >
-std::ostream & operator << ( std::ostream & out, VoxelArray<D,F> const & v ){
-	out << "VoxelArray( lb: " << v.lb_ << " ub: " << v.ub_ << " cs: " << v.cs_ << " nelem: " << v.num_elements() << " sizeof_val: " << sizeof(F) << " )";
+template< size_t D, class F, class V >
+std::ostream & operator << ( std::ostream & out, VoxelArray<D,F,V> const & v ){
+	out << "VoxelArray( lb: " << v.lb_ << " ub: " << v.ub_ << " cs: " << v.cs_ << " nelem: " << v.num_elements() << " sizeof_val: " << sizeof(V) << " )";
 	return out;
 }
 

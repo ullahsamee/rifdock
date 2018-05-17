@@ -29,11 +29,6 @@
 #include <core/id/AtomID.hh>
 
 
-#ifdef USEGRIDSCORE
-#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
-#include <protocols/ligand_docking/GALigandDock/RotamerData.hh>
-#endif
-
 namespace devel {
 namespace scheme {
 
@@ -237,43 +232,6 @@ sqr( Float const & x ) { return x*x; }
 
 
 
-// template< class HBondRay >
-// float score_hbond_rays(
-// 	HBondRay const & don,
-// 	HBondRay const & acc,
-// 	float non_directional_fraction = 0.0 // 0.0 - 1.0
-// ){
-// 	Eigen::Vector3f ho = acc.horb_cen - don.horb_cen;
-// 	float ho_dist = ho.norm() - 1.05 ;
-// 	ho_dist = ho_dist < 0 ? ho_dist*1.5 : ho_dist; // increase dis pen if too close
-// 	float const max_diff = 1.3;
-// 	ho_dist = ho_dist >  max_diff ?  max_diff : ho_dist;
-// 	ho_dist = ho_dist < -max_diff ? -max_diff : ho_dist;
-
-// 	ho.normalize();
-// 	float bho_dot = don.direction.dot(ho);
-// 	float hoa_dot = -ho.dot(acc.direction);
-	
-// 	if( hoa_dot < 0 ) hoa_dot = 0;
-// 	if( bho_dot < 0 ) bho_dot = 0;
-
-// 	// if( ho_dist > max_diff ) return 0.0;
-// 	// sigmoid -like shape on distance score
-// 	float score = -sqr( 1.0 - sqr( ho_dist/max_diff ) );
-
-// 	// score -= bho_dot;
-// 	// score -= hoa_dot;
-// 	// score /= 3.0;
-
-// 	score *= bho_dot;
-// 	score *= hoa_dot;
-
-// 	return score;
-// }
-
-
-
-
 /// @brief Returns an map mapping the CA of the atoms given in the subset
 /// to themselves
 std::map< core::id::AtomID, core::id::AtomID >
@@ -298,41 +256,6 @@ find_xform_from_identical_pose_to_pose(
 	core::pose::Pose const & pose1,
 	core::pose::Pose const & pose2,
 	float align_error = 0.2 );
-
-
-void
-all_by_all_rmsd( 
-	std::vector<core::pose::PoseOP> const & poses,
-	utility::vector1<utility::vector1<core::Real>> & table );
-
-std::vector<std::vector<std::pair<core::pose::PoseOP, uint64_t>>>
-cluster_poses_into_n_bins( 
-	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n,
-	utility::vector1<utility::vector1<core::Real>> & rmsds );
-
-std::vector<core::pose::PoseOP>
-cluster_poses_leaving_n( 
-	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n );
-
-size_t
-find_cluster_center( 
-	std::vector<uint64_t> indexes,
-	utility::vector1<utility::vector1<core::Real>> const & rmsds );
-
-std::vector<core::pose::PoseOP>
-cluster_poses_leaving_n_representing_frac(
-	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n,
-	float frac,
-	float tol
-	);
-
-std::vector<core::pose::PoseOP>
-random_selection_poses_leaving_n( 
-	std::vector<core::pose::PoseOP> const & poses,
-	uint64_t n );
 
 
 // from riflib/rifdock_subroutines/util.hh
@@ -370,14 +293,6 @@ xform_pose(
 	core::Size eres=0
 );
 
-#ifdef USEGRIDSCORE
-shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer>
-prepare_grid_scorer(
-	core::pose::Pose const & target,
-	utility::vector1<core::Size> const & target_res,
-	std::string const & atype_aas = "ACDEFGHIKLMNPQRSTVWY"
-);
-#endif
 
 
 // https://stackoverflow.com/questions/7931358/printing-sizeoft-at-compile-time

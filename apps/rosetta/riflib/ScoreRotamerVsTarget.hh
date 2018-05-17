@@ -13,7 +13,9 @@
 #define INCLUDED_riflib_ScoreRotamerVsTarget_hh
 
 #include <riflib/util.hh>
-
+#include <scheme/numeric/util.hh>
+#include <scheme/chemical/HBondRay.hh>
+#include <riflib/DonorAcceptorCache.hh>
 
 #ifdef USEGRIDSCORE
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
@@ -53,8 +55,9 @@ float score_hbond_rays(
     float non_directional_fraction = 0.0, // 0.0 - 1.0,
     float long_hbond_fudge_distance = 0.0
 ){
+    using ::scheme::numeric::sqr;
 
-    const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
+    const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*::scheme::chemical::ORBLEN;
     float diff = ( (don.horb_cen-accep_O).norm() - 2.00 );
     diff = diff < 0 ? diff*1.5 : std::max<float>( 0.0, diff - long_hbond_fudge_distance ); // increase dis pen if too close
     float const max_diff = 0.8;
@@ -94,6 +97,9 @@ struct ScoreRotamerVsTarget {
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer_;
     bool soft_grid_energies_;
 #endif
+    shared_ptr<DonorAcceptorCache> target_donor_cache_;
+    shared_ptr<DonorAcceptorCache> target_acceptor_cache_;
+
     ScoreRotamerVsTarget(){}
 
     template< class Xform, class Int >
@@ -212,19 +218,45 @@ struct ScoreRotamerVsTarget {
         float used_tgt_donor   [target_donors_   .size()];
         for( int i = 0; i < target_donors_   .size(); ++i ) used_tgt_donor   [i] = 9e9;
 
+
         for( HBondRay const & hr_rot_acc : acceptor_rays ) {
             
             float best_score = 100;
             int best_sat = -1;
-            for( int i_hr_tgt_don = 0; i_hr_tgt_don < target_donors_.size(); ++i_hr_tgt_don )
-            {
-                HBondRay const & hr_tgt_don = target_donors_.at(i_hr_tgt_don);
-                float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc, 0.0, long_hbond_fudge_distance_ );
-                if ( thishb < best_score ) {
-                    best_score = thishb;
-                    best_sat = i_hr_tgt_don;
+
+            if ( target_donor_cache_ ) {
+
+                typedef typename DonorAcceptorCache::Sat Sat;
+                std::vector<Sat>::const_iterator sats_iter = target_donor_cache_->at( hr_rot_acc.horb_cen );
+
+                Sat i_hr_tgt_don = 0;
+                while ( (i_hr_tgt_don = *(sats_iter++)) != DonorAcceptorCache::CACHE_MAX_SAT ) {
+
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+                    HBondRay const & hr_tgt_don = target_donors_.at(i_hr_tgt_don);
+                    float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc, 0.0, long_hbond_fudge_distance_ );
+                    if ( thishb < best_score ) {
+                        best_score = thishb;
+                        best_sat = i_hr_tgt_don;
+                    }
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+
+                }
+
+            } else {
+                for( int i_hr_tgt_don = 0; i_hr_tgt_don < target_donors_.size(); ++i_hr_tgt_don )
+                {
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+                    HBondRay const & hr_tgt_don = target_donors_.at(i_hr_tgt_don);
+                    float const thishb = score_hbond_rays( hr_tgt_don, hr_rot_acc, 0.0, long_hbond_fudge_distance_ );
+                    if ( thishb < best_score ) {
+                        best_score = thishb;
+                        best_sat = i_hr_tgt_don;
+                    }
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
                 }
             }
+
             if ( best_sat > -1 && used_tgt_donor[best_sat] > best_score ) {
                 // I don't think there is any need to use if ... else ..., but to make things more clear.
                 if ( used_tgt_donor[ best_sat ] < this->min_hb_quality_for_satisfaction_ ){
@@ -267,15 +299,41 @@ struct ScoreRotamerVsTarget {
             
             float best_score = 100;
             int best_sat = -1;
-            for( int i_hr_tgt_acc = 0; i_hr_tgt_acc < target_acceptors_.size(); ++i_hr_tgt_acc )
-            {
-                HBondRay const & hr_tgt_acc = target_acceptors_.at(i_hr_tgt_acc);
-                float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc, 0.0, long_hbond_fudge_distance_ );
-                if ( thishb < best_score ) {
-                    best_score = thishb;
-                    best_sat = i_hr_tgt_acc + target_donors_.size();
+
+
+            if ( target_acceptor_cache_ ) {
+
+                typedef typename DonorAcceptorCache::Sat Sat;
+                std::vector<Sat>::const_iterator sats_iter =  target_acceptor_cache_->at( hr_rot_don.horb_cen );
+
+                Sat i_hr_tgt_acc = 0;
+                while ( (i_hr_tgt_acc = *(sats_iter++)) != DonorAcceptorCache::CACHE_MAX_SAT ) {
+
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+                    HBondRay const & hr_tgt_acc = target_acceptors_.at(i_hr_tgt_acc);
+                    float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc, 0.0, long_hbond_fudge_distance_ );
+                    if ( thishb < best_score ) {
+                        best_score = thishb;
+                        best_sat = i_hr_tgt_acc + target_donors_.size();
+                    }
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+                }
+
+            } else {
+                for( int i_hr_tgt_acc = 0; i_hr_tgt_acc < target_acceptors_.size(); ++i_hr_tgt_acc )
+                {
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
+                    HBondRay const & hr_tgt_acc = target_acceptors_.at(i_hr_tgt_acc);
+                    float const thishb = score_hbond_rays( hr_rot_don, hr_tgt_acc, 0.0, long_hbond_fudge_distance_ );
+                    if ( thishb < best_score ) {
+                        best_score = thishb;
+                        best_sat = i_hr_tgt_acc + target_donors_.size();
+                    }
+                    /////////////// DUPLICATE CODE ///////////////////////////////////////////
                 }
             }
+
+
             if ( best_sat > -1 && used_tgt_acceptor[best_sat - target_donors_.size()] > best_score ) {
                 // I don't think there is any need to use if ... else ..., but to make things more clear.
                 if ( used_tgt_acceptor[ best_sat - target_donors_.size() ] < this->min_hb_quality_for_satisfaction_ ){

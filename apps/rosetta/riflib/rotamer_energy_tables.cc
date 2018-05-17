@@ -248,14 +248,14 @@ void get_per_rotamer_rf_tables_one(
 	int const N_ATYPE,
 	std::vector< std::vector<
 		::scheme::shared_ptr<
-			::scheme::objective::voxel::VoxelArray< 3, float >
+			::scheme::objective::voxel::VoxelArray< 3, float, float >
 		>
 	> >	& fields_by_atype_per_rot,
 	bool verbose
 ){
 	typedef ::scheme::objective::voxel::FieldCache3D< float > FieldCache;
 	typedef ::scheme::objective::voxel::BoundingFieldCache3D< float, ::scheme::objective::voxel::AggMin > BoundingFieldCache;
-	typedef ::scheme::objective::voxel::VoxelArray< 3, float > VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > VoxelArray;
 	typedef ::scheme::actor::Atom< Eigen::Vector3f > SchemeAtom;
 	typedef ::scheme::util::SimpleArray<3,float> F3;
 
@@ -377,13 +377,13 @@ void get_per_rotamer_rf_tables(
 	int const N_ATYPE,
 	std::vector< std::vector<
 		::scheme::shared_ptr<
-			::scheme::objective::voxel::VoxelArray< 3, float >
+			::scheme::objective::voxel::VoxelArray< 3, float, float >
 		>
 	> >	& fields_by_atype_per_rot
 ){
 	typedef ::scheme::objective::voxel::FieldCache3D< float > FieldCache;
 	typedef ::scheme::objective::voxel::BoundingFieldCache3D< float, ::scheme::objective::voxel::AggMin > BoundingFieldCache;
-	typedef ::scheme::objective::voxel::VoxelArray< 3, float > VoxelArray;
+	typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > VoxelArray;
 	typedef ::scheme::actor::Atom< Eigen::Vector3f > SchemeAtom;
 	typedef ::scheme::util::SimpleArray<3,float> F3;
 
@@ -442,7 +442,7 @@ make_twobody_tables(
 	MakeTwobodyOpts opts,
 	::scheme::objective::storage::TwoBodyTable<float> & twob
 ){
-	// typedef ::scheme::objective::voxel::VoxelArray< 3, float > VoxelArray;
+	// typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > VoxelArray;
 	// typedef Eigen::Transform<float,3,Eigen::AffineCompact> EigenXform;
 	typedef ::scheme::actor::BackboneActor<EigenXform> BackboneActor;
 	typedef ::scheme::actor::Atom< Eigen::Vector3f > SchemeAtom;

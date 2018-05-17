@@ -293,7 +293,7 @@ UnsatManager::set_target_donors_acceptors(
             numeric::xyzVector<core::Real> xyz = target.residue(atom_pair.first).xyz(atom_pair.second);
             xyz_[0] = xyz[0]; xyz_[1] = xyz[1]; xyz_[2] = xyz[2];
 
-            float dist = ( xyz_ - ( ray.horb_cen - ray.direction*ORBLEN ) ).norm();
+            float dist = ( xyz_ - ( ray.horb_cen - ray.direction*::scheme::chemical::ORBLEN ) ).norm();
 
             if (dist < 0.1) break;
             so_far++;
@@ -955,9 +955,11 @@ UnsatManager::add_to_pack_rot(
 float
 UnsatManager::prepare_packer( 
     ::scheme::search::HackPack & packer, 
-    std::vector<float> const & burial_weights 
+    std::vector<float> const & burial_weights,
+    std::vector<bool> const & pre_and_bb_satisfied
 ) {
     runtime_assert( burial_weights.size() == target_heavy_atoms_.size() );
+    runtime_assert( pre_and_bb_satisfied.size() == target_presatisfied_.size());
 
     if (debug_) {
 
@@ -1031,8 +1033,8 @@ UnsatManager::prepare_packer(
 
     //       first find target presatisfiers
 
-    for ( int isat = 0; isat < target_presatisfied_.size(); isat++ ) {
-        if ( target_presatisfied_[isat] ) {
+    for ( int isat = 0; isat < pre_and_bb_satisfied.size(); isat++ ) {
+        if ( pre_and_bb_satisfied[isat] ) {
             sat_satsifiers[isat].push_back(-1);
 
             const int heavy_atom_no = heavy_atom_per_sat[isat];

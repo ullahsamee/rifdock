@@ -11,6 +11,7 @@
 #include <boost/any.hpp>
 
 #include <vector>
+#include <Eigen/Dense>
 
 
 /*
@@ -318,7 +319,7 @@ struct ScaffoldDirector
 	}
 
 	// This doesn't actually work, the format of ScaffoldProvider.size() can't be returned in this format
-	virtual BigIndex size(int resl, BigIndex sizes) const override {
+	BigIndex size(int resl, BigIndex sizes) const override {
 		return sizes;
 	}
 
@@ -490,7 +491,7 @@ struct TreeDirector : public Director<_Position,_BigIndex,_Index> {
 		return true;
 	}
 
-	virtual void size(int resl, BigIndex & sizes) const { 
+	BigIndex size(int resl, BigIndex sizes) const override { 
 		sizes = multinest_.size(resl);
 		return sizes;
 	}

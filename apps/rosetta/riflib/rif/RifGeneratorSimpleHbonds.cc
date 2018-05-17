@@ -33,6 +33,7 @@
 	#include <riflib/HBondedPairGenerator.hh>
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
+    #include <riflib/util_complex.hh>
 	#include <riflib/rif/make_hbond_geometries.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
 
@@ -491,6 +492,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 		                                                     n_sat_groups, std::vector<utility::io::ozstream*>(n_sat_groups,nullptr));
 		std::cout << "n_sat_groups = " << n_sat_groups << std::endl;
 
+
 	// target.dump_pdb("test.pdb");
 	// utility_exit_with_message("DEBUG EXTRA ACCEPTORS!!!");
 		devel::scheme::ScoreRotamerVsTarget<
@@ -510,7 +512,11 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
 #endif
+            shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+            prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
 
+            rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
+            rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 
 		}
 

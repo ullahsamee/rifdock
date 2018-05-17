@@ -150,7 +150,7 @@ namespace rif {
 		// runtime_assert( sizeof(SchemeAtom) == 16 );
 		// typedef scheme::rosetta::score::RosettaField<SchemeAtom,devel::scheme::EtableParamsInit> RosettaField;
 
-		typedef ::scheme::objective::voxel::VoxelArray<3,float> VoxelArray;
+		typedef ::scheme::objective::voxel::VoxelArray<3,float,float> VoxelArray;
 		typedef ::scheme::objective::voxel::BoundingFieldCache3D<float> BoundingGrid;
 
 

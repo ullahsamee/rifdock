@@ -46,15 +46,15 @@ fill_voxel_near_xyz( BurialVoxelArray & grid, Eigen::Vector3f const & xyz, float
 
     Eigen::Vector3f worker;
 
-    for ( float x = lbs[0] + step/2; x < ubs[0]; x += step ) {
+    for ( float x = lbs[0] - step/2; x < ubs[0] + step; x += step ) {
         if ( x < grid.lb_[0] || x > grid.ub_[0] ) continue;
         worker[0] = x;
 
-        for ( float y = lbs[1] + step/2; y < ubs[1]; y += step ) {
+        for ( float y = lbs[1] - step/2; y < ubs[1] + step; y += step ) {
                 if ( y < grid.lb_[1] || y > grid.ub_[1] ) continue;
                 worker[1] = y;
 
-            for ( float z = lbs[2] + step/2; z < ubs[2]; z += step ) {
+            for ( float z = lbs[2] - step/2; z < ubs[2] + step; z += step ) {
                 if ( z < grid.lb_[2] || z > grid.ub_[2] ) continue;
                 worker[2] = z;
 

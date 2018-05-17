@@ -15,9 +15,9 @@ using std::endl;
 
 TEST(VoxelArray,simple1d){
 	typedef util::SimpleArray<1,float> F1;
-	// VoxelArray<0,float> a; // this should fail to compile
+	// VoxelArray<0,float,float> a; // this should fail to compile
 
-	VoxelArray<1,float> a1( 0, 3, 0.5 );
+	VoxelArray<1,float,float> a1( 0, 3, 0.5 );
 	ASSERT_EQ(a1.size(),7);
 	a1[F1(0)] = 1;
 	ASSERT_EQ(a1[F1(0)],1);
@@ -30,7 +30,7 @@ TEST(VoxelArray,simple1d){
 }
 TEST(VoxelArray,simple3d){
 	typedef util::SimpleArray<3,float> F3;		
-	VoxelArray<3,float> a3( F3(-1,-2,-3), F3(1,2,3), 0.5 );
+	VoxelArray<3,float,float> a3( F3(-1,-2,-3), F3(1,2,3), 0.5 );
 	ASSERT_EQ(a3.shape()[0],5);
 	ASSERT_EQ(a3.shape()[1],9);
 	ASSERT_EQ(a3.shape()[2],13);		
@@ -47,7 +47,7 @@ TEST(VoxelArray,simple3d){
 }
 TEST(VoxelArray,bounds3d){
 	typedef util::SimpleArray<3,float> F3;		
-	VoxelArray<3,float> a3( F3(-1,-2,-3), F3(1,2,3), 0.49 );
+	VoxelArray<3,float,float> a3( F3(-1,-2,-3), F3(1,2,3), 0.49 );
 	ASSERT_EQ(a3.shape()[0],5);
 	ASSERT_EQ(a3.shape()[1],9);
 	ASSERT_EQ(a3.shape()[2],13);		
@@ -67,10 +67,10 @@ TEST(VoxelArray,io){
 	std::mt19937 rng((unsigned int)time(0));
 	std::uniform_real_distribution<> uniform;
 
-	VoxelArray<3,double> a(-6,7,1.6345);
+	VoxelArray<3,double,double> a(-6,7,1.6345);
 	for(size_t i = 0; i < a.num_elements(); ++i) a.data()[i] = uniform(rng);
 
-	VoxelArray<3,double> b(-6,7,1.6354);
+	VoxelArray<3,double,double> b(-6,7,1.6354);
 	ASSERT_NE( a, b );
 	b = a;
 	ASSERT_EQ( a, b );
@@ -84,7 +84,7 @@ TEST(VoxelArray,io){
 	std::ostringstream oss;
 	a.save( oss );
 	std::istringstream iss(oss.str());
-	VoxelArray<3,double> save_read_a;
+	VoxelArray<3,double,double> save_read_a;
 	save_read_a.load( iss );
 
 	ASSERT_TRUE( a == save_read_a );

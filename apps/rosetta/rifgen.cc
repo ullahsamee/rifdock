@@ -40,6 +40,7 @@ remove some or all modifications to residues, and/or remap res numbers? fix hbon
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/rosetta_field.hh>
 	#include <riflib/util.hh>
+	#include <riflib/util_complex.hh>
 	#include <riflib/rotamer_energy_tables.hh>
 	#include <riflib/RifFactory.hh>
 	// #include <riflib/rif/RifGenerator.hh>

@@ -7,6 +7,20 @@
 
 namespace scheme { namespace numeric {
 
+// This returns a random, un-normalized vector from a spherical distribution
+template<class T>
+void
+rand_vector_sphere(
+	std::mt19937 & rng,
+	T & vec
+){
+	std::normal_distribution<> rnorm;
+
+	vec[0] = rnorm(rng);
+	vec[1] = rnorm(rng);
+	vec[2] = rnorm(rng);
+}
+
 
 template<class T>
 void

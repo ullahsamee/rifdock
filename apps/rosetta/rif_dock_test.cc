@@ -35,6 +35,7 @@
 	#include <devel/init.hh>
 	// #include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
+	#include <riflib/util_complex.hh>
 
 	// #include <numeric/alignment/QCP_Kernel.hh>
 	#include <parallel/algorithm>
@@ -74,6 +75,7 @@
 	#include <riflib/BurialManager.hh>
 	#include <riflib/UnsatManager.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
+	#include <numeric/random/random_xyz.hh>
 
 
 // Task system
@@ -667,6 +669,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
+
     RifScoreRotamerVsTarget rot_tgt_scorer;
     rot_tgt_scorer.rot_index_p_ = rot_index_p;
     rot_tgt_scorer.target_field_by_atype_ = target_field_by_atype;
@@ -681,6 +684,18 @@ int main(int argc, char *argv[]) {
     rot_tgt_scorer.grid_scorer_ = grid_scorer;
     rot_tgt_scorer.soft_grid_energies_ = opt.soft_rosetta_grid_energies;
 #endif
+
+    shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+    prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
+
+    rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
+    rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
+
+
+
+
+/// Prepare DonorAcceptorCaches
+
 
 
 
@@ -937,6 +952,7 @@ int main(int argc, char *argv[]) {
                 rso_config.requirements = opt.requirements;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
+            	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
 
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
             	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {
@@ -1039,7 +1055,6 @@ int main(int argc, char *argv[]) {
 
 				director = make_shared<RifDockDirector>(director_list);
 			}
-
 
 
 			std::vector< ScenePtr > scene_pt( omp_max_threads_1() );

@@ -16,7 +16,7 @@ namespace actor {
 		///@brief Position type, leave out to make actor "Fixed"
 		// typedef _Position Position;
 		typedef _Float Float;
-		typedef objective::voxel::VoxelArray<3,Float> VoxelArray;
+		typedef objective::voxel::VoxelArray<3,Float,Float> VoxelArray;
 		// typedef std::vector<std::vector<shared_ptr< VoxelArray > > > Voxels;
 		typedef std::vector<std::vector< VoxelArray * > > Voxels;
 
