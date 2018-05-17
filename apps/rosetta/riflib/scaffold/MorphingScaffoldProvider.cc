@@ -11,6 +11,7 @@
 #include <riflib/types.hh>
 #include <riflib/scaffold/MorphingScaffoldProvider.hh>
 #include <riflib/scaffold/util.hh>
+#include <riflib/util_complex.hh>
 #include <ObjexxFCL/format.hh>
 #include <riflib/HSearchConstraints.hh>
 #include <core/import_pose/import_pose.hh>

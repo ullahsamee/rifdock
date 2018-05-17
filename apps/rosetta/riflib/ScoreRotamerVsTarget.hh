@@ -13,6 +13,8 @@
 #define INCLUDED_riflib_ScoreRotamerVsTarget_hh
 
 #include <riflib/util.hh>
+#include <scheme/numeric/util.hh>
+#include <scheme/chemical/HBondRay.hh>
 #include <riflib/DonorAcceptorCache.hh>
 
 #ifdef USEGRIDSCORE
@@ -53,8 +55,9 @@ float score_hbond_rays(
     float non_directional_fraction = 0.0, // 0.0 - 1.0,
     float long_hbond_fudge_distance = 0.0
 ){
+    using ::scheme::numeric::sqr;
 
-    const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*ORBLEN;
+    const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*::scheme::chemical::ORBLEN;
     float diff = ( (don.horb_cen-accep_O).norm() - 2.00 );
     diff = diff < 0 ? diff*1.5 : std::max<float>( 0.0, diff - long_hbond_fudge_distance ); // increase dis pen if too close
     float const max_diff = 0.8;

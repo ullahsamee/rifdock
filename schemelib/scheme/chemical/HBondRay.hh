@@ -5,6 +5,8 @@
 
 namespace scheme { namespace chemical {
 
+const float ORBLEN = 0.61; // don't change this number!!!!!!!!!!
+
 struct HBondRay {
 	::Eigen::Vector3f horb_cen, direction;
 	int32_t id=1, group=-1;

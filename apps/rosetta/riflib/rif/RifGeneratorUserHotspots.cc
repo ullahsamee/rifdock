@@ -32,6 +32,7 @@
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
 	#include <riflib/util.hh>
+    #include <riflib/util_complex.hh>
 	#include <scheme/numeric/rand_xform.hh>
 	#include <scheme/actor/Atom.hh>
 	#include <scheme/actor/BackboneActor.hh>
@@ -176,11 +177,6 @@ namespace rif {
 			}
 			std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
 
-            /// Prepare DonorAcceptorCaches
-                                 // ideal length - orbital position + max extension + extra extension + resl + safety
-            const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + opts.long_hbond_fudge_distance + 1.0 + 0.3 );
-            shared_ptr<DonorAcceptorCache> target_donor_cache = make_shared<DonorAcceptorCache>( target_donors, max_hbond_interaction );
-            shared_ptr<DonorAcceptorCache> target_acceptor_cache = make_shared<DonorAcceptorCache>( target_acceptors, max_hbond_interaction );
 
 			{
 				rot_tgt_scorer.rot_index_p_ = params->rot_index_p;
@@ -196,6 +192,9 @@ namespace rif {
 				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
 #endif
+                shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+                prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
+
                 rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
                 rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 			}

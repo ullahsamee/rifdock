@@ -135,9 +135,9 @@ struct DonorAcceptorCache {
         std::vector<std::vector<Sat>> early_map;
 
         size_t elements = shape_[0] * shape_[1] * shape_[2];
-        std::cout << shape_ << std::endl;
-        std::cout << floats_to_index( ub_ ) << std::endl;
-        std::cout << elements << " " << index_to_map_index( floats_to_index( ub_ ) ) << std::endl;
+        // std::cout << shape_ << std::endl;
+        // std::cout << floats_to_index( ub_ ) << std::endl;
+        // std::cout << elements << " " << index_to_map_index( floats_to_index( ub_ ) ) << std::endl;
         runtime_assert( elements - 1 == index_to_map_index( floats_to_index( ub_ ) ) );
 
         early_map.resize(elements);

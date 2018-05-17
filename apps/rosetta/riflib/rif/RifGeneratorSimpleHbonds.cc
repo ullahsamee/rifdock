@@ -33,6 +33,7 @@
 	#include <riflib/HBondedPairGenerator.hh>
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
+    #include <riflib/util_complex.hh>
 	#include <riflib/rif/make_hbond_geometries.hh>
 	#include <riflib/ScoreRotamerVsTarget.hh>
 
@@ -492,13 +493,6 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 		std::cout << "n_sat_groups = " << n_sat_groups << std::endl;
 
 
-    /// Prepare DonorAcceptorCaches
-                                 // ideal length - orbital position + max extension + extra extension + resl + safety
-        const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + opts.long_hbond_fudge_distance + 1.0 + 0.3 );
-        shared_ptr<DonorAcceptorCache> target_donor_cache = make_shared<DonorAcceptorCache>( target_donors, max_hbond_interaction );
-        shared_ptr<DonorAcceptorCache> target_acceptor_cache = make_shared<DonorAcceptorCache>( target_acceptors, max_hbond_interaction );
-
-
 	// target.dump_pdb("test.pdb");
 	// utility_exit_with_message("DEBUG EXTRA ACCEPTORS!!!");
 		devel::scheme::ScoreRotamerVsTarget<
@@ -518,6 +512,9 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
 			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
 #endif
+            shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+            prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
+
             rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
             rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
 

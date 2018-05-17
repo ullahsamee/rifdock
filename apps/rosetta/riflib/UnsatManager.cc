@@ -293,7 +293,7 @@ UnsatManager::set_target_donors_acceptors(
             numeric::xyzVector<core::Real> xyz = target.residue(atom_pair.first).xyz(atom_pair.second);
             xyz_[0] = xyz[0]; xyz_[1] = xyz[1]; xyz_[2] = xyz[2];
 
-            float dist = ( xyz_ - ( ray.horb_cen - ray.direction*ORBLEN ) ).norm();
+            float dist = ( xyz_ - ( ray.horb_cen - ray.direction*::scheme::chemical::ORBLEN ) ).norm();
 
             if (dist < 0.1) break;
             so_far++;
