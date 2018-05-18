@@ -88,6 +88,15 @@ struct RifFactory
 	RifFactoryConfig const &
 	config() const { return config_; }
 
+// DELETE THIS!@!!!!!!!!
+	virtual void
+    set_sasa_params(
+        std::vector<ObjectivePtr> & objectives,
+        shared_ptr<BurialVoxelArray> sasa_grid,
+        float sasa_threshold,
+        float sasa_multiplier
+    ) const = 0;
+
 	// This should not be in here. Only here because of the typedefs
 	virtual std::vector<shared_ptr<UnsatManager>> &
 	get_unsatperthread( ObjectivePtr & objective ) const = 0;
@@ -117,6 +126,9 @@ struct RifSceneObjectiveConfig
     std::vector< int > requirements;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
+    shared_ptr<BurialVoxelArray> sasa_grid;
+    float sasa_threshold;
+    float sasa_multiplier;
 
 };
 

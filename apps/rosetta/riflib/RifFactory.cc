@@ -1163,6 +1163,7 @@ std::string get_rif_type_from_file( std::string fname )
         VoxelArrayPtr target_proximity_test_grid_ = nullptr;
         RifScoreRotamerVsTarget rot_tgt_scorer_;
         bool initialized_ = false;
+        bool packing_ = false;
 
         ScoreBBHBondActorVsRIF() {}
 
@@ -1173,18 +1174,20 @@ std::string get_rif_type_from_file( std::string fname )
 
         void init(
             RifScoreRotamerVsTarget const & rot_tgt_scorer,
-            float scaff_bb_hbond_weight
+            float scaff_bb_hbond_weight,
+            bool packing
         ){
             rot_tgt_scorer_ = rot_tgt_scorer;   // This must make a copy!!!!!!
             rot_tgt_scorer_.hbond_weight_ = scaff_bb_hbond_weight;
             initialized_ = true;
+            packing_ = packing;
         }
 
         template<class Config>
         Result operator()( RIFAnchor const &, BBHBondActor const & bbh, Scratch & scratch, Config const& c ) const
         {
 
-            if ( ! initialized_ ) return 0.0;
+            if ( ! initialized_ ) return 0.0; // this is to block lower resolutions
 
             // if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bbh.hbond_rays().front().horb_cen ) == 0.0 ){
             //     return 0.0;
@@ -1192,17 +1195,45 @@ std::string get_rif_type_from_file( std::string fname )
 
             float score = 0;
 
-            int sat1 = -1, sat2 = -1, hbcount = 0;
+            if ( packing_ ) {
+                int sat1 = -1, sat2 = -1, hbcount = 0;
 
-            if ( bbh.is_donor() ) {
-                score += rot_tgt_scorer_.score_donor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
+                if ( bbh.is_donor() ) {
+                    score += rot_tgt_scorer_.score_donor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
+                } else {
+                    score += rot_tgt_scorer_.score_acceptor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
+                }
+
+                if ( scratch.is_satisfied_.size() > 0 ) {
+                    if ( sat1 > -1 ) scratch.is_satisfied_.at(sat1) = true;
+                    if ( sat2 > -1 ) scratch.is_satisfied_.at(sat2) = true;
+                }
             } else {
-                score += rot_tgt_scorer_.score_acceptor_rays_v_target( bbh.hbond_rays(), sat1, sat2, hbcount );
-            }
 
-            if ( scratch.is_satisfied_.size() > 0 ) {
-                if ( sat1 > -1 ) scratch.is_satisfied_.at(sat1) = true;
-                if ( sat2 > -1 ) scratch.is_satisfied_.at(sat2) = true;
+                typedef typename DonorAcceptorCache::Sat Sat;
+                bool any = false;
+
+                // When in doubt on which is which here, just check the callpath in rot_tgt_scorer_
+                shared_ptr<DonorAcceptorCache> const & cache = bbh.is_donor() ? rot_tgt_scorer_.target_acceptor_cache_ : rot_tgt_scorer_.target_donor_cache_;
+                Sat adder = bbh.is_donor() ? rot_tgt_scorer_.target_donors_.size() : 0  ;
+
+                runtime_assert(cache);
+                Eigen::Vector3f super_far_away(1e5, 1e5, 1e5);
+
+                for ( auto const & ray : bbh.hbond_rays() ) {
+                    std::vector<Sat>::const_iterator sats_iter =  rot_tgt_scorer_.target_acceptor_cache_->at( ray.horb_cen );
+
+                    Sat don_or_acc = 0;
+                    while ( (don_or_acc = *(sats_iter++)) != DonorAcceptorCache::CACHE_MAX_SAT ) {
+  
+                        don_or_acc += adder;
+                        scratch.is_satisfied_.at(don_or_acc ) = true;
+                        any = true;
+                    }
+
+                } 
+                score = any ? -rot_tgt_scorer_.hbond_weight_ : 0;
+
             }
 
             return score;
@@ -1211,6 +1242,83 @@ std::string get_rif_type_from_file( std::string fname )
     };
     template< class B, class V >
     std::ostream & operator<<( std::ostream & out, ScoreBBHBondActorVsRIF<B,V> const& si ){ return out << si.name(); }
+
+
+
+
+//////////////////////////////////// ScoreBBSasaActorVsRIF ////////////////////////////////////////////
+
+
+    struct ScoreBBSasaActorvsRIFResult {
+        float val_;
+        ScoreBBSasaActorvsRIFResult() : val_(0) {}
+        ScoreBBSasaActorvsRIFResult( float f ) : val_(f) {}
+        operator float() const { return val_; }
+        void operator=( float f ) { val_ = f; }
+        void operator+=( float f ) { val_ += f; }
+        bool operator<( ScoreBBSasaActorvsRIFResult const & other ) const { return val_ < other.val_; }
+    };
+
+    template< class BBSasaActor, class VoxelArrayPtr >
+    struct ScoreBBSasaActorVsRIF
+    {
+
+        // typedef ScoreBBSasavsRIFScratch Scratch;      
+        typedef ScoreBBSasaActorvsRIFResult Result;
+        typedef std::pair<RIFAnchor,BBSasaActor> Interaction;
+
+        shared_ptr<BurialVoxelArray> sasa_grid_;
+        float threshold_;
+        float multiplier_;
+        bool initialized_ = false;
+
+        ScoreBBSasaActorVsRIF() {}
+
+         void clear() {
+         }
+
+        static std::string name(){ return "ScoreBBSasaActorVsRIF"; }
+
+        void init(
+            shared_ptr<BurialVoxelArray> const & sasa_grid,
+            float threshold,
+            float multiplier
+        ){
+            sasa_grid_ = sasa_grid;
+            threshold_ = threshold;
+            multiplier_ = multiplier;
+            initialized_ = true;
+        }
+
+        template<class Config>
+        Result operator()( RIFAnchor const &, BBSasaActor const & bbs, Config const& c ) const
+        {
+            if ( ! initialized_ ) return 0;     // this is to block lower resolutions
+
+            float score = 0;
+
+            for ( Eigen::Vector3f const & pt : bbs.sasa_points() ) {
+
+                float grid_score = sasa_grid_->at( pt );
+
+                if (threshold_ >= 0) {
+                    if ( grid_score > threshold_ ) {
+                        score += 1;
+                    }
+                } else {
+                    score += grid_score;
+                }
+
+            }
+
+            score *= multiplier_;
+
+            return score;
+        }
+
+    };
+    template< class B, class V >
+    std::ostream & operator<<( std::ostream & out, ScoreBBSasaActorVsRIF<B,V> const& si ){ return out << si.name(); }
 
 
 
@@ -1234,11 +1342,18 @@ struct RifFactoryImpl :
             VoxelArrayPtr
         > MyScoreBBHBondActorRIF;
 
+    typedef ScoreBBSasaActorVsRIF<
+            BBSasaActor,
+            VoxelArrayPtr
+        > MyScoreBBSasaActorRIF;
+
+
 	typedef ::scheme::objective::ObjectiveFunction<
-			boost::mpl::vector<
+			boost::mpl::vector<          // Do not change this order, only append
 				MyScoreBBActorRIF,
 				MyClashScore,
-                MyScoreBBHBondActorRIF
+                MyScoreBBHBondActorRIF,
+                MyScoreBBSasaActorRIF   
 			>,
 			int // Config type, just resl
 		> MyRIFObjective;
@@ -1437,14 +1552,25 @@ struct RifFactoryImpl :
             dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
                                     .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
             dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
-                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight );
+                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight, false );
         }
         if ( packing_objectives.back() ) {
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
                                     .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
-                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight );
+                                    .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight, true );
         }
+
+        // Only want to do BBSasa at highest resl otherwise they are meaningless
+        if ( objectives.size() ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBSasaActorRIF>()
+                                    .init( config.sasa_grid, config.sasa_threshold, config.sasa_multiplier );
+        }
+        if ( packing_objectives.back() ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBSasaActorRIF>()
+                                    .init( config.sasa_grid, config.sasa_threshold, config.sasa_multiplier );
+        }
+
 
 
         if ( config.burial_manager ) {
@@ -1461,6 +1587,20 @@ struct RifFactoryImpl :
 		return true;
 
 	}
+
+// DELETE THIS, ONLY USED WHEN TRAINING SASA
+    void
+    set_sasa_params(
+        std::vector<ObjectivePtr> & objectives,
+        shared_ptr<BurialVoxelArray> sasa_grid,
+        float sasa_threshold,
+        float sasa_multiplier
+    ) const {
+        if ( objectives.size() ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBSasaActorRIF>()
+                                    .init( sasa_grid, sasa_threshold, sasa_multiplier );
+        }
+    }
 
 
     std::vector<shared_ptr<UnsatManager>> &

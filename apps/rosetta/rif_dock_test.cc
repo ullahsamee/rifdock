@@ -954,6 +954,10 @@ int main(int argc, char *argv[]) {
             	rso_config.unsat_manager = unsat_manager;
             	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
 
+            	rso_config.sasa_grid = nullptr;
+            	rso_config.sasa_threshold = 0;
+            	rso_config.sasa_multiplier = 0;
+
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
             	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {
             		utility_exit_with_message("New error message to fix an old bug!!! You can fix this error!!!"

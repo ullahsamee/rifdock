@@ -79,6 +79,9 @@ apply_direct_segment_lookup_mover(
 std::vector<BBHBondActor>
 get_bbhbond_actors( core::pose::Pose const & pose );
 
+std::vector<BBSasaActor>
+get_bbsasa_actors( core::pose::Pose const & pose );
+
 void
 get_default_scaffold_res( core::pose::Pose const & pose,
     utility::vector1<core::Size> & scaffold_res);

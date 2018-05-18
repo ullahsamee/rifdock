@@ -224,6 +224,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, burial_scaffold_neighbor_cut )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_burial )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, force_calculate_sasa )
+
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
@@ -448,6 +450,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::burial_scaffold_neighbor_cut, "Num neighbors to be scaffold in target burial grid.", 17 );
             NEW_OPT(  rif_dock::require_burial, "Require at least this many polar atoms be buried", 0 );
 
+            NEW_OPT(  rif_dock::force_calculate_sasa, "Calculate Sasa even if it won't be used", false );
+
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
 
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
@@ -660,7 +664,9 @@ struct RifDockOpt
 
     std::string buried_list                          ;
     
-    std::vector<int> requirements;
+    std::vector<int> requirements                    ;
+
+    bool        need_to_calculate_sasa               ;
 
 
     void init_from_cli();
@@ -899,6 +905,9 @@ struct RifDockOpt
             std::cout << "bad rif_dock::symmetry_axis option" << std::endl;
             std::exit(-1);
         }
+
+
+        need_to_calculate_sasa = option[rif_dock::force_calculate_sasa]();
 
 
 // Brian
