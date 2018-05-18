@@ -551,7 +551,7 @@ prepare_donor_acceptor_cache(
 ) {
 	if (target_donors.size() == 0 && target_acceptors.size() == 0) return;
 
-	float safe = 0.1;
+	float safe = 1.1;
 	while ( safe < 5.0f ) {
 		std::cout << boost::str(boost::format("Building DonorAcceptorCache with %.1f safe distance")%safe) << std::endl;
 		if ( inner_prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, safe, target_donor_cache, target_acceptor_cache ) ) {

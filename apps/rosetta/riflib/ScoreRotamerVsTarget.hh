@@ -26,6 +26,13 @@
 namespace devel {
 namespace scheme {
 
+
+inline
+float
+dot( Eigen::Vector3f const & v1, Eigen::Vector3f const & v2 ) {
+    return v1[0]*v2[0] + v1[1]+v2[1] + v1[2]*v2[2];
+}
+
 // on the donor:
 // horb_cen = H xyz
 // horb_cen - direction = O/N xyz
@@ -48,38 +55,45 @@ namespace scheme {
 //   Doing this and either averaging or multiplying the dots gives r=0.88
 //   Squaring the H term gives r=0.93
 
+// This code is *INCREDIBLY* hot. Be very careful here
 template< class HBondRay >
 float score_hbond_rays(
     HBondRay const & don,
     HBondRay const & acc,
-    float non_directional_fraction = 0.0, // 0.0 - 1.0,
+    float non_directional_fraction = 0.0, // 0.0 - 1.0, // this is disabled by a comment below
     float long_hbond_fudge_distance = 0.0
 ){
     using ::scheme::numeric::sqr;
 
     const Eigen::Vector3f accep_O = acc.horb_cen - acc.direction*::scheme::chemical::ORBLEN;
+
+
+    const Eigen::Vector3f h_to_a = ( accep_O - don.horb_cen ).normalized();
+    // float const h_dirscore = don.direction.dot( h_to_a );
+    float const h_dirscore = dot( don.direction, h_to_a );
+    if ( h_dirscore <= 0 ) return 0;
+
+    // float const a_dirscore = acc.direction.dot( h_to_a ) * -1.0;
+    float const a_dirscore = dot( acc.direction, h_to_a ) * -1.0;
+    if ( a_dirscore <= 0 ) return 0;
+
+
     float diff = ( (don.horb_cen-accep_O).norm() - 2.00 );
     diff = diff < 0 ? diff*1.5 : std::max<float>( 0.0, diff - long_hbond_fudge_distance ); // increase dis pen if too close
     float const max_diff = 0.8;
-    diff = diff >  max_diff ?  max_diff : diff;
-    diff = diff < -max_diff ? -max_diff : diff;
-    // if( diff > max_diff ) return 0.0;
+    if ( diff >= max_diff || diff <= -max_diff ) return 0;
+
     // sigmoid -like shape on distance score
     float score = sqr( 1.0 - sqr( diff/max_diff ) ) * -1.0;
     assert( score <= 0.0 );
 
-    const Eigen::Vector3f h_to_a = ( accep_O - don.horb_cen ).normalized();
-    float const h_dirscore = std::max<float>( 0, don.direction.dot( h_to_a ) );
-    float const a_dirscore = std::max<float>( 0, acc.direction.dot( h_to_a ) * -1.0 );
-
     float dirscore = h_dirscore * h_dirscore * a_dirscore;
 
-    // float dirscore = -don.direction.dot( acc.direction );
-    dirscore = dirscore < 0 ? 0.0 : dirscore; // is positive
-    float const nds = non_directional_fraction;
-    score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
+// Uncomment this if you want to use non_directional_fraction
+    // float const nds = non_directional_fraction;
+    // score = ( 1.0 - nds )*( score * dirscore ) + nds * score;
 
-    return score;
+    return score * dirscore;
 }
 
 template< class VoxelArrayPtr, class HBondRay, class RotamerIndex >
@@ -214,9 +228,11 @@ struct ScoreRotamerVsTarget {
     float
     score_acceptor_rays_v_target( std::vector<HBondRay> const & acceptor_rays, int & sat1, int & sat2, int & hbcount ) const {
         float hbscore = 0;
+        const size_t target_donors_size = target_donors_.size();
 
-        float used_tgt_donor   [target_donors_   .size()];
-        for( int i = 0; i < target_donors_   .size(); ++i ) used_tgt_donor   [i] = 9e9;
+        // this is faster than std::vector
+        float used_tgt_donor   [target_donors_size];
+        for( int i = 0; i < target_donors_size; ++i ) used_tgt_donor   [i] = 9e9;
 
 
         for( HBondRay const & hr_rot_acc : acceptor_rays ) {
@@ -292,8 +308,11 @@ struct ScoreRotamerVsTarget {
     score_donor_rays_v_target( std::vector<HBondRay> const & donor_rays, int & sat1, int & sat2, int & hbcount ) const {
         float hbscore = 0;
 
-        float used_tgt_acceptor[target_acceptors_.size()];
-        for( int i = 0; i < target_acceptors_.size(); ++i ) used_tgt_acceptor[i] = 9e9;
+        const size_t target_acceptors_size = target_acceptors_.size();
+
+        // This is faster than std::vector
+        float used_tgt_acceptor[target_acceptors_size];
+        for( int i = 0; i < target_acceptors_size; ++i ) used_tgt_acceptor[i] = 9e9;
 
         for( HBondRay const & hr_rot_don : donor_rays ) {
             
