@@ -74,8 +74,8 @@ prepare_donor_acceptor_cache(
     std::vector<HBondRay> const & target_donors,
     std::vector<HBondRay> const & target_acceptors,
     RifScoreRotamerVsTarget const & rot_tgt_scorer,
-    shared_ptr<DonorAcceptorCache> target_donor_cache,
-    shared_ptr<DonorAcceptorCache> target_acceptor_cache
+    shared_ptr<DonorAcceptorCache> & target_donor_cache,
+    shared_ptr<DonorAcceptorCache> & target_acceptor_cache
 );
 
 
