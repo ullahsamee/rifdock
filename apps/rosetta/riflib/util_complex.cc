@@ -528,8 +528,8 @@ inner_prepare_donor_acceptor_cache(
     std::vector<HBondRay> const & target_acceptors,
     RifScoreRotamerVsTarget const & rot_tgt_scorer,
     float safe_distance,
-    shared_ptr<DonorAcceptorCache> target_donor_cache,
-    shared_ptr<DonorAcceptorCache> target_acceptor_cache
+    shared_ptr<DonorAcceptorCache> & target_donor_cache,
+    shared_ptr<DonorAcceptorCache> & target_acceptor_cache
 ) {
 							 // ideal length - orbital position + max extension + extra extension + resl + safety
 	const float max_hbond_interaction = ( 2.00 - 0.61 + 0.8 + rot_tgt_scorer.long_hbond_fudge_distance_ + 1.0 + safe_distance );
@@ -546,8 +546,8 @@ prepare_donor_acceptor_cache(
     std::vector<HBondRay> const & target_donors,
     std::vector<HBondRay> const & target_acceptors,
     RifScoreRotamerVsTarget const & rot_tgt_scorer,
-    shared_ptr<DonorAcceptorCache> target_donor_cache,
-    shared_ptr<DonorAcceptorCache> target_acceptor_cache
+    shared_ptr<DonorAcceptorCache> & target_donor_cache,
+    shared_ptr<DonorAcceptorCache> & target_acceptor_cache
 ) {
 	if (target_donors.size() == 0 && target_acceptors.size() == 0) return;
 
@@ -563,10 +563,4 @@ prepare_donor_acceptor_cache(
 	utility_exit_with_message("Something is horribly wrong. Tell Brian. (bcov@uw.edu)");
 
 }
-
-
-
-}
-}
-
 
