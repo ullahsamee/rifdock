@@ -401,17 +401,19 @@ BurialManager::get_burial_count(
 
     const float scaff_scale = opts_.target_burial_cutoff / opts_.scaffold_burial_cutoff;
 
-    float burial_count = 9e9;
-    for ( int dim = 0; dim < 3; dim++ ) {
-        for ( float dir = -1; dir < 2; dir += 2 ) {
-            work[dim] += dir * 0.0f;
-            const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid, scaff_scale);
-            burial_count = std::min<float>(burial_count, this_burial_count);
-            // if (debug_) std::cout << this_burial_count;
-            // std::cout << work << std::endl;
-            work[dim] -= dir * 1.0f;
-        }
-    }
+    // float burial_count = 9e9;
+    // for ( int dim = 0; dim < 3; dim++ ) {
+    //     for ( float dir = -1; dir < 2; dir += 2 ) {
+    //         work[dim] += dir * 0.0f;
+    //         const float this_burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid, scaff_scale);
+    //         burial_count = std::min<float>(burial_count, this_burial_count);
+    //         // if (debug_) std::cout << this_burial_count;
+    //         // std::cout << work << std::endl;
+    //         work[dim] -= dir * 1.0f;
+    //     }
+    // }
+
+    const float burial_count = burial_lookup( work, target_burial_grid_, scaff_inv_transform, scaff_grid, scaff_scale);
 
     return burial_count;
 
