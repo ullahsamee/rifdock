@@ -1595,7 +1595,7 @@ struct RifFactoryImpl :
         shared_ptr<BurialVoxelArray> sasa_grid,
         float sasa_threshold,
         float sasa_multiplier
-    ) const {
+    ) const override {
         if ( objectives.size() ) {
             dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBSasaActorRIF>()
                                     .init( sasa_grid, sasa_threshold, sasa_multiplier );

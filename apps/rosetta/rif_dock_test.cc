@@ -1004,6 +1004,7 @@ int main(int argc, char *argv[]) {
 			print_header( "setup director based on scaffold and target sizes" ); //////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			shared_ptr<RifDockNestDirector> nest_director;
+
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
 				float body_radius = std::min( test_scaff_radius, rif_radius );
@@ -1109,6 +1110,73 @@ int main(int argc, char *argv[]) {
 			global_set_fa_mode( false, rdd );
     		test_data_cache->setup_onebody_tables( rot_index_p, opt);
 			cout << std::endl;
+
+			float first_threshold = 2;
+
+			for ( float fill_distance = 7.0f; fill_distance <= 11.0f; fill_distance += 0.5f ) {
+
+
+				#ifdef USE_OPENMP
+			    #pragma omp parallel for schedule(dynamic,1)
+			    #endif
+				for ( int threshold_value = first_threshold; threshold_value < 40; threshold_value += 2 ) {
+
+					float use_threshold_value = threshold_value;
+					if ( use_threshold_value <= first_threshold + 0.1f ) {
+						use_threshold_value = -1;
+					}
+
+
+            		// ScenePtr tscene( scene_pt[omp_get_thread_num()] );
+
+					BurialOpts burial_opts;
+					burial_opts.target_method = burial::ALL_ATOMS; //burial::HEAVY_ATOMS;
+					burial_opts.target_distance_cutoff = fill_distance;
+					burial_opts.target_burial_cutoff = 10;
+
+					// std::cout << "burial weights: " << burial_opts.neighbor_count_weights << std::endl;
+
+					float a = 10.0f;
+					Eigen::Vector3f lbz { -rif_radius - a, -rif_radius - a, -rif_radius - a };
+					Eigen::Vector3f ubz { rif_radius + a, rif_radius + a, rif_radius + a };
+
+
+					std::vector<Eigen::Vector3f> points = { lbz, ubz };
+					shared_ptr<BurialManager> man = make_shared<BurialManager>( burial_opts, points, opt.unsat_debug );
+					man->set_target_neighbors( target );
+
+					shared_ptr<BurialVoxelArray> sasa_grid = man->target_burial_grid_;
+
+					#ifdef USE_OPENMP
+		            #pragma omp critical
+		            #endif
+					{
+						rif_factory->set_sasa_params( objectives, sasa_grid, use_threshold_value, SASA_SUBVERT_MULTIPLIER );
+
+						EigenXform x(EigenXform::Identity());
+						x.translation() = test_scaffold_center;
+						director->set_scene( RifDockIndex(), 0, *scene_minimal);
+						scene_minimal->set_position(1,x);
+
+						std::vector<float> sc = objectives.back()->scores(*scene_minimal);
+						cout << "input bounding score "
+						     << F( 7, 3, sc[0]+sc[1]+sc[2]+sc[3] ) << " "
+						     << F( 7, 3, sc[0]       ) << " "
+						     << F( 7, 3, sc[1]       ) << " "
+						     << F( 7, 3, sc[2]       ) << " "
+						     << F( 7, 3, sc[3]       ) << endl;
+
+						std::cout << "DATA: " << fill_distance << " " << threshold_value << " " << sc[3] / SASA_SUBVERT_MULTIPLIER << std::endl;
+					}
+						
+
+
+				}
+
+			}
+
+			continue;
+
 			cout << "scores for scaffold in original position: " << std::endl;
 			{
 				EigenXform x(EigenXform::Identity());
@@ -1119,10 +1187,11 @@ int main(int argc, char *argv[]) {
 					if ( ! resl_load_map.at(i) ) continue;
 					std::vector<float> sc = objectives[i]->scores(*scene_minimal);
 					cout << "input bounding score " << i << " " << F(7,3,RESLS[i]) << " "
-					     << F( 7, 3, sc[0]+sc[1]+sc[2] ) << " "
+					     << F( 7, 3, sc[0]+sc[1]+sc[2]+sc[3] ) << " "
 					     << F( 7, 3, sc[0]       ) << " "
 					     << F( 7, 3, sc[1]       ) << " "
-					     << F( 7, 3, sc[2]       ) << endl;
+					     << F( 7, 3, sc[2]       ) << " "
+					     << F( 7, 3, sc[3]       ) << endl;
 
 				}
 				if ( opt.test_hackpack ) {
