@@ -225,6 +225,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_burial )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, force_calculate_sasa )
+    OPT_1GRP_KEY(  Real        , rif_dock, sasa_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, score_per_1000_sasa_cut )
 
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
@@ -451,6 +453,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::require_burial, "Require at least this many polar atoms be buried", 0 );
 
             NEW_OPT(  rif_dock::force_calculate_sasa, "Calculate Sasa even if it won't be used", false );
+            NEW_OPT(  rif_dock::sasa_cut, "Anything with a sasa below this value is thrown out", 0 );
+            NEW_OPT(  rif_dock::score_per_1000_sasa_cut, "Anything with a score per 1000 sasa units above this value is thrown out", 0 );
 
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
 
@@ -667,6 +671,8 @@ struct RifDockOpt
     std::vector<int> requirements                    ;
 
     bool        need_to_calculate_sasa               ;
+    float       sasa_cut                             ;
+    float       score_per_1000_sasa_cut              ;
 
 
     void init_from_cli();
@@ -868,6 +874,9 @@ struct RifDockOpt
         burial_scaffold_neighbor_cut            = option[rif_dock::burial_scaffold_neighbor_cut         ]();
         require_burial                          = option[rif_dock::require_burial                       ]();
 
+        sasa_cut                                = option[rif_dock::sasa_cut                             ]();
+        score_per_1000_sasa_cut                 = option[rif_dock::score_per_1000_sasa_cut              ]();
+
         buried_list                             = option[rif_dock::buried_list                          ]();
 
 
@@ -907,7 +916,7 @@ struct RifDockOpt
         }
 
 
-        need_to_calculate_sasa = option[rif_dock::force_calculate_sasa]();
+        need_to_calculate_sasa = option[rif_dock::force_calculate_sasa]() || sasa_cut > 0 || score_per_1000_sasa_cut < 0;
 
 
 // Brian

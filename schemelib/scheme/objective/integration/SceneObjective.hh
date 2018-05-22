@@ -17,9 +17,9 @@ struct SceneOjbective {
 	typedef ::scheme::kinematics::SceneBase< Position, Index > SceneBase;
 	typedef shared_ptr<SceneBase> SceneP;
 	virtual float score( SceneBase const & s ) const = 0;
-	virtual void  score( SceneBase const & s , std::vector<float> & vec ) const = 0;
+	virtual float  score( SceneBase const & s , std::vector<float> & vec ) const = 0;
 	virtual float score_with_rotamers( SceneBase const & s, Rotamers & rots ) const = 0;
-	virtual void  score_with_rotamers( SceneBase const & s , std::vector<float> & vec, Rotamers & rots ) const = 0;
+	virtual float  score_with_rotamers( SceneBase const & s , std::vector<float> & vec, Rotamers & rots ) const = 0;
 	virtual bool is_compatible( SceneBase const & s ) const = 0;
 	virtual bool provides_rotamers() const = 0;
 	std::vector<float> scores( SceneBase const & s ) const { std::vector<float> tmp; score(s,tmp); return tmp; }
@@ -56,17 +56,19 @@ struct SceneObjectiveParametric :
 		return results.sum();
 	}
 	virtual
-	void
+	float
 	score( SceneBase const & s, std::vector<float> & vec ) const
 	{
 		// ::devel::scheme::print_eigenxform( s.position(0) );
 		// ::devel::scheme::print_eigenxform( s.position(1) );
 		Scene const & scene = static_cast<Scene const &>( s );
-		objective( scene, config ).vector( vec );
+		typename Objective::Results results = objective( scene, config );
+		results.vector( vec );
+		return results.sum();
 	}
 
 	virtual
-	void
+	float
 	score_with_rotamers(
 		SceneBase const & s ,
 		std::vector<float> & vec,
@@ -77,6 +79,7 @@ struct SceneObjectiveParametric :
 		typename Objective::Results results = objective( scene, config );
 		results.vector(vec);
 		fill_rotamers<_RotamerMethod>( results, rots );
+		return results.sum();
 	}
 
 	template< class RotMeth >

@@ -138,6 +138,9 @@ OutputResultsTask::return_rif_dock_results(
         oss << " buried:" << I(4,buried);
         oss << " unsats:" << I(4, unsats);
         }
+        if ( rdd.opt.need_to_calculate_sasa ) {
+        oss << " sasa:" << I(5, selected_result.sasa);
+        }
         oss << " " << pdboutfile
             << std::endl;
         std::cout << oss.str();

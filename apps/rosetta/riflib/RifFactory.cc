@@ -1301,14 +1301,10 @@ std::string get_rif_type_from_file( std::string fname )
 
                 float grid_score = sasa_grid_->at( pt );
 
-                if (threshold_ >= 0) {
-                    if ( grid_score > threshold_ ) {
-                        score += 1;
-                    }
-                } else {
-                    score += grid_score;
+                if ( grid_score > threshold_ ) {
+                    score += 1;
                 }
-
+                
             }
 
             score *= multiplier_;

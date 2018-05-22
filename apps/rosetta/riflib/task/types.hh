@@ -50,6 +50,7 @@ struct tmplSearchPoint {
     typedef _DirectorBigIndex DirectorBigIndex;
     typedef tmplSearchPoint<DirectorBigIndex> This;
     float score;
+    uint64_t sasa;
     DirectorBigIndex index;
     tmplSearchPoint() : score(9e9) {}
     tmplSearchPoint(DirectorBigIndex i) : score(9e9), index(i) {}
@@ -59,11 +60,13 @@ struct tmplSearchPoint {
     This& operator=( tmplSearchPointWithRots<DirectorBigIndex> const & ot ) {
         score = ot.score;
         index = ot.index;
+        sasa = ot.sasa;
         return *this;
     }
     This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
         score = ot.score;
         index = ot.index;
+        sasa = ot.sasa;
         return *this;
     }
 };
@@ -75,6 +78,7 @@ struct tmplSearchPointWithRots {
     typedef _DirectorBigIndex DirectorBigIndex;
     typedef tmplSearchPointWithRots<DirectorBigIndex> This;
     float score;
+    uint64_t sasa;
     uint32_t prepack_rank;
     DirectorBigIndex index;
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
@@ -92,6 +96,7 @@ struct tmplSearchPointWithRots {
     This& operator=( tmplSearchPoint<DirectorBigIndex> const & ot ) {
         score = ot.score;
         index = ot.index;
+        sasa = ot.sasa;
         return *this;
     }
     This& operator=( tmplRifDockResult<DirectorBigIndex> const & ot ) {
@@ -100,6 +105,7 @@ struct tmplSearchPointWithRots {
         index = ot.index;
         rotamers_ = ot.rotamers_;
         pose_ = ot.pose_;
+        sasa = ot.sasa;
         return *this;
     }
 };
@@ -110,6 +116,7 @@ struct tmplRifDockResult {
     typedef tmplRifDockResult<DirectorBigIndex> This;
     float dist0, nopackscore, rifscore, stericscore;
     float score; // formerly packscore
+    uint64_t sasa;
     uint64_t isamp;
     DirectorBigIndex index; // formerly index
     uint32_t prepack_rank;
@@ -123,6 +130,7 @@ struct tmplRifDockResult {
     This& operator=( tmplSearchPoint<DirectorBigIndex> const & ot ) {
         score = ot.score;
         index = ot.index;
+        sasa = ot.sasa;
         return *this;
     }
     This& operator=( tmplSearchPointWithRots<DirectorBigIndex> const & ot ) {
@@ -131,10 +139,31 @@ struct tmplRifDockResult {
         index = ot.index;
         rotamers_ = ot.rotamers_;
         pose_ = ot.pose_;
+        sasa = ot.sasa;
         return *this;
     }
 };
 
+struct SasaComparator
+{
+
+    template <typename AnyPoint>
+    inline bool operator()(AnyPoint const & lhs, AnyPoint const & rhs)
+    {
+      return lhs.sasa > rhs.sasa;
+    }
+};
+
+
+struct ScorePer1000SasaComparator
+{
+
+    template <typename AnyPoint>
+    inline bool operator()(AnyPoint const & lhs, AnyPoint const & rhs)
+    {
+      return lhs.score / lhs.sasa < rhs.score / rhs.sasa;
+    }
+};
 
 
 

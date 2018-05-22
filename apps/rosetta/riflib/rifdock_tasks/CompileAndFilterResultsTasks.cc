@@ -98,7 +98,9 @@ awful_compile_output_helper_(
     ScenePtr scene_minimal( scene_pt[omp_get_thread_num()] );
     director->set_scene( sp.index, director_resl, *scene_minimal );
     std::vector<float> sc = objective->scores(*scene_minimal);
-    float const nopackscore = sc[0]+sc[1]; //result.sum();
+    float _nopackscore = 0;
+    for ( float f : sc ) _nopackscore += f;
+    float const nopackscore = _nopackscore; //result.sum();
     float const rifscore = sc[0]; //result.template get<MyScoreBBActorRIF>();
     float const stericscore = sc[1]; //result.template get<MyClashScore>();
 
@@ -111,16 +113,17 @@ awful_compile_output_helper_(
     }
 
     RifDockResult r; // float dist0, packscore, nopackscore, rifscore, stericscore;
+    // r.prepack_rank = sp.prepack_rank;
+    // r.index = sp.index;
+    // r.score = sp.score;
+    // r.pose_ = sp.pose_;
+    r = sp;    // do it like this so we don't have to manually add every new term
     r.isamp = isamp;
-    r.prepack_rank = sp.prepack_rank;
-    r.index = sp.index;
-    r.score = sp.score;
     r.nopackscore = nopackscore;
     r.rifscore = rifscore;
     r.stericscore = stericscore;
     r.dist0 = dist0;
     r.cluster_score = 0.0;
-    r.pose_ = sp.pose_;
     allresults_pt.at( omp_get_thread_num() ).push_back( r ); // recorded w/o rotamers here
 
     bool force_selected = ( dist0 < nclosethresh && ++nclose < nclosemax ); // not thread-safe... is this important?
