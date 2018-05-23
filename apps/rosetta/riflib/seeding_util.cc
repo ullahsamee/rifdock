@@ -48,7 +48,9 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
     if( opt.seeding_fnames.size() ){
 
         std::string seeding_fname = "";
-        if( opt.seeding_fnames.size() == opt.scaffold_fnames.size() ) {
+        if ( opt.seeding_fnames.size() == 1 ) {
+            seeding_fname = opt.seeding_fnames.front();
+        } else if( opt.seeding_fnames.size() == opt.scaffold_fnames.size() ) {
             seeding_fname = opt.seeding_fnames.at(iscaff);
         } else {
             utility_exit_with_message( "-seeding_files list not same length as -scaffolds list" );

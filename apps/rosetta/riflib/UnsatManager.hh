@@ -236,7 +236,7 @@ struct UnsatManager {
     ) const;
 
     void
-    print_buried_unsats( std::vector<float> const & unsat_penalties) const;
+    print_buried_unsats( std::vector<float> const & unsat_penalties, int scaff_size=-1) const;
 
     void
     print_unsats_help( std::vector<float> const & unsat_penalties) const;

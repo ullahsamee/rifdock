@@ -57,6 +57,8 @@ struct BurialOpts {
     float scaffold_burial_cutoff = 17.0;
 
     float burial_grid_spacing = 0.5f;
+
+    std::set<int> skip_sasa_for_res;
 };
 
 typedef ::scheme::objective::voxel::VoxelArray< 3, float, float > BurialVoxelArray;
@@ -127,13 +129,18 @@ struct BurialManager {
 
     void
     dump_burial_grid( 
-    std::string const & fname,  
-    EigenXform const & scaff_transform, 
-    shared_ptr<BurialVoxelArray> const & scaff_grid 
-);
+        std::string const & fname,  
+        EigenXform const & scaff_transform, 
+        shared_ptr<BurialVoxelArray> const & scaff_grid 
+    );
 
     shared_ptr<BurialVoxelArray>
-    generate_burial_grid( core::pose::Pose const & pose, burial::BurialMethod method, float distance_cut ) const;
+    generate_burial_grid(
+        core::pose::Pose const & pose,
+        burial::BurialMethod method,
+        float distance_cut,
+        std::set<int> const & skip_sasa_for_res
+    ) const;
 
     void
     unbury_heavy_atom( int heavy_atom_no );

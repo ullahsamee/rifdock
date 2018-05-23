@@ -101,6 +101,7 @@ struct ScaffoldDataCache {
 
 // Items that don't belong here but nontheless are here
     bool make_bbhbond_actors;                                                  // needed in make_conformation_from_data_cache
+    bool make_bbsasa_actors;                                                   // needed in make_conformation_from_data_cache
 
 
 
@@ -256,6 +257,7 @@ struct ScaffoldDataCache {
         }
 
         make_bbhbond_actors = opt.scaff_bb_hbond_weight > 0;
+        make_bbsasa_actors = opt.need_to_calculate_sasa;
 
         std::cout << "scaffold selected region rg: " << scaff_redundancy_filter_rg << ", radius: " << scaff_radius << std::endl;
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;

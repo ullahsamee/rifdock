@@ -105,6 +105,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, only_score_input_pos )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -224,6 +225,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, burial_scaffold_neighbor_cut )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_burial )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, force_calculate_sasa )
+    OPT_1GRP_KEY(  Real        , rif_dock, sasa_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, score_per_1000_sasa_cut )
+    OPT_1GRP_KEY(  String      , rif_dock, skip_sasa_for_res )
+
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
@@ -329,6 +335,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+            NEW_OPT(  rif_dock::only_score_input_pos, "Dont' actually run the protocol, just score the input", false );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -448,6 +455,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::burial_scaffold_neighbor_cut, "Num neighbors to be scaffold in target burial grid.", 17 );
             NEW_OPT(  rif_dock::require_burial, "Require at least this many polar atoms be buried", 0 );
 
+            NEW_OPT(  rif_dock::force_calculate_sasa, "Calculate Sasa even if it won't be used", false );
+            NEW_OPT(  rif_dock::sasa_cut, "Anything with a sasa below this value is thrown out", 0 );
+            NEW_OPT(  rif_dock::score_per_1000_sasa_cut, "Anything with a score per 1000 sasa units above this value is thrown out", 0 );
+            NEW_OPT(  rif_dock::skip_sasa_for_res, "Comma separated list of residues to not include in sasa calculations. (like glycans)", "");
+
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
 
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
@@ -496,6 +508,7 @@ struct RifDockOpt
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
     bool        test_hackpack                        ;  
+    bool        only_score_input_pos                 ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -660,7 +673,12 @@ struct RifDockOpt
 
     std::string buried_list                          ;
     
-    std::vector<int> requirements;
+    std::vector<int> requirements                    ;
+
+    bool        need_to_calculate_sasa               ;
+    float       sasa_cut                             ;
+    float       score_per_1000_sasa_cut              ;
+    std::set<int> skip_sasa_for_res                  ;
 
 
     void init_from_cli();
@@ -710,6 +728,7 @@ struct RifDockOpt
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
         test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
+        only_score_input_pos                   = option[rif_dock::only_score_input_pos               ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -862,6 +881,9 @@ struct RifDockOpt
         burial_scaffold_neighbor_cut            = option[rif_dock::burial_scaffold_neighbor_cut         ]();
         require_burial                          = option[rif_dock::require_burial                       ]();
 
+        sasa_cut                                = option[rif_dock::sasa_cut                             ]();
+        score_per_1000_sasa_cut                 = option[rif_dock::score_per_1000_sasa_cut              ]();
+
         buried_list                             = option[rif_dock::buried_list                          ]();
 
 
@@ -898,6 +920,13 @@ struct RifDockOpt
         } else {
             std::cout << "bad rif_dock::symmetry_axis option" << std::endl;
             std::exit(-1);
+        }
+
+
+        need_to_calculate_sasa = option[rif_dock::force_calculate_sasa]() || sasa_cut > 0 || score_per_1000_sasa_cut < 0;
+
+        for ( int res : utility::string_split( option[rif_dock::skip_sasa_for_res](), ',', int(0) ) ) {
+            skip_sasa_for_res.insert(res);
         }
 
 

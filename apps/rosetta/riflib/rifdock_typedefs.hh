@@ -16,6 +16,7 @@
 
 #include <scheme/actor/BackboneActor.hh>
 #include <scheme/actor/BackboneHBondActor.hh>
+#include <scheme/actor/BackboneSasaActor.hh>
 #include <scheme/actor/VoxelActor.hh>
 #include <scheme/actor/Atom.hh>
 #include <scheme/kinematics/Scene.hh>
@@ -48,12 +49,15 @@ typedef int32_t intRot;
 
 typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 typedef ::scheme::actor::BackboneHBondActor BBHBondActor;
+typedef ::scheme::actor::BackboneSasaActor BBSasaActor;
 
 typedef ::scheme::actor::VoxelActor<EigenXform,float> VoxelActor;
 
 typedef ::scheme::actor::SimpleAtom< Eigen::Vector3f > SimpleAtom;
 typedef ::scheme::chemical::HBondRay HBondRay;
 
+// This is used to allow SASA to be calculated like an energy but not contribute to the total
+static float const SASA_SUBVERT_MULTIPLIER = 1.0e-9; 
 
 // Typedefs related to the Hierarchical Search Scene
 
@@ -68,6 +72,7 @@ typedef boost::mpl::vector<
             SimpleAtom,
             VoxelActor,
             BBHBondActor,
+            BBSasaActor,
             RIFAnchor
         > ParametricSceneContainers;
 

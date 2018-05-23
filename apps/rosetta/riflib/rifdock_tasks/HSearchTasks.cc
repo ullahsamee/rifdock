@@ -211,7 +211,12 @@ HSearchScoreAtReslTask::return_search_points(
             }
 
             // the real rif score!!!!!!
-            search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene );// + tot_sym_score;
+            std::vector<float> scores;
+            search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene, scores );
+
+            search_points[i].sasa = (uint16_t) ( scores[3] / SASA_SUBVERT_MULTIPLIER );
+
+            // search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene );// + tot_sym_score;
 
 
         } catch( std::exception const & ex ) {

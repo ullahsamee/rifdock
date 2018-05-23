@@ -135,7 +135,10 @@ HackPackTask::return_search_point_with_rotss(
                 continue;
             }
 
-            packed_results[ ipack ].score = rdd.packing_objectives[rif_resl_]->score_with_rotamers( *tscene, packed_results[ ipack ].rotamers() );
+            std::vector<float> scores;
+            packed_results[ ipack ].score = rdd.packing_objectives[rif_resl_]->score_with_rotamers( *tscene, scores, packed_results[ ipack ].rotamers() );
+            packed_results[ ipack ].sasa = (uint16_t) ( scores[3] / SASA_SUBVERT_MULTIPLIER );
+
 
         } catch( std::exception const & ex ) {
             #ifdef USE_OPENMP

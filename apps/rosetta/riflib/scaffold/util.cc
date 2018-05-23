@@ -276,6 +276,58 @@ get_bbhbond_actors( core::pose::Pose const & pose ) {
 }
 
 
+std::vector<BBSasaActor>
+get_bbsasa_actors( core::pose::Pose const & pose ) {
+
+    std::vector<BBSasaActor> actors;
+
+    for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+
+        std::vector<Eigen::Vector3f> sasa_points;
+
+        {
+            numeric::xyzVector<core::Real> _xyz = pose.residue(resid).nbr_atom_xyz();
+            Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+            sasa_points.push_back( xyz );
+        }
+        {
+            numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("N");
+            Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+            sasa_points.push_back( xyz );
+        }
+        {
+            numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("CA");
+            Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+            sasa_points.push_back( xyz );
+        }
+        {
+            numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("C");
+            Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+            sasa_points.push_back( xyz );
+        }     
+        if ( pose.residue(resid).has("CB") ) {
+
+            numeric::xyzVector<core::Real> _xyza = pose.residue(resid).xyz("CA");
+            Eigen::Vector3f xyza; xyza[0] = _xyza[0]; xyza[1] = _xyza[1]; xyza[2] = _xyza[2];
+
+            numeric::xyzVector<core::Real> _xyzb = pose.residue(resid).xyz("CB");
+            Eigen::Vector3f xyzb; xyzb[0] = _xyzb[0]; xyzb[1] = _xyzb[1]; xyzb[2] = _xyzb[2];
+
+            Eigen::Vector3f xyz = xyzb + (xyzb - xyza);
+
+            sasa_points.push_back( xyz );
+        }
+
+        BBSasaActor bbs( sasa_points, resid );
+        actors.push_back( bbs );
+
+    }
+
+    return actors;
+
+}
+
+
 void
 get_default_scaffold_res( core::pose::Pose const & pose,
     utility::vector1<core::Size> & scaffold_res ) {
@@ -318,6 +370,13 @@ make_conformation_from_data_cache(ScaffoldDataCacheOP cache, bool fa /*= false*/
         std::vector<BBHBondActor> bbhbond_actors = get_bbhbond_actors( scaffold_centered );
         for ( BBHBondActor const & bbhbond_actor : bbhbond_actors ) {
             scene.add_actor(0, bbhbond_actor );
+        }
+    }
+
+    if ( cache->make_bbsasa_actors ) {
+        std::vector<BBSasaActor> bbsasa_actors = get_bbsasa_actors( scaffold_centered );
+        for ( BBSasaActor const & bbsasa_actor : bbsasa_actors ) {
+            scene.add_actor(0, bbsasa_actor);
         }
     }
 
