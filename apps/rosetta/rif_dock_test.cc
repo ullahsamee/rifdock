@@ -63,6 +63,7 @@
 	#include <utility/file/file_sys_util.hh>
 	#include <utility/io/izstream.hh>
 	#include <utility/io/ozstream.hh>
+	#include <utility/file/FileName.hh>
 
 	#include <chrono>
 	#include <random>
@@ -663,24 +664,34 @@ int main(int argc, char *argv[]) {
 			std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 		}
 
-		if (opt.dump_rifgen_near_pdb.length() > 0) {
-			float dump_dist = opt.dump_rifgen_near_pdb_dist;
-			float dump_frac = opt.dump_rifgen_near_pdb_frac;
-			core::pose::Pose pose = *(core::import_pose::pose_from_file(opt.dump_rifgen_near_pdb));
-			core::conformation::Residue const & res = pose.residue(1);
+		if (opt.dump_rifgen_near_pdb.size() > 0) {
 
-			std::stringstream fname;
-			fname << "rifgen_dump_" << opt.dump_rifgen_near_pdb << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
+			for ( std::string pdb_fname : opt.dump_rifgen_near_pdb ) {
 
-			rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
-			if ( opt.dump_rifgen_text ) {
-				rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
+				float dump_dist = opt.dump_rifgen_near_pdb_dist;
+				float dump_frac = opt.dump_rifgen_near_pdb_frac;
+				core::pose::Pose pose = *(core::import_pose::pose_from_file(pdb_fname));
+				core::conformation::Residue const & res = pose.residue(1);
+
+				{
+					utility::file::FileName tmp( pdb_fname );
+					pdb_fname = tmp.base();
+				}
+				
+
+				std::stringstream fname;
+				fname << "rifgen_dump_" << pdb_fname << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
+
+				rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
+				if ( opt.dump_rifgen_text ) {
+					rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
+				}
+
+				std::stringstream fname2;
+				fname2 << "rifgen_dump_center_" << pdb_fname << ".pdb.gz";
+
+				rif_ptrs.back()->dump_rotamers_at_bin_center( res, fname2.str(), rot_index_p );
 			}
-
-			std::stringstream fname2;
-			fname2 << "rifgen_dump_center_" << opt.dump_rifgen_near_pdb << ".pdb.gz";
-
-			rif_ptrs.back()->dump_rotamers_at_bin_center( res, fname2.str(), rot_index_p );
 
 		}
 
