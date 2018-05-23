@@ -131,8 +131,11 @@ OutputResultsTask::return_rif_dock_results(
             << " packscore: " << F(7,3,selected_result.score)
             << " score: "     << F(7,3,selected_result.nopackscore)
             // << " rif: "       << F(7,3,selected_result.rifscore)
-            << " steric: "    << F(7,3,selected_result.stericscore)
-            << " cluster: "   << I(7,selected_result.cluster_score)
+            << " steric: "    << F(7,3,selected_result.stericscore);
+        if (rdd.opt.scaff_bb_hbond_weight > 0) {
+        oss << " bb-hbond: "  << F(7,3,selected_result.scaff_bb_hbond);
+        }
+        oss << " cluster: "   << I(7,selected_result.cluster_score)
             << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack);
         if ( rdd.unsat_manager ) {
         oss << " buried:" << I(4,buried);

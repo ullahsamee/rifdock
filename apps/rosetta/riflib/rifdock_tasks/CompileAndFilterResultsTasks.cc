@@ -103,6 +103,7 @@ awful_compile_output_helper_(
     float const nopackscore = _nopackscore; //result.sum();
     float const rifscore = sc[0]; //result.template get<MyScoreBBActorRIF>();
     float const stericscore = sc[1]; //result.template get<MyClashScore>();
+    float const scaff_bb_hbond = sc[2];
 
     // dist0 is only important to the nclose* options
     float dist0; {
@@ -122,6 +123,7 @@ awful_compile_output_helper_(
     r.nopackscore = nopackscore;
     r.rifscore = rifscore;
     r.stericscore = stericscore;
+    r.scaff_bb_hbond = scaff_bb_hbond;
     r.dist0 = dist0;
     r.cluster_score = 0.0;
     allresults_pt.at( omp_get_thread_num() ).push_back( r ); // recorded w/o rotamers here

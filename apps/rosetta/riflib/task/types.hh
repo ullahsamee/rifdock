@@ -116,6 +116,7 @@ struct tmplRifDockResult {
     typedef tmplRifDockResult<DirectorBigIndex> This;
     float dist0, nopackscore, rifscore, stericscore;
     float score; // formerly packscore
+    float scaff_bb_hbond;
     uint64_t sasa;
     uint64_t isamp;
     DirectorBigIndex index; // formerly index
@@ -144,6 +145,22 @@ struct tmplRifDockResult {
     }
 };
 
+// Convenience templates for the above templated containers
+
+template <class __Director>
+using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
+typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
+
+template <class __Director>
+using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
+typedef _RifDockResult<DirectorBase> RifDockResult;
+
+template <class __Director>
+using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;
+typedef _SearchPoint<DirectorBase> SearchPoint;
+
+
+
 struct SasaComparator
 {
 
@@ -164,24 +181,6 @@ struct ScorePer1000SasaComparator
       return lhs.score / lhs.sasa < rhs.score / rhs.sasa;
     }
 };
-
-
-
-// Convenience templates for the above templated containers
-
-template <class __Director>
-using _SearchPointWithRots = tmplSearchPointWithRots<_DirectorBigIndex<__Director>>;
-typedef _SearchPointWithRots<DirectorBase> SearchPointWithRots;
-
-template <class __Director>
-using _RifDockResult = tmplRifDockResult<_DirectorBigIndex<__Director>>;
-typedef _RifDockResult<DirectorBase> RifDockResult;
-
-template <class __Director>
-using _SearchPoint = tmplSearchPoint<_DirectorBigIndex<__Director>>;
-typedef _SearchPoint<DirectorBase> SearchPoint;
-
-
 
 
 
