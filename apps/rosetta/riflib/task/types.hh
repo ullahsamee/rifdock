@@ -50,7 +50,7 @@ struct tmplSearchPoint {
     typedef _DirectorBigIndex DirectorBigIndex;
     typedef tmplSearchPoint<DirectorBigIndex> This;
     float score;
-    uint64_t sasa;
+    uint16_t sasa;
     DirectorBigIndex index;
     tmplSearchPoint() : score(9e9) {}
     tmplSearchPoint(DirectorBigIndex i) : score(9e9), index(i) {}
@@ -78,7 +78,7 @@ struct tmplSearchPointWithRots {
     typedef _DirectorBigIndex DirectorBigIndex;
     typedef tmplSearchPointWithRots<DirectorBigIndex> This;
     float score;
-    uint64_t sasa;
+    uint16_t sasa;
     uint32_t prepack_rank;
     DirectorBigIndex index;
     shared_ptr< std::vector< std::pair<intRot,intRot> > > rotamers_;
@@ -117,7 +117,7 @@ struct tmplRifDockResult {
     float dist0, nopackscore, rifscore, stericscore;
     float score; // formerly packscore
     float scaff_bb_hbond;
-    uint64_t sasa;
+    uint16_t sasa;
     uint64_t isamp;
     DirectorBigIndex index; // formerly index
     uint32_t prepack_rank;

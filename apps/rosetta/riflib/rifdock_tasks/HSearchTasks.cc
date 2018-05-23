@@ -214,7 +214,7 @@ HSearchScoreAtReslTask::return_search_points(
             std::vector<float> scores;
             search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene, scores );
 
-            search_points[i].sasa = (uint64_t) ( scores[3] / SASA_SUBVERT_MULTIPLIER );
+            search_points[i].sasa = (uint16_t) ( scores[3] / SASA_SUBVERT_MULTIPLIER );
 
             // search_points[i].score = rdd.objectives[rif_resl_]->score( *tscene );// + tot_sym_score;
 

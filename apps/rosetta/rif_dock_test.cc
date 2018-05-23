@@ -1011,6 +1011,9 @@ int main(int argc, char *argv[]) {
 					     << F( 7, 3, sc[1]       ) << " "
 					     << F( 7, 3, sc[2]       ) << " "
 					     << F( 7, 3, sc[3]       ) << endl;
+					if ( opt.need_to_calculate_sasa ) {
+						std::cout << "Sasa: " << (uint16_t) ( sc[3] / SASA_SUBVERT_MULTIPLIER ) << std::endl;
+					}
 
 				}
 				if ( opt.test_hackpack ) {
@@ -1075,6 +1078,8 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			// If this option is set, we skip everything below
+			if (opt.only_score_input_pos) continue;
 
 			// std::cout << "scores for scaffold in original position: " << std::endl;
    //          {

@@ -105,6 +105,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, only_score_input_pos )
 
 	OPT_1GRP_KEY(  String     , rif_dock, dokfile )
 	OPT_1GRP_KEY(  String     , rif_dock, outdir )
@@ -334,6 +335,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
+            NEW_OPT(  rif_dock::only_score_input_pos, "Dont' actually run the protocol, just score the input", false );
 
 			NEW_OPT(  rif_dock::dokfile, "", "default.dok" );
 			NEW_OPT(  rif_dock::outdir, "", "./" );
@@ -506,6 +508,7 @@ struct RifDockOpt
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
     bool        test_hackpack                        ;  
+    bool        only_score_input_pos                 ;
 	bool        add_native_scaffold_rots_when_packing;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -725,6 +728,7 @@ struct RifDockOpt
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
         test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
+        only_score_input_pos                   = option[rif_dock::only_score_input_pos               ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
