@@ -296,7 +296,7 @@ dump_rif_result_(
     }
 
     if ( unsat_scores.size() > 0 ) {
-        rdd.unsat_manager->print_buried_unsats( unsat_scores );
+        rdd.unsat_manager->print_buried_unsats( unsat_scores, scaffold_size );
     }
 
     // // TEMP debug:

@@ -356,6 +356,7 @@ int main(int argc, char *argv[]) {
 			burial_opts.scaffold_method = burial::N_CA_C_CB_CG;
 			burial_opts.scaffold_distance_cutoff = opt.burial_scaffold_distance_cut;
 			burial_opts.scaffold_burial_cutoff = opt.burial_scaffold_neighbor_cut;
+			burial_opts.skip_sasa_for_res = opt.skip_sasa_for_res;
 
 			std::cout << "Burial options: " << std::endl;
 			std::cout << "            target_method: " << burial::METHOD_NAMES[burial_opts.target_method] << std::endl;
@@ -560,6 +561,7 @@ int main(int argc, char *argv[]) {
 		BurialOpts burial_opts;
 		burial_opts.target_method = burial::ALL_ATOMS;
 		burial_opts.target_distance_cutoff = sasa_distance;
+		burial_opts.skip_sasa_for_res = opt.skip_sasa_for_res;
 
 		// 10.0 may be a bit overkill...
 		float a = 10.0f;

@@ -1195,7 +1195,7 @@ std::string get_rif_type_from_file( std::string fname )
 
             float score = 0;
 
-            if ( packing_ ) {
+            if ( true ) {
                 int sat1 = -1, sat2 = -1, hbcount = 0;
 
                 if ( bbh.is_donor() ) {
@@ -1304,7 +1304,7 @@ std::string get_rif_type_from_file( std::string fname )
                 if ( grid_score > threshold_ ) {
                     score += 1;
                 }
-                
+
             }
 
             score *= multiplier_;

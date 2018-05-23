@@ -158,18 +158,24 @@ fill_voxel_near_xyz_cone( BurialVoxelArray & grid, Eigen::Vector3f const & ca, E
 
 void
 BurialManager::set_target_neighbors( core::pose::Pose const & pose ) {
-    target_burial_grid_ = generate_burial_grid( pose, opts_.target_method, opts_.target_distance_cutoff );
+    target_burial_grid_ = generate_burial_grid( pose, opts_.target_method, opts_.target_distance_cutoff, opts_.skip_sasa_for_res );
 }
 
 shared_ptr<BurialVoxelArray>
 BurialManager::get_scaffold_neighbors( core::pose::Pose const & pose ) const {
-    return generate_burial_grid( pose, opts_.scaffold_method, opts_.scaffold_distance_cutoff );
+    std::set<int> skip_sasa_for_res;
+    return generate_burial_grid( pose, opts_.scaffold_method, opts_.scaffold_distance_cutoff, skip_sasa_for_res );
 }
 
 
 
 shared_ptr<BurialVoxelArray>
-BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::BurialMethod method, float distance_cut ) const {
+BurialManager::generate_burial_grid(
+    core::pose::Pose const & pose,
+    burial::BurialMethod method,
+    float distance_cut,
+    std::set<int> const & skip_sasa_for_res
+) const {
 
     // float cutoff_sq = opts_.neighbor_distance_cutoff*opts_.neighbor_distance_cutoff;
 
@@ -187,6 +193,18 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::Buri
 
     std::cout << "Building burial grid using method: " << burial::METHOD_NAMES[method] << std::endl;
 
+    if ( skip_sasa_for_res.size() > 0 ) {
+        std::cout << "Skipping residues: ";
+        bool first = true;
+        for ( int res : skip_sasa_for_res ) {
+            if ( ! first ) {
+                std::cout << ",";
+            }
+            first = false;
+            std::cout << res;
+        }
+        std::cout << std::endl;
+    }
 
     using ObjexxFCL::format::F;
 
@@ -223,41 +241,43 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::Buri
         case burial::N_CA_C_CB_CG: {
 
             for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).nbr_atom_xyz();
-                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                if ( skip_sasa_for_res.count( resid ) > 0 ) continue;
+                {
+                    numeric::xyzVector<core::Real> _xyz = pose.residue(resid).nbr_atom_xyz();
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
-            }
-            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("N");
-                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+                {
+                    numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("N");
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
-            }
-            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("CA");
-                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+                {
+                    numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("CA");
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
-            }
-            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-                numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("C");
-                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+                {
+                    numeric::xyzVector<core::Real> _xyz = pose.residue(resid).xyz("C");
+                    Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
 
-                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
-            }
-            for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
-                if ( ! pose.residue(resid).has("CB") ) continue;
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
+                if ( pose.residue(resid).has("CB") ) {
 
-                numeric::xyzVector<core::Real> _xyza = pose.residue(resid).xyz("CA");
-                Eigen::Vector3f xyza; xyza[0] = _xyza[0]; xyza[1] = _xyza[1]; xyza[2] = _xyza[2];
+                    numeric::xyzVector<core::Real> _xyza = pose.residue(resid).xyz("CA");
+                    Eigen::Vector3f xyza; xyza[0] = _xyza[0]; xyza[1] = _xyza[1]; xyza[2] = _xyza[2];
 
-                numeric::xyzVector<core::Real> _xyzb = pose.residue(resid).xyz("CB");
-                Eigen::Vector3f xyzb; xyzb[0] = _xyzb[0]; xyzb[1] = _xyzb[1]; xyzb[2] = _xyzb[2];
+                    numeric::xyzVector<core::Real> _xyzb = pose.residue(resid).xyz("CB");
+                    Eigen::Vector3f xyzb; xyzb[0] = _xyzb[0]; xyzb[1] = _xyzb[1]; xyzb[2] = _xyzb[2];
 
-                Eigen::Vector3f xyz = xyzb + (xyzb - xyza);
+                    Eigen::Vector3f xyz = xyzb + (xyzb - xyza);
 
-                fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                    fill_voxel_near_xyz( *burial_grid, xyz, distance_cut );
+                }
             }
 
             break;
@@ -265,6 +285,7 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::Buri
         }
         case burial::HEAVY_ATOMS: {
             for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                if ( skip_sasa_for_res.count( resid ) > 0 ) continue;
 
                 core::conformation::Residue const & res = pose.residue( resid );
 
@@ -280,6 +301,7 @@ BurialManager::generate_burial_grid( core::pose::Pose const & pose, burial::Buri
         }
         case burial::ALL_ATOMS: {
             for ( core::Size resid = 1; resid <= pose.size(); resid ++ ) {
+                if ( skip_sasa_for_res.count( resid ) > 0 ) continue;
 
                 core::conformation::Residue const & res = pose.residue( resid );
 

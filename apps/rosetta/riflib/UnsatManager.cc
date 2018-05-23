@@ -689,7 +689,7 @@ UnsatManager::get_buried_unsats(
 }
 
 void
-UnsatManager::print_buried_unsats( std::vector<float> const & unsat_penalties) const {
+UnsatManager::print_buried_unsats( std::vector<float> const & unsat_penalties, int scaff_size) const {
 
     for ( int iheavy = 0; iheavy < target_heavy_atoms_.size(); iheavy++ ) {
 
@@ -697,7 +697,13 @@ UnsatManager::print_buried_unsats( std::vector<float> const & unsat_penalties) c
          if ( score > 0 ) {
 
             hbond::HeavyAtom const & ha = target_heavy_atoms_[iheavy];
-            std::cout << " Buried unsat: " << boost::str(boost::format(" resid: %i name: %s score: %.3f ")%ha.resid%ha.name%score);
+
+            std::string scaff_text = "";
+            if ( scaff_size > 0 ) {
+                scaff_text = boost::str(boost::format("/%i")%(scaff_size + ha.resid));
+            }
+
+            std::cout << " Buried unsat: " << boost::str(boost::format(" resid: %i%s name: %s score: %.3f ")%ha.resid%scaff_text%ha.name%score);
             std::cout << " satnos: ";
             for ( int isat : ha.sat_groups ) {
                 std::cout << isat << ",";
