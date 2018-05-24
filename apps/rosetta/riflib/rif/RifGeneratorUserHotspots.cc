@@ -434,6 +434,11 @@ namespace rif {
 								//for( auto const & x_perturb : sample_position_deltas ){
 								int num_of_hotspot_inserted = 0;
 								//std::cout << "being parallel block" << std::endl;
+
+                                if ( opts.test_hotspot_redundancy ) {
+                                    omp_set_num_threads(1);
+                                }
+
 								#ifdef USE_OPENMP
 								#pragma omp parallel for schedule(dynamic,16)
 								#endif
@@ -491,35 +496,30 @@ namespace rif {
 
                                         if ( opts.test_hotspot_redundancy ) {
 
-                                            #ifdef USE_OPENMP
-                                            #pragma omp critical
-                                            #endif
-                                            {
-                                                accumulator->condense();
+                                            accumulator->condense();
 
-                                                std::set<size_t> in_rif = accumulator->get_sats_of_this_irot( new_x_position, irot );
+                                            std::set<size_t> in_rif = accumulator->get_sats_of_this_irot( new_x_position, irot );
 
-                                                bool is_us = in_rif.count(254) > 0;
-                                                bool anything = in_rif.size() != 0;
+                                            bool is_us = in_rif.count(254) > 0;
+                                            bool anything = in_rif.size() != 0;
 
-                                                if ( is_us ) {
-                                                    redundancy_from_self++;
-                                                } else{
-                                                    if ( anything ) {
-                                                        redundancy_from_rif++;
-                                                    } else {
-                                                        redundancy_new++;
-                                                    }
+                                            if ( is_us ) {
+                                                redundancy_from_self++;
+                                            } else{
+                                                if ( anything ) {
+                                                    redundancy_from_rif++;
+                                                } else {
+                                                    redundancy_new++;
                                                 }
-                                            
-
-                                                sat1 = 254;
-
-                                                accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
                                             }
-                                        } else {
-                                            accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+                                        
+
+                                            sat1 = 254;
+
+                                        
                                         }
+
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
 
 
 
