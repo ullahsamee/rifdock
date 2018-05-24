@@ -55,7 +55,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		return r;
 	}
 
-	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2, bool single_thread ) override {
+	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2, bool force, bool single_thread ) override {
 		if( score > 0.0 ) return;
 		uint64_t const key = xmap_ptr_->hasher_.get_key( x );
 		typename XMap::Map & map_for_this_thread( single_thread ? xmap_ptr_->map_ : to_insert_[ omp_get_thread_num() ] );
@@ -63,7 +63,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		typename XMap::Map::iterator iter = map_for_this_thread.find(key);
 		if( iter == map_for_this_thread.end() ){
 			typename XMap::Value value;
-			value.add_rotamer( rot, score, sat1, sat2 );
+			value.add_rotamer( rot, score, sat1, sat2, force );
 
 
          //    std::vector<int> sats;
@@ -80,7 +80,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		} else {
 			// for( int i = 0; i < iter->second.maxsize(); ++i ) runtime_assert( iter->second.score(i) > -9.0 );
 			// std::cout << score << std::endl;
-			iter->second.add_rotamer( rot, score, sat1, sat2 );
+			iter->second.add_rotamer( rot, score, sat1, sat2, force );
 			// for( int i = 0; i < iter->second.maxsize(); ++i ) runtime_assert( iter->second.score(i) > -9.0 );
 		}
 		++nsamp_[ omp_get_thread_num() ];
