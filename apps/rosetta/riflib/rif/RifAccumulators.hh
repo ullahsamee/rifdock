@@ -135,6 +135,51 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		return count;
 	}
 
+	// This isn't threadsafe at all!!!
+	std::set<size_t> get_sats_of_this_irot( devel::scheme::EigenXform const & x, int irot ) const override {
+
+		std::set<size_t> sats;
+
+		uint64_t const key = xmap_ptr_->hasher_.get_key( x );
+
+		typename XMap::Map & map_for_this_thread(xmap_ptr_->map_);
+		typename XMap::Map::iterator iter = map_for_this_thread.find(key);
+
+		typedef typename XMap::Value Value;
+
+
+		if( iter == map_for_this_thread.end() ){
+
+			return sats;
+		} else {
+
+			Value const & rotscores = iter->second;
+			static int const Nrots = Value::N;
+			// typedef typename Value::RotScore RotScore;
+
+			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+				if( rotscores.empty(i_rs) ) {
+					break;
+				}
+
+                int _irot = rotscores.rotamer(i_rs);
+                if (_irot != irot) continue;
+
+				sats.insert(255);
+
+				std::vector<int> sat_groups;
+				rotscores.rotamer_sat_groups( i_rs, sat_groups );
+
+				for ( int number : sat_groups ) {
+					sats.insert(number);
+				}
+			}
+		}
+
+		return sats;
+
+	}
+
 	uint64_t mem_use() const {
 		uint64_t mem = 0;
 		for( int i = 0; i < to_insert_.size(); ++i ){

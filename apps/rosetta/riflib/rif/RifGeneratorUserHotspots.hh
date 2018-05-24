@@ -31,6 +31,8 @@ struct RifGeneratorUserHotspotsOpts {
 	float min_hb_quality_for_satisfaction = -0.6;
     float long_hbond_fudge_distance = 0.0;
     int  dump_hotspot_samples = 0;
+    bool test_hotspot_redundancy = false;
+    bool all_hotspots_are_bidentate = false;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;
 	Eigen::Vector3f target_center;

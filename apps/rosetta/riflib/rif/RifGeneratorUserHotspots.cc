@@ -110,6 +110,8 @@ namespace rif {
 		typedef ::scheme::actor::BackboneActor<EigenXform> BBActor;
 
 		typedef ::Eigen::Matrix<float,3,1> Pos;
+
+        using ObjexxFCL::format::I;
         
         // requirements definitions
         std::vector< RequirementDefinition > requirement_definitions = get_requirement_definitions( params->tuning_file );
@@ -140,7 +142,7 @@ namespace rif {
 		// some sanity checks
 		int const n_hspot_groups = this->opts.hotspot_files.size();
 		runtime_assert_msg( n_hspot_groups, "no hotspot group files specified!!" );
-		runtime_assert_msg( n_hspot_groups<16, "too many hotspot groups!!" );
+		// runtime_assert_msg( n_hspot_groups<16, "too many hotspot groups!!" );
 
 		std::cout << "this RIF type doesn't support sat groups!!!" << std::endl;
 
@@ -222,6 +224,10 @@ namespace rif {
 			core::pose::Pose target_pose(*params->target);
 			target_pose.dump_pdb(hotspot_dump_file);
 		}
+
+        uint64_t redundancy_new = 0;
+        uint64_t redundancy_from_rif = 0;
+        uint64_t redundancy_from_self = 0;
 
     	// std::ostream & out( std::cout );
     	// std::ofstream out;
@@ -445,8 +451,13 @@ namespace rif {
 									//EigenXform x_position = x_2_orig_inverse * x_2_orig * building_x_position;
 										
 									// you can check their "energies" against the target like this, obviously substituting the real rot# and position
-									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+                                    int actual_sat1=-1, actual_sat2=-1, hbcount=0;
+									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, x_position,
+                                            actual_sat1, actual_sat2, true, hbcount, 10.0, 0 );
 									
+                                    if ( opts.all_hotspots_are_bidentate && ( actual_sat1 == -1 || actual_sat2 == -1 ) ) continue;
+
+
 									if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
 
 										//num_of_hotspot_inserted += 1;
@@ -477,7 +488,40 @@ namespace rif {
                                             // as the numbering of i_hotspot_group starts from 0.
                                             sat1 = hotspot_requirement_labels[ i_hotspot_group + 1 ];
                                         }
-                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+
+                                        if ( opts.test_hotspot_redundancy ) {
+
+                                            #ifdef USE_OPENMP
+                                            #pragma omp critical
+                                            #endif
+                                            {
+                                                accumulator->condense();
+
+                                                std::set<size_t> in_rif = accumulator->get_sats_of_this_irot( new_x_position, irot );
+
+                                                bool is_us = in_rif.count(254) > 0;
+                                                bool anything = in_rif.size() != 0;
+
+                                                if ( is_us ) {
+                                                    redundancy_from_self++;
+                                                } else{
+                                                    if ( anything ) {
+                                                        redundancy_from_rif++;
+                                                    } else {
+                                                        redundancy_new++;
+                                                    }
+                                                }
+                                            
+
+                                                sat1 = 254;
+
+                                                accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+                                            }
+                                        } else {
+                                            accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+                                        }
+
+
 
 									 	if (opts.dump_hotspot_samples>=NSAMP){
 									 		hotspot_dump_file <<"MODEL        "<<irot<<a<<"                                                                  \n";
@@ -515,6 +559,17 @@ namespace rif {
 		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout );
+
+
+
+        if ( opts.test_hotspot_redundancy ) {
+
+            std::cout << "================= Redundancy report =====================" << std::endl;
+            std::cout << "            New: " << I(8, redundancy_new) << std::endl;
+            std::cout << "  Rif redundant: " << I(8, redundancy_from_rif) << std::endl;
+            std::cout << " Self redundant: " << I(8, redundancy_from_self) << std::endl;
+
+        }
 	
 	} //end RifGeneratorUserHotspots
 
