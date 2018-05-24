@@ -55,10 +55,10 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		return r;
 	}
 
-	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2 ) override {
+	void insert( devel::scheme::EigenXform const & x, float score, int32_t rot, int sat1, int sat2, bool single_thread ) override {
 		if( score > 0.0 ) return;
 		uint64_t const key = xmap_ptr_->hasher_.get_key( x );
-		typename XMap::Map & map_for_this_thread( to_insert_[ omp_get_thread_num() ] );
+		typename XMap::Map & map_for_this_thread( single_thread ? xmap_ptr_->map_ : to_insert_[ omp_get_thread_num() ] );
 		// std::cerr << "INSERT mapsize: " << map_for_this_thread.size() << " thread: " << omp_get_thread_num() << " nmaps: " << to_insert_.size() << std::endl;
 		typename XMap::Map::iterator iter = map_for_this_thread.find(key);
 		if( iter == map_for_this_thread.end() ){

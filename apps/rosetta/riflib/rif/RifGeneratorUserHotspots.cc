@@ -235,6 +235,8 @@ namespace rif {
 
 		// loop over files (one file is one hotspot group)
 
+        bool const single_thread = opts.test_hotspot_redundancy;
+
 		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
@@ -435,7 +437,7 @@ namespace rif {
 								int num_of_hotspot_inserted = 0;
 								//std::cout << "being parallel block" << std::endl;
 
-                                if ( opts.test_hotspot_redundancy ) {
+                                if ( single_thread ) {
                                     omp_set_num_threads(1);
                                 }
 
@@ -496,7 +498,7 @@ namespace rif {
 
                                         if ( opts.test_hotspot_redundancy ) {
 
-                                            accumulator->condense();
+                                            // accumulator->condense();
 
                                             std::set<size_t> in_rif = accumulator->get_sats_of_this_irot( new_x_position, irot );
 
@@ -519,7 +521,7 @@ namespace rif {
                                         
                                         }
 
-                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2);
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2, single_thread);
 
 
 

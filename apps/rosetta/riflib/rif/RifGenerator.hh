@@ -37,7 +37,7 @@ using ::devel::scheme::shared_ptr;
 
 struct RifAccumulator {
 	virtual ~RifAccumulator(){}
-	virtual void insert( EigenXform const & x, float score, int rot, int sat1=-1, int sat2=-1 ) = 0;
+	virtual void insert( EigenXform const & x, float score, int rot, int sat1=-1, int sat2=-1, bool single_thread=false) = 0;
 	virtual void report( std::ostream & out ) const = 0;
 	virtual void checkpoint( std::ostream & out ) = 0;
 	virtual uint64_t n_motifs_found() const = 0;
