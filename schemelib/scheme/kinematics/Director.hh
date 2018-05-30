@@ -194,7 +194,51 @@ struct CompositeDirector
 
 };
     
+// This must be used as part of a CompositeDirector
+template<
+    class _Position,
+    class _RifDockIndex
+>
+struct IdentityDirector
+:  public Director<
+    _Position,
+    _RifDockIndex
+> {
+    typedef Director< _Position, _RifDockIndex> Base;
+    typedef typename Base::Position Position;
+    typedef typename Base::BigIndex BigIndex;
+    typedef typename Base::Index Index;
+    typedef typename Base::Scene Scene;
+        
+        
+    Index ibody_;
     
+    IdentityDirector(Index ibody) : ibody_(ibody) {}
+
+        
+    virtual
+    bool
+    set_scene(
+        BigIndex const & i,
+        int resl,
+        Scene & scene
+    ) const override {
+            
+        scene.set_position(ibody_, Position::Identity());
+           
+        return true;
+    }
+        
+    virtual BigIndex size(int resl, BigIndex sizes) const override {
+        sizes.nest_index = std::max<uint64_t>( 1, sizes.nest_index );
+        return sizes;
+    }
+        
+    
+        
+};
+
+
 // This must be used as part of a CompositeDirector
 template<
     class _Position,

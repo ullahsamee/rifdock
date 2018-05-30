@@ -363,7 +363,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_at_least, "", -1 );
 			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
-			NEW_OPT(  rif_dock::rosetta_min_at_least, "", -1 );
+			NEW_OPT(  rif_dock::rosetta_min_at_least, "", 0 );
 			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );

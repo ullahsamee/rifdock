@@ -900,6 +900,8 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			shared_ptr<RifDockNestDirector> nest_director;
 
+			bool needs_nest_director = opt.xform_fname != "IDENTITY";
+
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
 				float body_radius = std::min( test_scaff_radius, rif_radius );
@@ -945,7 +947,12 @@ int main(int argc, char *argv[]) {
 
 
 				std::vector<DirectorBase> director_list;
-				director_list.push_back( nest_director );  // Nest director must come first!!!!
+				if ( needs_nest_director ) {
+					director_list.push_back( nest_director );  // Nest director must come first!!!!
+				} else {
+					director_list.emplace_back( make_shared<RifDockIdentityDirector>( 1 ) );
+				}
+
 				if ( needs_scaffold_director ) {
 					director_list.push_back( make_shared<RifDockScaffoldDirector>(scaffold_provider, 1 ) );
 				}

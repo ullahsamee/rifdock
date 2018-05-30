@@ -120,6 +120,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
+    OPT_1GRP_KEY( Boolean       , rifgen, test_hotspot_redundancy )
+    OPT_1GRP_KEY( Boolean       , rifgen, all_hotspots_are_bidentate )
     OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
     OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
     OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
@@ -193,6 +195,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
+        NEW_OPT(  rifgen::test_hotspot_redundancy          , "Determine if hotspots are already in rif and if they are self-redundant. This makes an invalid RIF!!!", false );
+        NEW_OPT(  rifgen::all_hotspots_are_bidentate       , "Hotpots only inserted if they make bidentate h-bonds", false );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
         NEW_OPT(  rifgen::use_d_aa							, "" , false);
         NEW_OPT(  rifgen::use_l_aa							, "" , true);
@@ -402,6 +406,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
             hspot_opts.hotspot_score_thresh = option[ rifgen::hotspot_score_thresh]();
             hspot_opts.dump_hotspot_samples = option[ rifgen::dump_hotspot_samples]();
+            hspot_opts.test_hotspot_redundancy = option[ rifgen::test_hotspot_redundancy]();
+            hspot_opts.all_hotspots_are_bidentate = option[ rifgen::all_hotspots_are_bidentate]();
             hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();

@@ -59,8 +59,8 @@ struct RotamerScore {
 
 	bool empty() const { return data_ == RotamerMask; }
 
- 	void set_or_merge( THIS const & other ){
- 		if( other < *this ){
+ 	void set_or_merge( THIS const & other, bool force ){
+ 		if( other < *this || force ){
  			*this = other;
  		}
  	}
@@ -198,9 +198,9 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 		}
 		return true;
 	}
-	void set_or_merge( THIS const & other )
+	void set_or_merge( THIS const & other, bool force )
 	{
-		if( this->empty() ){
+		if( this->empty() || force ){
 			*this = other;
 		} else {
 			// merge sat data iff same rotamer, mostly for bounding grids
@@ -215,7 +215,7 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 					}
 				}
 			}
-			BASE::set_or_merge( other );
+			BASE::set_or_merge( other, force );
 		}
 	}
 
@@ -288,8 +288,8 @@ struct RotamerScores {
 	// void add_rotamer( Data rot, float score ){
 		// add_rotamer( RotScore(rot,score) );
 	// }
-	void add_rotamer( Data rot, float score, int sat1=-1, int sat2=-1 )	{
-		add_rotamer_impl< RotScore::UseSat >( rot, score, sat1, sat2 );
+	void add_rotamer( Data rot, float score, int sat1=-1, int sat2=-1, bool force=false )	{
+		add_rotamer_impl< RotScore::UseSat >( rot, score, sat1, sat2, force );
 	}
 	void rotamer_sat_groups( int irot, std::vector<int> & sat_groups_out ) const	{
 		rotamer_sat_groups_impl< RotScore::UseSat >( irot, sat_groups_out );
@@ -304,7 +304,7 @@ struct RotamerScores {
     int get_requirement_num( int irot ) const {
         return get_requirement_num_impl< RotScore::UseSat >( irot );
     }
-	void add_rotamer( RotScore to_insert )
+	void add_rotamer( RotScore to_insert, bool force )
 	{
 		Data irot = to_insert.rotamer();
 		int insert_pos = 0;
@@ -327,14 +327,14 @@ struct RotamerScores {
 		}
 		// std::cout << "insert_pos " << insert_pos << std::endl;
 		// now insert if new val is better than worst stored val
-		rotscores_[insert_pos].set_or_merge( to_insert );
+		rotscores_[insert_pos].set_or_merge( to_insert, force );
 	}
 	template<int N2>
 	void merge( RotamerScores<N2,RotScore> const & other )
 	{
 		for( int i = 0; i < N2; ++i ){
 			if( other.empty(i) ) break;
-			add_rotamer( other.rotscores_[i] );
+			add_rotamer( other.rotscores_[i], false );
 		}
 	}
 	float score_of_rotamer( int irot ) const
@@ -390,9 +390,9 @@ struct RotamerScores {
 	bool operator!=(THIS const & o) const { return rotscores_ != o.rotscores_; }
 
 	template< bool UseSat >	typename boost::enable_if_c< UseSat, void >::type
-	add_rotamer_impl( Data rot, float score, int sat1, int sat2 ){ add_rotamer( RotScore(rot,score,sat1,sat2) ); }
+	add_rotamer_impl( Data rot, float score, int sat1, int sat2, bool force ){ add_rotamer( RotScore(rot,score,sat1,sat2), force ); }
 	template< bool UseSat >	typename boost::disable_if_c< UseSat, void >::type
-	add_rotamer_impl( Data rot, float score, int sat1, int sat2 ){ add_rotamer( RotScore(rot,score) ); }
+	add_rotamer_impl( Data rot, float score, int sat1, int sat2, bool force ){ add_rotamer( RotScore(rot,score), force ); }
 	template< bool UseSat >	typename boost::enable_if_c< UseSat, void >::type
 	rotamer_sat_groups_impl( int irot, std::vector<int> & sat_groups_out ) const { rotscores_[irot].get_sat_groups( sat_groups_out ); }
 	template< bool UseSat >	typename boost::disable_if_c< UseSat, void >::type
