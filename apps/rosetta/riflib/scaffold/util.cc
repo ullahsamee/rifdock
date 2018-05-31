@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 #include <boost/any.hpp>
+#include <boost/format.hpp>
 
 #include <scheme/kinematics/Scene.hh>
 
