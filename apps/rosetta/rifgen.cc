@@ -115,7 +115,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
-    OPT_1GRP_KEY( String        , rifgen, hotspot_list_file )
+	OPT_1GRP_KEY( String        , rifgen, hotspot_list_file )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_angle_bound )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
@@ -191,7 +191,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
-        NEW_OPT(  rifgen::hotspot_list_file                   , "" , "" );
+		NEW_OPT(  rifgen::hotspot_list_file                , "" , "" );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
         NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 15.0 );
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
