@@ -1219,6 +1219,15 @@ int main(int argc, char *argv[]) {
 				task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, opt.force_output_if_close_to_input_num, 
 					                                                          opt.force_output_if_close_to_input, opt.filter_seeding_positions_separately, 
 					                                                          opt.filter_scaffolds_separately ));
+
+				task_list.push_back(make_shared<SortByScoreTask>( ));
+
+			    if ( opt.n_pdb_out_global > -1 ) {
+			        task_list.push_back(make_shared<CompileAndFilterResultsTask>( final_resl, final_resl, opt.n_pdb_out_global, opt.redundancy_filter_mag, 0, 0, false, false )); 
+			        
+			    }
+
+
 				task_list.push_back(make_shared<OutputResultsTask>( final_resl, final_resl));
 			}
 
