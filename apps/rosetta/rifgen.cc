@@ -115,6 +115,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
 
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
+	OPT_1GRP_KEY( String        , rifgen, hotspot_list_file )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_angle_bound )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
@@ -190,6 +191,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
 
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
+		NEW_OPT(  rifgen::hotspot_list_file                , "" , "" );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
         NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 15.0 );
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
@@ -397,10 +399,31 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 
 		}
 
-		if( option[rifgen::hotspot_groups]().size() ){
+		if( option[rifgen::hotspot_groups]().size() || option[rifgen::hotspot_list_file].user() ){
 			devel::scheme::rif::RifGeneratorUserHotspotsOpts hspot_opts;
 			auto const & hspot_files = option[rifgen::hotspot_groups]();
-			hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
+            std::string hspot_list_file = option[rifgen::hotspot_list_file]();
+            
+            if (hspot_list_file != "") {
+                // read file contents into hspot_files
+                runtime_assert_msg(utility::file::file_exists( hspot_list_file ), "hotspot list file does not exist: " + hspot_list_file );
+                auto hspot_files = utility::vector1<std::string>();
+                
+                std::ifstream in;
+                in.open(hspot_list_file, std::ios::in);
+                std::string hspot_fname;
+                while (std::getline(in, hspot_fname)) {
+                    if (hspot_fname.empty()) continue;
+                    
+                    hspot_fname = utility::strip(hspot_fname, "\n");
+                    runtime_assert_msg(utility::file::file_exists( hspot_fname ), "hotspot file does not exist: " + hspot_fname );
+                    hspot_files.push_back(hspot_fname);
+                }
+                hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
+            } else {
+                hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
+            }
+        
 			hspot_opts.hotspot_sample_cart_bound = option[ rifgen::hotspot_sample_cart_bound ]();
             hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
