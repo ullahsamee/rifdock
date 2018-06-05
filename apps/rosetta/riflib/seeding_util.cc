@@ -87,6 +87,13 @@ parse_exhausitive_searching_file(
     if (fname == "" ) {
         return false;
     }
+
+		// longxing: as derrick wants to use the IDENTITY director for his C2 ligand, so check this.
+		// this is a temporary solution, so the function should not be called when using the IDENTITY director.
+		if ( fname == "IDENTITY" ) {
+				return true;
+		}
+
     runtime_assert_msg(utility::file::file_exists( fname ), "exhausitive searching file does not exits: " + fname );
     
     std::ifstream in;
