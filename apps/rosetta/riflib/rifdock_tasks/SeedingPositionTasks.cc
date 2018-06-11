@@ -158,10 +158,12 @@ create_rifine_task(
     int final_resl = rdd.rif_ptrs.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
-    if ( rdd.opt.xform_fname != "ALL" ) {
-        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
-    } else {
+    if ( rdd.opt.xform_fname == "IDENTITY" ) {
+        // The identity director takes care of this
+    } else if ( rdd.opt.xform_fname == "ALL" ) {
         task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+    } else {
+        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
     }
     
     task_list.push_back(make_shared<HSearchInit>( ));
