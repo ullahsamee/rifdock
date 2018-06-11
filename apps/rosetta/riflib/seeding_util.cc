@@ -41,6 +41,10 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
             pd.seeding_tags.push_back( tag );
         }
 
+        if ( seeding_positions->size() >= 4294967296 ) {
+            utility_exit_with_message("Too many seeding positions!!!!");
+        }
+
         return seeding_positions;
     }
 
@@ -62,6 +66,10 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         EigenXform x(EigenXform::Identity());
         x.translation() = scaffold_center;
         for( auto & t : *seeding_positions ) t = t * x;
+
+        if ( seeding_positions->size() >= 4294967296 ) {
+            utility_exit_with_message("Too many seeding positions!!!!");
+        }
 
         return seeding_positions;
     }
