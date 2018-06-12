@@ -236,7 +236,7 @@ namespace rif {
 		// loop over files (one file is one hotspot group)
 
         bool const single_thread = opts.test_hotspot_redundancy;
-        bool const force_hotspot = opts.test_hotspot_redundancy;
+        bool const force_hotspot = opts.test_hotspot_redundancy | opts.label_hotspots_254;
 
 		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
@@ -522,7 +522,11 @@ namespace rif {
                                         
                                         }
 
-                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2, force_hotspot, single_thread);
+										if ( opts.label_hotspots_254 ) {
+											sat1 = 254;
+										}
+
+                                        accumulator->insert( new_x_position, positioned_rotamer_score + opts.hotspot_score_bonus, irot, sat1, sat2, force_hotspot, single_thread);
 
 
 

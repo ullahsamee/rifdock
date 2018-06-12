@@ -32,6 +32,8 @@ struct RifGeneratorUserHotspotsOpts {
     float long_hbond_fudge_distance = 0.0;
     int  dump_hotspot_samples = 0;
     bool test_hotspot_redundancy = false;
+	float hotspot_score_bonus = 0.;
+	bool label_hotspots_254 = false;
     bool all_hotspots_are_bidentate = false;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;
