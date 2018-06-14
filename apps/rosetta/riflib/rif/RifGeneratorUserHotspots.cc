@@ -238,6 +238,9 @@ namespace rif {
         bool const single_thread = opts.test_hotspot_redundancy;
         bool const force_hotspot = opts.test_hotspot_redundancy | opts.label_hotspots_254;
 
+        // We might be overriding later, so make sure everything is condensed now
+        accumulator->checkpoint( std::cout, false );
+
 		print_header("Building RIF from resampled user hotspots");
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
@@ -565,7 +568,7 @@ namespace rif {
 		}
 		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
-		accumulator->checkpoint( std::cout );
+		accumulator->checkpoint( std::cout, force_hotspot );
 
 
 

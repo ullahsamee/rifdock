@@ -330,11 +330,11 @@ struct RotamerScores {
 		rotscores_[insert_pos].set_or_merge( to_insert, force );
 	}
 	template<int N2>
-	void merge( RotamerScores<N2,RotScore> const & other )
+	void merge( RotamerScores<N2,RotScore> const & other, bool force=false )
 	{
 		for( int i = 0; i < N2; ++i ){
 			if( other.empty(i) ) break;
-			add_rotamer( other.rotscores_[i], false );
+			add_rotamer( other.rotscores_[i], force );
 		}
 	}
 	float score_of_rotamer( int irot ) const

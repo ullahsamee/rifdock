@@ -96,7 +96,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		return mem_use() > uint64_t(scratch_size_M_)*uint64_t(1024*1024);
 	}
 
-	void condense() override {
+	void condense(bool force_override/*=false*/) override {
 		using ObjexxFCL::format::I;
 		for( int i = 0; i < to_insert_.size(); ++i ){
 			// std::cout << I(3,i+1) << " of " << to_insert_.size() << " progress: ";
@@ -111,7 +111,7 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 					xmap_ptr_->map_.insert( std::make_pair( key, rotsc ) );
 					// for( int i = 0; i < rotsc.maxsize(); ++i ) runtime_assert( rotsc.score(i) > -9.0 );
 				} else {
-					iter->second.merge( rotsc );
+					iter->second.merge( rotsc, force_override );
 					// for( int i = 0; i < iter->second.maxsize(); ++i ) runtime_assert( iter->second.score(i) > -9.0 );
 				}
 
@@ -203,13 +203,13 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		nsamp_.resize( devel::scheme::omp_max_threads_1(), 0 );
 	}
 
-	void checkpoint( std::ostream & out ) override {
+	void checkpoint( std::ostream & out, bool force_override/*=false*/ ) override {
 		using devel::scheme::KMGT;
 		// uint64_t m = mem_use();
 		// if( m > uint64_t(scratch_size_M_)*uint64_t(1024*1024) ){ // time to clean up a bit...
 			// out << "mem use " << float(m)/1024.0/1024.0 << "M is above threshold " << scratch_size_M_ << "M, time to condense" << std::endl;
 			out << '<'; out.flush();
-			condense();
+			condense(force_override);
 			N_motifs_found_ += total_samples();
 			clear();
 			out << '>'; out.flush();

@@ -39,10 +39,10 @@ struct RifAccumulator {
 	virtual ~RifAccumulator(){}
 	virtual void insert( EigenXform const & x, float score, int rot, int sat1=-1, int sat2=-1, bool force=false, bool single_thread=false) = 0;
 	virtual void report( std::ostream & out ) const = 0;
-	virtual void checkpoint( std::ostream & out ) = 0;
+	virtual void checkpoint( std::ostream & out, bool force_override=false ) = 0;
 	virtual uint64_t n_motifs_found() const = 0;
 	virtual int64_t total_samples() const = 0;
-	virtual void condense() = 0;
+	virtual void condense(bool force_override=false) = 0;
 	virtual bool need_to_condense() const = 0;
 	virtual shared_ptr<RifBase> rif() const = 0;
 	virtual void clear() = 0; // seems to only clear temporary storage....

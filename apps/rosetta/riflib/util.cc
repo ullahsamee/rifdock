@@ -415,6 +415,35 @@ get_rif_atype_map()
 	return atypemap;
 }
 
+// I was going to use the atom_properties.txt, but turns out it was wrong
+std::vector<bool> get_rif_hydrophobic_map() {
+	std::vector<int> atypemap = get_rif_atype_map();
+
+	std::vector<bool> hydrophobic_map( atypemap.size(), false );
+
+	hydrophobic_map[ 1] = false; //"CNH2"
+	hydrophobic_map[ 2] = false; //"COO" 
+	hydrophobic_map[ 3] =  true; //"CH1" 
+	hydrophobic_map[ 4] =  true; //"CH2" 
+	hydrophobic_map[ 5] =  true; //"CH3" 
+	hydrophobic_map[ 6] =  true; //"aroC"
+	hydrophobic_map[ 7] = false; //"Ntrp"
+	hydrophobic_map[ 8] = false; //"Nhis"
+	hydrophobic_map[ 9] = false; //"NH2O"
+	hydrophobic_map[10] = false; //"Nlys"
+	hydrophobic_map[11] = false; //"Narg"
+	hydrophobic_map[12] = false; //"Npro"
+	hydrophobic_map[13] = false; //"OH"  
+	hydrophobic_map[14] = false; //"ONH2"
+	hydrophobic_map[15] = false; //"OOC" 
+	hydrophobic_map[16] = false; //"Oaro"
+	hydrophobic_map[17] =  true; //"S"   
+	hydrophobic_map[18] = false; //"Nbb" 
+	hydrophobic_map[19] =  true; //"CAbb"
+	hydrophobic_map[20] = false; //"CObb"
+	hydrophobic_map[21] = false; //"OCbb"
+}
+
 
 
 std::map< core::id::AtomID, core::id::AtomID >

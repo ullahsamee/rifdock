@@ -121,6 +121,7 @@ append_subpose_to_pose(
 
 
 std::vector<int> get_rif_atype_map();
+std::vector<bool> get_rif_hydrophobic_map();
 
 
 
