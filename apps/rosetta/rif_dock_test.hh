@@ -60,6 +60,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier_cutoff )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
+    OPT_1GRP_KEY(  Real        , rif_dock, rotamer_onebody_inclusion_threshold )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
 	OPT_1GRP_KEY(  Real        , rif_dock, rotrf_resl )
@@ -262,6 +263,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_1body_multiplier, "Anything with a one-body energy less than favorable_1body_cutoff gets multiplied by this", 1 );
 			NEW_OPT(  rif_dock::favorable_1body_multiplier_cutoff, "Anything with a one-body energy less than this gets multiplied by favorable_1body_multiplier", 0 );
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
+            NEW_OPT(  rif_dock::rotamer_onebody_inclusion_threshold, "Threshold to include residue into 2-body calc. Increase this if 'crazy energy delta'", 8 );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 			NEW_OPT(  rif_dock::target_donors, "", "" );
@@ -548,6 +550,7 @@ struct RifDockOpt
 	float       favorable_1body_multiplier           ;
 	float       favorable_1body_multiplier_cutoff    ;
 	float       favorable_2body_multiplier           ;
+    float       rotamer_onebody_inclusion_threshold  ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
@@ -768,6 +771,7 @@ struct RifDockOpt
 		favorable_1body_multiplier             = option[rif_dock::favorable_1body_multiplier            ]();
 		favorable_1body_multiplier_cutoff      = option[rif_dock::favorable_1body_multiplier_cutoff     ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
+        rotamer_onebody_inclusion_threshold    = option[rif_dock::rotamer_onebody_inclusion_threshold   ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();

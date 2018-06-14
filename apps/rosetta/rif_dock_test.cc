@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
 		packopts.packing_use_rif_rotamers = opt.packing_use_rif_rotamers;
 		packopts.add_native_scaffold_rots_when_packing = opt.add_native_scaffold_rots_when_packing;
 		packopts.rotamer_inclusion_threshold = -0.5;//-0.5
-		packopts.rotamer_onebody_inclusion_threshold = 5;//5
+		packopts.rotamer_onebody_inclusion_threshold = opt.rotamer_onebody_inclusion_threshold;//5
 		packopts.init_with_best_1be_rots = true;
 		packopts.user_rotamer_bonus_constant=opt.user_rotamer_bonus_constant;
 		packopts.user_rotamer_bonus_per_chi=opt.user_rotamer_bonus_per_chi;
