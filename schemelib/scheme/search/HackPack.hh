@@ -263,7 +263,8 @@ struct HackPack
 			#pragma omp critical
 			#endif
 			{
-				std::cout << "crazy energy delta, indicates a problem.... res (scene numbering) = " << res_rots_.at(ilres).first << " " << delta << std::endl;
+				std::cout << "crazy energy delta, indicates a problem.... res (scene numbering) = " << res_rots_.at(ilres).first << " " << delta 
+					<< " 1body-old: " << ionebodyold << " 1body-new: " << ionebodynew << std::endl;
 				static int errcount = 0;
 				if( ++errcount > 10 ) throwerr = true;
 			}
