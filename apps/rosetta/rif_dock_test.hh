@@ -52,6 +52,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
+    OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
@@ -283,6 +284,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold, "", false );
 			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
+            NEW_OPT(  rif_dock::n_pdb_out_global, "Normally n_pdb_out applies to each seeding position, this caps the global", -1);
 
 			NEW_OPT(  rif_dock::rf_resl, ""       , 0.25 );
 			NEW_OPT(  rif_dock::rf_oversample, "" , 2 );
@@ -575,6 +577,7 @@ struct RifDockOpt
 	int         force_output_if_close_to_input_num   ;
 	float       force_output_if_close_to_input       ;
 	int         n_pdb_out                            ;
+    int         n_pdb_out_global                     ;
 	bool        extra_rotamers                       ;
 	bool        extra_rif_rotamers                   ;
 	int         always_available_rotamers_level      ;
@@ -794,6 +797,7 @@ struct RifDockOpt
 		force_output_if_close_to_input_num     = option[rif_dock::force_output_if_close_to_input_num    ]();
 		force_output_if_close_to_input         = option[rif_dock::force_output_if_close_to_input        ]();
 		n_pdb_out                              = option[rif_dock::n_pdb_out                             ]();
+        n_pdb_out_global                       = option[rif_dock::n_pdb_out_global                      ]();
 		extra_rotamers                         = option[rif_dock::extra_rotamers                        ]();
 		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
 		always_available_rotamers_level        = option[rif_dock::always_available_rotamers_level       ]();

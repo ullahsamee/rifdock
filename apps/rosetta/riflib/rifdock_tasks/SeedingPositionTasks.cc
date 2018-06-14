@@ -158,10 +158,12 @@ create_rifine_task(
     int final_resl = rdd.rif_ptrs.size() - 1;
 
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
-    if ( rdd.opt.xform_fname != "ALL" ) {
-        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
-    } else {
+    if ( rdd.opt.xform_fname == "IDENTITY" ) {
+        // The identity director takes care of this
+    } else if ( rdd.opt.xform_fname == "ALL" ) {
         task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
+    } else {
+        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
     }
     
     task_list.push_back(make_shared<HSearchInit>( ));
@@ -215,9 +217,12 @@ create_rifine_task(
     // dummy task to turn these into RifDockResults
     task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, opt.n_pdb_out, opt.redundancy_filter_mag, 0, 0, 
                                                                                       opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
-
-
     task_list.push_back(make_shared<SortByScoreTask>( ));
+
+    if ( opt.n_pdb_out_global > -1 ) {
+        task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, opt.n_pdb_out_global, opt.redundancy_filter_mag, 0, 0, false, false )); 
+        
+    }
 
     // if ( opt.score_per_1000_sasa_cut < 0 ) {
     //     task_list.push_back(make_shared<FilterByScorePer1000SasaTask>( opt.score_per_1000_sasa_cut ));
