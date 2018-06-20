@@ -577,6 +577,11 @@ int main(int argc, char *argv[]) {
 
     }
 
+    shared_ptr<HydrophobicManager> hydrophobic_manager;
+    if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ) {
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, target_res, rot_index_p );
+    }
+
 
 /// Prepare DonorAcceptorCaches
 
@@ -852,6 +857,10 @@ int main(int argc, char *argv[]) {
             	rso_config.sasa_threshold = sasa_threshold;
             	rso_config.sasa_multiplier = sasa_slope * SASA_SUBVERT_MULTIPLIER;
 
+            	rso_config.hydrophobic_manager = hydrophobic_manager;
+            	rso_config.require_hydrophobic_residue_contacts = opt.require_hydrophobic_residue_contacts;
+            	rso_config.hydrophobic_ddg_cut = opt.hydrophobic_ddg_cut;
+
 
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
             	if ( ! donor_acceptors_from_file && opt.num_hotspots == 0 ) {
@@ -997,7 +1006,8 @@ int main(int argc, char *argv[]) {
  						dokout,
  						scaffold_provider,
  						burial_manager,
- 						unsat_manager
+ 						unsat_manager,
+ 						hydrophobic_manager
 #ifdef USEGRIDSCORE
     				,   grid_scorer
 #endif

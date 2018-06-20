@@ -704,10 +704,12 @@ std::string get_rif_type_from_file( std::string fname )
 		typedef std::pair<RIFAnchor,BBActor> Interaction;
 		bool packing_ = false;
 		::scheme::search::HackPackOpts packopts_;
-		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0;
+		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0, require_hydrophobic_residue_contacts_ = 0;
+        float hydrophobic_ddg_cut_ = 0;
 		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
+        shared_ptr< HydrophobicManager> hydrophobic_manager_;
         
         // the requirements code
         std::vector< int > requirements_;
@@ -996,6 +998,29 @@ std::string get_rif_type_from_file( std::string fname )
 					// runtime_assert(scratch.reference_twobody_->check_equal(*packer.twob_));
 				}
 				
+
+                if ( hydrophobic_manager_ ) {
+                    std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
+                    for( int i = 0; i < result.rotamers_.size(); ++i ){
+                        BBActor const & bb = scene.template get_actor<BBActor>( 1, result.rotamers_[i].first );
+                        int irot = result.rotamers_[i].second;
+
+                        irot_and_bbpos.emplace_back( irot, bb.position() );
+                    }
+                    std::vector<int> hyd_counts;
+                    float hydrophobic_ddg = 0;
+                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg );
+                    if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
+                        result.val_ = 9e9;
+                    }
+                    if ( hydrophobic_ddg > hydrophobic_ddg_cut_ ) {
+                        result.val_ = 9e9;
+                    }
+
+                }
+
+
+
                 if ( requirements_.size() > 0 )
                 {
                     for( int ii = 0; ii < scratch.requirements_satisfied_.size(); ++ii ) scratch.requirements_satisfied_[ii] = false;
@@ -1577,6 +1602,18 @@ struct RifFactoryImpl :
             if ( packing_objectives.size() ) {
                 dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
                                 .init_for_burial( config.burial_manager, config.unsat_manager );
+            }
+        }
+
+        if ( config.hydrophobic_manager ) {
+            // Only the packing objectives need this
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .hydrophobic_manager_ = config.hydrophobic_manager;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .require_hydrophobic_residue_contacts_ = config.require_hydrophobic_residue_contacts;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .hydrophobic_ddg_cut_ = config.hydrophobic_ddg_cut;
             }
         }
 

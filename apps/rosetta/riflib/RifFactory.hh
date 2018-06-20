@@ -19,6 +19,7 @@
 #include <riflib/ScoreRotamerVsTarget.hh>
 #include <riflib/BurialManager.hh>
 #include <riflib/UnsatManager.hh>
+#include <riflib/HydrophobicManager.hh>
 
 #ifdef USEGRIDSCORE
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
@@ -122,11 +123,14 @@ struct RifSceneObjectiveConfig
 	int n_sat_groups;
 	int require_satisfaction;
 	int require_n_rifres;
+    int require_hydrophobic_residue_contacts;
+    float hydrophobic_ddg_cut;
 	float scaff_bb_hbond_weight;
     std::vector< int > requirements;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
     shared_ptr<BurialVoxelArray> sasa_grid;
+    shared_ptr<HydrophobicManager> hydrophobic_manager;
     float sasa_threshold;
     float sasa_multiplier;
 

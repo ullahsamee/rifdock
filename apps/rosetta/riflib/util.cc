@@ -163,12 +163,12 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	core::id::AtomID_Map< core::Real > atom_sasa;
 	utility::vector1< core::Real > rsd_sasa;
 	core::scoring::calc_per_atom_sasa( allval, atom_sasa, rsd_sasa, 2.1 );
-	for( int ir = 1; ir <= pose.size(); ++ir ){
+	for( int ir = 1; ir <= allval.size(); ++ir ){
 		// std::cout << pose.secstruct(ir) << std::endl;
 		bool isloop = pose.secstruct(ir) == 'L';
-		int natoms = pose.residue(ir).nheavyatoms()-pose.residue(ir).last_backbone_atom();
+		int natoms = allval.residue(ir).nheavyatoms()-allval.residue(ir).last_backbone_atom();
 		core::Real scsasa = 0;
-		for( int ia = pose.residue(ir).first_sidechain_atom(); ia <= pose.residue(ir).natoms(); ++ia ){
+		for( int ia = allval.residue(ir).first_sidechain_atom(); ia <= allval.residue(ir).natoms(); ++ia ){
 			scsasa += atom_sasa[core::id::AtomID(ia,ir)];
 		}
 		float scsasa_per_atom = scsasa / float(natoms);
@@ -442,6 +442,8 @@ std::vector<bool> get_rif_hydrophobic_map() {
 	hydrophobic_map[19] =  true; //"CAbb"
 	hydrophobic_map[20] = false; //"CObb"
 	hydrophobic_map[21] = false; //"OCbb"
+
+	return hydrophobic_map;
 }
 
 

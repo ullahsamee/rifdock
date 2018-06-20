@@ -97,11 +97,12 @@ OutputResultsTask::return_rif_dock_results(
 
 /////
 
+        rdd.director->set_scene( selected_result.index, director_resl_, *rdd.scene_minimal );
+
         std::vector<float> unsat_scores;
         int unsats = -1;
         int buried = -1;
         if ( rdd.unsat_manager ) {
-            rdd.director->set_scene( selected_result.index, director_resl_, *rdd.scene_minimal );
             std::vector<EigenXform> bb_positions;
             for ( int i_actor = 0; i_actor < rdd.scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
                 bb_positions.push_back( rdd.scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
@@ -113,6 +114,21 @@ OutputResultsTask::return_rif_dock_results(
             for ( float this_burial : burial ) if ( this_burial > 0 ) buried++;
             unsats = 0;
             for ( float this_unsat_score : unsat_scores ) if ( this_unsat_score > 0 ) unsats++;
+        }
+
+        std::vector<int> hydrophobic_counts;
+        int hydrophobic_residue_contacts;
+        float hydrophobic_ddg = 0;
+        if ( rdd.hydrophobic_manager ) {
+            std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
+            selected_result.rotamers();
+            for( int i = 0; i < selected_result.rotamers_->size(); ++i ){
+                BBActor const & bb = rdd.scene_minimal->template get_actor<BBActor>( 1, selected_result.rotamers_->at(i).first );
+                int irot = selected_result.rotamers_->at(i).second;
+
+                irot_and_bbpos.emplace_back( irot, bb.position() );
+            }
+            hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg );
         }
 
 
@@ -144,13 +160,18 @@ OutputResultsTask::return_rif_dock_results(
         if ( rdd.opt.need_to_calculate_sasa ) {
         oss << " sasa:" << I(5, selected_result.sasa);
         }
+        if ( rdd.hydrophobic_manager ) {
+        oss << " hyd-cont:" << I(3, hydrophobic_residue_contacts);
+        oss << " hyd-ddg: " << F(7,3, hydrophobic_ddg);
+        }
         oss << " " << pdboutfile
             << std::endl;
         std::cout << oss.str();
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
 
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores,
+                    hydrophobic_counts);
 
 
     }
@@ -170,7 +191,8 @@ dump_rif_result_(
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile, /* = "" */
-    std::vector<float> const & unsat_scores /* = std::vector<float>() */
+    std::vector<float> const & unsat_scores, /* = std::vector<float>() */
+    std::vector<int> const & hydrophobic_counts /* = std::vector<int>() */
     ) {
 
     using ObjexxFCL::format::F;
@@ -301,6 +323,9 @@ dump_rif_result_(
     if ( unsat_scores.size() > 0 ) {
         rdd.unsat_manager->print_buried_unsats( unsat_scores, scaffold_size );
     }
+    if ( hydrophobic_counts.size() > 0 ) {
+        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts );
+    } 
 
     // // TEMP debug:
     // for (auto i: scaffold_phi_psi) {
