@@ -250,6 +250,7 @@ namespace rif {
 		abs_score_cut_by_res["DVA"] = -1.0;
 		abs_score_cut_by_res["DTY"] = -3.4;
 		abs_score_cut_by_res["DLY"] = -2.6;
+		abs_score_cut_by_res["DTR"] = -3.4;
 
 		// #ifdef USE_OPENMP
 		// #pragma omp parallel for schedule(dynamic,1)
