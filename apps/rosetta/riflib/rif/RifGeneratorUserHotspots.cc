@@ -255,7 +255,8 @@ namespace rif {
 			core::pose::Pose pose;
 			core::import_pose::pose_from_file(pose,hotspot_file);
 			
-			utility::vector1<std::vector<std::string>>myresname(pose.size()); 
+			utility::vector1<std::vector<std::string>>myresname(pose.size());
+			utility::vector1<std::vector<std::string>>d_name(pose.size()); 
 			for (int i = 1; i <= pose.size(); i++) {
                 std::string rn(pose.residue(i).name3());
 				if (rn == "CA_") { // carboxamide
@@ -279,32 +280,38 @@ namespace rif {
                     myresname[i].push_back("ASP");
                 } else {
 					myresname[i].push_back(pose.residue(i).name3());
+					d_name[i].push_back(static_cast<std::string>("DUMMY"));
+					// put in d res name if user specified
+					if (this->opts.use_d_aa) {
+						for (auto it : params -> rot_index_p -> d_l_map_){
+							if (it.second == rn){
+								std::replace(d_name[i].begin(),d_name[i].end(),static_cast<std::string>("DUMMY"),it.first);
+							}
+						}			 
+					}
 				}
 			}
-
-      		
 
       		std::cout << "Processing hotspots... " << std::flush; // No endl here!!!!
 			// read in pdb files # i_hotspot_group
 			
 			for( int i_hspot_res = 1; i_hspot_res <= myresname.size(); ++i_hspot_res ){
 
-			    std::vector<std::string> d_name;
-			    // try to find matching d version if use_d_aa
- 
-                for (auto it : params -> rot_index_p -> d_l_map_) {
-                	 
-                	for (auto const & name_it: myresname[i_hspot_res]){
-                    	//std::cout << it.second << " " << name_it << std::endl;
-                    	if (it.second == name_it){//pose.residue(i_hspot_res).name3()) {
-                    		if (this->opts.use_d_aa) {
-                    			d_name.push_back(it.first);
-                    		} else {
-                    			d_name.push_back(" ");
-                    		}
-                    	}
-                	}
-                }
+			  //   std::vector<std::string> d_name(myresname.size(),"NONE");
+			  //   // try to find matching d version if use_d_aa
+ 				// if (this->opts.use_d_aa) {
+	    //             // loop thorugh the d_l_map_ 
+	    //             for (auto it : params -> rot_index_p -> d_l_map_) {
+	    //             	// loop through the added hotspot
+	    //             	for (auto const & name_it: myresname[i_hspot_res]){
+	    //                 	//std::cout << it.second << " " << name_it << std::endl;
+	    //                 	if (it.second == name_it){//pose.residue(i_hspot_res).name3()) {
+	    //                 		d_name.push_back(it.first);
+	    //                 		//d_name.push_back(" ");
+	    //                 	}
+	    //             	}
+	    //             }
+	    //         }
 
             	// if (this->opts.use_d_aa && d_name == " ") {
              //   		std::cout << pose.residue(i_hspot_res).name3() << std::endl;
@@ -362,9 +369,10 @@ namespace rif {
 					//for (auto const & it: myresname[i_hspot_res]){
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
-							//std::cout << it << std::endl;
-							//std::cout << d_name[i] << std::endl;
-						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_name[i])
+							auto d_it =  d_name[i_hspot_res][i];
+							std::cout << it << std::endl;
+							std::cout << d_it << std::endl;
+						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_it)
 						{
 							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
 							EigenXform Xrotamer = ::scheme::chemical::make_stub<EigenXform>(
@@ -407,7 +415,7 @@ namespace rif {
 							int passes = 1;
 							EigenXform O_2_orig = EigenXform::Identity();
 		     				EigenXform tyr_thing = EigenXform::Identity();	
-							if (pose.residue(i_hspot_res).name3() == "TYR" || d_name[i] == "DTY") {
+							if (pose.residue(i_hspot_res).name3() == "TYR" || d_it == "DTY") {
 
 								Pos the_axis = (hot_atom1 - hot_atom2).normalized();
 								O_2_orig.translation() = -hot_atom1;	
@@ -415,7 +423,7 @@ namespace rif {
 
 								passes = 2;
 
-							} else if (pose.residue(i_hspot_res).name3() == "PHE" || d_name[i] == "DPH") {
+							} else if (pose.residue(i_hspot_res).name3() == "PHE" || d_it == "DPH") {
 								
 								Pos atom6;
 								atom6(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy - 5 )[0];
