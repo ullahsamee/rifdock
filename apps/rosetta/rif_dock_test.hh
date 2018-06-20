@@ -127,6 +127,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_satisfaction )
 	OPT_1GRP_KEY(  Integer     , rif_dock, num_hotspots )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
+    OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -358,7 +360,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::require_satisfaction, "", 0 );
 			NEW_OPT(  rif_dock::num_hotspots, "Number of hotspots found in Rifdock hotspots. If in doubt, set this to 1000", 0 );
-			NEW_OPT(  rif_dock::require_n_rifres, "This doesn't work during HackPack", 0 );
+			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
+            NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -528,6 +532,8 @@ struct RifDockOpt
 	int         require_satisfaction                 ;
 	int         num_hotspots                         ;
 	int         require_n_rifres                     ;
+    int         require_hydrophobic_residue_contacts ;
+    float       hydrophobic_ddg_cut                  ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -749,6 +755,8 @@ struct RifDockOpt
 		require_satisfaction                   = option[rif_dock::require_satisfaction                  ]();
 		num_hotspots                           = option[rif_dock::num_hotspots                          ]();
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
+        require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
+        hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();

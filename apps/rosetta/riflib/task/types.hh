@@ -217,6 +217,7 @@ struct RifDockData {
     ScaffoldProviderOP scaffold_provider;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
+    shared_ptr<HydrophobicManager> hydrophobic_manager;
 
 #ifdef USEGRIDSCORE
     shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
