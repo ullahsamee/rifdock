@@ -304,7 +304,7 @@ struct HydrophobicManager {
     }
 
     void
-    print_hydrophobic_counts( core::pose::Pose const & target, std::vector<int> const & hyd_counts ) const {
+    print_hydrophobic_counts( core::pose::Pose const & target, std::vector<int> const & hyd_counts, int scaff_size ) const {
         std::cout << "Hydrophobic counts:" << std::endl;
 
         assert( hyd_counts.size() == hydrophobic_res_.size() );
@@ -314,7 +314,7 @@ struct HydrophobicManager {
             if ( count >= 2 ) {
                 core::Size seqpos = hydrophobic_res_[i];
                 core::conformation::Residue const & res = target.residue(seqpos);
-                std::cout << " " << seqpos << " " << res.name3() << ": " << count << std::endl;
+                std::cout << " " << seqpos << "/" << seqpos + scaff_size << " " << res.name3() << ": " << count << std::endl;
             }
         }
     }
