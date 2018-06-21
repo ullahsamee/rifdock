@@ -156,6 +156,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_even_if_no_score )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_debug_dump_scores )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_select_random )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, skip_redundancy_filter_before_rosetta )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, override_rosetta_pose )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
@@ -390,6 +392,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_filter_even_if_no_score, "Do the filtering for rosetta score and min even if you don't actually score/min", false );
 			NEW_OPT(  rif_dock::rosetta_debug_dump_scores, "dump lists of scores around the rosetta score and min", false);
 			NEW_OPT(  rif_dock::rosetta_score_select_random, "Select random positions to score rather than best", false);
+            NEW_OPT(  rif_dock::skip_redundancy_filter_before_rosetta, "For patchdock method, don't redundancy filter before rosetta score", false );
+            NEW_OPT(  rif_dock::override_rosetta_pose, "Override the rosetta score and min output with the usual output", false );
 
 			NEW_OPT(  rif_dock::extra_rotamers, "", true );
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
@@ -608,6 +612,8 @@ struct RifDockOpt
 	bool        rosetta_score_ddg_only               ;
 	float       rosetta_score_rifres_rifres_weight   ;
 	float       rosetta_score_rifres_scaffold_weight ;
+    bool        skip_redundancy_filter_before_rosetta;
+    bool        override_rosetta_pose                ;
 
 	bool        rosetta_beta                         ;
 	std::string rosetta_soft_score                   ;
@@ -831,6 +837,8 @@ struct RifDockOpt
   		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();
   		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();
 		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();
+        skip_redundancy_filter_before_rosetta  = option[rif_dock::skip_redundancy_filter_before_rosetta ]();
+        override_rosetta_pose                  = option[rif_dock::override_rosetta_pose                 ]();
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  					]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score 				    ]();
 		rosetta_beta                           = option[corrections::beta 								]();

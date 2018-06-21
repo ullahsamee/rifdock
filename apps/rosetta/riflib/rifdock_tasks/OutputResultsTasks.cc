@@ -324,7 +324,7 @@ dump_rif_result_(
         rdd.unsat_manager->print_buried_unsats( unsat_scores, scaffold_size );
     }
     if ( hydrophobic_counts.size() > 0 ) {
-        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts );
+        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, scaffold_size );
     } 
 
     // // TEMP debug:
@@ -379,7 +379,7 @@ dump_rif_result_(
     }
 
     // Add PDBInfo labels if they are applicable
-    bool using_rosetta_model = selected_result.pose_ != nullptr;
+    bool using_rosetta_model = (selected_result.pose_ != nullptr) && !rdd.opt.override_rosetta_pose;
 
     core::pose::PoseOP stored_pose = selected_result.pose_;
     if ( using_rosetta_model && ( rdd.opt.output_scaffold_only || rdd.opt.output_full_scaffold_only ) ) {

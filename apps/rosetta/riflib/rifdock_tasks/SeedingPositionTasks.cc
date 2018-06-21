@@ -197,7 +197,10 @@ create_rifine_task(
     task_list.push_back(make_shared<FilterByScoreCutTask>( opt.global_score_cut ));
     // task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, 100000000, opt.redundancy_filter_mag, 0, 0, 
     //                                                                                   opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
-    task_list.push_back(make_shared<RemoveRedundantPointsTask>( opt.redundancy_filter_mag, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+    
+    if ( ! opt.skip_redundancy_filter_before_rosetta ) {
+        task_list.push_back(make_shared<RemoveRedundantPointsTask>( opt.redundancy_filter_mag, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+    }
 
     task_list.push_back(make_shared<DumpSeedingClusterScoreTask>());
 
