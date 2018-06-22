@@ -240,8 +240,8 @@ int main(int argc, char *argv[]) {
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
 
-		::scheme::chemical::RotamerIndexSpec rot_index_spec;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies, rot_index_spec );
+		::scheme::chemical::RotamerIndexSpec rot_index_spec;					// we need per-thread rotamers for new faster 1-bodies
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, true, rot_index_spec );
 		RotamerIndex & rot_index( *rot_index_p );
 
 
