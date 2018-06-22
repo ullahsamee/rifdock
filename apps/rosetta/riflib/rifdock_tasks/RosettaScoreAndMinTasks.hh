@@ -76,9 +76,10 @@ private:
 
 struct FilterForRosettaMinTask : public AnyPointTask {
 
-    FilterForRosettaMinTask( float rosetta_min_fraction, int rosetta_min_at_least ) :
+    FilterForRosettaMinTask( float rosetta_min_fraction, int rosetta_min_at_least, int rosetta_min_at_most ) :
     rosetta_min_fraction_( rosetta_min_fraction ),
-    rosetta_min_at_least_( rosetta_min_at_least )
+    rosetta_min_at_least_( rosetta_min_at_least ),
+    rosetta_min_at_most_( rosetta_min_at_most )
     {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -110,6 +111,7 @@ private:
 private:
     float rosetta_min_fraction_;
     int rosetta_min_at_least_;
+    int rosetta_min_at_most_;
 
 };
 

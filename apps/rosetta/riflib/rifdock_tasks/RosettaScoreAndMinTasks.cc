@@ -120,6 +120,9 @@ FilterForRosettaMinTask::return_any_points(
     // min take ~10x score time, so do on 1/10th of the scored
     n_scormin = any_points->size() * rosetta_min_fraction_;
     n_scormin = std::max<size_t>( n_scormin, rosetta_min_at_least_);
+    if ( rosetta_min_at_most_ > 0 ) {
+        n_scormin = std::min<size_t>( n_scormin, rosetta_min_at_most_ );
+    }
     n_scormin = std::ceil(1.0f*n_scormin/omp_max_threads()) * omp_max_threads();
     n_scormin = std::min( n_scormin, any_points->size() );
 

@@ -240,6 +240,124 @@ compute_onebody_rotamer_energies(
 }
 
 
+// void
+// compute_onebody_rotamer_energies_fast(
+// 	core::pose::Pose const & pose,
+// 	utility::vector1<core::Size> const & scaffold_res,
+// 	RotamerIndex const & rot_index,
+// 	std::vector<std::vector< float > > & onebody_rotamer_energies,
+// 	bool replace_with_ala
+// ){
+// 	using devel::scheme::str;
+// 	using devel::scheme::omp_max_threads_1;
+// 	using devel::scheme::omp_thread_num_1;
+// 	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+// 	core::conformation::ResidueOP ala = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA") );
+
+
+// 	std::vector<core::scoring::ScoreFunctionOP> score_func_per_thread(omp_max_threads_1());
+// 	for( auto & score_func : score_func_per_thread ){
+// 		// score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
+// 		// score_func->set_etable( "FA_STANDARD_SOFT" );
+// 		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
+
+		
+// 		score_func = core::scoring::get_score_function();
+// 		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
+// 		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
+// 		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
+// 		hopts.use_hb_env_dep( false );
+// 		opts.hbond_options( hopts );
+// 		score_func->set_energy_method_options( opts );
+// 	}
+
+// 	// make all ala or gly
+// 	core::pose::Pose bbone(pose);
+// 	if( replace_with_ala ) pose_to_ala( bbone );
+// 	double const base_score = score_func_per_thread.front()->score( bbone );
+// 	// bbone.dump_pdb("bbone_test.pdb");
+
+
+// 	onebody_rotamer_energies.resize( bbone.size() );
+// 	std::vector<core::pose::Pose> pose_per_thread( omp_max_threads_1(), bbone );
+// 	std::cout << "compute_onebody_rotamer_energies " << bbone.size() << "/" << rot_index.size();
+// 	std::exception_ptr exception = nullptr;
+// 	#ifdef USE_OPENMP
+// 	#pragma omp parallel for schedule(dynamic,1)
+// 	#endif
+// 	for( int ir = 1; ir <= bbone.size(); ++ir ){
+// 		if( exception ) continue;
+// 		if( std::find(scaffold_res.begin(), scaffold_res.end(), ir) == scaffold_res.end() ){
+// 			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
+// 			continue;
+// 		}
+// 		try {
+// 			core::pose::Pose & work_pose( pose_per_thread[ omp_thread_num_1()-1 ] );
+// 			core::scoring::ScoreFunctionOP score_func = score_func_per_thread[ omp_thread_num_1()-1 ];
+// 			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
+// 			if( ! work_pose.residue(ir).is_protein()   ) continue;
+// 			if(   work_pose.residue(ir).name3()=="GLY" ) continue;
+// 			if(   work_pose.residue(ir).name3()=="PRO" ) continue;
+// 			#ifdef USE_OPENMP
+// 			#pragma omp critical
+// 			#endif
+// 			std::cout << (100.0*ir)/work_pose.size() << "% "; std::cout.flush();
+// 			for( int jr = 0; jr < rot_index.size(); ++jr ){
+// 				std::string rot_name;
+// 				core::conformation::ResidueOP rot;
+// 				auto dl_map_it = rot_index.d_l_map_.find(rot_index.resname(jr));
+// 				// d case
+// 				if (dl_map_it != rot_index.d_l_map_.end()) {
+// 					rot_name = rot_index.d_l_map_.at(rot_index.resname(jr));
+// 					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+// 					core::chemical::ResidueType const & rtype = rts.lock()->name_map( rot_name );
+// 					core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
+// 					core::pose::Pose tmp_pose;
+// 					tmp_pose.append_residue_by_jump(*resop,1);
+// 					core::chemical::ResidueTypeSetCOP pose_rts = tmp_pose.residue_type_set_for_pose();
+//         			core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(tmp_pose, rot_name);
+//         			core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+//         			rot = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+// 				} else {
+// 				//rot_index.d_l_map_reverse(rot_index.resname(jr), d_name);
+// 				// if (rot_index.resname(jr) == d_name) {
+// 					rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
+// 				}
+// 				// } else {
+
+// 				// 	core::conformation::ResidueOP rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
+// 				// }
+// 				work_pose.replace_residue( ir, *rot, true );
+// 				for( int k = 0; k < rot_index.nchi(jr); ++k ){
+// 					work_pose.set_chi( k+1, ir, rot_index.chi( jr, k ) );
+// 				}
+// 				onebody_rotamer_energies[ir-1][jr] = score_func->score( work_pose ) - base_score;
+// 				// std::cout << "fa_dun " << ir << " " << jr << " "<< work_pose.energies().residue_total_energies(ir)[core::scoring::fa_dun] << std::endl;
+// 				work_pose.replace_residue( ir, *ala, true );
+// 				// if( jr > 2	 ) break;
+// 			}
+// 		} catch( ... ) {
+// 			#ifdef USE_OPENMP
+// 			#pragma omp critical
+// 			#endif
+// 			exception = std::current_exception();
+// 		}
+// 	}
+// 	if( exception ) std::rethrow_exception(exception);
+
+// 	std::cout << "compute_onebody_rotamer_energies_DONE" << std::endl;
+
+// 	// for( int i = 0; i < onebody_rotamer_energies.size(); ++i ){
+// 	// 	std::cout << "OBE " << i;
+// 	// 	for( int j = 0; j < onebody_rotamer_energies[i].size(); ++j ){
+// 	// 		std::cout << " " << onebody_rotamer_energies[i][j];
+// 	// 	}
+// 	// 	std::cout << std::endl;
+// 	// }
+
+
+// }
 
 void get_per_rotamer_rf_tables_one(
 	devel::scheme::RotamerIndex const & rot_index,
