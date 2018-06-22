@@ -1220,7 +1220,7 @@ int main(int argc, char *argv[]) {
 				}
 
 				if ( do_rosetta_min ) {
-					task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+					task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least, opt.rosetta_min_at_most ));
 					task_list.push_back(make_shared<RosettaMinTask>( final_resl, opt.rosetta_score_cut, true )); 
 
 					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_min_scores.dat")); 

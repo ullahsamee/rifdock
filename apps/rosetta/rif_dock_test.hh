@@ -138,6 +138,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_least )
+    OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_most )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_fix_target )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_scaffoldbb )
@@ -374,6 +375,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
 			NEW_OPT(  rif_dock::rosetta_min_at_least, "", 0 );
+            NEW_OPT(  rif_dock::rosetta_min_at_most, "Min at most this many", -1 );
 			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
@@ -602,6 +604,7 @@ struct RifDockOpt
 	float       rosetta_score_at_most                ;
 	float       rosetta_min_fraction                 ;
 	int         rosetta_min_at_least                 ;
+    int         rosetta_min_at_most                  ;
 	bool        rosetta_min_fix_target               ;
 	bool        rosetta_min_targetbb                 ;
 	bool        rosetta_min_scaffoldbb               ;
@@ -827,6 +830,7 @@ struct RifDockOpt
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
   		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
   		rosetta_min_at_least                   = option[rif_dock::rosetta_min_at_least                  ]();
+        rosetta_min_at_most                    = option[rif_dock::rosetta_min_at_most                   ]();
   		rosetta_min_fix_target                 = option[rif_dock::rosetta_min_fix_target                ]();
   		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
   		rosetta_min_scaffoldbb                 = option[rif_dock::rosetta_min_scaffoldbb                ]();

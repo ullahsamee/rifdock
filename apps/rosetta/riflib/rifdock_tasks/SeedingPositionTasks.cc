@@ -213,7 +213,7 @@ create_rifine_task(
     }
 
     if ( do_rosetta_min || opt.rosetta_filter_even_if_no_score ) {
-                            task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+                            task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least, opt.rosetta_min_at_most ));
         if (do_rosetta_min) task_list.push_back(make_shared<RosettaMinTask>( 0, opt.rosetta_score_cut, false )); 
     }
 
