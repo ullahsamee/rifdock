@@ -105,25 +105,6 @@ void get_onebody_rotamer_energies(
 		);
 
 
-		std::vector<std::vector<float> > test;
-		devel::scheme::compute_onebody_rotamer_energies_fast(
-			scaffold,
-			scaffold_res,
-			rot_index,
-			test,
-					// this doesn't seem to work the way I expected...
-					// false // do not mutate all to ALA!
-			replace_with_ala
-		);
-
-		for ( core::Size seqpos : scaffold_res ) {
-			std::cout << "### " << I(3, seqpos) << " " << scaffold.residue(seqpos).name3() << " ###" << std::endl;
-			for ( int i = 0; i < 20; i++ ) {
-				std::cout << " " << I(3, i) << " " << rot_index.resname(i) << " " << F(7,3,scaffold_onebody_rotamer_energies[seqpos-1][i]) << " " 
-																				  << F(7,3,test[seqpos-1][i]) << std::endl;
-			}
-		}
-
 		if( cachefile.size() ){
 			std::cout << "saving onebody energies to: " << cachefile << std::endl;
 			utility::io::ozstream out;//( cachefile );
@@ -152,6 +133,7 @@ void get_onebody_rotamer_energies(
 	}
 }
 
+
 void
 compute_onebody_rotamer_energies(
 	core::pose::Pose const & pose,
@@ -163,138 +145,6 @@ compute_onebody_rotamer_energies(
 	using devel::scheme::str;
 	using devel::scheme::omp_max_threads_1;
 	using devel::scheme::omp_thread_num_1;
-	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-	core::conformation::ResidueOP ala = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA") );
-
-
-	std::vector<core::scoring::ScoreFunctionOP> score_func_per_thread(omp_max_threads_1());
-	for( auto & score_func : score_func_per_thread ){
-		// score_func = core::scoring::ScoreFunctionFactory::create_score_function( "talaris2014" );
-		// score_func->set_etable( "FA_STANDARD_SOFT" );
-		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
-
-		
-		// score_func = core::scoring::ScoreFunctionFactory::create_score_function("none");//core::scoring::get_score_function();
-		// score_func->set_weight( core::scoring::rama_prepro, 1 );
-
-		score_func = core::scoring::get_score_function();
-		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
-
-		// score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
-
-		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
-		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
-		hopts.use_hb_env_dep( false );
-		opts.hbond_options( hopts );
-		score_func->set_energy_method_options( opts );
-	}
-
-	// make all ala or gly
-	core::pose::Pose bbone(pose);
-	if( replace_with_ala ) pose_to_ala( bbone );
-	double const base_score = score_func_per_thread.front()->score( bbone );
-	// bbone.dump_pdb("bbone_test.pdb");
-
-
-	onebody_rotamer_energies.resize( bbone.size() );
-	std::vector<core::pose::Pose> pose_per_thread( omp_max_threads_1(), bbone );
-	std::cout << "compute_onebody_rotamer_energies " << bbone.size() << "/" << rot_index.size();
-	std::exception_ptr exception = nullptr;
-	#ifdef USE_OPENMP
-	#pragma omp parallel for schedule(dynamic,1)
-	#endif
-	for( int ir = 1; ir <= bbone.size(); ++ir ){
-		if( exception ) continue;
-		if( std::find(scaffold_res.begin(), scaffold_res.end(), ir) == scaffold_res.end() ){
-			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
-			continue;
-		}
-		try {
-			core::pose::Pose & work_pose( pose_per_thread[ omp_thread_num_1()-1 ] );
-			core::scoring::ScoreFunctionOP score_func = score_func_per_thread[ omp_thread_num_1()-1 ];
-			onebody_rotamer_energies[ir-1].resize( rot_index.size(), 12345.0 );
-			if( ! work_pose.residue(ir).is_protein()   ) continue;
-			if(   work_pose.residue(ir).name3()=="GLY" ) continue;
-			if(   work_pose.residue(ir).name3()=="PRO" ) continue;
-			#ifdef USE_OPENMP
-			#pragma omp critical
-			#endif
-			std::cout << (100.0*ir)/work_pose.size() << "% "; std::cout.flush();
-			for( int jr = 0; jr < rot_index.size(); ++jr ){
-				std::string rot_name;
-				core::conformation::ResidueOP rot;
-				auto dl_map_it = rot_index.d_l_map_.find(rot_index.resname(jr));
-				// d case
-				if (dl_map_it != rot_index.d_l_map_.end()) {
-					rot_name = rot_index.d_l_map_.at(rot_index.resname(jr));
-					core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-					core::chemical::ResidueType const & rtype = rts.lock()->name_map( rot_name );
-					core::conformation::ResidueOP resop = core::conformation::ResidueFactory::create_residue( rtype );
-					core::pose::Pose tmp_pose;
-					tmp_pose.append_residue_by_jump(*resop,1);
-					core::chemical::ResidueTypeSetCOP pose_rts = tmp_pose.residue_type_set_for_pose();
-        			core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(tmp_pose, rot_name);
-        			core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
-        			rot = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
-				} else {
-				//rot_index.d_l_map_reverse(rot_index.resname(jr), d_name);
-				// if (rot_index.resname(jr) == d_name) {
-					rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
-				}
-				// } else {
-
-				// 	core::conformation::ResidueOP rot = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map( rot_index.resname(jr) ) );
-				// }
-				work_pose.replace_residue( ir, *rot, true );
-				for( int k = 0; k < rot_index.nchi(jr); ++k ){
-					work_pose.set_chi( k+1, ir, rot_index.chi( jr, k ) );
-				}
-				onebody_rotamer_energies[ir-1][jr] = score_func->score( work_pose ) - base_score;
-				// std::cout << "fa_dun " << ir << " " << jr << " "<< work_pose.energies().residue_total_energies(ir)[core::scoring::fa_dun] << std::endl;
-				
-
-				// if (ir == 27) {
-				// 	work_pose.dump_pdb(boost::str(boost::format("res27_is_irot_%i.pdb")%jr));
-				// }
-				work_pose.replace_residue( ir, *ala, true );
-				// if( jr > 2	 ) break;
-			}
-		} catch( ... ) {
-			#ifdef USE_OPENMP
-			#pragma omp critical
-			#endif
-			exception = std::current_exception();
-		}
-	}
-	if( exception ) std::rethrow_exception(exception);
-
-	std::cout << "compute_onebody_rotamer_energies_DONE" << std::endl;
-
-	// for( int i = 0; i < onebody_rotamer_energies.size(); ++i ){
-	// 	std::cout << "OBE " << i;
-	// 	for( int j = 0; j < onebody_rotamer_energies[i].size(); ++j ){
-	// 		std::cout << " " << onebody_rotamer_energies[i][j];
-	// 	}
-	// 	std::cout << std::endl;
-	// }
-
-
-}
-
-
-void
-compute_onebody_rotamer_energies_fast(
-	core::pose::Pose const & pose,
-	utility::vector1<core::Size> const & scaffold_res,
-	RotamerIndex const & rot_index,
-	std::vector<std::vector< float > > & onebody_rotamer_energies,
-	bool replace_with_ala
-){
-	using devel::scheme::str;
-	using devel::scheme::omp_max_threads_1;
-	using devel::scheme::omp_thread_num_1;
-	core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-	core::conformation::ResidueOP ala = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map("ALA") );
 
 	// make all ala or gly
 	core::pose::Pose bbone(pose);
@@ -302,13 +152,12 @@ compute_onebody_rotamer_energies_fast(
 	std::vector<core::pose::Pose> pose_per_thread( omp_max_threads_1(), bbone );
 
 	std::vector<core::scoring::ScoreFunctionOP> score_func_per_thread(omp_max_threads_1());
-	// std::vector<core::conformation::ResidueOP> ala_per_thread(omp_max_threads_1());
 	utility::vector1<bool> true_vect(bbone.size(), true);
 
 	runtime_assert(rot_index.per_thread_rotamers_.size() > 0);
 	int ala_rot = rot_index.ala_rot();
 
-	// Some real yolo multithreading this guy lol
+	core::scoring::get_score_function();	// get one first to prevent multi-thread crash
 	#ifdef USE_OPENMP
 	#pragma omp parallel for schedule(dynamic,1)
 	#endif
@@ -317,10 +166,6 @@ compute_onebody_rotamer_energies_fast(
 		// We specifically don't use the thread number here because we're filling in the per-thread stuff
 		core::scoring::ScoreFunctionOP & score_func = score_func_per_thread[i];
 		core::pose::Pose & work_pose = pose_per_thread[i];
-
-		
-		// score_func = core::scoring::ScoreFunctionFactory::create_score_function("none");//
-		// score_func->set_weight( core::scoring::rama_prepro, 1 );
 
 		score_func = core::scoring::get_score_function();
 		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
@@ -336,8 +181,6 @@ compute_onebody_rotamer_energies_fast(
 		score_func->score( work_pose );
 		score_func->setup_for_packing( work_pose, true_vect, true_vect );
 
-		// We need to clone the per-thread ala with the correct thread, but fill in the i-thread ala
-		// ala_per_thread[i] = rot_index.get_per_thread_rotamer(::devel::scheme::omp_thread_num(), ala_rot)->clone();
 	}
 
 
@@ -352,7 +195,6 @@ compute_onebody_rotamer_energies_fast(
 	float max_rotamer_radius = rot_index.get_max_nbr_radius();
 	float max_interaction_radius = score_func_per_thread.front()->info()->max_atomic_interaction_distance();
 	float max_radius = max_rotamer_radius + max_res_radius + max_interaction_radius;
-	// float max_radius_sq = max_radius * max_radius;
 
 	// Copied from core/pack/packer_neighbors.cc
 	core::conformation::PointGraphOP point_graph( new core::conformation::PointGraph );
