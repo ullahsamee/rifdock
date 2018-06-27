@@ -823,6 +823,17 @@ struct RotamerIndex {
 		}
 	}
 
+	float
+	get_max_nbr_radius() const {
+		runtime_assert(per_thread_rotamers_.size() > 0);
+
+		float max_radius = 0;
+		for ( int irot = 0; irot < size(); irot++ ) {
+			max_radius = std::max<float>(max_radius, get_per_thread_rotamer(0, irot)->nbr_radius());
+		}
+		return max_radius;
+	}
+
 	void
 	build_per_thread_rotamers( int threads ) {
 		per_thread_rotamers_.resize(threads);

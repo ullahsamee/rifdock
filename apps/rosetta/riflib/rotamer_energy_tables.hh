@@ -41,7 +41,6 @@ compute_onebody_rotamer_energies(
 );
 
 
-
 struct RotamerRFOpts {
 	int oversample;
 	float field_resl, field_spread;
