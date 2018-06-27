@@ -40,6 +40,14 @@ compute_onebody_rotamer_energies(
 	bool replace_with_ala = true
 );
 
+void
+compute_onebody_rotamer_energies_fast(
+	core::pose::Pose const & pose,
+	utility::vector1<core::Size> const & scaffold_res,
+	RotamerIndex const & rot_index,
+	std::vector<std::vector< float > > & onebody_rotamer_energies,
+	bool replace_with_ala = true
+);
 
 
 struct RotamerRFOpts {

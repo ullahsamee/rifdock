@@ -24,6 +24,7 @@
 #include <core/scoring/EnergyMap.fwd.hh>
 #include <core/scoring/methods/EnergyMethodOptions.hh>
 #include <core/scoring/LREnergyContainer.hh>
+#include <core/scoring/methods/LongRangeTwoBodyEnergy.hh>
 #include <core/conformation/find_neighbors.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/conformation/PointGraph.hh>
@@ -58,6 +59,7 @@ namespace devel {
 namespace scheme {
 
 using ObjexxFCL::format::I;
+using ObjexxFCL::format::F;
 
 void get_onebody_rotamer_energies(
 	core::pose::Pose const & scaffold,
@@ -101,6 +103,27 @@ void get_onebody_rotamer_energies(
 					// false // do not mutate all to ALA!
 			replace_with_ala
 		);
+
+
+		std::vector<std::vector<float> > test;
+		devel::scheme::compute_onebody_rotamer_energies_fast(
+			scaffold,
+			scaffold_res,
+			rot_index,
+			test,
+					// this doesn't seem to work the way I expected...
+					// false // do not mutate all to ALA!
+			replace_with_ala
+		);
+
+		for ( core::Size seqpos : scaffold_res ) {
+			std::cout << "### " << I(3, seqpos) << " " << scaffold.residue(seqpos).name3() << " ###" << std::endl;
+			for ( int i = 0; i < 20; i++ ) {
+				std::cout << " " << I(3, i) << " " << rot_index.resname(i) << " " << F(7,3,scaffold_onebody_rotamer_energies[seqpos-1][i]) << " " 
+																				  << F(7,3,test[seqpos-1][i]) << std::endl;
+			}
+		}
+
 		if( cachefile.size() ){
 			std::cout << "saving onebody energies to: " << cachefile << std::endl;
 			utility::io::ozstream out;//( cachefile );
@@ -151,8 +174,13 @@ compute_onebody_rotamer_energies(
 		// // score_func->set_weight( core::scoring::fa_rep, score_func->get_weight(core::scoring::fa_rep)*0.67 );
 
 		
+		// score_func = core::scoring::ScoreFunctionFactory::create_score_function("none");//core::scoring::get_score_function();
+		// score_func->set_weight( core::scoring::rama_prepro, 1 );
+
 		score_func = core::scoring::get_score_function();
 		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
+
+		// score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
 
 		core::scoring::methods::EnergyMethodOptions opts = score_func->energy_method_options();
 		core::scoring::hbonds::HBondOptions hopts = opts.hbond_options();
@@ -223,6 +251,11 @@ compute_onebody_rotamer_energies(
 				}
 				onebody_rotamer_energies[ir-1][jr] = score_func->score( work_pose ) - base_score;
 				// std::cout << "fa_dun " << ir << " " << jr << " "<< work_pose.energies().residue_total_energies(ir)[core::scoring::fa_dun] << std::endl;
+				
+
+				// if (ir == 27) {
+				// 	work_pose.dump_pdb(boost::str(boost::format("res27_is_irot_%i.pdb")%jr));
+				// }
 				work_pose.replace_residue( ir, *ala, true );
 				// if( jr > 2	 ) break;
 			}
@@ -269,7 +302,7 @@ compute_onebody_rotamer_energies_fast(
 	std::vector<core::pose::Pose> pose_per_thread( omp_max_threads_1(), bbone );
 
 	std::vector<core::scoring::ScoreFunctionOP> score_func_per_thread(omp_max_threads_1());
-	std::vector<core::conformation::ResidueOP> ala_per_thread(omp_max_threads_1());
+	// std::vector<core::conformation::ResidueOP> ala_per_thread(omp_max_threads_1());
 	utility::vector1<bool> true_vect(bbone.size(), true);
 
 	runtime_assert(rot_index.per_thread_rotamers_.size() > 0);
@@ -286,6 +319,9 @@ compute_onebody_rotamer_energies_fast(
 		core::pose::Pose & work_pose = pose_per_thread[i];
 
 		
+		// score_func = core::scoring::ScoreFunctionFactory::create_score_function("none");//
+		// score_func->set_weight( core::scoring::rama_prepro, 1 );
+
 		score_func = core::scoring::get_score_function();
 		score_func->set_weight( core::scoring::fa_dun, score_func->get_weight(core::scoring::fa_dun)*0.67 );
 
@@ -297,17 +333,26 @@ compute_onebody_rotamer_energies_fast(
 		score_func->set_energy_method_options( opts );
 
 		// all work poses are scored here
+		score_func->score( work_pose );
 		score_func->setup_for_packing( work_pose, true_vect, true_vect );
 
 		// We need to clone the per-thread ala with the correct thread, but fill in the i-thread ala
-		ala_per_thread[i] = rot_index.get_per_thread_rotamer(::devel::scheme::omp_thread_num(), ala_rot)->clone();
+		// ala_per_thread[i] = rot_index.get_per_thread_rotamer(::devel::scheme::omp_thread_num(), ala_rot)->clone();
+	}
+
+
+	utility::vector1<core::Real> per_res_nbr_dist( bbone.size(), 0 );
+	float max_res_radius = 0;
+	for ( core::Size ir = 1; ir <= bbone.size(); ir++ ) {
+		float radius = bbone.residue(ir).nbr_radius();
+		per_res_nbr_dist[ir] = radius;
+		max_res_radius = std::max<float>( max_res_radius, radius );
 	}
 
 	float max_rotamer_radius = rot_index.get_max_nbr_radius();
-	float ala_radius = rot_index.get_per_thread_rotamer(0, ala_rot)->nbr_radius();
 	float max_interaction_radius = score_func_per_thread.front()->info()->max_atomic_interaction_distance();
-	float max_radius = max_rotamer_radius + ala_radius + max_interaction_radius;
-	float max_radius_sq = max_radius * max_radius;
+	float max_radius = max_rotamer_radius + max_res_radius + max_interaction_radius;
+	// float max_radius_sq = max_radius * max_radius;
 
 	// Copied from core/pack/packer_neighbors.cc
 	core::conformation::PointGraphOP point_graph( new core::conformation::PointGraph );
@@ -323,8 +368,12 @@ compute_onebody_rotamer_energies_fast(
 				iter_end = point_graph->get_vertex( ir ).const_upper_edge_list_end();
 				iter != iter_end; ++iter ) {
 
-			if ( iter->data().dsq() < max_radius_sq ) {
-				neighbor_graph.add_edge( ir, iter->upper_vertex() );
+			int other_pos = iter->upper_vertex();
+			core::Real other_dist = per_res_nbr_dist[other_pos];
+			core::Real dist = other_dist + max_rotamer_radius + max_interaction_radius;
+
+			if ( iter->data().dsq() < dist*dist ) {
+				neighbor_graph.add_edge( ir, other_pos );
 			}
 		}
 	}
@@ -361,14 +410,18 @@ compute_onebody_rotamer_energies_fast(
 			core::pack::rotamer_set::RotamerSet_ rotset;
 			rotset.set_resid(ir);
 
+			core::conformation::ResidueOP original_rot = work_pose.residue( ir ).clone();
 			for ( int irot = 0; irot < rot_index.size(); irot++ ) {
 				core::conformation::ResidueOP pt_rot = rot_index.get_per_thread_rotamer( omp_thread_num(), irot );
-				pt_rot->place( work_pose.residue( ir ), work_pose.conformation(), false );	// false because replace_residue uses false
-				pt_rot->seqpos(ir);	// idk if this is necessary
-				rotset.add_rotamer( *pt_rot );	// not cloning because yolo
+				work_pose.replace_residue( ir, *pt_rot, true );	// I give up, there's just so much you have to update without replace residue
+				rotset.add_rotamer( work_pose.residue(ir) );	// not cloning because yolo
 			}
+			work_pose.replace_residue( ir, *original_rot, true );
+			// Add the current rotamer to the end to get the base score
+			rotset.add_rotamer( *original_rot );
+			int original_rot_index = rotset.num_rotamers();
+
     		score_func->prepare_rotamers_for_packing(work_pose, rotset);
-    		runtime_assert( rotset.num_rotamers() == rot_index.size() );
 
     		// Now make the energy containers that rosetta wants
 																	//   ala    rotamers
@@ -376,7 +429,7 @@ compute_onebody_rotamer_energies_fast(
 			utility::vector1< core::PackerEnergy > onebody_energies( rotset.num_rotamers(), 0 );
 
 			// First do the actual one-body energies
-			for ( int irot = 0; irot < rotset.num_rotamers(); irot++ ) {
+			for ( int irot = 1; irot <= rotset.num_rotamers(); irot++ ) {
 				core::scoring::EnergyMap emap;
 				score_func->eval_ci_1b( *(rotset.rotamer( irot )), work_pose, emap );
 				score_func->eval_cd_1b( *(rotset.rotamer( irot )), work_pose, emap );
@@ -387,26 +440,20 @@ compute_onebody_rotamer_energies_fast(
 			// Loop over interacting positions
 			for ( utility::graph::Graph::EdgeListConstIter
 					iter = neighbor_graph.get_node( ir )->const_edge_list_begin(),
-					iter_end = neighbor_graph.get_node( ir )->const_edge_list_begin();
+					iter_end = neighbor_graph.get_node( ir )->const_edge_list_end();
 					iter != iter_end; ++iter ) {
 
 				int seqpos = (*iter)->get_other_ind( ir );
 
-				// Make a rotset for the alanine that's here
-
 				core::pack::rotamer_set::RotamerSet_ other_rotset;
 				other_rotset.set_resid(seqpos);
-				core::conformation::ResidueOP pt_ala = ala_per_thread[omp_thread_num()];
-				pt_ala->place( work_pose.residue(seqpos), work_pose.conformation(), false );
-				pt_ala->seqpos(seqpos);
-				other_rotset.add_rotamer( *pt_ala );
+				other_rotset.add_rotamer( *(work_pose.residue(seqpos).clone()));
     			score_func->prepare_rotamers_for_packing(work_pose, other_rotset);
 
 				score_func->evaluate_rotamer_pair_energies( rotset, other_rotset, work_pose, pair_energy_table );
 
-				// Cus you know, the one-body energies have two body components...
-				score_func->evaluate_rotamer_background_energies( rotset, *pt_ala, work_pose, onebody_energies );
 			}
+
 
 			// Long range interactions have their own graph structure
 			for ( auto 
@@ -425,32 +472,26 @@ compute_onebody_rotamer_energies_fast(
 					core::Size seqpos = rni->neighbor_id();
 					runtime_assert( seqpos != ir );
 
+
 					core::pack::rotamer_set::RotamerSet_ other_rotset;
 					other_rotset.set_resid(seqpos);
-					core::conformation::ResidueOP pt_ala = ala_per_thread[omp_thread_num()];
-					pt_ala->place( work_pose.residue(seqpos), work_pose.conformation(), false );
-					pt_ala->seqpos(seqpos);
-					other_rotset.add_rotamer( *pt_ala );
+					other_rotset.add_rotamer( *(work_pose.residue(seqpos).clone()));
     				score_func->prepare_rotamers_for_packing(work_pose, other_rotset);
 
     				(*lr_iter)->evaluate_rotamer_pair_energies( rotset, other_rotset, work_pose, *score_func, 
     									score_func->weights(), pair_energy_table );
 
-					// Cus you know, the one-body energies have two body components...
-					(*lr_iter)->evaluate_rotamer_background_energies( rotset, *pt_ala, work_pose, *score_func, 
-								score_func->weights(), onebody_energies );
 
 				}
 			}
 
-
 			// Now we have the scores, lets fill the table
 
-			// Everything is relative to alanine, so get that score first
-			float base_score = onebody_energies[ala_rot+1] + pair_energy_table( ala_rot+1, 1 );
+			// Everything is relative to the original, so get that score first
+			float base_score = onebody_energies[original_rot_index] + pair_energy_table( 1, original_rot_index);
 
 			for ( int irot = 0; irot < rot_index.size(); irot++ ) {
-				float raw_score = onebody_energies[irot+1] + pair_energy_table( irot+1, 1 );
+				float raw_score = onebody_energies[irot+1] + pair_energy_table( 1, irot+1);
 				onebody_rotamer_energies[ir-1][irot] = raw_score - base_score;
 			}
 
