@@ -26,6 +26,8 @@
 
 #include <riflib/util.hh>
 
+#include <ObjexxFCL/format.hh>
+
 
 namespace devel {
 namespace scheme {
@@ -50,6 +52,8 @@ namespace scheme {
 
 
 struct HydrophobicManager {
+
+    static constexpr float DDG_PER_COUNT = -0.17f;
 
     typedef uint16_t Hyd;
     static int const CACHE_MAX_HYD = std::numeric_limits<Hyd>::max();
@@ -78,6 +82,13 @@ struct HydrophobicManager {
 
     shared_ptr< RotamerIndex > rot_index_p;
 
+    float one_hydrophobic_better_than_ = 0;
+    float two_hydrophobics_better_than_ = 0;
+    float three_hydrophobics_better_than_ = 0;
+    float hydrophobic_ddg_per_atom_cut_ = 0;
+    bool doing_better_than_ = false;
+
+
     HydrophobicManager(
         core::pose::Pose const & target,
         utility::vector1<core::Size> const & target_res,
@@ -94,6 +105,16 @@ struct HydrophobicManager {
         std::vector<std::vector<Hyd>> early_map = first_pass_fill( target );
 
         create_and_fill_voxel_map( early_map );
+    }
+
+    void
+    set_hydrophobics_better_than( float one, float two, float three, float ddg_per_atom_cut ) {
+        one_hydrophobic_better_than_ = one;
+        two_hydrophobics_better_than_ = two;
+        three_hydrophobics_better_than_ = three;
+        hydrophobic_ddg_per_atom_cut_ = ddg_per_atom_cut;
+
+        doing_better_than_ = ( one < 0 || two < 0 || three < 0 );
     }
 
     void
@@ -181,7 +202,7 @@ struct HydrophobicManager {
 
                 const float low_rad_sq = 3.0f*3.0f;
                 const float med_rad_sq = 4.5f*4.5f;
-                const float long_rad_sq = 6.0f*6.0f;
+                const float long_rad_sq = 5.5f*5.5f;
 
                 const float step = cs_[0];
 
@@ -262,23 +283,33 @@ struct HydrophobicManager {
     find_hydrophobic_residue_contacts( 
         std::vector<std::pair<intRot, EigenXform>> const & irot_and_bbpos,
         std::vector<int> & hyd_counts,
-        float & hydrophobic_ddg
+        float & hydrophobic_ddg,
+        std::vector<int> & per_irot_counts,
+        bool & pass_better_than
     ) const {
         hyd_counts.clear();
         hyd_counts.resize( hydrophobic_res_.size(), 0 );
 
+        per_irot_counts.clear();
+        per_irot_counts.resize( irot_and_bbpos.size(), 0 );
+
+        std::vector<int> has_ok_atoms( irot_and_bbpos.size(), 0 );
+
         typedef typename RotamerIndex::Atom Atom;
 
-        for ( std::pair<intRot, EigenXform> pair : irot_and_bbpos ) {
+        for ( int ipair = 0; ipair < irot_and_bbpos.size(); ipair++ ) {
+            std::pair<intRot, EigenXform> const & pair = irot_and_bbpos[ipair];
             int irot = pair.first;
             EigenXform const & bbpos = pair.second;
 
+            int ok_atoms = 0;
+            int this_irot_count = 0;
             for( int iatom = 4; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
             {
                 Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
 
                 if ( ! rif_hydrophobic_map_.at(atom.type()) ) continue;
-
+                ok_atoms ++;
                 typename Atom::Position pos = bbpos * atom.position();
 
                 std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
@@ -286,8 +317,11 @@ struct HydrophobicManager {
                 Hyd this_hyd = 0;
                 while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
                     hyd_counts[this_hyd] ++;
+                    this_irot_count++;
                 }
             }
+            has_ok_atoms[ipair] = ok_atoms;
+            per_irot_counts[ipair] = this_irot_count;
         }
 
         int total_sum = 0;
@@ -299,24 +333,69 @@ struct HydrophobicManager {
             total_sum += count;
         }
 
-        hydrophobic_ddg = -0.17f * total_sum; // This is how it was parameterized, but holy crap this is a hack.
+// HYDROPHOBIC DDG
+        hydrophobic_ddg = DDG_PER_COUNT * total_sum; // This is how it was parameterized, but holy crap this is a hack.
+
+// HYDROPHOBICS BETTER THAN
+
+        pass_better_than = true;
+        if ( doing_better_than_ ) {
+            int one_better_than = 0;
+            int two_better_than = 0;
+            int three_better_than = 0;
+            for ( int ipair = 0; ipair < per_irot_counts.size(); ipair ++) {
+                float ddg_hyd = per_irot_counts[ipair] * DDG_PER_COUNT;
+                float ddg_ratio = ddg_hyd / has_ok_atoms[ipair];
+                if (ddg_ratio > hydrophobic_ddg_per_atom_cut_) continue;
+                if ( ddg_hyd < one_hydrophobic_better_than_ ) one_better_than++;
+                if ( ddg_hyd < two_hydrophobics_better_than_ ) two_better_than++;
+                if ( ddg_hyd < three_hydrophobics_better_than_ ) three_better_than++;
+            }
+            if ( one_hydrophobic_better_than_ < 0 ) pass_better_than &= (one_better_than >= 1);
+            if ( two_hydrophobics_better_than_ < 0 ) pass_better_than &= (two_better_than >= 2);
+            if ( three_hydrophobics_better_than_ < 0 ) pass_better_than &= (three_better_than >= 3);
+        }
+
+
         return hydrophobic_residue_contacts;
     }
 
     void
-    print_hydrophobic_counts( core::pose::Pose const & target, std::vector<int> const & hyd_counts, int scaff_size ) const {
-        std::cout << "Hydrophobic counts:" << std::endl;
+    print_hydrophobic_counts( 
+        core::pose::Pose const & target,
+        std::vector<int> const & hyd_counts,
+        std::vector<std::pair<intRot, EigenXform>> const & irot_and_bbpos,
+        std::vector<int> const & seqposs,
+        std::vector<int> const & per_irot_counts,
+        int scaff_size,
+        std::ostream & ostream
+    ) const {
+        using ObjexxFCL::format::F;
+        ostream << "Hydrophobic counts:" << std::endl;
 
-        assert( hyd_counts.size() == hydrophobic_res_.size() );
+        runtime_assert( hyd_counts.size() == hydrophobic_res_.size() );
 
         for ( int i = 0; i < hyd_counts.size(); i++ ) {
             int count = hyd_counts[i];
             if ( count >= 2 ) {
                 core::Size seqpos = hydrophobic_res_[i];
                 core::conformation::Residue const & res = target.residue(seqpos);
-                std::cout << " " << seqpos << "/" << seqpos + scaff_size << " " << res.name3() << ": " << count << std::endl;
+                ostream << " " << seqpos << "/" << seqpos + scaff_size << " " << res.name3() << ": " << count << std::endl;
             }
         }
+
+        if ( doing_better_than_ ) {
+            ostream << "Hotspot ddGs:" << std::endl;
+            runtime_assert( irot_and_bbpos.size() == seqposs.size() );
+            runtime_assert( per_irot_counts.size() == seqposs.size() );
+
+            for ( int i = 0; i < irot_and_bbpos.size(); i++ ) {
+                int irot = irot_and_bbpos[i].first;
+                ostream << " " << seqposs[i] << " " << rot_index_p->resname(irot) << ": " 
+                          << F(5,1,per_irot_counts[i] * DDG_PER_COUNT) << std::endl;
+            }
+        }
+
     }
 
 

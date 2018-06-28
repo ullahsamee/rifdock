@@ -129,6 +129,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -366,6 +370,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
             NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
+            NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -540,6 +548,10 @@ struct RifDockOpt
 	int         require_n_rifres                     ;
     int         require_hydrophobic_residue_contacts ;
     float       hydrophobic_ddg_cut                  ;
+    float       one_hydrophobic_better_than          ;
+    float       two_hydrophobics_better_than         ;
+    float       three_hydrophobics_better_than       ;
+    float       hydrophobic_ddg_per_atom_cut         ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -766,6 +778,10 @@ struct RifDockOpt
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
         require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
         hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
+        one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
+        two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
+        three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
+        hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();

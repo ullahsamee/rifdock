@@ -1007,13 +1007,18 @@ std::string get_rif_type_from_file( std::string fname )
 
                         irot_and_bbpos.emplace_back( irot, bb.position() );
                     }
-                    std::vector<int> hyd_counts;
+                    std::vector<int> hyd_counts, per_irot_counts;
                     float hydrophobic_ddg = 0;
-                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg );
+                    bool pass_better_than = true;
+                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
+                                                                                    per_irot_counts, pass_better_than );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
                         result.val_ = 9e9;
                     }
                     if ( hydrophobic_ddg > hydrophobic_ddg_cut_ ) {
+                        result.val_ = 9e9;
+                    }
+                    if ( ! pass_better_than ) {
                         result.val_ = 9e9;
                     }
 

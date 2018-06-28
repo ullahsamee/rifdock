@@ -578,8 +578,16 @@ int main(int argc, char *argv[]) {
     }
 
     shared_ptr<HydrophobicManager> hydrophobic_manager;
-    if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ) {
+    if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ||
+        	opt.one_hydrophobic_better_than < 0 ||
+        	opt.two_hydrophobics_better_than < 0 ||
+        	opt.three_hydrophobics_better_than < 0 ) {
+
     	hydrophobic_manager = make_shared<HydrophobicManager>( target, target_res, rot_index_p );
+    	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
+    													   opt.two_hydrophobics_better_than, 
+    													   opt.three_hydrophobics_better_than,
+    													   opt.hydrophobic_ddg_per_atom_cut );
     }
 
 
