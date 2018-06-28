@@ -105,7 +105,7 @@ struct RifBase
     virtual bool random_dump_rotamers( std::vector< std::string > res_names_dump, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     virtual bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
-                                           float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
+                                           float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p, bool last_atom_only ) const = 0;
 
     virtual void dump_rotamers_at_bin_center( core::conformation::Residue const & res, std::string const & file_name, 
                                     shared_ptr<RotamerIndex> rot_index_p ) const = 0;

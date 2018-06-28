@@ -581,13 +581,15 @@ int main(int argc, char *argv[]) {
     if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ||
         	opt.one_hydrophobic_better_than < 0 ||
         	opt.two_hydrophobics_better_than < 0 ||
-        	opt.three_hydrophobics_better_than < 0 ) {
+        	opt.three_hydrophobics_better_than < 0 ||
+        	opt.num_cation_pi > 0) {
 
     	hydrophobic_manager = make_shared<HydrophobicManager>( target, target_res, rot_index_p );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
     													   opt.hydrophobic_ddg_per_atom_cut );
+    	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
     }
 
 
@@ -693,9 +695,11 @@ int main(int argc, char *argv[]) {
 				
 
 				std::stringstream fname;
-				fname << "rifgen_dump_" << pdb_fname << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
+				fname << "rifgen_dump_" << pdb_fname << "_" << (opt.dump_rifgen_near_pdb_last_atom ? "lastatom_" : "")
+											<< boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
 
-				rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
+				rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p, 
+																					opt.dump_rifgen_near_pdb_last_atom );
 				if ( opt.dump_rifgen_text ) {
 					rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
 				}

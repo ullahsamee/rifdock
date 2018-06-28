@@ -132,9 +132,9 @@ OutputResultsTask::return_rif_dock_results(
                 irot_and_bbpos.emplace_back( irot, bb.position() );
                 seqposs.push_back( seqpos );
             }
-            bool pass_better_than = true;
+            bool pass_better_than = true, pass_cation_pi = true;
             hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg,
-                                                                            per_irot_counts, pass_better_than );
+                                                                            per_irot_counts, pass_better_than, pass_cation_pi );
 
             rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, irot_and_bbpos, seqposs, per_irot_counts, 
                                                                             sdc->scaffres_g2l_p->size(), extra_output );
