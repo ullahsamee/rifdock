@@ -304,7 +304,7 @@ struct HydrophobicManager {
 
             int ok_atoms = 0;
             int this_irot_count = 0;
-            for( int iatom = 4; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
+            for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
             {
                 Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
 
