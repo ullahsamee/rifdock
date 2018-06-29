@@ -75,6 +75,11 @@ namespace devel {
                 std::vector<ApoReqTerm> terms;
             };
             
+            struct CationPiRequirement {
+                int req_num = -1;
+                int res_num = -1;
+                std::vector<std::string> allowed_rot_names;
+            };
             
             std::vector < DonorDefinition > get_donor_definitions( std::string tuning_file );
             std::vector < AcceptorDefinition > get_acceptor_definitions( std::string tuning_file );
@@ -84,6 +89,7 @@ namespace devel {
             std::vector< BidentateRequirement > get_bidentate_requirement_definitions( std::string tuning_file );
             std::vector< HotspotRequirement > get_hotspot_requirement_definitions( std::string tuning_file );
             std::vector< ApoRequirement > get_Apo_requirement_definitions( std::string tuning_file );
+            std::vector< CationPiRequirement > get_cationpi_requirement_definitions( std::string tuning_file );
             bool check_requirement_definition_exists( std::string tuning_file );
         }
     }
