@@ -59,6 +59,9 @@
 	#include <boost/random/mersenne_twister.hpp>
 	#include <boost/random/uniform_real.hpp>
 
+// the requirement definitions
+#include <riflib/rif/requirements_util.hh>
+
 
 namespace devel {
 namespace scheme {
@@ -251,6 +254,32 @@ namespace rif {
 		abs_score_cut_by_res["DTY"] = -3.4;
 		abs_score_cut_by_res["DLY"] = -2.6;
 		abs_score_cut_by_res["DTR"] = -3.4;
+        
+        
+        // some basic apo requirement definitions.
+        std::vector< ApoRequirement > apo_reqs = get_Apo_requirement_definitions( params->tuning_file );
+        bool const use_apo_requirements = !( apo_reqs.empty() );
+        // change everyting to a vector, so it should make it a little bit faster.
+        std::vector< std::vector< std::pair< float, Eigen::Vector3f > > > req_distance_terms( apo_reqs.size() );
+        std::vector< std::vector<bool> > allowed_res( apo_reqs.size() );
+        std::vector< int > req_nums( apo_reqs.size() );
+        if ( use_apo_requirements ){
+            for ( int ii = 0; ii < apo_reqs.size(); ++ii ){
+                req_nums[ii] = apo_reqs[ii].req_num;
+                for( int jj = 0; jj < rot_index_p->size(); ++jj ){
+                    if ( apo_reqs[ii].allowed_rot_names.size() == 0 || std::find(apo_reqs[ii].allowed_rot_names.begin(), apo_reqs[ii].allowed_rot_names.end(), rot_index_p->rotamers_[jj].resname_ ) != apo_reqs[ii].allowed_rot_names.end() )
+                        allowed_res[ii].push_back(true);
+                    else
+                        allowed_res[ii].push_back(false);
+                }
+                for( auto const & x : apo_reqs[ii].terms ){
+                    Eigen::Vector3f temp_v( target.residue(x.res_num).xyz(x.atom_name)[0], target.residue(x.res_num).xyz(x.atom_name)[1], target.residue(x.res_num).xyz(x.atom_name)[2] );
+                    runtime_assert_msg( x.distance != 0 , "What? How can you set the distance to zero? What do you want? Talk with longxing about this...");
+                    float dist_square = x.distance / abs( x.distance ) * x.distance * x.distance;
+                    req_distance_terms[ii].push_back(std::make_pair(dist_square, temp_v));
+                }
+            }
+        }
 
 		// #ifdef USE_OPENMP
 		// #pragma omp parallel for schedule(dynamic,1)
@@ -311,28 +340,36 @@ namespace rif {
 			}
 
 
-			struct RotChild {
-				int rotid;
-				Eigen::Vector3f Ncen, CAcen, Ccen;
-			};
-			std::vector<RotChild> inv_rotamer_backbones;
-
-			std::cout << "RifGeneratorApoHSearch: add child rotamers:";
-			for( size_t crot = 0; crot < rot_index_p->size(); ++crot ){
-				if( rot_index_p->structural_parent_of_.at(crot) == irot && rot_index_p->is_primary(crot) ){
-					RotChild child;
-					child.rotid = crot;
-					auto x = rot_index_p->to_structural_parent_frame_.at(crot);
-					child.Ncen  = x * rot_index_p->atom(crot,0).position() - rotamer_center;
-					child.CAcen = x * rot_index_p->atom(crot,1).position() - rotamer_center;
-					child.Ccen  = x * rot_index_p->atom(crot,2).position() - rotamer_center;
-					auto testca  = x * rot_index_p->atom(crot,3).position() - rotamer_center;
-					auto primaryca = rot_index_p->atom(irot,3).position()-rotamer_center;
-					runtime_assert( (primaryca - testca).norm() < 0.001 );
-					inv_rotamer_backbones.push_back(child);
-					std::cout << " " << resn << crot;
-				}
-			}
+            struct RotChild {
+                int rotid;
+                Eigen::Vector3f Ncen, CAcen, Ccen;
+                Eigen::Vector3f CBcen;
+            };
+            std::vector<RotChild> inv_rotamer_backbones;
+            
+            std::cout << "RifGeneratorApoHSearch: add child rotamers:";
+            for( size_t crot = 0; crot < rot_index_p->size(); ++crot ){
+                if( rot_index_p->structural_parent_of_.at(crot) == irot && rot_index_p->is_primary(crot) ){
+                    RotChild child;
+                    child.rotid = crot;
+                    auto x = rot_index_p->to_structural_parent_frame_.at(crot);
+                    child.Ncen  = x * rot_index_p->atom(crot,0).position() - rotamer_center;
+                    child.CAcen = x * rot_index_p->atom(crot,1).position() - rotamer_center;
+                    child.Ccen  = x * rot_index_p->atom(crot,2).position() - rotamer_center;
+                    if ( rot_index_p->rotamers_[crot].atoms_.size() > 3 ){
+                        // use C-beta if this residue has C-beta, or else use CA
+                        // for all case there should have CB
+                        child.CBcen = x * rot_index_p->atom(crot,3).position() - rotamer_center;
+                    } else {
+                        child.CBcen = x * rot_index_p->atom(crot,1).position() - rotamer_center;
+                    }
+                    auto testca  = x * rot_index_p->atom(crot,3).position() - rotamer_center;
+                    auto primaryca = rot_index_p->atom(irot,3).position()-rotamer_center;
+                    runtime_assert( (primaryca - testca).norm() < 0.001 );
+                    inv_rotamer_backbones.push_back(child);
+                    std::cout << " " << resn << crot;
+                }
+            }
 			std::cout << std::endl;
 
 			float const half_tgt_resl = RESLS.front()/2.0;
@@ -560,7 +597,37 @@ namespace rif {
 									}
 									if( score > final_score_cut ) continue;
 
-									accumulator->insert( bbactor_child.position_, score_weight*score, crot );
+                                    int req_index = -1;
+                                    if( use_apo_requirements ){
+                                        Eigen::Vector3f currentCB = tscene.position(1) * child.CBcen;
+                                        for ( int ii = 0; ii< req_nums.size(); ++ ii ){
+                                            if ( !allowed_res[ii][crot] ) continue;
+                                            bool pass = true;
+                                            for ( int jj = 0; jj < req_distance_terms[ii].size(); ++jj ){
+                                                if ( req_distance_terms[ii][jj].first > 0 ){
+                                                    if ( ( req_distance_terms[ii][jj].second - currentCB ).squaredNorm() > req_distance_terms[ii][jj].first ){
+                                                        pass = false;
+                                                        break;
+                                                    }
+                                                } else {
+                                                    if ( ( req_distance_terms[ii][jj].second - currentCB ).squaredNorm() < -req_distance_terms[ii][jj].first ){
+                                                        pass = false;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            if ( true == pass ){
+                                                req_index = req_nums[ii];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // check whether the apores can satisfy any requirements
+                                    // if the apores_must_satisfy_req is set to true and the residue can't safisfy anything, then just continue'
+                                    //if ( opts.apores_must_satisfy_req == true && req_index == -1) continue;
+                                    
+                                    accumulator->insert( bbactor_child.position_, score_weight*score, crot, req_index );
 
 									if( opts.dump_fraction > 0 ){
 										double const runif = uniform(rngs[omp_thread_num_1()-1]);
