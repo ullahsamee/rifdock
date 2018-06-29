@@ -312,6 +312,10 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 
         // the hbond definition stuff
         std::string tuning_file = params->tuning_file;
+        
+        std::vector< DonorDefinition > const donor_definitions = get_donor_definitions( tuning_file );
+        std::vector< AcceptorDefinition > const acceptor_definitions = get_acceptor_definitions( tuning_file );
+        
         std::vector< HBondDefinition > const hbond_definitions = get_hbond_definitions( tuning_file );
         bool const use_hbond_definition = !( hbond_definitions.empty() );
         std::vector< int > use_hbond_definition_rays;
@@ -324,8 +328,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
         bool const use_bidentate_definition = !( bidentate_definitions.empty() );
         std::vector< int > use_bidentate_definition_rays;
         // the requirement definition stuff
-        std::vector< RequirementDefinition > requirement_definitions = get_requirement_definitions( tuning_file );
-        bool const use_requirement_definition = !( requirement_definitions.empty() );
+        bool const use_requirement_definition = check_requirement_definition_exists( tuning_file ) ;
         std::vector< int > hbond_requirement_labels;
         std::vector< int > bidentate_requirement_labels;
 
@@ -411,6 +414,22 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 x.second = utility::strip( x.second, ' ');
             
             
+            // print out the binder names
+            /*
+             std::cout << "########### debug info for small molecules ##############" << std::endl;
+             for ( auto & x : target_bonder_names )
+             std::cout << x.first << " " << x.second << std::endl;
+             std::cout << " Hbond definitins " << std::endl;
+             for ( HBondDefinition const & hb : hbond_definitions )
+             {
+             std::cout << hb.res_num << " " << hb.atom_name << std::endl;
+             for ( std::string s : hb.allowed_rot_names ) std::cout << s << std::endl;
+             }
+             std::cout << use_requirement_definition << std::endl;
+             std::cout << "#######################################" << std::endl;
+             */
+            
+            
             if ( use_hbond_definition ){
                 use_hbond_definition_rays.resize( target_bonder_names.size() );
                 allowed_rotamers_rays.resize( 0 );
@@ -448,29 +467,52 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                     hbond_requirement_labels[ii] = -1;
                     bidentate_requirement_labels[ii] = -1;
                 }
+                
+                std::vector< HbondRequirement > hbond_reqs = get_hbond_requirement_definitions( tuning_file );
+                std::vector< BidentateRequirement > bidentate_reqs = get_bidentate_requirement_definitions( tuning_file );
                 // fill the hbond definitions
-                for ( auto const & x : requirement_definitions ) {
-                    if ( x.require == "HBOND" ) {
-                        for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
-                            if ( target_bonder_names[ii].first == utility::string2int(x.definition[1]) && target_bonder_names[ii].second == x.definition[0] ) {
-                                hbond_requirement_labels[ii] = x.req_num;
-                            }
+                for ( auto const & x : hbond_reqs ){
+                    for ( int ii = 0; ii < target_bonder_names.size(); ++ii){
+                        if ( target_bonder_names[ii].first == x.res_num && target_bonder_names[ii].second == x.atom_name ) {
+                            hbond_requirement_labels[ii] = x.req_num;
                         }
-                    } else if ( x.require == "BIDENTATE" ) {
-                        for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
-                            if ( ( utility::string2int(x.definition[1]) == target_bonder_names[ii].first && x.definition[0] == target_bonder_names[ii].second ) || ( utility::string2int(x.definition[3]) == target_bonder_names[ii].first && x.definition[2] == target_bonder_names[ii].second ) ) {
-                                bidentate_requirement_labels[ii] = x.req_num;
-                            }
-                        }
-                    } else if ( x.require == "HOTSPOT" ) {
-                        
-                    } else {
-                        std::cout << "Unknown requirement definition, maybe you should define more." << std::endl;
                     }
                 }
+                for ( auto const & x : bidentate_reqs ){
+                    for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
+                        if ( ( x.res1_num == target_bonder_names[ii].first && x.atom1_name == target_bonder_names[ii].second ) || ( x.res2_num == target_bonder_names[ii].first && x.atom2_name == target_bonder_names[ii].second ) ) {
+                            bidentate_requirement_labels[ii] = x.req_num;
+                        }
+                    }
+                    
+                }
+                
+                
+                // debuging code here
+                
+                /*
+                 for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
+                 std::cout << "########" << ii << "########" << std::endl;
+                 std::cout << target_bonder_names[ii].first << " " << target_bonder_names[ii].second << std::endl;
+                 std::cout << "BidentateLabels: " << bidentate_requirement_labels[ii] << std::endl;
+                 std::cout << "HbondDefinitionLabels:" << hbond_requirement_labels[ii] << std::endl;
+                 std::cout << "#############END#############" << std::endl;
+                 }
+                 exit(0);
+                 */
+                
             }
+            /*
+             for ( auto const & x : target_bonder_names ) std::cout << x.first << " " << x.second << std::endl;
+             for ( auto const & x : use_hbond_definition_rays ) std::cout << x << std::endl;
+             for ( auto const & x : allowed_rotamers_rays ) {
+             for ( auto const & y : x )
+             std::cout << y << " ";
+             std::cout << std::endl;
+             }
+             */
         }
-		{
+        {
 			// these get used now. Don't change the names!!!
 			if( target_donors.size() ){
 				utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
@@ -526,63 +568,83 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 		std::vector<HBJob> hb_jobs;
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 
-		for(int ires = 1; ires <= target_res.size(); ++ires){
-			int const ir = target_res[ires];
-			std::string resn = target.residue(ir).name();
-			std::cout << "RifGenSimpleHbonds checking res " << resn << std::endl;
-			HBJob j;
-			j.ires = ir;
-			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
-				std::string acc_resname = accresn_user[iacc];
-				if (params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) != params -> rot_index_p -> d_l_map_.end()) {
-					acc_resname = params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) -> second;
-				} 
-				// else {
-				// 	core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
-				// }
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(acc_resname);
-				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
-					std::cout << "not putting " << accresn_user[iacc] << " into rif, no N,CA,C" << std::endl;
-					continue;
-				}
-				j.don = "GLY";
-				j.acc = accresn_user[iacc];
-				if( std::find( accresn_std.begin(), accresn_std.end(), j.acc ) == accresn_std.end() ) continue; // no non-standard res in RIF
-				j.don_or_acc = "DON_";
-				std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
-				j.nrots = b.second-b.first;
-				//if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
-				if( target.residue(ir).has("H") ) hb_jobs.push_back( j );
-				if( std::find(donresn_std.begin(),donresn_std.end(),resn)!=donresn_std.end() ){ // is donor
-					j.don = resn;
-					hb_jobs.push_back( j );
-				}
-			}
-			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
-				std::string don_resname = donresn_user[idon];
-				if (params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) != params -> rot_index_p -> d_l_map_.end()) {
-					don_resname = params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) -> second;
-				}
-				//std::cout << "----------"<<donresn_user[idon] << std::endl;
-				core::chemical::ResidueType const & rtype = rts.lock()->name_map(don_resname);
-				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
-					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
-					continue;
-				}
-				j.don = donresn_user[idon];
-				if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF
-				j.acc = "GLY";
-				j.don_or_acc = "ACC_";
-				std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
-				j.nrots = b.second-b.first;
-				//if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
-				if( target.residue(ir).has("O") ) hb_jobs.push_back( j );
-				if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
-					j.acc = resn;
-					hb_jobs.push_back( j );
-				}
-			}
-		}
+        for(int ires = 1; ires <= target_res.size(); ++ires){
+            int const ir = target_res[ires];
+            std::string resn = target.residue(ir).name();
+            std::cout << "RifGenSimpleHbonds checking res " << resn << std::endl;
+            HBJob j;
+            j.ires = ir;
+            // check whether using donor definitions or acceptor definitions for this residue
+            // copy the whole vector, maybe a little bit slow, but I think it doesn't matter.'
+            utility::vector1<std::string> donresn_customize = donresn_user;
+            utility::vector1<std::string> accresn_customize = accresn_user;
+            bool use_customize_donor_definition = false;
+            bool use_customize_acceptor_definition = false;
+            for ( int i_donor_def = 0; i_donor_def < donor_definitions.size(); ++i_donor_def )
+            {
+                if( ir == donor_definitions[i_donor_def].res_num )
+                {
+                    use_customize_donor_definition = true;
+                    donresn_customize.clear();
+                    for ( std::string s : donor_definitions[i_donor_def].allowed_donor_res ) {
+                        donresn_customize.push_back( s );
+                    }
+                    break;
+                }
+            }
+            for ( int i_acceptor_def = 0; i_acceptor_def < acceptor_definitions.size(); ++i_acceptor_def )
+            {
+                if( ir == acceptor_definitions[i_acceptor_def].res_num )
+                {
+                    use_customize_acceptor_definition = true;
+                    accresn_customize.clear();
+                    for ( std::string s : acceptor_definitions[i_acceptor_def].allowed_acceptor_res ) {
+                        accresn_customize.push_back( s );
+                    }
+                    break;
+                }
+            }
+            
+            
+            for( int iacc = 1; iacc <= accresn_customize.size(); ++iacc ){
+                core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_customize[iacc]);
+                if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
+                    std::cout << "not putting " << accresn_customize[iacc] << " into rif, no N,CA,C" << std::endl;
+                    continue;
+                }
+                j.don = "GLY";
+                j.acc = accresn_customize[iacc];
+                if( std::find( accresn_std.begin(), accresn_std.end(), j.acc ) == accresn_std.end() ) continue; // no non-standard res in RIF
+                j.don_or_acc = "DON_";
+                std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
+                j.nrots = b.second-b.first;
+                //if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
+                if( target.residue(ir).has("H") ) hb_jobs.push_back( j );
+                if( std::find(donresn_std.begin(),donresn_std.end(),resn)!=donresn_std.end() ){ // is donor
+                    j.don = resn;
+                    hb_jobs.push_back( j );
+                }
+            }
+            for( int idon = 1; idon <= donresn_customize.size(); ++idon ){
+                core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_customize[idon]);
+                if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
+                    std::cout << "not putting " << donresn_customize[idon] << " into rif, no N,CA,C" << std::endl;
+                    continue;
+                }
+                j.don = donresn_customize[idon];
+                if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF
+                j.acc = "GLY";
+                j.don_or_acc = "ACC_";
+                std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
+                j.nrots = b.second-b.first;
+                //if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
+                if( target.residue(ir).has("O") ) hb_jobs.push_back( j );
+                if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
+                    j.acc = resn;
+                    hb_jobs.push_back( j );
+                }
+            }
+        }
 		runtime_assert_msg( hb_jobs.size() , "no hbond jobs generated!" );
 		std::sort( hb_jobs.begin(), hb_jobs.end() );
 		// for( int i = 0; i < hb_jobs.size(); ++i ){
