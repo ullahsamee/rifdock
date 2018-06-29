@@ -387,11 +387,11 @@ struct HydrophobicManager {
 
 //https://stackoverflow.com/questions/47932955/how-to-check-if-a-3d-point-is-inside-a-cylinder
 
-            // Define a cylinder with radius 2.6 A from the center of ARG
+            // Define a cylinder with radius 2.2 A from the center of ARG
             // then on either side of the cylinder, you have to be between 2.5 and 4.5 A away
             // Actually do it as 2 cylinders
 
-            float radius = 2.6;
+            float radius = 2.2;
 
             Eigen::Vector3f cy1_p1 = cz + normal * 2.5f;
             Eigen::Vector3f cy1_p2 = cz + normal * 4.5f;
@@ -626,7 +626,7 @@ struct HydrophobicManager {
                     }
                 }
                 for ( std::pair<Hyd, int> pair : this_irot_counts ) {
-                    if ( pair.second >= 6 ) {
+                    if ( pair.second >= 5 ) {       // 5 for histidine
                         found_cation_pi += 1;
                     }
                 }
