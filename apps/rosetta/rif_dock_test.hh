@@ -103,6 +103,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_near_pdb_last_atom )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
@@ -129,6 +130,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -338,8 +344,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
 
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", utility::vector1<std::string>());
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1.0f );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1.0f );
+            NEW_OPT(  rif_dock::dump_rifgen_near_pdb_last_atom, "Use only the last atom to decide if rotamers are close", false );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
@@ -366,6 +373,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
             NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
+            NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
+            NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -518,6 +530,7 @@ struct RifDockOpt
 	std::vector<std::string> dump_rifgen_near_pdb    ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
+    bool        dump_rifgen_near_pdb_last_atom       ;
 	bool        dump_rifgen_text                     ;
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
@@ -540,6 +553,11 @@ struct RifDockOpt
 	int         require_n_rifres                     ;
     int         require_hydrophobic_residue_contacts ;
     float       hydrophobic_ddg_cut                  ;
+    float       one_hydrophobic_better_than          ;
+    float       two_hydrophobics_better_than         ;
+    float       three_hydrophobics_better_than       ;
+    float       hydrophobic_ddg_per_atom_cut         ;
+    int         num_cation_pi                        ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -744,6 +762,7 @@ struct RifDockOpt
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
+        dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
@@ -766,6 +785,11 @@ struct RifDockOpt
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
         require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
         hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
+        one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
+        two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
+        three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
+        hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
+        num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
