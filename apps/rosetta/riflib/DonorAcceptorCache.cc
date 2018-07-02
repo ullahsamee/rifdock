@@ -82,6 +82,13 @@ DonorAcceptorCache::prepare_bounds( std::vector<HBondRay> const & rays ) {
         ubs[i] += max_interaction_range_;
     }
 
+    if ( rays.size() == 0 ) {
+        for ( int i = 0; i < 3; i++ ) {
+            lbs[i] = 0;
+            ubs[i] = 0;
+        }
+    }
+
     lb_ = lbs;
     ub_ = ubs;
     cs_ = Eigen::Vector3f( 1.0, 1.0, 1.0 );
