@@ -584,7 +584,14 @@ int main(int argc, char *argv[]) {
         	opt.three_hydrophobics_better_than < 0 ||
         	opt.num_cation_pi > 0) {
 
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, target_res, rot_index_p );
+    	utility::vector1<int> use_hydrophobic_target_res;
+    	if (opt.hydrophobic_target_res.size() > 0) {
+    		use_hydrophobic_target_res = opt.hydrophobic_target_res;
+    	} else {
+    		use_hydrophobic_target_res = target_res;
+    	}
+
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,

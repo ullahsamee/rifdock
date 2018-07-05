@@ -134,6 +134,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
+    OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
@@ -377,6 +378,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
@@ -557,6 +559,7 @@ struct RifDockOpt
     float       two_hydrophobics_better_than         ;
     float       three_hydrophobics_better_than       ;
     float       hydrophobic_ddg_per_atom_cut         ;
+    utility::vector1<int> hydrophobic_target_res     ;
     int         num_cation_pi                        ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
@@ -982,6 +985,11 @@ struct RifDockOpt
 
 
 // Brian
+
+        if ( option[rif_dock::hydrophobic_target_res]().length() > 0) {
+            int t = 0;
+            hydrophobic_target_res = utility::string_split(option[rif_dock::hydrophobic_target_res](), ',', t);
+        }
 
 
         if (option[rif_dock::use_scaffold_bounding_grids]()) {

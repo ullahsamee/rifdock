@@ -53,7 +53,7 @@ namespace scheme {
 
 struct HydrophobicManager {
 
-    static constexpr float DDG_PER_COUNT = -0.17f;
+    static constexpr float DDG_PER_COUNT = -0.28f;
 
     typedef uint16_t Hyd;
     static int const CACHE_MAX_HYD = std::numeric_limits<Hyd>::max();
@@ -227,7 +227,7 @@ struct HydrophobicManager {
 
                 const float low_rad_sq = 3.0f*3.0f;
                 const float med_rad_sq = 4.5f*4.5f;
-                const float long_rad_sq = 5.5f*5.5f;
+                const float long_rad_sq = 4.8f*4.8f;
 
                 const float step = cs_[0];
 
@@ -539,6 +539,9 @@ struct HydrophobicManager {
             int irot = pair.first;
             EigenXform const & bbpos = pair.second;
 
+
+            std::unordered_map<Hyd, int> with_whom;
+
             int ok_atoms = 0;
             int this_irot_count = 0;
             for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
@@ -551,14 +554,28 @@ struct HydrophobicManager {
 
                 std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
 
+
                 Hyd this_hyd = 0;
                 while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
                     hyd_counts[this_hyd] ++;
                     this_irot_count++;
+                    if (with_whom.count(this_hyd) == 0) {
+                        with_whom[this_hyd] = 1;
+                    } else {
+                        with_whom[this_hyd] += 1;
+                    }
                 }
             }
             has_ok_atoms[ipair] = ok_atoms;
-            per_irot_counts[ipair] = this_irot_count;
+
+            int partners = 0;
+            for ( auto pair : with_whom ) {
+                if ( pair.second >= 2) {
+                    partners += 1;
+                }
+            }
+
+            per_irot_counts[ipair] = ( partners >= 2 ? this_irot_count : 0 );
         }
 
         int total_sum = 0;
