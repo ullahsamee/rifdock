@@ -213,6 +213,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, seeding_pos )
+    OPT_1GRP_KEY(  Real        , rif_dock, patchdock_min_sasa )
+    OPT_1GRP_KEY(  Integer     , rif_dock, patchdock_top_ranks )
     OPT_1GRP_KEY(  Boolean     , rif_dock, seeding_by_patchdock )
     OPT_1GRP_KEY(  String      , rif_dock, xform_pos )
     OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_each_seeding_at_least )
@@ -448,6 +450,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
 			NEW_OPT(  rif_dock::seeding_pos, "" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::patchdock_min_sasa, "the cutoff sasa value for a valid patchdock output, the default is to use all of them", -1000.0);
+            NEW_OPT(  rif_dock::patchdock_top_ranks, "only use the top solutions of patchdock to do refinement, the default is to use all of them", 99999);
             NEW_OPT(  rif_dock::seeding_by_patchdock, "The format of seeding file can be either Rosetta Xform or raw patchdock outputs", true );
             NEW_OPT(  rif_dock::xform_pos, "" , "" );
             NEW_OPT(  rif_dock::rosetta_score_each_seeding_at_least, "", -1 );
@@ -678,6 +682,8 @@ struct RifDockOpt
     float       cluster_score_cut                    ;
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
+    float       patchdock_min_sasa                   ;
+    int         patchdock_top_ranks                  ;
 
     float       unsat_score_scalar                   ;
     std::string unsat_helper                         ;
@@ -700,6 +706,7 @@ struct RifDockOpt
     float       sasa_cut                             ;
     float       score_per_1000_sasa_cut              ;
     std::set<int> skip_sasa_for_res                  ;
+    
 
 
     void init_from_cli();
@@ -993,6 +1000,9 @@ struct RifDockOpt
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
+
+        patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();
+        patchdock_top_ranks                     = option[rif_dock::patchdock_top_ranks                 ]();
         
         for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 

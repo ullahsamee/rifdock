@@ -59,7 +59,7 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         } else {
             utility_exit_with_message( "-seeding_files list not same length as -scaffolds list" );
         }
-        runtime_assert_msg(parse_seeding_file(seeding_fname, *seeding_positions, opt.seeding_by_patchdock), "Faild to parse the seeding file!!!");
+        runtime_assert_msg(parse_seeding_file(seeding_fname, *seeding_positions, opt.seeding_by_patchdock, opt.patchdock_min_sasa, opt.patchdock_top_ranks), "Faild to parse the seeding file!!!");
         
         Eigen::Vector3f scaffold_center = scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_center;
 
@@ -139,7 +139,9 @@ bool
 parse_seeding_file(
     std::string fname, 
     std::vector<devel::scheme::EigenXform> & seeding_positions, 
-    bool seeding_by_patchdock
+    bool seeding_by_patchdock,
+		float patchdock_min_sasa,
+		int patchdock_top_ranks
 ) {
         
     // the seeding
@@ -168,6 +170,10 @@ parse_seeding_file(
                         }
 
                         if(!flag) continue;
+
+												// remove bad patchdock seeding pos based on the sasa
+												if ( utility::string2float(splt[7]) < patchdock_min_sasa ) continue;
+												if ( utility::string2int  (splt[1]) > patchdock_top_ranks) continue;
 
                         float cx = cos(utility::string2float(splt[25]));
                         float cy = cos(utility::string2float(splt[26]));
