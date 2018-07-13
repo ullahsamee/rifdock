@@ -116,19 +116,28 @@ OutputResultsTask::return_rif_dock_results(
             for ( float this_unsat_score : unsat_scores ) if ( this_unsat_score > 0 ) unsats++;
         }
 
-        std::vector<int> hydrophobic_counts;
+        std::stringstream extra_output;
+
         int hydrophobic_residue_contacts;
         float hydrophobic_ddg = 0;
         if ( rdd.hydrophobic_manager ) {
+            std::vector<int> hydrophobic_counts, seqposs, per_irot_counts;
             std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
             selected_result.rotamers();
             for( int i = 0; i < selected_result.rotamers_->size(); ++i ){
                 BBActor const & bb = rdd.scene_minimal->template get_actor<BBActor>( 1, selected_result.rotamers_->at(i).first );
+                int seqpos = sdc->scaffres_l2g_p->at( bb.index_ ) + 1;
                 int irot = selected_result.rotamers_->at(i).second;
 
                 irot_and_bbpos.emplace_back( irot, bb.position() );
+                seqposs.push_back( seqpos );
             }
-            hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg );
+            bool pass_better_than = true, pass_cation_pi = true;
+            hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg,
+                                                                            per_irot_counts, pass_better_than, pass_cation_pi );
+
+            rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, irot_and_bbpos, seqposs, per_irot_counts, 
+                                                                            sdc->scaffres_g2l_p->size(), extra_output );
         }
 
 
@@ -170,9 +179,9 @@ OutputResultsTask::return_rif_dock_results(
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
 
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores,
-                    hydrophobic_counts);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
 
+        std::cout << extra_output.str() << std::flush;
 
     }
 
@@ -191,8 +200,7 @@ dump_rif_result_(
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile, /* = "" */
-    std::vector<float> const & unsat_scores, /* = std::vector<float>() */
-    std::vector<int> const & hydrophobic_counts /* = std::vector<int>() */
+    std::vector<float> const & unsat_scores /* = std::vector<float>() */
     ) {
 
     using ObjexxFCL::format::F;
@@ -323,9 +331,7 @@ dump_rif_result_(
     if ( unsat_scores.size() > 0 ) {
         rdd.unsat_manager->print_buried_unsats( unsat_scores, scaffold_size );
     }
-    if ( hydrophobic_counts.size() > 0 ) {
-        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, scaffold_size );
-    } 
+
 
     // // TEMP debug:
     // for (auto i: scaffold_phi_psi) {

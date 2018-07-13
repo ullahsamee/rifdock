@@ -305,7 +305,8 @@ public:
 
     // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
     bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
-                                        float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p ) const override {
+                                        float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p,
+                                        bool last_atom_only ) const override {
 
         std::string name3 = res.name3();
 
@@ -317,6 +318,10 @@ public:
             {1, "CA"},
             cb
         };
+
+        if (last_atom_only) {
+            align_pairs.clear();
+        }
 
         // prepare listed atoms
         std::vector<Eigen::Vector3f> scaff_atoms;
@@ -343,7 +348,7 @@ public:
 		base->get_xmap_const_ptr( from );
 
 
-		float coarse_dist_sq = (dump_dist + 5) * (dump_dist + 5);
+		float coarse_dist_sq = (dump_dist + 8) * (dump_dist + 8);
 		float dump_dist_sq = dump_dist * dump_dist;
 
 		// transform and irot
@@ -1007,13 +1012,21 @@ std::string get_rif_type_from_file( std::string fname )
 
                         irot_and_bbpos.emplace_back( irot, bb.position() );
                     }
-                    std::vector<int> hyd_counts;
+                    std::vector<int> hyd_counts, per_irot_counts;
                     float hydrophobic_ddg = 0;
-                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg );
+                    bool pass_better_than = true, pass_cation_pi = true;
+                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
+                                                                                    per_irot_counts, pass_better_than, pass_cation_pi );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
                         result.val_ = 9e9;
                     }
                     if ( hydrophobic_ddg > hydrophobic_ddg_cut_ ) {
+                        result.val_ = 9e9;
+                    }
+                    if ( ! pass_better_than ) {
+                        result.val_ = 9e9;
+                    }
+                    if ( ! pass_cation_pi ) {
                         result.val_ = 9e9;
                     }
 
