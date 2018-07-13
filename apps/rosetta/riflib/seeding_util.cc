@@ -151,6 +151,7 @@ parse_seeding_file(
     }
     runtime_assert_msg(utility::file::file_exists( fname ), "seeding file does not exits: " + fname );
     
+
     std::ifstream in;
     in.open(fname, std::ios::in);
     // utility::io::izstream in(fname);
