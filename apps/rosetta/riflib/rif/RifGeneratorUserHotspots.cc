@@ -259,9 +259,9 @@ namespace rif {
 			utility::vector1<std::vector<std::string>>d_name(pose.size());
 			for (int i = 1; i <= pose.size(); i++) {
                 std::string rn(pose.residue(i).name3());
-				if (rn == "CA_") { // carboxamide
-					myresname[i].push_back("GLN");
-					myresname[i].push_back("ASN");
+                if (rn == "CA_") { // carboxamide
+                    myresname[i].push_back("GLN");
+                    myresname[i].push_back("ASN");
                     d_name[i].push_back(static_cast<std::string>("DUMMY"));
                     d_name[i].push_back(static_cast<std::string>("DUMMY"));
                 } else if (rn == "OH_") { // hydroxyl
