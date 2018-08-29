@@ -197,7 +197,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
         NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 15.0 );
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
-        NEW_OPT(  rifgen::hotspot_score_thresh             , "" , -0.5 );
+        NEW_OPT(  rifgen::hotspot_score_thresh             , "" , 5.0 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::test_hotspot_redundancy          , "Determine if hotspots are already in rif and if they are self-redundant. This makes an invalid RIF!!!", false );
 		NEW_OPT(  rifgen::hotspot_score_bonus              , "Amount to add to rif score (you probably want to use a negative number) ", 0. );
