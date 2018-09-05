@@ -514,16 +514,15 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
         }
         {
 			// these get used now. Don't change the names!!!
-			if( target_donors.size() ){
-				utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
-				::devel::scheme::dump_hbond_rays( donout, target_donors, true );
-				donout.close();
-			}
-			if( target_acceptors.size() ){
-				utility::io::ozstream accout(params->output_prefix+"acceptors.pdb.gz");
-				::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
-				accout.close();
-			}
+			
+			utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
+			::devel::scheme::dump_hbond_rays( donout, target_donors, true );
+			donout.close();
+			
+			utility::io::ozstream accout(params->output_prefix+"acceptors.pdb.gz");
+			::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
+			accout.close();
+			
 			// utility_exit_with_message("debug hbonds");
 		}
 		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
