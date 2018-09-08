@@ -118,9 +118,11 @@ struct HydrophobicManager {
 
 
         identify_cation_residues( target, target_res );
-        cation_prepare_bounds( target );
-        std::vector<std::set<Hyd>> cation_early_map = cation_first_pass_fill( target );
-        cation_create_and_fill_voxel_map( cation_early_map );
+        if ( cation_res_.size() > 0 ) {
+            cation_prepare_bounds( target );
+            std::vector<std::set<Hyd>> cation_early_map = cation_first_pass_fill( target );
+            cation_create_and_fill_voxel_map( cation_early_map );
+        }
 
 
 
@@ -138,6 +140,9 @@ struct HydrophobicManager {
 
     void
     set_num_cation_pi( int num_pi ) {
+        if ( num_pi > 0 ) {
+            runtime_assert_string_msg( cation_res_.size() > 0, "Cation pi: There are no ARG in your selected residues!!!" );
+        }
         num_cation_pi_ = num_pi;
     }
 
