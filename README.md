@@ -1,10 +1,7 @@
-# scheme
-Scheme Library for Conformational Search
+# RifDock
+RifDock Library for Conformational Search
 
-This repository is a temporary solution to the issue of multiple versions of "RifDock" being available in the wild. This repository's master branch will be considered "Master Rifdock" from now until a new master appears.
-
-Ideally RifDock should be merged into Rosetta, but no one has stepped up to this herculean task yet. Most would be in favor of such a merge, so if you have a month to kill, perhaps you can add RifDock (and its unit tests) to Rosetta.
-
+Ideally RifDock should be merged into Rosetta, but no one has stepped up to this herculean task yet.
 
 ***Building***
 
@@ -12,7 +9,7 @@ RifDock links against Rosetta. While RifDock may be compatible with the bleeding
 
 <b>Last known-good Rosetta branch</b>: bcov/stable1
 
-This section needs work, but the gist is:
+To build RifDock:
 
 Optain a copy of gcc with version >= 4.9 (I have no idea if this is the minimum version)
 
@@ -59,5 +56,5 @@ scheme/build/schemelib/test/test_libscheme
 
 ***Modifying***
 
-RifDock is licenced under the <insert license here file>. We only ask that if you update RifDock to build against a new version of Rosetta, that you branch (or tag or something else) a snapshot and edit this wiki so that others can build against a known-good version of rosetta.
+RifDock is licenced under the Apache 2 License which can be found at rifdock/LICENSE.
 
