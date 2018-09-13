@@ -479,7 +479,7 @@ namespace rif {
                                     if ( opts.all_hotspots_are_bidentate && ( actual_sat1 == -1 || actual_sat2 == -1 ) ) continue;
 
 
-									if( positioned_rotamer_score < 5){ // probably want this threshold to be an option or something
+									if( positioned_rotamer_score < opts.hotspot_score_thresh ){ // probably want this threshold to be an option or something
 
 										//num_of_hotspot_inserted += 1;
 										// EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test

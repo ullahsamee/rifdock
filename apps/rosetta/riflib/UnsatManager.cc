@@ -441,7 +441,8 @@ UnsatManager::find_target_presatisfied(
             hbond::identify_acceptor( atom_name, sequence[resid-1], heavy_atom_name );
         }        
         if ( heavy_atom_name == "" ) {
-            utility_exit_with_message("Unknown hydrogen bond acceptor/donor type: " + atom_name);
+            std::cout << "WARNING!!!!!! Unknown hydrogen bond acceptor/donor type: " << atom_name << std::endl;
+            continue;
         }
 
 
