@@ -171,6 +171,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 	OPT_1GRP_KEY(  Integer     , rif_dock, always_available_rotamers_level )
     OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rifdock_rotamers )
 
     OPT_1GRP_KEY(  Integer     , rif_dock, nfold_symmetry )
     OPT_1GRP_KEY(  RealVector  , rif_dock, symmetry_axis )
@@ -417,6 +418,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 			NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
 	        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+            NEW_OPT(  rif_dock::dump_all_rifdock_rotamers, "Dump all the rotamers that rifdock reads from the rotamer spec file.", false );
 
 	        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
 	        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
@@ -622,6 +624,7 @@ struct RifDockOpt
 	bool        extra_rif_rotamers                   ;
 	int         always_available_rotamers_level      ;
 	int         packing_use_rif_rotamers             ;
+    bool        dump_all_rifdock_rotamers            ;
 
 	float       rosetta_score_fraction               ;
 	float       rosetta_score_then_min_below_thresh  ;
@@ -857,6 +860,7 @@ struct RifDockOpt
 		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
 		always_available_rotamers_level        = option[rif_dock::always_available_rotamers_level       ]();
 		packing_use_rif_rotamers               = option[rif_dock::packing_use_rif_rotamers              ]();
+        dump_all_rifdock_rotamers              = option[rif_dock::dump_all_rifdock_rotamers             ]();
 
   		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();
   		rosetta_score_then_min_below_thresh    = option[rif_dock::rosetta_score_then_min_below_thresh   ]();

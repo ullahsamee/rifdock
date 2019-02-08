@@ -245,9 +245,14 @@ int main(int argc, char *argv[]) {
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		std::cout << "================ RotamerIndex ===================" << std::endl;\
+		std::cout << "================ RotamerIndex ===================" << std::endl;
 		std::cout << rot_index << std::endl;
 		std::cout << "=================================================" << std::endl;
+
+		if ( opt.dump_all_rifdock_rotamers ) {
+			std::cout << "Dumping all residues from the rotamer spec to rifdock_rotamerspec.pdb" << std::endl;
+			rot_index_spec.dump_all_rotspec_rotamers("rifdock_rotamerspec.pdb");
+		}
 
 
 		RotamerRFOpts rotrfopts;
