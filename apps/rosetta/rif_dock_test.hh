@@ -61,6 +61,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier_cutoff )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
     OPT_1GRP_KEY(  Real        , rif_dock, rotamer_onebody_inclusion_threshold )
+    OPT_1GRP_KEY(  StringVector, rif_dock, rotamer_boltzmann_files )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, rotboltz_ignore_missing_rots )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
 	OPT_1GRP_KEY(  Real        , rif_dock, rotrf_resl )
@@ -95,6 +97,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, restrict_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Real        , rif_dock, bonus_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, add_native_scaffold_rots_when_packing )
+    OPT_1GRP_KEY(  Real        , rif_dock, ignore_rifres_if_worse_than )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
@@ -105,6 +108,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_near_pdb_last_atom )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
+    OPT_1GRP_KEY(  IntegerVector, rif_dock, dump_rifgen_for_sat )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_rifgen_for_sat_models )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_best_rifgen_rots )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_best_rifgen_rmsd )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
@@ -279,6 +286,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_1body_multiplier_cutoff, "Anything with a one-body energy less than this gets multiplied by favorable_1body_multiplier", 0 );
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
             NEW_OPT(  rif_dock::rotamer_onebody_inclusion_threshold, "Threshold to include residue into 2-body calc. Increase this if 'crazy energy delta'", 8 );
+            NEW_OPT(  rif_dock::rotamer_boltzmann_files, "Files that contain rotamer boltzmann penalties for each rifrot at select positions.", utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::rotboltz_ignore_missing_rots, "Ignore mismatches in the number of rotamers. Missing rotamers get score of 0", false );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 			NEW_OPT(  rif_dock::target_donors, "", "" );
@@ -342,6 +351,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
 			NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
 			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
+            NEW_OPT(  rif_dock::ignore_rifres_if_worse_than, "Don't use bad rif residues", 0 );
 
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
@@ -352,6 +362,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1.0f );
             NEW_OPT(  rif_dock::dump_rifgen_near_pdb_last_atom, "Use only the last atom to decide if rotamers are close", false );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat, "Dump a rotamers near a specific sat or multiple sats", utility::vector1<size_t>());
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 1000);
+            NEW_OPT(  rif_dock::dump_best_rifgen_rots, "Dump the best rotamer from the rifgen. This is how many", 0 );
+            NEW_OPT(  rif_dock::dump_best_rifgen_rmsd, "The rmsd of the last atom for each aa type used in clustering", 3 );
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
@@ -540,11 +554,16 @@ struct RifDockOpt
 	float       dump_rifgen_near_pdb_frac            ;
     bool        dump_rifgen_near_pdb_last_atom       ;
 	bool        dump_rifgen_text                     ;
+    std::vector<size_t> dump_rifgen_for_sat          ;
+    int         dump_rifgen_for_sat_models           ;
+    int         dump_best_rifgen_rots                ;
+    float       dump_best_rifgen_rmsd                ;
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
     bool        test_hackpack                        ;  
     bool        only_score_input_pos                 ;
 	bool        add_native_scaffold_rots_when_packing;
+    float       ignore_rifres_if_worse_than          ;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
 	float       hack_pack_frac                       ;
@@ -590,6 +609,8 @@ struct RifDockOpt
 	float       favorable_1body_multiplier_cutoff    ;
 	float       favorable_2body_multiplier           ;
     float       rotamer_onebody_inclusion_threshold  ;
+    std::vector<std::string> rotamer_boltzmann_fnames;
+    bool        rotboltz_ignore_missing_rots         ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
@@ -777,11 +798,15 @@ struct RifDockOpt
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
         dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
+        dump_rifgen_for_sat_models             = option[rif_dock::dump_rifgen_for_sat_models         ]();
+        dump_best_rifgen_rots                  = option[rif_dock::dump_best_rifgen_rots              ]();
+        dump_best_rifgen_rmsd                  = option[rif_dock::dump_best_rifgen_rmsd              ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
         test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
         only_score_input_pos                   = option[rif_dock::only_score_input_pos               ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
+        ignore_rifres_if_worse_than            = option[rif_dock::ignore_rifres_if_worse_than           ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
 		hack_pack_frac                         = option[rif_dock::hack_pack_frac                        ]();
@@ -826,6 +851,7 @@ struct RifDockOpt
 		favorable_1body_multiplier_cutoff      = option[rif_dock::favorable_1body_multiplier_cutoff     ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
         rotamer_onebody_inclusion_threshold    = option[rif_dock::rotamer_onebody_inclusion_threshold   ]();
+        rotboltz_ignore_missing_rots           = option[rif_dock::rotboltz_ignore_missing_rots          ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
@@ -997,6 +1023,10 @@ struct RifDockOpt
 
 // Brian
 
+        for ( size_t sat : option[rif_dock::dump_rifgen_for_sat]() ) {
+            dump_rifgen_for_sat.push_back(sat);
+        }
+
         if ( option[rif_dock::hydrophobic_target_res]().length() > 0) {
             int t = 0;
             hydrophobic_target_res = utility::string_split(option[rif_dock::hydrophobic_target_res](), ',', t);
@@ -1036,6 +1066,8 @@ struct RifDockOpt
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
+
+        for( std::string s : option[rif_dock::rotamer_boltzmann_files ]() ) rotamer_boltzmann_fnames.push_back(s);
 
         patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();
         patchdock_top_ranks                     = option[rif_dock::patchdock_top_ranks                 ]();

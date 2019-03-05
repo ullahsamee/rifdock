@@ -70,7 +70,8 @@ void get_onebody_rotamer_energies(
 	std::string const & cachefile,
 	bool replace_with_ala,
 	float favorable_1be_multiplier,
-	float favorable_1be_cutoff
+	float favorable_1be_cutoff,
+	std::shared_ptr< std::vector< std::vector<float> > > extra_scores_p
 ){
 	utility::io::izstream in;
 	std::string cachefile_found = devel::scheme::open_for_read_on_path( cachepath, cachefile, in );
@@ -123,8 +124,25 @@ void get_onebody_rotamer_energies(
 		}
 	}
 
+	#ifdef USE_OPENMP
+	#pragma omp parallel for schedule(dynamic,1)
+	#endif
 	for( int ir = 1; ir <= scaffold_onebody_rotamer_energies.size(); ++ir ){
+
+		std::vector<float> const & extra = ( extra_scores_p ? extra_scores_p->at( ir-1 ) : std::vector<float>() );
+		if ( extra.size() > 0 ) {
+			runtime_assert_msg( extra.size() == scaffold_onebody_rotamer_energies[ir-1].size(), 
+				"get_onebody_rotamer_energies has wrong number of rotamers for this rifdock!! " +
+				boost::str(boost::format(" saw %i expected %i")%extra.size()%
+					scaffold_onebody_rotamer_energies[ir-1].size()) );
+		}
+
 		for( int jr = 0; jr < scaffold_onebody_rotamer_energies[ir-1].size(); ++jr ){
+
+			if ( extra.size() > 0 ) {
+				scaffold_onebody_rotamer_energies[ir-1][jr] += extra[jr];
+			}
+
 			float _1be = scaffold_onebody_rotamer_energies[ir-1][jr];
 			if (_1be < favorable_1be_cutoff) {
 				scaffold_onebody_rotamer_energies[ir-1][jr] = favorable_1be_multiplier * _1be;

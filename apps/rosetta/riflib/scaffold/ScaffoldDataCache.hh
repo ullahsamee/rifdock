@@ -24,6 +24,7 @@
 #include <riflib/rotamer_energy_tables.hh>
 #include <riflib/scaffold/MultithreadPoseCloner.hh>
 #include <riflib/scaffold/util.hh>
+#include <riflib/scaffold/ExtraScaffoldData.hh>
 #include <riflib/HSearchConstraints.hh>
 #include <riflib/BurialManager.hh>
 
@@ -75,6 +76,8 @@ struct ScaffoldDataCache {
 
     shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
 
+    std::shared_ptr< std::vector< std::vector<float> > > rotboltz_data_p;
+
 
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
@@ -113,8 +116,8 @@ struct ScaffoldDataCache {
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
-        std::vector<CstBaseOP> const & csts_in,
-        Eigen::Vector3f force_scaffold_center = Eigen::Vector3f {std::numeric_limits<double>::quiet_NaN(), 0, 0} ) {
+        ExtraScaffoldData const & extra_data
+    ) {
 
         debug_sanity = 1337;
 
@@ -143,9 +146,10 @@ struct ScaffoldDataCache {
         std::vector<bool> l_map( d_map.size() );
         for ( int irot = 0; irot < l_map.size(); irot++ ) l_map[irot] = ! d_map[irot]; 
 
-        for ( int irot = 0; irot < l_map.size(); irot++ ) {
-            std::cout << irot << " " << ( l_map[irot] ? "L" : " " ) << ( d_map[irot] ? "D" : " " ) << rot_index_p->oneletter(irot) << std::endl;
-        }
+        // I did it, I commented it out. End the suffering forever -bcov
+        // for ( int irot = 0; irot < l_map.size(); irot++ ) {
+        //     std::cout << irot << " " << ( l_map[irot] ? "L" : " " ) << ( d_map[irot] ? "D" : " " ) << rot_index_p->oneletter(irot) << std::endl;
+        // }
 
 
 
@@ -181,11 +185,11 @@ struct ScaffoldDataCache {
         else if( opt.scaff2alaselonly ) ::devel::scheme::pose_to_ala( scaffold_centered, *scaffold_res_p );
 
         // Setup scaffold_center
-        if ( std::isnan( force_scaffold_center[0] ) || std::isnan( force_scaffold_center[1] )
-            || std::isnan( force_scaffold_center[2] )) {
+        if ( std::isnan( extra_data.force_scaffold_center[0] ) || std::isnan( extra_data.force_scaffold_center[1] )
+            || std::isnan( extra_data.force_scaffold_center[2] )) {
             scaffold_center = pose_center(scaffold_centered,*scaffold_res_p);
         } else {
-            scaffold_center = force_scaffold_center;
+            scaffold_center = extra_data.force_scaffold_center;
         }
 
         // Move scaffold_centered_p and scaffold_full_centered_p to origin
@@ -263,11 +267,13 @@ struct ScaffoldDataCache {
         std::cout << "scaffold_simple_atoms " << scaffold_simple_atoms_p->size() << std::endl;
 
 
-        for(CstBaseOP cst_in : csts_in ) { 
+        for(CstBaseOP cst_in : extra_data.csts ) { 
             CstBaseOP cst = cst_in->clone(); // make a copy
             cst->reset();   // clear previous scaffold related data
             csts.push_back(cst);
         }
+
+        rotboltz_data_p = extra_data.rotboltz_data_p;
 
     }
 
@@ -326,7 +332,7 @@ struct ScaffoldDataCache {
 
     // setup scaffold_onebody_glob0_p and local_onebody_p
     void
-    setup_onebody_tables( 
+    setup_onebody_tables(
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt ) {
 
@@ -346,8 +352,10 @@ struct ScaffoldDataCache {
                 cachefile_1be,
                 opt.replace_all_with_ala_1bre,
                 opt.favorable_1body_multiplier,
-                opt.favorable_1body_multiplier_cutoff
+                opt.favorable_1body_multiplier_cutoff,
+                rotboltz_data_p
             );
+
 
         if( opt.restrict_to_native_scaffold_res ){
             std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD!!!" << std::endl;
@@ -539,7 +547,6 @@ void dump_bbhbond_actors( shared_ptr<ScaffoldDataCache> const & cache ) {
     dump_bbhbond_actors_inner( cache, true );
     dump_bbhbond_actors_inner( cache, false );
 }
-
 
 
 

@@ -19,6 +19,7 @@
 #include <protocols/minimization_packing/TaskAwareMinMover.hh>
 #include <protocols/simple_moves/MutateResidue.hh>
 #include <core/scoring/ScoreFunction.hh>
+#include <riflib/scaffold/ExtraScaffoldData.hh>
 
 #include <core/pose/Pose.hh>
 #include <core/scoring/Energies.hh>
@@ -47,8 +48,9 @@ get_info_for_iscaff(
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
     EigenXform & scaffold_perturb,
-    std::vector<CstBaseOP> & csts,
-    MorphRules & morph_rules
+    MorphRules & morph_rules,
+    ExtraScaffoldData & extra_data,
+    shared_ptr< RotamerIndex > rot_index_p_in
     );
 
 // historically, non_fa was used during HSearch and fa was used during hack pack
@@ -106,6 +108,14 @@ std::string
 pdb_name( std::string const & fname );
 
 
+
+std::shared_ptr< std::vector< std::vector<float> > >
+load_rotboltz_data(
+    std::string const & fname,
+    size_t num_res,
+    size_t num_rots,
+    bool ignore_missing_rots
+);
 
 }}
 

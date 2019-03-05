@@ -299,8 +299,284 @@ public:
             fout.close();
             
         }
+
+    // This one is built for speed
+    struct RifEntry1 {
+        RifEntry1( EigenXform const & x_in, float score_in, size_t i_at_x_in )
+        :
+            x( x_in ),
+            score( score_in ),
+            i_at_x( i_at_x_in )
+        {}
+
+        EigenXform x;
+        float score;
+        size_t i_at_x;
+
+        bool operator < ( RifEntry1 const & ot ) const {
+            return score < ot.score;
+        }
+    };
+
+
+    struct RifEntry2 {
+
+        RifEntry2( EigenXform x_in, float score_in, size_t i_at_x_in, Eigen::Vector3f const & last_atom_in, char name1_in, size_t irot_in )
+        :
+            x( x_in ),
+            score( score_in ),
+            i_at_x( i_at_x_in ),
+            last_atom( last_atom_in ),
+            name1( name1_in ),
+            irot( irot_in )
+        {}
+
+        EigenXform x;
+        size_t i_at_x;
+
+        float score;
+        Eigen::Vector3f last_atom;
+        char name1;
+        size_t irot;
+
+    };
+
+    bool dump_the_best_rifres( size_t num_to_dump, float rmsd_resl, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+        size_t num_to_collect = num_to_dump * 100000;
+
+        std::cout << "Collecting the top " << num_to_collect << " rifres" << std::endl;
+
+        std::priority_queue<RifEntry1> queue; // top is the worst score
+        float worst_score_in_queue = 100;
+        
+        const RifBase * base = this;
+        shared_ptr<XMap const> from;
+        base->get_xmap_const_ptr( from );
+        static int const Nrots = XMap::Value::N;
+
+        for( auto const & v : from->map_ ){
+            EigenXform x = from->hasher_.get_center( v.first );
+
+            typename XMap::Value const & rotscores = from->operator[]( x );
+            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                if( rotscores.empty(i_rs) ) {
+                    break;
+                }
+
+                float score = rotscores.score(i_rs);
+
+                if ( score < worst_score_in_queue ) {
+                    queue.emplace( x, score, i_rs );
+
+                    if ( queue.size() > num_to_collect ) {
+                        worst_score_in_queue = queue.top().score;
+                        queue.pop();
+                    }
+                }
+            }
+        }
+
+        std::cout << "Collected " << queue.size() << " rifres. Removing rifres with same aa and last atom within " << rmsd_resl
+            << " of each other." << std::endl;
+
+        std::vector<RifEntry2> entry2s;
+        entry2s.reserve(queue.size());
+        while ( ! queue.empty() ) {
+            RifEntry1 const & entry1 = queue.top();
+
+            typename XMap::Value const & rotscores = from->operator[]( entry1.x );
+            size_t irot = rotscores.rotamer(entry1.i_at_x);
+
+            entry2s.emplace_back( entry1.x, entry1.score, entry1.i_at_x,
+                  entry1.x * rot_index_p->rotamers_.at( irot ).atoms_.back().position(),
+                  rot_index_p->oneletter( irot )[0], irot );
+
+            queue.pop();
+
+        }
+
+        std::cout << "Clustering..." << std::endl;
+
+        /// entry2s are sorted by score. So the best score is last
+
+        std::vector< bool > kept( entry2s.size(), false );
+        std::map< char, std::vector<RifEntry2> > keepers;
+        size_t num_keepers = 0;
+        float rmsd2 = rmsd_resl * rmsd_resl;
+
+        // This is incorrect. But it underflows at -1 so...
+        for ( size_t i = entry2s.size()-1; i > 0; i-- ) {
+
+            RifEntry2 const & this_entry = entry2s[i];
+
+            bool accept = true;
+            for ( RifEntry2 const & other : keepers[ this_entry.name1 ]) {
+                if ( (this_entry.last_atom - other.last_atom).squaredNorm() < rmsd2 ) {
+                    accept = false;
+                    break;
+                }
+            }
+            if ( ! accept ) continue;
+
+            keepers[ this_entry.name1 ].push_back( this_entry );
+            kept[i] = true;
+            num_keepers ++;
+
+
+            if ( num_keepers == num_to_dump ) {
+                break;
+            }
+        }
+
+        std::string const & file_name = boost::str(boost::format("best_%i_rotamers_at_%.2fA.pdb")%num_to_dump%rmsd_resl);
+
+        std::cout << "Found " << num_keepers << " rifres. Dumping to  " << file_name << "." << std::endl;
+
+
+        utility::io::ozstream out( file_name );
+        size_t dumped = 0;
+        for ( size_t i = entry2s.size()-1; i > 0; i-- ) {
+            if ( ! kept[i] ) continue;
+
+            RifEntry2 const & this_entry = entry2s[i];
+
+            EigenXform x = this_entry.x;
+            int irot = this_entry.irot;
+            float score = this_entry.score;
+
+
+            out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
+
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
+
+            dumped ++;
+
+            out << std::string("ENDMDL") << std::endl;
+
+        }
+
+        out.close();
+
+
+        return true;
+    }
         
 
+    // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
+    bool dump_rotamers_for_sats( std::vector< size_t > const & sats, size_t number_to_dump, shared_ptr<RotamerIndex> rot_index_p ) const override {
+
+        std::cout << "Looking for rotamers satisfying sat numbers:  " << sats << std::endl;
+        const RifBase * base = this;
+        shared_ptr<XMap const> from;
+        base->get_xmap_const_ptr( from );
+
+
+
+        // transform and irot
+        std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
+        to_dump.reserve( from->map_.size() );
+
+
+        for( auto const & v : from->map_ ){
+            EigenXform x = from->hasher_.get_center( v.first );
+
+
+            typename XMap::Value const & rotscores = from->operator[]( x );
+            static int const Nrots = XMap::Value::N;
+            for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                if( rotscores.empty(i_rs) ) {
+                    break;
+                }
+
+
+
+                int irot = rotscores.rotamer(i_rs);
+
+                std::vector<int> sat_groups;
+                rotscores.rotamer_sat_groups( i_rs, sat_groups );
+                if ( sat_groups.size() == 0 ) continue;
+
+                bool missing = false;
+                for ( size_t sat : sats ) {
+
+                    if ( std::find( sat_groups.begin(), sat_groups.end(), sat) == sat_groups.end() ) {
+                        missing = true;
+                        break;
+                    }
+                }
+                if ( missing ) {
+                    continue;
+                }
+                // std::cout << sat_groups << std::endl;
+
+                float score = rotscores.score(i_rs);
+
+                // std::cout << rot_index_p->resname( irot ) << " " << score << std::endl;
+
+                to_dump.push_back(std::pair<EigenXform, std::pair<int, float>>(x, std::pair<int, float>(irot, score)));
+            
+            }
+        }
+
+
+        if (to_dump.size() == 0) {
+            std::cout << "No rotamers found!!!!" << std::endl;
+            return false;
+        }
+
+        uint64_t num_dump = std::min<uint64_t>(number_to_dump, to_dump.size());
+        uint64_t dump_every = to_dump.size() / num_dump;
+
+        std::string sat_str = "";
+        for ( size_t sat : sats ) {
+            sat_str += boost::str(boost::format("%i_")%sat);
+        }
+
+        std::string const & file_name = "sat" + sat_str + "rotamers.pdb";
+
+
+        std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << num_dump << " to " << file_name << " ..." << std::endl;
+
+
+        utility::io::ozstream out( file_name );
+        uint64_t dumped = 0;
+        for ( uint64_t i = 0; i < to_dump.size(); i ++ ) {
+            if ( i % dump_every != 0 ) {
+                continue;
+            }
+            EigenXform x = to_dump[i].first;
+            auto inner_pair = to_dump[i].second;
+            int irot = inner_pair.first;
+            float score = inner_pair.second;
+
+
+            out << std::string("MODEL") << " " << boost::str(boost::format("%.3f")%score) << std::endl;
+
+            BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
+                a.set_position( x * a.position() ); 
+                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().chain = 'A';
+                ::scheme::actor::write_pdb( out, a, nullptr );
+            }
+
+            dumped ++;
+
+            out << std::string("ENDMDL") << std::endl;
+
+        }
+
+        out.close();
+
+
+        return true;
+
+    }
 
 
     // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
@@ -711,6 +987,7 @@ std::string get_rif_type_from_file( std::string fname )
 		::scheme::search::HackPackOpts packopts_;
 		int n_sat_groups_ = 0, require_satisfaction_ = 0, require_n_rifres_ = 0, require_hydrophobic_residue_contacts_ = 0;
         float hydrophobic_ddg_cut_ = 0;
+        float ignore_rifres_if_worse_than = 0;
 		std::vector< shared_ptr< ::scheme::search::HackPack> > packperthread_;
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
@@ -866,6 +1143,8 @@ std::string get_rif_type_from_file( std::string fname )
 
 				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
+
+                if ( score_rot_v_target > ignore_rifres_if_worse_than ) continue;
 
 				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
 
@@ -1518,6 +1797,8 @@ struct RifFactoryImpl :
 					objective->objective.template get_objective<MyScoreBBActorRIF>().target_proximity_test_grid_ =
 						config.target_bounding_by_atype->at(i_tptg).at(5);
 				}
+                dynamic_cast<MySceneObjectiveRIF&>(*objective).objective.template
+                    get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
 				objective->config = i_so;
 				objectives.push_back( objective );
 			}
@@ -1541,6 +1822,8 @@ struct RifFactoryImpl :
 				if( config.requirements.size() > 0 ){
 						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 				}
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
+                    get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
         packing_objectives.push_back( packing_objective );
         }
 

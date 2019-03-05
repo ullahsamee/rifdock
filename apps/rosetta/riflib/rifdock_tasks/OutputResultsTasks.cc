@@ -297,6 +297,13 @@ dump_rif_result_(
                         }
                     }
 
+                    float rotboltz = 0;
+                    if ( sdc->rotboltz_data_p ) {
+                        if ( sdc->rotboltz_data_p->at(ires).size() > 0 ) {
+                            rotboltz = sdc->rotboltz_data_p->at(ires)[irot];
+                        }
+                    }
+
                     if ( ! quiet ) {
 
                         std::cout << ( rot_was_placed ? "*" : " " );
@@ -305,6 +312,9 @@ dump_rif_result_(
                         std::cout << " score:" << F(7, 2, sc);
                         std::cout << " irot:" << I(3, irot);
                         std::cout << " 1-body:" << F(7, 2, onebody );
+                        if ( sdc->rotboltz_data_p ) {
+                            std::cout << " rotboltz:" << F(7, 2, rotboltz );
+                        }
                         std::cout << " rif score:" << F(7, 2, p.first);
                         std::cout << " rif rescore:" << F(7, 2, rescore);
                         std::cout << " sats:" << I(3, sat1_sat2.first) << " " << I(3, sat1_sat2.second) << " ";

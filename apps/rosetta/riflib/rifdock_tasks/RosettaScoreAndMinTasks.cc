@@ -338,6 +338,7 @@ rosetta_score_inner(
             xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold_size );
 
             // place the rotamers
+            float rotamer_penalty = 0;
             core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
             std::vector<bool> is_rif_res(pose_to_min.size(),false);
             for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
@@ -348,6 +349,9 @@ rosetta_score_inner(
                 is_rif_res[ires] = true;
                 for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
                     pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
+                }
+                if ( sdc->rotboltz_data_p ) {
+                    rotamer_penalty += sdc->rotboltz_data_p->at( ires )[irot];
                 }
             }
 
@@ -457,6 +461,7 @@ rosetta_score_inner(
                 packed_results[imin].score = pose_to_min.energies().total_energy();
             } else {
                 double rosetta_score = 0.0;
+                rosetta_score += rotamer_penalty;
                 auto const & weights = pose_to_min.energies().weights();
                 if( !rdd.opt.rosetta_score_ddg_only ){
                     for( int ir = 1; ir <= scaffold_size; ++ir ){
