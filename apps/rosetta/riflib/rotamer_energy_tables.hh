@@ -28,7 +28,8 @@ void get_onebody_rotamer_energies(
 	std::string const & cachefile,
 	bool replace_with_ala = true,
 	float favorable_1be_multiplier = 1,
-	float favorable_1be_cutoff = 0
+	float favorable_1be_cutoff = 0,
+	std::shared_ptr< std::vector< std::vector<float> > > extra_scores_p = nullptr
 );
 
 void

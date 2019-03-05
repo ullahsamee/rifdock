@@ -804,6 +804,14 @@ int main(int argc, char *argv[]) {
 	        }
 
 		}
+
+		if ( opt.dump_rifgen_for_sat.size() > 0 ) {
+			rif_ptrs.back()->dump_rotamers_for_sats( opt.dump_rifgen_for_sat, opt.dump_rifgen_for_sat_models, rot_index_p );
+		}
+
+		if ( opt.dump_best_rifgen_rots > 0 ) {
+			rif_ptrs.back()->dump_the_best_rifres( opt.dump_best_rifgen_rots, opt.dump_best_rifgen_rmsd, rot_index_p );
+		}
 	}
 
 
@@ -884,6 +892,8 @@ int main(int argc, char *argv[]) {
             	rso_config.hydrophobic_manager = hydrophobic_manager;
             	rso_config.require_hydrophobic_residue_contacts = opt.require_hydrophobic_residue_contacts;
             	rso_config.hydrophobic_ddg_cut = opt.hydrophobic_ddg_cut;
+
+            	rso_config.ignore_rifres_if_worse_than = opt.ignore_rifres_if_worse_than;
 
 
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {

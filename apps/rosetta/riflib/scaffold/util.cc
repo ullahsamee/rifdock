@@ -64,8 +64,9 @@ get_info_for_iscaff(
     core::pose::Pose & scaffold,
     utility::vector1<core::Size> & scaffold_res,
     EigenXform & scaffold_perturb,
-    std::vector<CstBaseOP> & csts,
-    MorphRules & morph_rules
+    MorphRules & morph_rules,
+    ExtraScaffoldData & extra_data,
+    shared_ptr< RotamerIndex > rot_index_p
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -119,7 +120,7 @@ get_info_for_iscaff(
         } else {
             utility_exit_with_message( "-cst_files list not same length as -scaffolds list" );
         }
-        runtime_assert_msg(parse_constrains_file(cst_fname, csts), "Faild to parse the constrain file!!!");
+        runtime_assert_msg(parse_constrains_file(cst_fname, extra_data.csts), "Faild to parse the constrain file!!!");
     }
 
     if( opt.morph_rules_fnames.size() ){
@@ -135,6 +136,18 @@ get_info_for_iscaff(
     } else {
         std::cout << "Morph rules file not specified, using command-line options" << std::endl;
         morph_rules.push_back(morph_rule_from_options(opt));
+    }
+
+    if( opt.rotamer_boltzmann_fnames.size() ){
+        std::string rotboltz_fname = "";
+        if( opt.rotamer_boltzmann_fnames.size() == opt.rotamer_boltzmann_fnames.size() ){
+            rotboltz_fname = opt.rotamer_boltzmann_fnames.at(iscaff);
+        } else if( opt.rotamer_boltzmann_fnames.size() == 1 ){
+            rotboltz_fname = opt.rotamer_boltzmann_fnames.front();
+        } else {
+            utility_exit_with_message( "-rotamer_boltzmann_files list not same length as -scaffolds list" );
+        }
+        extra_data.rotboltz_data_p = load_rotboltz_data( rotboltz_fname, scaffold.size(), rot_index_p->size(), opt.rotboltz_ignore_missing_rots );
     }
 
 }
@@ -801,6 +814,77 @@ pdb_name( std::string const & fname ) {
     if (utility::endswith( name, ".pdb" ) ) name = name.substr(0, name.length() - 4);
     return name;
 }
+
+
+std::shared_ptr< std::vector< std::vector<float> > >
+load_rotboltz_data(
+    std::string const & fname,
+    size_t num_res,
+    size_t num_rots,
+    bool ignore_missing_rots
+) {
+
+    std::cout << "Loading rotamer boltzmann data from: " << fname << std::endl;
+
+    std::shared_ptr< std::vector< std::vector<float> > > rotboltz_data_p = std::make_shared< std::vector< std::vector<float> > >(num_res);
+    std::vector< std::vector<float> > & rotboltz_data = *rotboltz_data_p;
+        
+    runtime_assert_msg(utility::file::file_exists( fname ), "rotboltz_data file does not exist: " + fname );
+    std::ifstream in;
+    in.open(fname, std::ios::in);
+    // utility::io::izstream in(fname);
+    std::string s;
+    while (std::getline(in, s)) {
+        std::string save_s = s;
+        if (s.empty()) continue;
+
+        s = utility::replace_in( s, "#", " #");
+        utility::vector1<std::string> comment_splt = utility::string_split_simple(s, ' ');
+        utility::vector1<std::string> splt;
+        for ( std::string item : comment_splt ) {
+            item = utility::strip(item, " \t\n");
+            if (item.empty()) continue;
+            if (item[0] == '#') break;
+            splt.push_back(item);
+        }
+        if (splt.size() == 0) continue;
+
+        // std::cout << save_s << std::endl;
+        // std::cout << splt << std::endl;
+        size_t seqpos = utility::string2int(splt[1]);
+        if ( seqpos > num_res ) {
+            std::cout << "Error!!! rotboltz_file has seqpos above pose.size(): saw " << seqpos
+            << " pose.size() " << num_res << " in file " << fname << std::endl;
+            utility_exit();
+        }
+
+        if ( rotboltz_data[seqpos-1].size() > 0 ) {
+            std::cout << "Error!!! rotboltz_file has seqpos listed twice: " << seqpos
+            << " in file " << fname << std::endl;
+            utility_exit();
+        }
+
+        rotboltz_data[seqpos-1].resize(num_rots);
+        for ( size_t i = 0; i < num_rots ; i++ ) {
+
+            float value = 0;
+            if ( i + 2 > splt.size() ) {
+                if ( ! ignore_missing_rots ) {
+                    utility_exit_with_message("-rotamer_boltzmann_files has wrong number of rotamers for this rifdock!! " +
+                        boost::str(boost::format(" saw %i expected %i")%(splt.size()-1)%num_rots));
+                }
+            } else {
+                value = utility::string2float(splt[i+2]);
+            }
+            rotboltz_data[seqpos-1][i] = value;
+        }
+
+    }
+
+    return rotboltz_data_p;
+    
+}
+
 
 
 }}

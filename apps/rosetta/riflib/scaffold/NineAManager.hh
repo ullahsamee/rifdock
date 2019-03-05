@@ -282,7 +282,7 @@ struct NineAManager : public utility::pointer::ReferenceCount {
         std::string scafftag = pose_p->pdb_info()->name();
         utility::vector1<core::Size> scaffold_res;
         EigenXform scaffold_perturb = EigenXform::Identity();
-        std::vector<CstBaseOP> csts;
+        ExtraScaffoldData extra_data;
 
         get_default_scaffold_res(*pose_p, scaffold_res);
 
@@ -293,7 +293,7 @@ struct NineAManager : public utility::pointer::ReferenceCount {
             scaffold_perturb,
             rot_index_p,
             opt,
-            csts);
+            extra_data);
 
         nine.conformation = make_conformation_from_data_cache(temp_data_cache, false);
 

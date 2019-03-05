@@ -133,6 +133,7 @@ struct RifSceneObjectiveConfig
     shared_ptr<HydrophobicManager> hydrophobic_manager;
     float sasa_threshold;
     float sasa_multiplier;
+    float ignore_rifres_if_worse_than;
 
 };
 

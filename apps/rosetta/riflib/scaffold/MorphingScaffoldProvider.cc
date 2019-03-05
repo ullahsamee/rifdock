@@ -47,10 +47,11 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     core::pose::Pose scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
-    std::vector<CstBaseOP> csts;
     MorphRules morph_rules;
+    ExtraScaffoldData extra_data;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
+
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p);
 
     ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -59,7 +60,7 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
         scaffold_perturb,
         rot_index_p,
         opt,
-        csts);
+        extra_data);
 
     ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
@@ -86,11 +87,11 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     core::pose::Pose _scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
-    std::vector<CstBaseOP> csts;
     MorphRules morph_rules;
+    ExtraScaffoldData extra_data;
 
 
-    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
+    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p);
 
 
 
@@ -159,6 +160,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
             for ( core::pose::PoseOP pose : poses ) {
                 count++;
 
+                extra_data.force_scaffold_center = data_cache->scaffold_center;
+
                 ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
                     *pose,
                     scaffold_res,
@@ -166,8 +169,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     scaffold_perturb,
                     rot_index_p,
                     opt,
-                    csts,
-                    data_cache->scaffold_center);
+                    extra_data
+                    );
 
 
                 if ( opt.use_parent_body_energies ) {
@@ -244,6 +247,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
 
             apply_xform_to_pose( *pose, archetype_to_input );
 
+            extra_data.force_scaffold_center = data_cache->scaffold_center;
+
             ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
                 *pose,
                 scaffold_res,
@@ -251,8 +256,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 scaffold_perturb,
                 rot_index_p,
                 opt,
-                csts,
-                data_cache->scaffold_center);
+                extra_data
+                );
 
 
             if ( opt.use_parent_body_energies ) {
