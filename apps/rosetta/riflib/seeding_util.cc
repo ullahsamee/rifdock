@@ -25,7 +25,9 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         if ( opt.seed_include_input ) {
             std::cout << "Adding seeding position: " << "_SP_input" << std::endl;
             seeding_positions->push_back(EigenXform::Identity());
-            pd.seeding_tags.push_back("_input");
+            if ( opt.write_seed_to_output ) {
+                pd.seeding_tags.push_back("_input");
+            }
         }
 
         core::pose::Pose const & input = *scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_unmodified_p;
@@ -38,7 +40,9 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
             std::cout << pose.size() << " " << input.size() << std::endl;
             EigenXform xform = find_xform_from_identical_pose_to_pose( input, pose, 1 );
             seeding_positions->push_back(xform);
-            pd.seeding_tags.push_back( tag );
+            if ( opt.write_seed_to_output ) {
+                pd.seeding_tags.push_back( tag );
+            }
         }
 
         if ( seeding_positions->size() >= 4294967296 ) {
@@ -63,9 +67,19 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         
         Eigen::Vector3f scaffold_center = scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_center;
 
-        EigenXform x(EigenXform::Identity());
-        x.translation() = scaffold_center;
-        for( auto & t : *seeding_positions ) t = t * x;
+        if ( ! opt.apply_seeding_xform_after_centering ) {
+            EigenXform x(EigenXform::Identity());
+            x.translation() = scaffold_center;
+            for( auto & t : *seeding_positions ) t = t * x;
+        }
+
+        if ( opt.write_seed_to_output ) {
+            size_t digits = boost::str(boost::format("%i")%(seeding_positions->size()-1)).length();
+            std::string format = "%0" + boost::str(boost::format("%i")%digits) + "i";
+            for ( size_t i = 0; i < seeding_positions->size(); i++ ) {
+                pd.seeding_tags.push_back("_SP_" + boost::str(boost::format(format)%i));
+            }
+        }
 
         if ( seeding_positions->size() >= 4294967296 ) {
             utility_exit_with_message("Too many seeding positions!!!!");

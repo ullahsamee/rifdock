@@ -110,6 +110,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
     OPT_1GRP_KEY(  IntegerVector, rif_dock, dump_rifgen_for_sat )
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_rifgen_for_sat_models )
+    OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_for_sat_name3 )
     OPT_1GRP_KEY(  Integer     , rif_dock, dump_best_rifgen_rots )
     OPT_1GRP_KEY(  Real        , rif_dock, dump_best_rifgen_rmsd )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
@@ -224,6 +225,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     // constrain file
 	OPT_1GRP_KEY(  StringVector, rif_dock, cst_files )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, write_seed_to_output )
 	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
@@ -231,6 +233,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, patchdock_min_sasa )
     OPT_1GRP_KEY(  Integer     , rif_dock, patchdock_top_ranks )
     OPT_1GRP_KEY(  Boolean     , rif_dock, seeding_by_patchdock )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, apply_seeding_xform_after_centering )
     OPT_1GRP_KEY(  String      , rif_dock, xform_pos )
     OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_each_seeding_at_least )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
@@ -364,6 +367,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
             NEW_OPT(  rif_dock::dump_rifgen_for_sat, "Dump a rotamers near a specific sat or multiple sats", utility::vector1<size_t>());
             NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 1000);
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_name3, "Only dump rotamers with this name3", "");
             NEW_OPT(  rif_dock::dump_best_rifgen_rots, "Dump the best rotamer from the rifgen. This is how many", 0 );
             NEW_OPT(  rif_dock::dump_best_rifgen_rmsd, "The rmsd of the last atom for each aa type used in clustering", 3 );
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
@@ -476,6 +480,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	        // constrain file names
 			NEW_OPT(  rif_dock::cst_files, "" , utility::vector1<std::string>() );
 
+            NEW_OPT(  rif_dock::write_seed_to_output, "Write the seeding position index to the scorefile", false );
 			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
@@ -483,6 +488,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::patchdock_min_sasa, "the cutoff sasa value for a valid patchdock output, the default is to use all of them", -1000.0);
             NEW_OPT(  rif_dock::patchdock_top_ranks, "only use the top solutions of patchdock to do refinement, the default is to use all of them", 99999);
             NEW_OPT(  rif_dock::seeding_by_patchdock, "The format of seeding file can be either Rosetta Xform or raw patchdock outputs", true );
+            NEW_OPT(  rif_dock::apply_seeding_xform_after_centering, "Apply the seeding position xforms after moving scaffold to center", false );
             NEW_OPT(  rif_dock::xform_pos, "" , "" );
             NEW_OPT(  rif_dock::rosetta_score_each_seeding_at_least, "", -1 );
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
@@ -556,6 +562,7 @@ struct RifDockOpt
 	bool        dump_rifgen_text                     ;
     std::vector<size_t> dump_rifgen_for_sat          ;
     int         dump_rifgen_for_sat_models           ;
+    std::string dump_rifgen_for_sat_name3            ;
     int         dump_best_rifgen_rots                ;
     float       dump_best_rifgen_rmsd                ;
 	std::string score_this_pdb                       ;
@@ -718,6 +725,7 @@ struct RifDockOpt
     // constrain file names
 	std::vector<std::string> cst_fnames              ;
 
+    bool        write_seed_to_output                  ;
 	std::vector<std::string> seed_with_these_pdbs    ;
 	bool        seed_include_input                   ;
 
@@ -727,6 +735,7 @@ struct RifDockOpt
     float       cluster_score_cut                    ;
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
+    bool        apply_seeding_xform_after_centering  ;
     float       patchdock_min_sasa                   ;
     int         patchdock_top_ranks                  ;
 
@@ -799,6 +808,7 @@ struct RifDockOpt
         dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
         dump_rifgen_for_sat_models             = option[rif_dock::dump_rifgen_for_sat_models         ]();
+        dump_rifgen_for_sat_name3              = option[rif_dock::dump_rifgen_for_sat_name3          ]();
         dump_best_rifgen_rots                  = option[rif_dock::dump_best_rifgen_rots              ]();
         dump_best_rifgen_rmsd                  = option[rif_dock::dump_best_rifgen_rmsd              ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
@@ -951,9 +961,11 @@ struct RifDockOpt
 
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
 
+        write_seed_to_output                    = option[rif_dock::write_seed_to_output                   ]();
 		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
 
 		seeding_by_patchdock                    = option[rif_dock::seeding_by_patchdock                 ]();
+        apply_seeding_xform_after_centering     = option[rif_dock::apply_seeding_xform_after_centering  ]();
         xform_fname                             = option[rif_dock::xform_pos                            ]();
         rosetta_score_each_seeding_at_least     = option[rif_dock::rosetta_score_each_seeding_at_least  ]();
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();

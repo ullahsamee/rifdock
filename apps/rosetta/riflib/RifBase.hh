@@ -107,7 +107,8 @@ struct RifBase
 
     virtual bool dump_the_best_rifres( size_t num_to_dump, float rmsd_resl, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
-    virtual bool dump_rotamers_for_sats( std::vector< size_t > const & sat, size_t number_to_dump, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
+    virtual bool dump_rotamers_for_sats( std::vector< size_t > const & sat, size_t number_to_dump, 
+        std::string const & name3, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     virtual bool dump_rotamers_near_res( core::conformation::Residue const & res, std::string const & file_name, 
                                            float dump_dist, float dump_frac, shared_ptr<RotamerIndex> rot_index_p, bool last_atom_only ) const = 0;
