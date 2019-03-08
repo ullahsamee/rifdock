@@ -469,14 +469,27 @@ public:
         
 
     // This looks for rifgen rotamers that have their N, CA, CB, and last atom within dump_dist of the residue given
-    bool dump_rotamers_for_sats( std::vector< size_t > const & sats, size_t number_to_dump, shared_ptr<RotamerIndex> rot_index_p ) const override {
+    bool dump_rotamers_for_sats(
+        std::vector< size_t > const & sats,
+        size_t number_to_dump,
+        std::string const & name3,
+        shared_ptr<RotamerIndex> rot_index_p
+    ) const override {
 
-        std::cout << "Looking for rotamers satisfying sat numbers:  " << sats << std::endl;
+        std::cout << "Looking for rotamers satisfying sat numbers:  " << sats;
+        if ( name3 != "" ) {
+            std::cout << " and with name3: " << name3;
+        }
+        std::cout << std::endl;
         const RifBase * base = this;
         shared_ptr<XMap const> from;
         base->get_xmap_const_ptr( from );
 
-
+        // If there are ever more than 1M rotamers, change this
+        std::pair<int, int> ok_range( -100, 1000000 );
+        if ( name3 != "" ) {
+            ok_range = rot_index_p->index_bounds( name3 );
+        }
 
         // transform and irot
         std::vector<std::pair<EigenXform, std::pair<int, float>>> to_dump;
@@ -497,6 +510,7 @@ public:
 
 
                 int irot = rotscores.rotamer(i_rs);
+                if (irot < ok_range.first || irot >= ok_range.second ) continue;
 
                 std::vector<int> sat_groups;
                 rotscores.rotamer_sat_groups( i_rs, sat_groups );
@@ -538,7 +552,7 @@ public:
             sat_str += boost::str(boost::format("%i_")%sat);
         }
 
-        std::string const & file_name = "sat" + sat_str + "rotamers.pdb";
+        std::string const & file_name = "sat" + sat_str + (name3 == "" ? "" : name3 + "_") + "rotamers.pdb";
 
 
         std::cout << "Found " << to_dump.size() << " rotamers. Dumping " << num_dump << " to " << file_name << " ..." << std::endl;
@@ -560,7 +574,7 @@ public:
 
             BOOST_FOREACH( SchemeAtom a, rot_index_p->rotamers_.at( irot ).atoms_ ){
                 a.set_position( x * a.position() ); 
-                a.nonconst_data().resnum = dumped;
+                a.nonconst_data().resnum = dumped % 10000;
                 a.nonconst_data().chain = 'A';
                 ::scheme::actor::write_pdb( out, a, nullptr );
             }

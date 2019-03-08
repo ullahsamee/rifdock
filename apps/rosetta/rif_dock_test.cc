@@ -806,7 +806,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		if ( opt.dump_rifgen_for_sat.size() > 0 ) {
-			rif_ptrs.back()->dump_rotamers_for_sats( opt.dump_rifgen_for_sat, opt.dump_rifgen_for_sat_models, rot_index_p );
+			rif_ptrs.back()->dump_rotamers_for_sats( opt.dump_rifgen_for_sat, opt.dump_rifgen_for_sat_models,
+				opt.dump_rifgen_for_sat_name3, rot_index_p );
 		}
 
 		if ( opt.dump_best_rifgen_rots > 0 ) {
