@@ -52,6 +52,7 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
+    utility::io::ozstream & outS,
     bool quiet = true,
     std::string const & resfileoutfile = "",
     std::string const & allrifrotsoutfile = "",

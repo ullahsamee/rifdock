@@ -22,6 +22,9 @@
 #include <core/pose/PDBInfo.hh>
 #include <core/pose/util.hh>
 #include <core/pose/Pose.hh>
+#include <core/io/silent/BinarySilentStruct.hh>
+#include <core/io/silent/SilentFileData.hh>
+#include <core/io/silent/SilentFileOptions.hh>
 
 #include <string>
 #include <vector>
@@ -83,6 +86,8 @@ OutputResultsTask::return_rif_dock_results(
 
     if( rdd.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
     else                        std::cout << "ALIGN TO TARGET"   << std::endl;
+    utility::io::ozstream outS;
+    outS.open_append( rdd.opt.outdir + "/" + "rifdock_out.silent" );
     for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
         RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
@@ -178,8 +183,7 @@ OutputResultsTask::return_rif_dock_results(
         std::cout << oss.str();
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
-
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, outS, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
 
         std::cout << extra_output.str() << std::flush;
 
@@ -197,6 +201,7 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
+    utility::io::ozstream & outS,
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile, /* = "" */
@@ -433,15 +438,16 @@ dump_rif_result_(
 
 
     // Dump the main output
-    utility::io::ozstream out1( pdboutfile );
-    out1 << expdb.str() << std::endl;
-    pose_to_dump.dump_pdb(out1);
-    if ( rdd.opt.dump_all_rif_rots_into_output ) {
-        if ( rdd.opt.rif_rots_as_chains ) out1 << "TER" << endl;
-        out1 << allout.str();
+    if (!rdd.opt.outputsilent) {
+        utility::io::ozstream out1( pdboutfile );
+        out1 << expdb.str() << std::endl;
+        pose_to_dump.dump_pdb(out1);
+        if ( rdd.opt.dump_all_rif_rots_into_output ) {
+            if ( rdd.opt.rif_rots_as_chains ) out1 << "TER" << endl;
+            out1 << allout.str();
+        }
+        out1.close();
     }
-    out1.close();
-
     // Dump a resfile
     if( rdd.opt.dump_resfile ){
         utility::io::ozstream out1res( resfileoutfile );
@@ -454,6 +460,28 @@ dump_rif_result_(
         utility::io::ozstream out2( allrifrotsoutfile );
         out2 << allout.str();
         out2.close();
+    }
+    // Dump silent file
+    if (rdd.opt.outputsilent) {
+        // silly thing to take care of multiple chains in PDBInfo for silentstruct
+        core::Size const ch1end(1);
+        //set chain ID
+        std::vector<char> chainID_vec(pose_to_dump.conformation().size()); 
+        for (auto i = 0; i <= pose_to_dump.conformation().chain_end(ch1end); i++) chainID_vec[i] = 'A';
+        for (auto i = pose_to_dump.conformation().chain_end(ch1end) + 1; i <= pose_to_dump.conformation().size(); i++) chainID_vec[i] = 'B';
+        pose_to_dump.pdb_info() -> set_chains(chainID_vec);
+        //set chain num
+        std::vector<int> v(pose_to_dump.conformation().size()); 
+        std::iota (std::begin(v), std::end(v), 1);
+        pose_to_dump.pdb_info() -> set_numbering(v.begin(), v.end());
+        //dump to silent
+        size_t tag_pos = pdboutfile.find_last_of("/\\");
+        std::string model_tag = pdboutfile.substr(tag_pos+1);
+        core::io::silent::SilentFileOptions sf_option;
+        sf_option.read_from_global_options();
+        core::io::silent::SilentFileData sfd(sf_option);
+        core::io::silent::BinarySilentStruct ss(sf_option, pose_to_dump, model_tag);
+        sfd._write_silent_struct(ss, outS);
     }
 
 
@@ -470,8 +498,9 @@ dump_search_point_(
 
     RifDockResult result;
     result = search_point;
-
-    dump_rif_result_( rdd, result, pdboutfile, director_resl, rif_resl, quiet, "", "" );
+    utility::io::ozstream trash;
+    dump_rif_result_( rdd, result, pdboutfile, director_resl, rif_resl, trash,quiet, "", "" );
+    trash.close();
 }
 
 
