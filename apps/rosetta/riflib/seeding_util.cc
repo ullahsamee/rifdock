@@ -25,7 +25,9 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         if ( opt.seed_include_input ) {
             std::cout << "Adding seeding position: " << "_SP_input" << std::endl;
             seeding_positions->push_back(EigenXform::Identity());
-            pd.seeding_tags.push_back("_input");
+            if ( opt.write_seed_to_output ) {
+                pd.seeding_tags.push_back("_input");
+            }
         }
 
         core::pose::Pose const & input = *scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_unmodified_p;
@@ -38,7 +40,9 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
             std::cout << pose.size() << " " << input.size() << std::endl;
             EigenXform xform = find_xform_from_identical_pose_to_pose( input, pose, 1 );
             seeding_positions->push_back(xform);
-            pd.seeding_tags.push_back( tag );
+            if ( opt.write_seed_to_output ) {
+                pd.seeding_tags.push_back( tag );
+            }
         }
 
         if ( seeding_positions->size() >= 4294967296 ) {
@@ -59,13 +63,23 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
         } else {
             utility_exit_with_message( "-seeding_files list not same length as -scaffolds list" );
         }
-        runtime_assert_msg(parse_seeding_file(seeding_fname, *seeding_positions, opt.seeding_by_patchdock), "Faild to parse the seeding file!!!");
+        runtime_assert_msg(parse_seeding_file(seeding_fname, *seeding_positions, opt.seeding_by_patchdock, opt.patchdock_min_sasa, opt.patchdock_top_ranks), "Faild to parse the seeding file!!!");
         
         Eigen::Vector3f scaffold_center = scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_center;
 
-        EigenXform x(EigenXform::Identity());
-        x.translation() = scaffold_center;
-        for( auto & t : *seeding_positions ) t = t * x;
+        if ( ! opt.apply_seeding_xform_after_centering ) {
+            EigenXform x(EigenXform::Identity());
+            x.translation() = scaffold_center;
+            for( auto & t : *seeding_positions ) t = t * x;
+        }
+
+        if ( opt.write_seed_to_output ) {
+            size_t digits = boost::str(boost::format("%i")%(seeding_positions->size()-1)).length();
+            std::string format = "%0" + boost::str(boost::format("%i")%digits) + "i";
+            for ( size_t i = 0; i < seeding_positions->size(); i++ ) {
+                pd.seeding_tags.push_back("_SP_" + boost::str(boost::format(format)%i));
+            }
+        }
 
         if ( seeding_positions->size() >= 4294967296 ) {
             utility_exit_with_message("Too many seeding positions!!!!");
@@ -139,7 +153,9 @@ bool
 parse_seeding_file(
     std::string fname, 
     std::vector<devel::scheme::EigenXform> & seeding_positions, 
-    bool seeding_by_patchdock
+    bool seeding_by_patchdock,
+		float patchdock_min_sasa,
+		int patchdock_top_ranks
 ) {
         
     // the seeding
@@ -149,6 +165,7 @@ parse_seeding_file(
     }
     runtime_assert_msg(utility::file::file_exists( fname ), "seeding file does not exits: " + fname );
     
+
     std::ifstream in;
     in.open(fname, std::ios::in);
     // utility::io::izstream in(fname);
@@ -168,6 +185,10 @@ parse_seeding_file(
                         }
 
                         if(!flag) continue;
+
+												// remove bad patchdock seeding pos based on the sasa
+												if ( utility::string2float(splt[7]) < patchdock_min_sasa ) continue;
+												if ( utility::string2int  (splt[1]) > patchdock_top_ranks) continue;
 
                         float cx = cos(utility::string2float(splt[25]));
                         float cy = cos(utility::string2float(splt[26]));

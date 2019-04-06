@@ -45,10 +45,10 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     core::pose::Pose scaffold;
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
-    std::vector<CstBaseOP> csts;
     MorphRules morph_rules;
+    ExtraScaffoldData extra_data;
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, csts, morph_rules);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p);
 
     ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -57,7 +57,7 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
         scaffold_perturb,
         rot_index_p,
         opt,
-        csts);
+        extra_data);
 
     conformation_ = make_conformation_from_data_cache(temp_data_cache, false);
 

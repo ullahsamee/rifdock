@@ -39,7 +39,9 @@ bool
 parse_seeding_file(
     std::string fname, 
     std::vector<devel::scheme::EigenXform> & seeding_positions, 
-    bool seeding_by_patchdock
+    bool seeding_by_patchdock,
+		float patchdock_min_sasa = -1000.0,
+		int patchdock_top_ranks = 99999
 );
 
 template<class AnyPoint>

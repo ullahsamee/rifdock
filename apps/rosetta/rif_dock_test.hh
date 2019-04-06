@@ -51,6 +51,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
     OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
     OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
@@ -62,6 +63,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_1body_multiplier_cutoff )
 	OPT_1GRP_KEY(  Real        , rif_dock, favorable_2body_multiplier )
     OPT_1GRP_KEY(  Real        , rif_dock, rotamer_onebody_inclusion_threshold )
+    OPT_1GRP_KEY(  StringVector, rif_dock, rotamer_boltzmann_files )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, rotboltz_ignore_missing_rots )
 
 	OPT_1GRP_KEY(  Integer     , rif_dock, rotrf_oversample )
 	OPT_1GRP_KEY(  Real        , rif_dock, rotrf_resl )
@@ -96,6 +99,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, restrict_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Real        , rif_dock, bonus_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, add_native_scaffold_rots_when_packing )
+    OPT_1GRP_KEY(  Real        , rif_dock, ignore_rifres_if_worse_than )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
@@ -104,7 +108,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_near_pdb_last_atom )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_text )
+    OPT_1GRP_KEY(  IntegerVector, rif_dock, dump_rifgen_for_sat )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_rifgen_for_sat_models )
+    OPT_1GRP_KEY(  String      , rif_dock, dump_rifgen_for_sat_name3 )
+    OPT_1GRP_KEY(  Integer     , rif_dock, dump_best_rifgen_rots )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_best_rifgen_rmsd )
 	OPT_1GRP_KEY(  String      , rif_dock, score_this_pdb )
 	OPT_1GRP_KEY(  String      , rif_dock, dump_pdb_at_bin_center )
     OPT_1GRP_KEY(  Boolean     , rif_dock, test_hackpack )
@@ -130,6 +140,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
+    OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -139,6 +155,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_at_most )
 	OPT_1GRP_KEY(  Real        , rif_dock, rosetta_min_fraction )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_least )
+    OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_min_at_most )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_fix_target )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_targetbb )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_min_scaffoldbb )
@@ -157,11 +174,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_filter_even_if_no_score )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_debug_dump_scores )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rosetta_score_select_random )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, skip_redundancy_filter_before_rosetta )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, override_rosetta_pose )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rotamers )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, extra_rif_rotamers )
 	OPT_1GRP_KEY(  Integer     , rif_dock, always_available_rotamers_level )
     OPT_1GRP_KEY(  Boolean     , rif_dock, packing_use_rif_rotamers )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rifdock_rotamers )
 
     OPT_1GRP_KEY(  Integer     , rif_dock, nfold_symmetry )
     OPT_1GRP_KEY(  RealVector  , rif_dock, symmetry_axis )
@@ -207,11 +227,15 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     // constrain file
 	OPT_1GRP_KEY(  StringVector, rif_dock, cst_files )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, write_seed_to_output )
 	OPT_1GRP_KEY(  StringVector, rif_dock, seed_with_these_pdbs )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, seed_include_input )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, seeding_pos )
+    OPT_1GRP_KEY(  Real        , rif_dock, patchdock_min_sasa )
+    OPT_1GRP_KEY(  Integer     , rif_dock, patchdock_top_ranks )
     OPT_1GRP_KEY(  Boolean     , rif_dock, seeding_by_patchdock )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, apply_seeding_xform_after_centering )
     OPT_1GRP_KEY(  String      , rif_dock, xform_pos )
     OPT_1GRP_KEY(  Integer     , rif_dock, rosetta_score_each_seeding_at_least )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
@@ -267,6 +291,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::favorable_1body_multiplier_cutoff, "Anything with a one-body energy less than this gets multiplied by favorable_1body_multiplier", 0 );
 			NEW_OPT(  rif_dock::favorable_2body_multiplier, "Anything with a two-body energy less than 0 gets multiplied by this", 1 );
             NEW_OPT(  rif_dock::rotamer_onebody_inclusion_threshold, "Threshold to include residue into 2-body calc. Increase this if 'crazy energy delta'", 8 );
+            NEW_OPT(  rif_dock::rotamer_boltzmann_files, "Files that contain rotamer boltzmann penalties for each rifrot at select positions.", utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::rotboltz_ignore_missing_rots, "Ignore mismatches in the number of rotamers. Missing rotamers get score of 0", false );
 
 			NEW_OPT(  rif_dock::target_rf_cache, "" , "NO_CACHE_SPECIFIED_ON_COMMAND_LINE" );
 			NEW_OPT(  rif_dock::target_donors, "", "" );
@@ -331,15 +357,22 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
 			NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
 			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
+            NEW_OPT(  rif_dock::ignore_rifres_if_worse_than, "Don't use bad rif residues", 0 );
 
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
 
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", utility::vector1<std::string>());
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1 );
-			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1 );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1.0f );
+			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1.0f );
+            NEW_OPT(  rif_dock::dump_rifgen_near_pdb_last_atom, "Use only the last atom to decide if rotamers are close", false );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat, "Dump a rotamers near a specific sat or multiple sats", utility::vector1<size_t>());
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 1000);
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_name3, "Only dump rotamers with this name3", "");
+            NEW_OPT(  rif_dock::dump_best_rifgen_rots, "Dump the best rotamer from the rifgen. This is how many", 0 );
+            NEW_OPT(  rif_dock::dump_best_rifgen_rmsd, "The rmsd of the last atom for each aa type used in clustering", 3 );
 			NEW_OPT(  rif_dock::score_this_pdb, "Score every residue of this pdb using the rif scoring machinery", "" );
 			NEW_OPT(  rif_dock::dump_pdb_at_bin_center, "Dump each residue of this pdb at the rotamer's bin center", "" );
             NEW_OPT(  rif_dock::test_hackpack, "Test the packing objective in the original position too", false );
@@ -365,6 +398,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
             NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
+            NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
+            NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -374,6 +413,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_score_at_most, "", 999999999 );
 			NEW_OPT(  rif_dock::rosetta_min_fraction  , "",  0.1 );
 			NEW_OPT(  rif_dock::rosetta_min_at_least, "", 0 );
+            NEW_OPT(  rif_dock::rosetta_min_at_most, "Min at most this many", -1 );
 			NEW_OPT(  rif_dock::rosetta_min_targetbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_scaffoldbb  , "",  false );
 			NEW_OPT(  rif_dock::rosetta_min_allbb  , "",  false );
@@ -392,11 +432,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::rosetta_filter_even_if_no_score, "Do the filtering for rosetta score and min even if you don't actually score/min", false );
 			NEW_OPT(  rif_dock::rosetta_debug_dump_scores, "dump lists of scores around the rosetta score and min", false);
 			NEW_OPT(  rif_dock::rosetta_score_select_random, "Select random positions to score rather than best", false);
+            NEW_OPT(  rif_dock::skip_redundancy_filter_before_rosetta, "For patchdock method, don't redundancy filter before rosetta score", false );
+            NEW_OPT(  rif_dock::override_rosetta_pose, "Override the rosetta score and min output with the usual output", false );
 
 			NEW_OPT(  rif_dock::extra_rotamers, "", true );
 			NEW_OPT(  rif_dock::extra_rif_rotamers, "", true );
 			NEW_OPT(  rif_dock::always_available_rotamers_level, "", 0 );
 	        NEW_OPT(  rif_dock::packing_use_rif_rotamers, "", true );
+            NEW_OPT(  rif_dock::dump_all_rifdock_rotamers, "Dump all the rotamers that rifdock reads from the rotamer spec file.", false );
 
 	        NEW_OPT(  rif_dock::nfold_symmetry, "", 1 );
 	        NEW_OPT(  rif_dock::symmetry_axis, "", utility::vector1<double>() );
@@ -440,11 +483,15 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	        // constrain file names
 			NEW_OPT(  rif_dock::cst_files, "" , utility::vector1<std::string>() );
 
+            NEW_OPT(  rif_dock::write_seed_to_output, "Write the seeding position index to the scorefile", false );
 			NEW_OPT(  rif_dock::seed_with_these_pdbs, "Use these pdbs as seeding positions, use this with tether_to_input_position", utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::seed_include_input, "Include the input scaffold as a seeding position in seed_with_these_pdbs", true );
 
 			NEW_OPT(  rif_dock::seeding_pos, "" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::patchdock_min_sasa, "the cutoff sasa value for a valid patchdock output, the default is to use all of them", -1000.0);
+            NEW_OPT(  rif_dock::patchdock_top_ranks, "only use the top solutions of patchdock to do refinement, the default is to use all of them", 99999);
             NEW_OPT(  rif_dock::seeding_by_patchdock, "The format of seeding file can be either Rosetta Xform or raw patchdock outputs", true );
+            NEW_OPT(  rif_dock::apply_seeding_xform_after_centering, "Apply the seeding position xforms after moving scaffold to center", false );
             NEW_OPT(  rif_dock::xform_pos, "" , "" );
             NEW_OPT(  rif_dock::rosetta_score_each_seeding_at_least, "", -1 );
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
@@ -514,12 +561,19 @@ struct RifDockOpt
 	std::vector<std::string> dump_rifgen_near_pdb    ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
+    bool        dump_rifgen_near_pdb_last_atom       ;
 	bool        dump_rifgen_text                     ;
+    std::vector<size_t> dump_rifgen_for_sat          ;
+    int         dump_rifgen_for_sat_models           ;
+    std::string dump_rifgen_for_sat_name3            ;
+    int         dump_best_rifgen_rots                ;
+    float       dump_best_rifgen_rmsd                ;
 	std::string score_this_pdb                       ;
 	std::string dump_pdb_at_bin_center               ;
     bool        test_hackpack                        ;  
     bool        only_score_input_pos                 ;
 	bool        add_native_scaffold_rots_when_packing;
+    float       ignore_rifres_if_worse_than          ;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
 	float       hack_pack_frac                       ;
@@ -536,6 +590,12 @@ struct RifDockOpt
 	int         require_n_rifres                     ;
     int         require_hydrophobic_residue_contacts ;
     float       hydrophobic_ddg_cut                  ;
+    float       one_hydrophobic_better_than          ;
+    float       two_hydrophobics_better_than         ;
+    float       three_hydrophobics_better_than       ;
+    float       hydrophobic_ddg_per_atom_cut         ;
+    utility::vector1<int> hydrophobic_target_res     ;
+    int         num_cation_pi                        ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -560,6 +620,8 @@ struct RifDockOpt
 	float       favorable_1body_multiplier_cutoff    ;
 	float       favorable_2body_multiplier           ;
     float       rotamer_onebody_inclusion_threshold  ;
+    std::vector<std::string> rotamer_boltzmann_fnames;
+    bool        rotboltz_ignore_missing_rots         ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
 	bool        cache_scaffold_data                  ;
@@ -594,6 +656,7 @@ struct RifDockOpt
 	bool        extra_rif_rotamers                   ;
 	int         always_available_rotamers_level      ;
 	int         packing_use_rif_rotamers             ;
+    bool        dump_all_rifdock_rotamers            ;
 
 	float       rosetta_score_fraction               ;
 	float       rosetta_score_then_min_below_thresh  ;
@@ -601,6 +664,7 @@ struct RifDockOpt
 	float       rosetta_score_at_most                ;
 	float       rosetta_min_fraction                 ;
 	int         rosetta_min_at_least                 ;
+    int         rosetta_min_at_most                  ;
 	bool        rosetta_min_fix_target               ;
 	bool        rosetta_min_targetbb                 ;
 	bool        rosetta_min_scaffoldbb               ;
@@ -611,6 +675,8 @@ struct RifDockOpt
 	bool        rosetta_score_ddg_only               ;
 	float       rosetta_score_rifres_rifres_weight   ;
 	float       rosetta_score_rifres_scaffold_weight ;
+    bool        skip_redundancy_filter_before_rosetta;
+    bool        override_rosetta_pose                ;
 
 	bool        rosetta_beta                         ;
 	std::string rosetta_soft_score                   ;
@@ -663,6 +729,7 @@ struct RifDockOpt
     // constrain file names
 	std::vector<std::string> cst_fnames              ;
 
+    bool        write_seed_to_output                  ;
 	std::vector<std::string> seed_with_these_pdbs    ;
 	bool        seed_include_input                   ;
 
@@ -672,6 +739,9 @@ struct RifDockOpt
     float       cluster_score_cut                    ;
     float       keep_top_clusters_frac               ;
     bool        seeding_by_patchdock                 ;
+    bool        apply_seeding_xform_after_centering  ;
+    float       patchdock_min_sasa                   ;
+    int         patchdock_top_ranks                  ;
 
     float       unsat_score_scalar                   ;
     std::string unsat_helper                         ;
@@ -694,6 +764,7 @@ struct RifDockOpt
     float       sasa_cut                             ;
     float       score_per_1000_sasa_cut              ;
     std::set<int> skip_sasa_for_res                  ;
+    
 
 
     void init_from_cli();
@@ -738,12 +809,18 @@ struct RifDockOpt
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
+        dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();
 		dump_rifgen_text                       = option[rif_dock::dump_rifgen_text                   ]();
+        dump_rifgen_for_sat_models             = option[rif_dock::dump_rifgen_for_sat_models         ]();
+        dump_rifgen_for_sat_name3              = option[rif_dock::dump_rifgen_for_sat_name3          ]();
+        dump_best_rifgen_rots                  = option[rif_dock::dump_best_rifgen_rots              ]();
+        dump_best_rifgen_rmsd                  = option[rif_dock::dump_best_rifgen_rmsd              ]();
 		score_this_pdb                         = option[rif_dock::score_this_pdb                     ]();
 		dump_pdb_at_bin_center                 = option[rif_dock::dump_pdb_at_bin_center             ]();
         test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
         only_score_input_pos                   = option[rif_dock::only_score_input_pos               ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
+        ignore_rifres_if_worse_than            = option[rif_dock::ignore_rifres_if_worse_than           ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
 		hack_pack_frac                         = option[rif_dock::hack_pack_frac                        ]();
@@ -760,13 +837,22 @@ struct RifDockOpt
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
         require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
         hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
+        one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
+        two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
+        three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
+        hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
+        num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
+<<<<<<< HEAD
 		outputsilent						   = option[rif_dock::outputsilent                          ](); 
+=======
+		outputsilent                           = option[rif_dock::outputsilent                             ]();
+>>>>>>> origin/master
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();
@@ -784,6 +870,7 @@ struct RifDockOpt
 		favorable_1body_multiplier_cutoff      = option[rif_dock::favorable_1body_multiplier_cutoff     ]();
 		favorable_2body_multiplier             = option[rif_dock::favorable_2body_multiplier            ]();
         rotamer_onebody_inclusion_threshold    = option[rif_dock::rotamer_onebody_inclusion_threshold   ]();
+        rotboltz_ignore_missing_rots           = option[rif_dock::rotboltz_ignore_missing_rots          ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
@@ -818,6 +905,7 @@ struct RifDockOpt
 		extra_rif_rotamers                     = option[rif_dock::extra_rif_rotamers                    ]();
 		always_available_rotamers_level        = option[rif_dock::always_available_rotamers_level       ]();
 		packing_use_rif_rotamers               = option[rif_dock::packing_use_rif_rotamers              ]();
+        dump_all_rifdock_rotamers              = option[rif_dock::dump_all_rifdock_rotamers             ]();
 
   		rosetta_score_fraction                 = option[rif_dock::rosetta_score_fraction                ]();
   		rosetta_score_then_min_below_thresh    = option[rif_dock::rosetta_score_then_min_below_thresh   ]();
@@ -825,6 +913,7 @@ struct RifDockOpt
   		rosetta_score_at_most                  = option[rif_dock::rosetta_score_at_most                 ]();
   		rosetta_min_fraction                   = option[rif_dock::rosetta_min_fraction                  ]();
   		rosetta_min_at_least                   = option[rif_dock::rosetta_min_at_least                  ]();
+        rosetta_min_at_most                    = option[rif_dock::rosetta_min_at_most                   ]();
   		rosetta_min_fix_target                 = option[rif_dock::rosetta_min_fix_target                ]();
   		rosetta_min_targetbb                   = option[rif_dock::rosetta_min_targetbb                  ]();
   		rosetta_min_scaffoldbb                 = option[rif_dock::rosetta_min_scaffoldbb                ]();
@@ -835,6 +924,8 @@ struct RifDockOpt
   		rosetta_score_ddg_only                 = option[rif_dock::rosetta_score_ddg_only                ]();
   		rosetta_score_rifres_rifres_weight     = option[rif_dock::rosetta_score_rifres_rifres_weight    ]();
 		rosetta_score_rifres_scaffold_weight   = option[rif_dock::rosetta_score_rifres_scaffold_weight  ]();
+        skip_redundancy_filter_before_rosetta  = option[rif_dock::skip_redundancy_filter_before_rosetta ]();
+        override_rosetta_pose                  = option[rif_dock::override_rosetta_pose                 ]();
 		rosetta_soft_score                     = option[rif_dock::rosetta_soft_score  					]();
 		rosetta_hard_score                     = option[rif_dock::rosetta_hard_score 				    ]();
 		rosetta_beta                           = option[corrections::beta 								]();
@@ -879,9 +970,11 @@ struct RifDockOpt
 
 		rot_spec_fname						   = option[rif_dock::rot_spec_fname                        ]();
 
+        write_seed_to_output                    = option[rif_dock::write_seed_to_output                   ]();
 		seed_include_input                     = option[rif_dock::seed_include_input                    ]();
 
 		seeding_by_patchdock                    = option[rif_dock::seeding_by_patchdock                 ]();
+        apply_seeding_xform_after_centering     = option[rif_dock::apply_seeding_xform_after_centering  ]();
         xform_fname                             = option[rif_dock::xform_pos                            ]();
         rosetta_score_each_seeding_at_least     = option[rif_dock::rosetta_score_each_seeding_at_least  ]();
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
@@ -951,6 +1044,15 @@ struct RifDockOpt
 
 // Brian
 
+        for ( size_t sat : option[rif_dock::dump_rifgen_for_sat]() ) {
+            dump_rifgen_for_sat.push_back(sat);
+        }
+
+        if ( option[rif_dock::hydrophobic_target_res]().length() > 0) {
+            int t = 0;
+            hydrophobic_target_res = utility::string_split(option[rif_dock::hydrophobic_target_res](), ',', t);
+        }
+
 
         if (option[rif_dock::use_scaffold_bounding_grids]()) {
         	std::cout << "ERROR: use_scaffold_bounding_grids no longer supported. Email bcov@uw.edu" << std::endl;
@@ -985,6 +1087,11 @@ struct RifDockOpt
 		for( std::string s : option[rif_dock::seed_with_these_pdbs ]() ) seed_with_these_pdbs.push_back(s);
 
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
+
+        for( std::string s : option[rif_dock::rotamer_boltzmann_files ]() ) rotamer_boltzmann_fnames.push_back(s);
+
+        patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();
+        patchdock_top_ranks                     = option[rif_dock::patchdock_top_ranks                 ]();
         
         for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 

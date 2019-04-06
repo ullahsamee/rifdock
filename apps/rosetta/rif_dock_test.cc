@@ -240,14 +240,19 @@ int main(int argc, char *argv[]) {
 		std::cout << "Loading " << opt.rot_spec_fname << "..." << std::endl;
 		std::string rot_index_spec_file = opt.rot_spec_fname;
 
-		::scheme::chemical::RotamerIndexSpec rot_index_spec;
-		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, opt.use_rosetta_grid_energies, rot_index_spec );
+		::scheme::chemical::RotamerIndexSpec rot_index_spec;					// we need per-thread rotamers for new faster 1-bodies
+		shared_ptr< RotamerIndex > rot_index_p = ::devel::scheme::get_rotamer_index( rot_index_spec_file, true, rot_index_spec );
 		RotamerIndex & rot_index( *rot_index_p );
 
 
-		std::cout << "================ RotamerIndex ===================" << std::endl;\
+		std::cout << "================ RotamerIndex ===================" << std::endl;
 		std::cout << rot_index << std::endl;
 		std::cout << "=================================================" << std::endl;
+
+		if ( opt.dump_all_rifdock_rotamers ) {
+			std::cout << "Dumping all residues from the rotamer spec to rifdock_rotamerspec.pdb" << std::endl;
+			rot_index_spec.dump_all_rotspec_rotamers("rifdock_rotamerspec.pdb");
+		}
 
 
 		RotamerRFOpts rotrfopts;
@@ -578,8 +583,25 @@ int main(int argc, char *argv[]) {
     }
 
     shared_ptr<HydrophobicManager> hydrophobic_manager;
-    if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ) {
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, target_res, rot_index_p );
+    if ( opt.require_hydrophobic_residue_contacts > 0 || opt.hydrophobic_ddg_cut < 0 ||
+        	opt.one_hydrophobic_better_than < 0 ||
+        	opt.two_hydrophobics_better_than < 0 ||
+        	opt.three_hydrophobics_better_than < 0 ||
+        	opt.num_cation_pi > 0) {
+
+    	utility::vector1<int> use_hydrophobic_target_res;
+    	if (opt.hydrophobic_target_res.size() > 0) {
+    		use_hydrophobic_target_res = opt.hydrophobic_target_res;
+    	} else {
+    		use_hydrophobic_target_res = target_res;
+    	}
+
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p );
+    	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
+    													   opt.two_hydrophobics_better_than, 
+    													   opt.three_hydrophobics_better_than,
+    													   opt.hydrophobic_ddg_per_atom_cut );
+    	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
     }
 
 
@@ -685,9 +707,11 @@ int main(int argc, char *argv[]) {
 				
 
 				std::stringstream fname;
-				fname << "rifgen_dump_" << pdb_fname << "_" << boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
+				fname << "rifgen_dump_" << pdb_fname << "_" << (opt.dump_rifgen_near_pdb_last_atom ? "lastatom_" : "")
+											<< boost::str(boost::format("%.2f") % dump_dist ) << ".pdb.gz";
 
-				rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p );
+				rif_ptrs.back()->dump_rotamers_near_res( res, fname.str(), dump_dist, dump_frac, rot_index_p, 
+																					opt.dump_rifgen_near_pdb_last_atom );
 				if ( opt.dump_rifgen_text ) {
 					rif_ptrs.back()->dump_rifgen_text_near_res( res, dump_dist, rot_index_p );
 				}
@@ -780,6 +804,15 @@ int main(int argc, char *argv[]) {
 	        }
 
 		}
+
+		if ( opt.dump_rifgen_for_sat.size() > 0 ) {
+			rif_ptrs.back()->dump_rotamers_for_sats( opt.dump_rifgen_for_sat, opt.dump_rifgen_for_sat_models,
+				opt.dump_rifgen_for_sat_name3, rot_index_p );
+		}
+
+		if ( opt.dump_best_rifgen_rots > 0 ) {
+			rif_ptrs.back()->dump_the_best_rifres( opt.dump_best_rifgen_rots, opt.dump_best_rifgen_rmsd, rot_index_p );
+		}
 	}
 
 
@@ -860,6 +893,8 @@ int main(int argc, char *argv[]) {
             	rso_config.hydrophobic_manager = hydrophobic_manager;
             	rso_config.require_hydrophobic_residue_contacts = opt.require_hydrophobic_residue_contacts;
             	rso_config.hydrophobic_ddg_cut = opt.hydrophobic_ddg_cut;
+
+            	rso_config.ignore_rifres_if_worse_than = opt.ignore_rifres_if_worse_than;
 
 
             if ( opt.require_satisfaction > 0 && rif_ptrs.back()->has_sat_data_slots() ) {
@@ -1220,7 +1255,7 @@ int main(int argc, char *argv[]) {
 				}
 
 				if ( do_rosetta_min ) {
-					task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least ));
+					task_list.push_back(make_shared<FilterForRosettaMinTask>( opt.rosetta_min_fraction, opt.rosetta_min_at_least, opt.rosetta_min_at_most ));
 					task_list.push_back(make_shared<RosettaMinTask>( final_resl, opt.rosetta_score_cut, true )); 
 
 					if (opt.rosetta_debug_dump_scores) task_list.push_back(make_shared<DumpScoresTask>( "rosetta_min_scores.dat")); 

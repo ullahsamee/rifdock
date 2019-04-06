@@ -11,13 +11,16 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <numeric/xyzVector.hh>
 #include <numeric/xyzMatrix.hh>
 #include <numeric/xyzTransform.hh>
 #include <core/chemical/ChemicalManager.hh>
+#include <core/chemical/ResidueType.hh>
 #include <core/chemical/ResidueTypeSet.hh>
 #include <core/conformation/Residue.hh>
 #include <core/conformation/ResidueFactory.hh>
 #include <core/scoring/lkball/LK_BallInfo.hh>
+#include <core/pose/Pose.hh>
 
 #include <cstdlib>
 #include <string>
@@ -221,6 +224,7 @@ void get_residue_rotspec_params(
 }
 
 
+
 //template<class _Atom, class RotamerGenerator, class Xform>
 struct
 RotamerIndexSpec
@@ -370,6 +374,30 @@ RotamerIndexSpec
 		// in >> endtag;
 		// ALWAYS_ASSERT(endtag=="load_rot_index_end");
 		//rot_specs.build_index();
+	}
+
+	// This is not a fast function!! Used for dumping the rotamer spec
+	core::conformation::ResidueOP
+	get_rotamer_at_identity( size_t irot ) const {
+		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
+		return get_residue_at_identity( rts.lock()->name_map( this->resname(irot)), get_rotspec(irot).chi_ );
+	}
+
+	void
+	dump_all_rotspec_rotamers( std::string const & filename ) const {
+		::numeric::xyzVector< core::Real > x_unit( 1, 0, 0 );
+		::numeric::xyzMatrix< core::Real > identity = ::numeric::xyzMatrix< core::Real >::identity();
+
+		core::Real const X_SCALE = 5;
+
+		core::pose::Pose pose;
+		for ( size_t irot = 0; irot < this->size(); irot++ ) {
+			core::conformation::ResidueOP res = get_rotamer_at_identity( irot );
+			res->apply_transform_Rx_plus_v( identity, x_unit * irot * X_SCALE );
+			pose.append_residue_by_jump( *res, 1 );
+		}
+
+		pose.dump_pdb( filename );
 	}
 
 };
@@ -821,6 +849,17 @@ struct RotamerIndex {
 			if( irot < n_primary_rotamers_ ){ ALWAYS_ASSERT(  is_primary(irot) ) }
 			else                            { ALWAYS_ASSERT( !is_primary(irot) ) }
 		}
+	}
+
+	float
+	get_max_nbr_radius() const {
+		runtime_assert(per_thread_rotamers_.size() > 0);
+
+		float max_radius = 0;
+		for ( int irot = 0; irot < size(); irot++ ) {
+			max_radius = std::max<float>(max_radius, get_per_thread_rotamer(0, irot)->nbr_radius());
+		}
+		return max_radius;
 	}
 
 	void
