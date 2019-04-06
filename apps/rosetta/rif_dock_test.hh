@@ -848,11 +848,7 @@ struct RifDockOpt
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
-<<<<<<< HEAD
-		outputsilent						   = option[rif_dock::outputsilent                          ](); 
-=======
 		outputsilent                           = option[rif_dock::outputsilent                             ]();
->>>>>>> origin/master
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();

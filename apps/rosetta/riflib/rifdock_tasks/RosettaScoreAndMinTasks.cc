@@ -550,7 +550,6 @@ rosetta_score_inner(
 
     } // end of OMP loop
     if( exception ) std::rethrow_exception(exception);
-    std::cout << "got here somehow " << std::endl;
 
     cout << endl;
     __gnu_parallel::sort( packed_results.begin(), packed_results.end() );
