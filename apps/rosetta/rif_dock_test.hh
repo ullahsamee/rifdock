@@ -54,7 +54,6 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
     OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
-    OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
