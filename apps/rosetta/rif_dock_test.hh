@@ -53,6 +53,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
     OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 
 	OPT_1GRP_KEY(  Real        , rif_dock, rf_resl )
 	OPT_1GRP_KEY(  Integer     , rif_dock, rf_oversample )
@@ -287,6 +288,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold, "", false );
+			NEW_OPT(  rif_dock::outputsilent, "", false );
 			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
             NEW_OPT(  rif_dock::n_pdb_out_global, "Normally n_pdb_out applies to each seeding position, this caps the global", -1);
 
@@ -540,6 +542,7 @@ struct RifDockOpt
 	bool        output_scaffold_only                 ;
 	bool        output_full_scaffold_only            ;
 	bool        output_full_scaffold                 ;
+	bool        outputsilent                         ;
 	bool        pdb_info_pikaa                       ;
 	bool        dump_resfile                         ;
 	std::string target_res_fname                     ;
@@ -763,6 +766,7 @@ struct RifDockOpt
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
+		outputsilent						   = option[rif_dock::outputsilent                          ](); 
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();

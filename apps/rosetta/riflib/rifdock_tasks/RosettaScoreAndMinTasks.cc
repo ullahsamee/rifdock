@@ -330,7 +330,7 @@ rosetta_score_inner(
             int scaffold_size = scaffuseres_p->size();
 
 //////////
-
+            //std::cout << "dsfsdf " << scaffold_size << "sdfsdf " << pose_to_min.size() << "sdfsf " << std::endl;
             xform_pose( pose_to_min, eigen2xyz(xalignout)            , scaffold_size+1 , pose_to_min.size() );
             xform_pose( pose_to_min, eigen2xyz(xalignout*xposition1) ,                      1 ,    scaffold_size );
 
@@ -340,7 +340,17 @@ rosetta_score_inner(
             for( int ipr = 0; ipr < packed_results[imin].numrots(); ++ipr ){
                 int ires = scaffres_l2g_p->at( packed_results[imin].rotamers().at(ipr).first );
                 int irot =                  packed_results[imin].rotamers().at(ipr).second;
-                core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rot_index.resname(irot)) );
+                std::string ires_name = rot_index.resname(irot);
+                core::conformation::ResidueOP newrsd;
+                if (rot_index.d_l_map_.find(rot_index.resname(irot)) != rot_index.d_l_map_.end()) {
+                    ires_name = rot_index.d_l_map_.find(rot_index.resname(irot)) -> second;
+                    newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(ires_name) );
+                    core::conformation::ResidueOP tmp_d = newrsd -> clone_flipping_chirality(*rts.lock());
+                    newrsd = tmp_d -> create_residue();
+                } else {
+                    newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(ires_name) );
+                }
+
                 pose_to_min.replace_residue( ires+1, *newrsd, true );
                 is_rif_res[ires] = true;
                 for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
@@ -532,7 +542,7 @@ rosetta_score_inner(
 
     } // end of OMP loop
     if( exception ) std::rethrow_exception(exception);
-
+    std::cout << "got here somehow " << std::endl;
 
     cout << endl;
     __gnu_parallel::sort( packed_results.begin(), packed_results.end() );

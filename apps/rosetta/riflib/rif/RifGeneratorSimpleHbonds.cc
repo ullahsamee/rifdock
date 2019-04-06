@@ -527,16 +527,20 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
 
 		for(int ires = 1; ires <= target_res.size(); ++ires){
-			int const ir = target_res[ires];
+
+            int const ir = target_res[ires];
 			std::string resn = target.residue(ir).name();
-			std::cout << "RifGenSimpleHbonds checking res " << resn << std::endl;
+            std::cout << "RifGenSimpleHbonds checking res " << resn << std::endl;
 			HBJob j;
 			j.ires = ir;
 			for( int iacc = 1; iacc <= accresn_user.size(); ++iacc ){
-				std::string acc_resname = accresn_user[iacc];
+                std::string acc_resname = accresn_user[iacc];
 				if (params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) != params -> rot_index_p -> d_l_map_.end()) {
-					acc_resname = params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) -> second;
-				} 
+                    j.acc = accresn_user[iacc];
+                    acc_resname = params -> rot_index_p -> d_l_map_.find(accresn_user[iacc]) -> second;
+				} else {
+                    j.acc = accresn_user[iacc];
+                }
 				// else {
 				// 	core::chemical::ResidueType const & rtype = rts.lock()->name_map(accresn_user[iacc]);
 				// }
@@ -546,7 +550,6 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 					continue;
 				}
 				j.don = "GLY";
-				j.acc = accresn_user[iacc];
 				if( std::find( accresn_std.begin(), accresn_std.end(), j.acc ) == accresn_std.end() ) continue; // no non-standard res in RIF
 				j.don_or_acc = "DON_";
 				std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
@@ -561,15 +564,19 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			for( int idon = 1; idon <= donresn_user.size(); ++idon ){
 				std::string don_resname = donresn_user[idon];
 				if (params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) != params -> rot_index_p -> d_l_map_.end()) {
-					don_resname = params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) -> second;
-				}
-				//std::cout << "----------"<<donresn_user[idon] << std::endl;
+					j.don = donresn_user[idon];
+                    don_resname = params -> rot_index_p -> d_l_map_.find(donresn_user[idon]) -> second;
+				} 
+                else {
+                    j.don = donresn_user[idon];
+                }
+				std::cout << "----------"<<donresn_user[idon] << std::endl;
 				core::chemical::ResidueType const & rtype = rts.lock()->name_map(don_resname);
 				if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
 					std::cout << "not putting " << donresn_user[idon] << " into rif, no N,CA,C" << std::endl;
 					continue;
 				}
-				j.don = donresn_user[idon];
+				//j.don = donresn_user[idon];
 				if( std::find( donresn_std.begin(), donresn_std.end(), j.don ) == donresn_std.end() ) continue; // no non-standard res in RIF
 				j.acc = "GLY";
 				j.don_or_acc = "ACC_";
@@ -897,7 +904,17 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                                 }
                             } else {
                                 if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] != -1 ) {
-                                    utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
+                                    //this is a HACK, basically randomly pick one to keep so the error does not pop up
+                                    //will probably want to switch to where sat1 and sat2 are both use in the future for requirments
+                                    std::vector<int> v{1,2};
+                                    int randomIndex = rand() % v.size();
+                                    if (randomIndex == 1) {
+                                        sat1 = hbond_requirement_labels[sat1];
+                                    } else {
+                                        sat1 = hbond_requirement_labels[sat2];
+                                    }
+                                    sat2 = -1;
+                                    //utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
                                 } else if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] == -1 ) {
                                     sat1 = hbond_requirement_labels[sat1];
                                     sat2 = -1;
