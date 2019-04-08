@@ -44,13 +44,13 @@ make test_libscheme
 
 The executables for RifDock are built at:  
 ```bash
-scheme/build/apps/rosetta/rifgen  
-scheme/build/apps/rosetta/rif_dock_test  
+rifdock/build/apps/rosetta/rifgen  
+rifdock/build/apps/rosetta/rif_dock_test  
 ```
 
 The unit test executable is at:  
 ```bash
-scheme/build/schemelib/test/test_libscheme  
+rifdock/build/schemelib/test/test_libscheme  
 ```
 
 
