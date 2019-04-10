@@ -466,8 +466,8 @@ dump_rif_result_(
         // silly thing to take care of multiple chains in PDBInfo for silentstruct
         core::Size const ch1end(1);
         //set chain ID
-        std::vector<char> chainID_vec(pose_to_dump.conformation().size()); 
-        for (auto i = 0; i <= pose_to_dump.conformation().chain_end(ch1end); i++) chainID_vec[i] = 'A';
+        utility::vector1<char> chainID_vec(pose_to_dump.conformation().size()); 
+        for (auto i = 1; i <= pose_to_dump.conformation().chain_end(ch1end); i++) chainID_vec[i] = 'A';
         for (auto i = pose_to_dump.conformation().chain_end(ch1end) + 1; i <= pose_to_dump.conformation().size(); i++) chainID_vec[i] = 'B';
         pose_to_dump.pdb_info() -> set_chains(chainID_vec);
         //set chain num
