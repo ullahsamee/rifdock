@@ -106,8 +106,11 @@ typedef typename ScaffoldProvider::ScaffoldIndex ScaffoldIndex;
 // 3. RifDockIndex() must provide a valid index
 
 struct RifDockIndex {
-    uint64_t nest_index;
-    uint32_t seeding_index;
+    typedef uint64_t NestIndex;
+    typedef uint32_t SeedingIndex;
+
+    NestIndex nest_index;
+    SeedingIndex seeding_index;
     ScaffoldIndex scaffold_index;
 
     RifDockIndex() :
@@ -155,6 +158,7 @@ typedef ::scheme::nest::NEST< 6,
 
 
 // typedef ::scheme::kinematics::NestDirector< NestOriTrans6D > DirectorOriTrans6D;
+typedef ::scheme::kinematics::StoredNestDirector< EigenXform, RifDockIndex> RifDockStoredNestDirector;
 typedef ::scheme::kinematics::NestDirector< NestOriTrans6D, RifDockIndex> RifDockNestDirector;
 typedef ::scheme::kinematics::IdentityDirector< EigenXform, RifDockIndex> RifDockIdentityDirector;
 

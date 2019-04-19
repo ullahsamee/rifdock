@@ -15,6 +15,7 @@
 
 #include "scheme/util/SimpleArray.hh"
 #include <riflib/RotamerGenerator.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <core/pose/Pose.hh>
 
@@ -96,6 +97,7 @@ struct HydrophobicManager {
     float three_hydrophobics_better_than_ = 0;
     float hydrophobic_ddg_per_atom_cut_ = 0;
     bool doing_better_than_ = false;
+    bool better_than_must_hbond_ = false;
 
     int num_cation_pi_ = 0;
 
@@ -129,11 +131,12 @@ struct HydrophobicManager {
     }
 
     void
-    set_hydrophobics_better_than( float one, float two, float three, float ddg_per_atom_cut ) {
+    set_hydrophobics_better_than( float one, float two, float three, float ddg_per_atom_cut, bool better_than_must_hbond ) {
         one_hydrophobic_better_than_ = one;
         two_hydrophobics_better_than_ = two;
         three_hydrophobics_better_than_ = three;
         hydrophobic_ddg_per_atom_cut_ = ddg_per_atom_cut;
+        better_than_must_hbond_ = better_than_must_hbond;
 
         doing_better_than_ = ( one < 0 || two < 0 || three < 0 );
     }
@@ -527,7 +530,8 @@ struct HydrophobicManager {
         float & hydrophobic_ddg,
         std::vector<int> & per_irot_counts,
         bool & pass_better_than,
-        bool & pass_cation_pi
+        bool & pass_cation_pi,
+        RifScoreRotamerVsTarget const & rot_tgt_scorer
     ) const {
         hyd_counts.clear();
         hyd_counts.resize( hydrophobic_res_.size(), 0 );
@@ -606,6 +610,16 @@ struct HydrophobicManager {
                 float ddg_hyd = per_irot_counts[ipair] * DDG_PER_COUNT;
                 float ddg_ratio = ddg_hyd / has_ok_atoms[ipair];
                 if (ddg_ratio > hydrophobic_ddg_per_atom_cut_) continue;
+
+                if ( better_than_must_hbond_ ) {
+
+                    int sat1=-1, sat2=-1, hbcount=0;
+                    rot_tgt_scorer.score_rotamer_v_target_sat(
+                                    irot_and_bbpos[ipair].first, irot_and_bbpos[ipair].second,
+                                    sat1, sat2, true, hbcount, 10.0, 4 );
+                    if ( hbcount == 0 ) continue;
+                }
+
                 if ( ddg_hyd < one_hydrophobic_better_than_ ) one_better_than++;
                 if ( ddg_hyd < two_hydrophobics_better_than_ ) two_better_than++;
                 if ( ddg_hyd < three_hydrophobics_better_than_ ) three_better_than++;

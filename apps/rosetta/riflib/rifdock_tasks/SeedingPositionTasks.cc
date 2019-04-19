@@ -92,62 +92,6 @@ DiversifyBySeedingPositionsTask::return_any_points(
     
 
 
-shared_ptr<std::vector<SearchPoint>> 
-DiversifyByXformFileTask::return_search_points( 
-    shared_ptr<std::vector<SearchPoint>> search_points, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-    return return_any_points( search_points, rdd, pd );
-}
-shared_ptr<std::vector<SearchPointWithRots>> 
-DiversifyByXformFileTask::return_search_point_with_rotss( 
-    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) { 
-    return return_any_points( search_point_with_rotss, rdd, pd );
-}
-shared_ptr<std::vector<RifDockResult>> 
-DiversifyByXformFileTask::return_rif_dock_results( 
-    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) { 
-    return return_any_points( rif_dock_results, rdd, pd );
-}
-
-template<class AnyPoint>
-shared_ptr<std::vector<AnyPoint>>
-DiversifyByXformFileTask::return_any_points( 
-    shared_ptr<std::vector<AnyPoint>> any_points, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-
-
-    std::vector< std::pair< int64_t, EigenXform > > xform_positions;
-    {
-        runtime_assert_msg(parse_exhausitive_searching_file(file_name_, xform_positions /*, 10*/), "Faild to parse the xform file!!!");
-    }
-
-    uint64_t nest_size = xform_positions.size();
-
-    shared_ptr<std::vector<AnyPoint>> diversified = make_shared<std::vector<AnyPoint>>( nest_size * any_points->size() );
-
-    uint64_t added = 0;
-    for ( AnyPoint const & pt : *any_points ) {
-
-        for ( uint64_t i = 0; i < nest_size; i++ ) {
-            (*diversified)[added] = pt;
-            (*diversified)[added].index.nest_index = xform_positions[i].first;
-            added++;
-        }
-    }
-
-    any_points->clear();
-
-    return diversified;
-}
-
-
-
 
 void
 create_rifine_task( 
@@ -160,10 +104,8 @@ create_rifine_task(
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
     if ( rdd.opt.xform_fname == "IDENTITY" ) {
         // The identity director takes care of this
-    } else if ( rdd.opt.xform_fname == "ALL" ) {
-        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
     } else {
-        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
     }
     
     task_list.push_back(make_shared<HSearchInit>( ));
