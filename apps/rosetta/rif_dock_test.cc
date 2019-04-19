@@ -600,7 +600,8 @@ int main(int argc, char *argv[]) {
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
-    													   opt.hydrophobic_ddg_per_atom_cut );
+    													   opt.hydrophobic_ddg_per_atom_cut,
+    													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
     }
 
@@ -820,6 +821,19 @@ int main(int argc, char *argv[]) {
         std::cout << "WARNING: NO SCAFFOLDS!!!!!!" << std::endl;
     }
 
+
+	bool needs_nest_director = opt.xform_fname != "IDENTITY";
+	bool needs_stored_nest_director = needs_nest_director && opt.xform_fname != "";
+
+	std::vector< EigenXform > xform_positions;
+
+	if ( needs_stored_nest_director ) {
+		std::vector< std::pair< int64_t, EigenXform > > xform_pairs;
+		runtime_assert_msg(parse_exhausitive_searching_file(opt.xform_fname, xform_pairs /*, 10*/), "Faild to parse the xform file!!!");
+		xform_positions.reserve( xform_pairs.size() );
+		for ( auto const & pair : xform_pairs ) xform_positions.push_back( pair.second );
+	}
+
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
 		std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -944,7 +958,6 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			shared_ptr<RifDockNestDirector> nest_director;
 
-			bool needs_nest_director = opt.xform_fname != "IDENTITY";
 
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
@@ -991,7 +1004,9 @@ int main(int argc, char *argv[]) {
 
 
 				std::vector<DirectorBase> director_list;
-				if ( needs_nest_director ) {
+				if ( needs_stored_nest_director ) {
+					director_list.push_back( make_shared<RifDockStoredNestDirector>( xform_positions, 1 ) );  // Nest director must come first!!!!
+				} else if ( needs_nest_director ) {
 					director_list.push_back( nest_director );  // Nest director must come first!!!!
 				} else {
 					director_list.emplace_back( make_shared<RifDockIdentityDirector>( 1 ) );

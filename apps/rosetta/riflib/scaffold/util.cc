@@ -102,7 +102,8 @@ get_info_for_iscaff(
         scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
     } else if (opt.scaffold_res_use_best_guess ){
         scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops, true, 
-                                                                            opt.best_guess_mutate_to_val );
+                                                                            opt.best_guess_mutate_to_val, opt.dont_use_scaffold_helices,
+                                                                            opt.dont_use_scaffold_strands );
         std::cout << "using scaffold residues: ";
         for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
         std::cout << std::endl;

@@ -123,6 +123,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String     , rif_dock, output_tag )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_loops )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_helices )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_strands )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dump_resfile )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pikaa )
@@ -141,6 +143,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, better_than_must_hbond )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
     OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
@@ -380,6 +383,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_tag, "", "" );
 
 			NEW_OPT(  rif_dock::dont_use_scaffold_loops, "", false );
+            NEW_OPT(  rif_dock::dont_use_scaffold_helices, "", false );
+            NEW_OPT(  rif_dock::dont_use_scaffold_strands, "", false );
 
 			NEW_OPT(  rif_dock::dump_resfile, "", false );
 			NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
@@ -398,6 +403,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::better_than_must_hbond, "*_hydrophobics_better_than must make a hbond to count", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
@@ -590,6 +596,7 @@ struct RifDockOpt
     float       one_hydrophobic_better_than          ;
     float       two_hydrophobics_better_than         ;
     float       three_hydrophobics_better_than       ;
+    bool        better_than_must_hbond               ;
     float       hydrophobic_ddg_per_atom_cut         ;
     utility::vector1<int> hydrophobic_target_res     ;
     int         num_cation_pi                        ;
@@ -620,6 +627,8 @@ struct RifDockOpt
     bool        rotboltz_ignore_missing_rots         ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
+    bool        dont_use_scaffold_helices            ;
+    bool        dont_use_scaffold_strands            ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
 	bool        hack_pack                            ;
@@ -836,6 +845,7 @@ struct RifDockOpt
         one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
         two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
         three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
+        better_than_must_hbond                 = option[rif_dock::better_than_must_hbond                ]();
         hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
         num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
@@ -864,6 +874,8 @@ struct RifDockOpt
         rotboltz_ignore_missing_rots           = option[rif_dock::rotboltz_ignore_missing_rots          ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
+        dont_use_scaffold_helices              = option[rif_dock::dont_use_scaffold_helices             ]();
+        dont_use_scaffold_strands              = option[rif_dock::dont_use_scaffold_strands             ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
