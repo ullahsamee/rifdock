@@ -86,8 +86,11 @@ OutputResultsTask::return_rif_dock_results(
 
     if( rdd.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
     else                        std::cout << "ALIGN TO TARGET"   << std::endl;
-    utility::io::ozstream outS;
-    outS.open_append( rdd.opt.outdir + "/" + "rifdock_out.silent" );
+    utility::io::ozstream out_silent_stream;
+    if ( rdd.opt.outputsilent ) {
+        ScaffoldDataCacheOP example_data_cache = rdd.scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
+        out_silent_stream.open_append( rdd.opt.outdir + "/" + example_data_cache->scafftag + ".silent" );
+    }
     for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
         RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
@@ -183,7 +186,7 @@ OutputResultsTask::return_rif_dock_results(
         std::cout << oss.str();
         rdd.dokout << oss.str(); rdd.dokout.flush();
 
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, outS, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
+        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, out_silent_stream, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
 
         std::cout << extra_output.str() << std::flush;
 
@@ -201,7 +204,7 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
-    utility::io::ozstream & outS,
+    utility::io::ozstream & out_silent_stream,
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile, /* = "" */
@@ -475,13 +478,13 @@ dump_rif_result_(
         std::iota (std::begin(v), std::end(v), 1);
         pose_to_dump.pdb_info() -> set_numbering(v.begin(), v.end());
         //dump to silent
-        size_t tag_pos = pdboutfile.find_last_of("/\\");
-        std::string model_tag = pdboutfile.substr(tag_pos+1);
+        std::string model_tag = pdb_name(pdboutfile);
         core::io::silent::SilentFileOptions sf_option;
         sf_option.read_from_global_options();
-        core::io::silent::SilentFileData sfd(sf_option);
-        core::io::silent::BinarySilentStruct ss(sf_option, pose_to_dump, model_tag);
-        sfd._write_silent_struct(ss, outS);
+        core::io::silent::SilentFileData sfd("", false, false, "binary", sf_option);
+        core::io::silent::SilentStructOP ss = sfd.create_SilentStructOP();
+        ss->fill_struct( pose_to_dump, model_tag );
+        sfd._write_silent_struct(*ss, out_silent_stream);
     }
 
 
