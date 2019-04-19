@@ -1309,7 +1309,7 @@ std::string get_rif_type_from_file( std::string fname )
                     float hydrophobic_ddg = 0;
                     bool pass_better_than = true, pass_cation_pi = true;
                     int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
-                                                                                    per_irot_counts, pass_better_than, pass_cation_pi );
+                                                                                    per_irot_counts, pass_better_than, pass_cation_pi, rot_tgt_scorer_ );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
                         result.val_ = 9e9;
                     }
@@ -1322,6 +1322,7 @@ std::string get_rif_type_from_file( std::string fname )
                     if ( ! pass_cation_pi ) {
                         result.val_ = 9e9;
                     }
+
 
                 }
 
