@@ -372,8 +372,8 @@ namespace rif {
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
 							auto d_it =  d_name[i_hspot_res][i];
-							std::cout << it << std::endl;
-							std::cout << d_it << std::endl;
+							//std::cout << it << std::endl;
+							//std::cout << d_it << std::endl;
 						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_it)
 						{
 							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
