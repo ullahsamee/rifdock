@@ -139,6 +139,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 
   // the tuning file, finely control how the rifgen and rifdock works
   OPT_1GRP_KEY( String        , rifgen, tuning_file )
+  OPT_1GRP_KEY( Boolean       , rifgen, only_place_requirement_res )
 
 
 
@@ -218,6 +219,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 
 
 		NEW_OPT(  rifgen::tuning_file                          , "precisely control how rifgen and rifdock work" , "" );
+		NEW_OPT(  rifgen::only_place_requirement_res           , "if it doesn't satisfy the tuning file, don't place it in the apo search", "" );
 	}
 
 
@@ -363,13 +365,9 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.score_threshold = option[ rifgen::score_threshold ]();
 			hbgenopts.dump_fraction = option[rifgen::rif_hbond_dump_fraction]();
 			hbgenopts.debug = false;
-			hbgenopts.hbond_weight = option[rifgen::hbond_weight]();
-			hbgenopts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
-			hbgenopts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 			hbgenopts.report_aa_count = option[ rifgen::report_aa_count ]();
 			hbgenopts.hbgeom_max_cache = option[ rifgen::hbgeom_max_cache ]();
-			hbgenopts.long_hbond_fudge_distance = option[ rifgen::long_hbond_fudge_distance ]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorSimpleHbonds>(
@@ -391,6 +389,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			apogenopts.downweight_hydrophobics = option[rifgen::downweight_hydrophobics]();
 			apogenopts.beam_size_M = option[rifgen::beam_size_M]();
 			apogenopts.dump_fraction = option[rifgen::rif_apo_dump_fraction]();
+			apogenopts.only_place_requirement_res = option[rifgen::only_place_requirement_res]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorApoHSearch>(
@@ -439,11 +438,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.all_hotspots_are_bidentate = option[ rifgen::all_hotspots_are_bidentate]();
             hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
-			hspot_opts.hbond_weight = option[rifgen::hbond_weight]();
-			hspot_opts.upweight_multi_hbond = option[rifgen::upweight_multi_hbond]();
-			hspot_opts.min_hb_quality_for_satisfaction = option[rifgen::min_hb_quality_for_satisfaction]();
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
-			hspot_opts.long_hbond_fudge_distance = option[rifgen::long_hbond_fudge_distance]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
 			rif_generators_out.push_back( make_shared<devel::scheme::rif::RifGeneratorUserHotspots>( hspot_opts ) );
 		}
@@ -769,7 +764,57 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+
+	//////////////////////////////// make target scorer ///////////////////////////////////////////////
+	HBRayOpts hbopt;
+
+    std::vector<std::pair<int, std::string> > target_donor_names;
+    std::vector<std::pair<int, std::string> > target_acceptor_names;
+	std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
+	for( auto ir : target_res ){
+        ::devel::scheme::get_donor_rays   ( *target, ir, hbopt, target_donors, target_donor_names );
+        ::devel::scheme::get_acceptor_rays( *target, ir, hbopt, target_acceptors, target_acceptor_names );
+	}
+
+	// these get used now. Don't change the names!!!
+	utility::io::ozstream donout(outfile+"_"+"donors.pdb.gz");
+	::devel::scheme::dump_hbond_rays( donout, target_donors, true );
+	donout.close();
 	
+	utility::io::ozstream accout(outfile+"_"+"acceptors.pdb.gz");
+	::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
+	accout.close();
+			
+	std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+
+	auto rot_tgt_scorer = std::make_shared< devel::scheme::ScoreRotamerVsTarget<
+		VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
+		> >();
+	{
+		rot_tgt_scorer->rot_index_p_ = rot_index_p;
+		rot_tgt_scorer->target_field_by_atype_ = field_by_atype;
+		rot_tgt_scorer->target_donors_ = target_donors;
+		rot_tgt_scorer->target_acceptors_ = target_acceptors;
+		rot_tgt_scorer->hbond_weight_ = option[rifgen::hbond_weight]();
+		rot_tgt_scorer->upweight_multi_hbond_ = option[rifgen::upweight_multi_hbond]() || option[ rifgen::dump_bidentate_hbonds ]();
+		rot_tgt_scorer->upweight_iface_ = 1.0;
+		rot_tgt_scorer->min_hb_quality_for_satisfaction_ = option[rifgen::min_hb_quality_for_satisfaction]();
+        rot_tgt_scorer->long_hbond_fudge_distance_ = option[rifgen::long_hbond_fudge_distance]();
+#ifdef USEGRIDSCORE
+		rot_tgt_scorer->grid_scorer_ = grid_scorer;
+		rot_tgt_scorer->soft_grid_energies_ = option[rifgen::soft_rosetta_grid_energies]();
+#endif
+        shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
+        prepare_donor_acceptor_cache( target_donors, target_acceptors, *rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
+
+        rot_tgt_scorer->target_donor_cache_ = target_donor_cache;
+        rot_tgt_scorer->target_acceptor_cache_ = target_acceptor_cache;
+
+        rot_tgt_scorer->target_donor_names = target_donor_names;
+        rot_tgt_scorer->target_acceptor_names = target_acceptor_names;
+
+	}
+
 
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -783,11 +828,12 @@ int main(int argc, char *argv[]) {
 		params->rot_index_p = rot_index_p;
 		params->cache_data_path = cache_data_path;
 		params->field_by_atype = field_by_atype;
+		params->hbopt = hbopt;
 #ifdef USEGRIDSCORE
 		params->grid_scorer = grid_scorer;
-		params->soft_grid_energies = option[rifgen::soft_rosetta_grid_energies]();
 #endif
 		params->tuning_file = option[rifgen::tuning_file]();
+		params->rot_tgt_scorer = rot_tgt_scorer;
 
 		for( int igen = 0; igen < generators.size(); ++igen )
 		{

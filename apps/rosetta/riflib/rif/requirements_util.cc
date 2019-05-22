@@ -15,7 +15,6 @@
 #include <utility/io/izstream.hh>
 #include <utility/io/ozstream.hh>
 
-#include <utility/string_util.hh>
 
 namespace devel {
     namespace scheme {
@@ -336,6 +335,7 @@ namespace devel {
                         
                         utility::vector1<std::string> splt = utility::quoted_split( s );
                         if ( splt.size() >=2 && splt[2] == "APOLAR" ) {
+                            splt = parse_apo_hbond( splt, 3, req_temp );
                             runtime_assert_msg( utility::string2int( splt[1] ) >=0, "The requirement number must be a positive integer!" );
                             req_temp.req_num = utility::string2int( splt[1] );
                             for (int ii = 3; ii <= splt.size(); ++ii) {
@@ -360,6 +360,7 @@ namespace devel {
                             req_temp.req_num = -1;
                             req_temp.allowed_rot_names.clear();
                             req_temp.terms.clear();
+                            clear_apo_hbond( req_temp );
                             found_one = false;
                         } else {
                             utility_exit_with_message("something is wrong with the APOLAR requirement definition!" );
@@ -405,6 +406,7 @@ namespace devel {
                         
                         utility::vector1<std::string> splt = utility::quoted_split( s );
                         if ( splt.size() >=2 && splt[2] == "PIPISTACKING" ) {
+                            splt = parse_apo_hbond( splt, 3, req_temp );
                             runtime_assert_msg( utility::string2int( splt[1] ) >=0, "The requirement number must be a positive integer!" );
                             req_temp.req_num = utility::string2int( splt[1] );
                             if ( splt.size() == 2 ) {
@@ -433,6 +435,7 @@ namespace devel {
                             req_temp.req_num = -1;
                             req_temp.allowed_rot_names.clear();
                             req_temp.terms.clear();
+                            clear_apo_hbond( req_temp );
                             found_one = false;
                         } else {
                             utility_exit_with_message("something is wrong with the APOLAR requirement definition!" );
@@ -477,6 +480,7 @@ namespace devel {
                         //std::cout << req_temp.req_num << std::endl;
                         
                         if ( splt.size() >=2 && splt[2] == "CATIONPI" ) {
+                            splt = parse_apo_hbond( splt, 3, req_temp );
                             runtime_assert_msg( splt.size() >= 3, "something is wrong with the CATIONPI requirement definition, talk with longxing about this. You can specify the allow residues to form a cationpi, such as TRP, PHE, HIS!" );
                             runtime_assert_msg( utility::string2int( splt[1] ) >=0, "The requirement number must be a positive integer!" );
                             req_temp.req_num = utility::string2int(splt[1]);
