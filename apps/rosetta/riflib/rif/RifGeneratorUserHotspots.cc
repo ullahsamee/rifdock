@@ -135,13 +135,13 @@ namespace rif {
 		runtime_assert_msg( n_hspot_groups, "no hotspot group files specified!!" );
 		// runtime_assert_msg( n_hspot_groups<16, "too many hotspot groups!!" );
 
-		std::cout << "this RIF type doesn't support sat groups!!!" << std::endl;
+		// std::cout << "this RIF type doesn't support sat groups!!!" << std::endl;
 
 		std::cout << "RifGeneratorUserHotspots opts:" << std::endl;
 		std::cout << "    hotspot_sample_cart_bound:  " << this->opts.hotspot_sample_cart_bound;
 		std::cout << "    hotspot_sample_angle_bound: " << this->opts.hotspot_sample_angle_bound;
-		std::cout << "    hbond_weight:               " << this->opts.hbond_weight;
-		std::cout << "    upweight_multi_hbond:       " << this->opts.upweight_multi_hbond;
+		// std::cout << "    hbond_weight:               " << this->opts.hbond_weight;
+		// std::cout << "    upweight_multi_hbond:       " << this->opts.upweight_multi_hbond;
 		std::cout << "    target_center:              "
 			<< this->opts.target_center[0] << " "
 			<< this->opts.target_center[1] << " "
@@ -155,45 +155,6 @@ namespace rif {
 		for( auto s : this->opts.hotspot_files ){
 			std::cout << "    hotspot_group:              " << s << std::endl;
 		}
-
-
-
-		// setup the hacky but fast scorer
-		devel::scheme::ScoreRotamerVsTarget<
-				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-			> rot_tgt_scorer;
-		{
-			std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
-			for( auto ir : params->target_res ){
-				::devel::scheme::get_donor_rays   ( *params->target, ir, params->hbopt, target_donors );
-				::devel::scheme::get_acceptor_rays( *params->target, ir, params->hbopt, target_acceptors );
-			}
-			std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
-
-
-			{
-				rot_tgt_scorer.rot_index_p_ = params->rot_index_p;
-				rot_tgt_scorer.target_field_by_atype_ = params->field_by_atype;
-				rot_tgt_scorer.target_donors_ = target_donors;
-				rot_tgt_scorer.target_acceptors_ = target_acceptors;
-				rot_tgt_scorer.hbond_weight_ = this->opts.hbond_weight;
-				rot_tgt_scorer.upweight_multi_hbond_ = this->opts.upweight_multi_hbond;
-				rot_tgt_scorer.upweight_iface_ = 1.0;
-				rot_tgt_scorer.min_hb_quality_for_satisfaction_ = opts.min_hb_quality_for_satisfaction;
-                rot_tgt_scorer.long_hbond_fudge_distance_ = opts.long_hbond_fudge_distance;
-#ifdef USEGRIDSCORE
-				rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
-				rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
-#endif
-                shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
-                prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
-
-                rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
-                rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
-			}
-		}
-
-
 
 
     	int const NSAMP = this->opts.hotspot_nsamples;
@@ -473,8 +434,9 @@ namespace rif {
 
 									// you can check their "energies" against the target like this, obviously substituting the real rot# and position
                                     int actual_sat1=-1, actual_sat2=-1, hbcount=0;
-									float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, x_position,
+									float positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( irot, x_position,
                                             actual_sat1, actual_sat2, true, hbcount, 10.0, 0 );
+                                    std::cout << positioned_rotamer_score << std::endl;
 
                                     if ( opts.all_hotspots_are_bidentate && ( actual_sat1 == -1 || actual_sat2 == -1 ) ) continue;
 
@@ -484,7 +446,7 @@ namespace rif {
 										//num_of_hotspot_inserted += 1;
 										// EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
 									    // you can check their "energies" against the target like this, obviously substituting the real rot# and position
-										//float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target( irot, x_position );
+										//float positioned_rotamer_score = rot_tgt_scorer->score_rotamer_v_target( irot, x_position );
 
 
 										//target_pose.dump_pdb(s);

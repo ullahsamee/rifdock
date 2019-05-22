@@ -13,21 +13,28 @@
 #define INCLUDED_riflib_rif_RifGenerator_hh
 
 #include <riflib/types.hh>
-#include <riflib/RotamerGenerator.hh>
+// #include <riflib/RotamerGenerator.hh>
 #include <riflib/RifBase.hh>
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
+#include <riflib/rifdock_typedefs.hh>
 #include <string>
 
 #ifdef USEGRIDSCORE
 	#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
 #endif
 
-namespace scheme {
-namespace chemical {
-	struct RotamerIndexSpec;
-}
-}
+// namespace devel {
+// namespace scheme {
+// 	struct ScoreRotamerVsTarget;
+// }
+// }
+
+// namespace scheme {
+// namespace chemical {
+// 	struct RotamerIndexSpec;
+// }
+// }
 
 namespace devel {
 namespace scheme {
@@ -65,8 +72,9 @@ struct RifGenParams {
 	HBRayOpts                      hbopt;
 #ifdef USEGRIDSCORE
 	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
-	bool                           soft_grid_energies;
 #endif
+	// the only reason this is a pointer is to avoid including a bunch of stuff this high up
+	shared_ptr<RifScoreRotamerVsTarget> rot_tgt_scorer;
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;
 

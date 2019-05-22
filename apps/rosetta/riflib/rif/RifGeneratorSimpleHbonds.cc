@@ -320,8 +320,6 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
         bool const use_hbond_definition = !( hbond_definitions.empty() );
         std::vector< int > use_hbond_definition_rays;
         std::vector< std::vector< std::string > > allowed_rotamers_rays;
-        std::vector<std::pair<int, std::string> > target_donor_names;
-        std::vector<std::pair<int, std::string> > target_acceptor_names;
         std::vector<std::pair<int, std::string> > target_bonder_names;
         // the bidentate hydrogen bond definition stuff
         std::vector< BidentateDefinition > bidentate_definitions = get_bidentate_definitions( tuning_file );
@@ -398,16 +396,10 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 				}
 			}
 		}
-		std::vector< ::scheme::chemical::HBondRay > target_donors, target_acceptors;
-		for( auto ir : target_res ){
-            ::devel::scheme::get_donor_rays   ( target, ir, params->hbopt, target_donors, target_donor_names );
-            ::devel::scheme::get_acceptor_rays( target, ir, params->hbopt, target_acceptors, target_acceptor_names );
-		}
         // this is to fill the allowed_rotamers_rays
         {
-            
-            target_bonder_names = target_donor_names;
-            for ( auto const & x : target_acceptor_names ) target_bonder_names.push_back( x );
+            target_bonder_names = params->rot_tgt_scorer->target_donor_names;
+            for ( auto const & x : params->rot_tgt_scorer->target_acceptor_names ) target_bonder_names.push_back( x );
             
             // remove the space in the atoms
             for ( auto  & x : target_bonder_names )
@@ -512,22 +504,9 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
              }
              */
         }
-        {
-			// these get used now. Don't change the names!!!
-			
-			utility::io::ozstream donout(params->output_prefix+"donors.pdb.gz");
-			::devel::scheme::dump_hbond_rays( donout, target_donors, true );
-			donout.close();
-			
-			utility::io::ozstream accout(params->output_prefix+"acceptors.pdb.gz");
-			::devel::scheme::dump_hbond_rays( accout, target_acceptors, false );
-			accout.close();
-			
-			// utility_exit_with_message("debug hbonds");
-		}
-		std::cout << "target_donors.size() " << target_donors.size() << " target_acceptors.size() " << target_acceptors.size() << std::endl;
+
 		int n_sat_groups = 0;
-		if( accumulator->rif()->has_sat_data_slots() ) n_sat_groups = target_donors.size() + target_acceptors.size();
+		if( accumulator->rif()->has_sat_data_slots() ) n_sat_groups = params->rot_tgt_scorer->target_donors_.size() + params->rot_tgt_scorer->target_acceptors_.size();
 		std::vector<utility::io::ozstream*> rif_hbond_vis_out_satgroups(n_sat_groups,nullptr);
 		std::vector<std::vector<utility::io::ozstream*>> rif_hbond_vis_out_double_satgroups(
 		                                                     n_sat_groups, std::vector<utility::io::ozstream*>(n_sat_groups,nullptr));
@@ -536,30 +515,6 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 
 	// target.dump_pdb("test.pdb");
 	// utility_exit_with_message("DEBUG EXTRA ACCEPTORS!!!");
-		devel::scheme::ScoreRotamerVsTarget<
-				VoxelArrayPtr, ::scheme::chemical::HBondRay, ::devel::scheme::RotamerIndex
-			> rot_tgt_scorer;
-		{
-			rot_tgt_scorer.rot_index_p_ = rot_index_p;
-			rot_tgt_scorer.target_field_by_atype_ = field_by_atype;
-			rot_tgt_scorer.target_donors_ = target_donors;
-			rot_tgt_scorer.target_acceptors_ = target_acceptors;
-			rot_tgt_scorer.hbond_weight_ = opts.hbond_weight;
-			rot_tgt_scorer.upweight_multi_hbond_ = opts.upweight_multi_hbond || opts.dump_bindentate_hbonds;
-			rot_tgt_scorer.upweight_iface_ = 1.0;
-			rot_tgt_scorer.min_hb_quality_for_satisfaction_ = opts.min_hb_quality_for_satisfaction;
-            rot_tgt_scorer.long_hbond_fudge_distance_ = opts.long_hbond_fudge_distance;
-#ifdef USEGRIDSCORE
-			rot_tgt_scorer.grid_scorer_ = params->grid_scorer;
-			rot_tgt_scorer.soft_grid_energies_ = params->soft_grid_energies;
-#endif
-            shared_ptr<DonorAcceptorCache> target_donor_cache, target_acceptor_cache;
-            prepare_donor_acceptor_cache( target_donors, target_acceptors, rot_tgt_scorer, target_donor_cache, target_acceptor_cache );
-
-            rot_tgt_scorer.target_donor_cache_ = target_donor_cache;
-            rot_tgt_scorer.target_acceptor_cache_ = target_acceptor_cache;
-
-		}
 
 		// int npairs = donresn.size()*accresn_user.size()  +  accresn.size()*donresn_user.size() ;
 
@@ -972,7 +927,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 						int sat1=-1, sat2=-1;
 						int hbcount=0;
 						bool want_sats = n_sat_groups > 0;
-						float positioned_rotamer_score = rot_tgt_scorer.score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 
+						float positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( irot, bbactor.position_, sat1, sat2, 
 																									want_sats, hbcount, 10.0, 0 );
 						if( positioned_rotamer_score > opts.score_threshold ) continue;
                         

@@ -371,7 +371,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::dump_rifgen_near_pdb_last_atom, "Use only the last atom to decide if rotamers are close", false );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
             NEW_OPT(  rif_dock::dump_rifgen_for_sat, "Dump a rotamers near a specific sat or multiple sats", utility::vector1<size_t>());
-            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 1000);
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 200);
             NEW_OPT(  rif_dock::dump_rifgen_for_sat_name3, "Only dump rotamers with this name3", "");
             NEW_OPT(  rif_dock::dump_best_rifgen_rots, "Dump the best rotamer from the rifgen. This is how many", 0 );
             NEW_OPT(  rif_dock::dump_best_rifgen_rmsd, "The rmsd of the last atom for each aa type used in clustering", 3 );

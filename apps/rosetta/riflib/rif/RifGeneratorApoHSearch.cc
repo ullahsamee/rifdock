@@ -29,6 +29,7 @@
 	#include <devel/init.hh>
 	#include <riflib/RotamerGenerator.hh>
 	#include <riflib/util.hh>
+    #include <riflib/ScoreRotamerVsTarget.hh>
 
 	#include <map>
 
@@ -106,6 +107,26 @@ namespace rif {
 
 	}
 
+
+    template<class Requirement>
+    std::vector< std::vector< int > >
+    get_apo_hbond_sats( std::vector< Requirement > const & reqs, std::vector<std::pair<int, std::string> > target_bonder_names )
+    {
+        std::vector< std::vector< int > > req_hbond_sats( reqs.size() );
+
+        for ( size_t ireq = 0; ireq < reqs.size(); ireq++ ) {
+            Requirement const & req = reqs[ireq];
+
+            if ( req.apo_hbond.atom_name == "" ) continue;
+
+            for ( int isat = 0; isat < target_bonder_names.size(); isat++ ) {
+                std::pair<int, std::string> const & pair = target_bonder_names[isat];
+
+                if ( pair.first == req.apo_hbond.res_num && pair.second == req.apo_hbond.atom_name ) req_hbond_sats[ireq].push_back(isat);
+            }
+        }
+        return req_hbond_sats;
+    }
 
 	void
 	RifGeneratorApoHSearch::generate_rif(
@@ -248,7 +269,7 @@ namespace rif {
         std::vector< int > cationpi_req_nums( cationpi_reqs.size() + pipi_reqs.size() );
         std::vector< std::vector<bool> > cationpi_allowed_res( cationpi_reqs.size() + pipi_reqs.size() );
         // in order to keep the original logic of apore search, I should keep the apore search residues in separate with the cation-pi interaction residues, even though they use almost the same hsearch framework.
-        
+
         
         std::vector<bool> rotamer_only_for_cationpi( rot_index_p->size(), false );
         if ( use_cationpi_requirements || use_pipi_requirements ) {
@@ -319,6 +340,26 @@ namespace rif {
             }
         }
         
+        std::vector< std::vector< int > > apo_hbond_sats;
+        std::vector< std::vector< int > > pipi_hbond_sats;
+        std::vector< std::vector< int > > cationpi_hbond_sats;
+
+        if ( use_apo_requirements || use_pipi_requirements || use_cationpi_requirements ) {
+
+            // copied from SimpleHBonds
+            std::vector<std::pair<int, std::string> > target_bonder_names;
+            target_bonder_names = params->rot_tgt_scorer->target_donor_names;
+            for ( auto const & x : params->rot_tgt_scorer->target_acceptor_names ) target_bonder_names.push_back( x );
+            for ( auto  & x : target_bonder_names )
+                x.second = utility::strip( x.second, ' ');
+
+            apo_hbond_sats = get_apo_hbond_sats( apo_reqs, target_bonder_names );
+            pipi_hbond_sats = get_apo_hbond_sats( pipi_reqs, target_bonder_names );
+            cationpi_hbond_sats = get_apo_hbond_sats( cationpi_reqs ,target_bonder_names );
+        }
+
+
+
         std::vector<int> rots;
         for( auto resn : apores ){
             if( resn.size() > 3 ){
@@ -720,7 +761,10 @@ namespace rif {
 									}
 									if( score > final_score_cut ) continue;
 
+                                    bool remove_if_doesnt_satisfy = opts.only_place_requirement_res;
+
                                     int req_index = -1;
+                                    std::vector<int> const * requires_hbond_sats_too;
                                     if( use_apo_requirements ){
                                         Eigen::Vector3f currentCB = tscene.position(1) * child.CBcen;
                                         for ( int ii = 0; ii< apo_req_nums.size(); ++ ii ){
@@ -741,6 +785,7 @@ namespace rif {
                                             }
                                             if ( true == satisfy_apo ){
                                                 req_index = apo_req_nums[ii];
+                                                requires_hbond_sats_too = &(apo_hbond_sats[ii]);
                                                 break;
                                             }
                                         }
@@ -749,7 +794,7 @@ namespace rif {
                                     // the cation-pi requirements, I put it after the apo requirement, so that the privillage of cation-pi is higher
                                     //
                                     if ( use_cationpi_requirements || use_pipi_requirements ) {
-                                        double const max_allowed_squared_distance  = 36.0;
+                                        double const max_allowed_squared_distance  = 25.0;
                                         double const max_allowed_angle1_radians_cos = 0.866; /* cos(30.0 / 180 * 3.1415926) */
                                         double const max_allowed_angle2_radians_cos = 0.766; /* cos(40.0 / 180 * 3.1415926) */
                                         bool satisfy_cationpi = false;
@@ -797,17 +842,39 @@ namespace rif {
                                             }
                                             if ( true == satisfy_cationpi ) {
                                                 req_index = cationpi_req_nums[ii];
+                                                requires_hbond_sats_too = &(cationpi_hbond_sats[ii]);
                                                 break;
                                             }
                                         }
                                         // remove rotamers only for cation-pi interactions, such as his and tyr
                                         if ( !satisfy_cationpi && rotamer_only_for_cationpi[crot] ) {
-                                            continue;
+                                            continue;   // this catches them if they passed apo for instance
                                         }
+
+                                        // This will catch them if they fail the hbond test
+                                        if ( rotamer_only_for_cationpi[crot] ) remove_if_doesnt_satisfy = true;
                                     }
 
                                     
+                                    if ( req_index > 0 ) {
+                                        runtime_assert( requires_hbond_sats_too );
+                                        if ( ! requires_hbond_sats_too->empty() ) {
+
+                                            int sat1=-1, sat2=-1;
+                                            int hbcount=0;
+                                            bool want_sats = true;
+                                            float positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( crot, bbactor_child.position_, sat1, sat2, 
+                                                                                                                        want_sats, hbcount, 10.0, 0 );
+
+                                            // i.e. The hbonds that were formed (if any) were not found in the required_hbond_sats
+                                            if ( std::find( requires_hbond_sats_too->begin(), requires_hbond_sats_too->end(), sat1 ) == requires_hbond_sats_too->end() &&
+                                                std::find( requires_hbond_sats_too->begin(), requires_hbond_sats_too->end(), sat2 ) == requires_hbond_sats_too->end() ) {
+                                                req_index = -1;
+                                            }
+                                        }
+                                    }
                                     
+                                    if ( remove_if_doesnt_satisfy  && req_index == -1 ) continue;
                                     
                                     accumulator->insert( bbactor_child.position_, score_weight*score, crot, req_index );
 

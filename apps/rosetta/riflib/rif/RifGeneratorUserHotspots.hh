@@ -26,10 +26,6 @@ struct RifGeneratorUserHotspotsOpts {
 	float hotspot_sample_angle_bound = 30.0;
     float hotspot_score_thresh = -0.5;
     int   hotspot_nsamples = 10000;
-	float hbond_weight = 2.0;
-	float upweight_multi_hbond = 0.0;
-	float min_hb_quality_for_satisfaction = -0.6;
-    float long_hbond_fudge_distance = 0.0;
     int  dump_hotspot_samples = 0;
     bool test_hotspot_redundancy = false;
 	float hotspot_score_bonus = 0.;

@@ -10,10 +10,11 @@
 
 
 #ifndef INCLUDED_riflib_rif_requirements_util_hh
-#define INCLUDED_riflib_rif_requirements_util__hh
+#define INCLUDED_riflib_rif_requirements_util_hh
 
 #include <string>
 #include <vector>
+#include <utility/string_util.hh>
 
 // TODO:: change this tuning file manager to a factory ..... Singleton ?
 
@@ -73,6 +74,7 @@ namespace devel {
                 int req_num = -1;
                 std::vector<std::string> allowed_rot_names;
                 std::vector<ApoReqTerm> terms;
+                HbondRequirement apo_hbond;
             };
             
             struct PiPiStackingTerm {
@@ -83,12 +85,14 @@ namespace devel {
                 int req_num = -1;
                 std::vector<std::string> allowed_rot_names;
                 std::vector<PiPiStackingTerm> terms;
+                HbondRequirement apo_hbond;
             };
             
             struct CationPiRequirement {
                 int req_num = -1;
                 int res_num = -1;
                 std::vector<std::string> allowed_rot_names;
+                HbondRequirement apo_hbond;
             };
             
             std::vector < DonorDefinition > get_donor_definitions( std::string tuning_file );
@@ -102,6 +106,37 @@ namespace devel {
             std::vector< PiPiStackingRequirement > get_pipi_stacking_requirement_definitions( std::string tuning_file );
             std::vector< CationPiRequirement > get_cationpi_requirement_definitions( std::string tuning_file );
             bool check_requirement_definition_exists( std::string tuning_file );
+
+            template< class Requirement >
+            void
+            clear_apo_hbond( Requirement & req ) {
+                req.apo_hbond.atom_name = "";
+                req.apo_hbond.res_num = -1;
+            }
+
+            template< class Requirement >
+            utility::vector1<std::string>
+            parse_apo_hbond( utility::vector1<std::string> const & split, size_t start, Requirement & req ) {
+                size_t hbond_start = 0;
+                for ( size_t i = start; i <= split.size(); i++ ) {
+                    if ( split[i] == "HBOND" ) {
+                        hbond_start = i;
+                        break;
+                    }
+                }
+                if ( hbond_start == 0 ) return split;
+
+                if ( hbond_start + 2 > split.size() ) {
+                    utility_exit_with_message("Bad apo-hbond definition");
+                }
+                req.apo_hbond.atom_name = split[hbond_start+1];
+                req.apo_hbond.res_num = utility::string2int(split[hbond_start+2]);
+
+                utility::vector1<std::string> new_split;
+                for ( size_t i = 1; i < hbond_start; i++ ) new_split.push_back(split[i]);
+                return new_split;
+            }
+
         }
     }
 }

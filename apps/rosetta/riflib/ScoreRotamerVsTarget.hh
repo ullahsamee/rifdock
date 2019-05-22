@@ -101,6 +101,11 @@ struct ScoreRotamerVsTarget {
     ::scheme::shared_ptr< RotamerIndex const > rot_index_p_ = nullptr;
     std::vector<VoxelArrayPtr> target_field_by_atype_;
     std::vector< HBondRay > target_donors_, target_acceptors_;
+
+    // Ok, the names shouldn't be here, but it's convenient
+    std::vector<std::pair<int, std::string> > target_donor_names;
+    std::vector<std::pair<int, std::string> > target_acceptor_names;
+
     float hbond_weight_ = 2.0;
     float upweight_iface_ = 1.0;
     float upweight_multi_hbond_ = 0.0;

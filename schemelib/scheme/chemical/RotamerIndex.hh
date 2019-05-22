@@ -412,7 +412,13 @@ struct RotamerIndex {
 	size_t size() const { return rotamers_.size(); }
 	size_t n_primary_rotamers() const { return n_primary_rotamers_; }
 	std::string resname(size_t i) const { return rotamers_.at(i).resname_; }
-	std::string oneletter(size_t i) const { return oneletter_map_.at(rotamers_.at(i).resname_); }
+	std::string oneletter(size_t i) const { 
+		if ( oneletter_map_.find(rotamers_.at(i).resname_) == oneletter_map_.end() ) {
+			return rotamers_.at(i).resname_;
+		} else {
+			return oneletter_map_.at(rotamers_.at(i).resname_);
+		}
+	}
 	size_t natoms( size_t i ) const { return rotamers_.at(i).atoms_.size(); }
 	size_t nheavyatoms( size_t i ) const { return rotamers_.at(i).nheavyatoms; }
 	size_t nchi( size_t i ) const { return rotamers_.at(i).chi_.size(); }
