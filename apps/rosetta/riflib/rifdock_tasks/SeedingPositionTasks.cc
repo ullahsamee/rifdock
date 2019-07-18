@@ -151,6 +151,9 @@ create_rifine_task(
 
     if ( do_rosetta_score || opt.rosetta_filter_even_if_no_score ) {
                               task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+                              // This is kind of just hacked in here to make rosetta_score_at_most work
+                              task_list.push_back(make_shared<FilterForRosettaScoreTask>( 1,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
+                                                                                    opt.rosetta_score_at_most, opt.rosetta_score_select_random )); 
         if (do_rosetta_score) task_list.push_back(make_shared<RosettaScoreTask>( 0, opt.rosetta_score_cut, do_rosetta_min, true));
     }
 
