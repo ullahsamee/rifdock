@@ -50,6 +50,8 @@ struct Task {
 
     virtual TaskType get_task_type() const = 0;
 
+    std::string name() const;
+
 
 };
 

@@ -23,6 +23,7 @@ namespace devel {
 namespace scheme {
 
 
+
 ThreePointVectors
 TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd ) {
 
@@ -53,17 +54,22 @@ TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd
         TaskType current_task_type = task.get_task_type();
         TaskType reported_task_type = current_task_type;
 
-// Debug delete this!!!!!!!!!!!!!!!!!!!
+        std::cout << std::endl;
+        std::string name = task.name();
+        std::cout << "# ";
 
         if ( working_search_points ) {
-            std::cout << "working_search_points.size(): " << working_search_points->size() << std::endl;
+            std::cout << working_search_points->size();
         } else if ( working_search_point_with_rotss ) {
-            std::cout << "working_search_point_with_rotss.size(): " << working_search_point_with_rotss->size() << std::endl;
+            std::cout << working_search_point_with_rotss->size();
         } else if ( working_rif_dock_results ) {
-            std::cout << "working_rif_dock_results.size(): " << working_rif_dock_results->size() << std::endl;
+            std::cout << working_rif_dock_results->size();
         } else {
             runtime_assert(false);
         }
+        std::cout << " --> " << name << std::endl;
+        
+        // std::cout << "--------------------------------------------" << std::endl;
 
 ///////////////////////////////////////
         switch (last_task_type) {
@@ -174,6 +180,7 @@ TaskProtocol::run( ThreePointVectors input, RifDockData & rdd, ProtocolData & pd
             }
             default: { runtime_assert(false); }
         }
+
 
 
         last_task_type = reported_task_type;
