@@ -76,6 +76,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, hack_pack_frac )
 	OPT_1GRP_KEY(  Real        , rif_dock, pack_iter_mult )
 	OPT_1GRP_KEY(  Integer     , rif_dock, pack_n_iters )
+	OPT_1GRP_KEY(  Real       , rif_dock, hackpack_score_cut )
 	OPT_1GRP_KEY(  Real        , rif_dock, hbond_weight )
     OPT_1GRP_KEY(  Real        , rif_dock, scaff_bb_hbond_weight )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_scaff_bb_hbond_rays )
@@ -334,6 +335,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 			NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
 			NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
+			NEW_OPT(  rif_dock::hackpack_score_cut, "", 0);
 			NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
             NEW_OPT(  rif_dock::scaff_bb_hbond_weight, "" , 0.0 );
             NEW_OPT(  rif_dock::dump_scaff_bb_hbond_rays, "Dump scaffold backbone hydrogen bond rays", false );
@@ -646,6 +648,7 @@ struct RifDockOpt
 
 	float       pack_iter_mult                       ;
 	int         pack_n_iters                         ;
+	float       hackpack_score_cut                   ;
 	float       hbond_weight                         ;
     float       scaff_bb_hbond_weight                ;
     bool        dump_scaff_bb_hbond_rays             ;
@@ -896,6 +899,7 @@ struct RifDockOpt
 		rotrf_scale_atr                        = option[rif_dock::rotrf_scale_atr                       ]();
 		pack_iter_mult                         = option[rif_dock::pack_iter_mult                        ]();
 		pack_n_iters                           = option[rif_dock::pack_n_iters                          ]();
+		hackpack_score_cut                     = option[rif_dock::hackpack_score_cut                    ]();
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
         scaff_bb_hbond_weight                  = option[rif_dock::scaff_bb_hbond_weight                 ]();
         dump_scaff_bb_hbond_rays               = option[rif_dock::dump_scaff_bb_hbond_rays              ]();

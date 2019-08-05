@@ -194,6 +194,8 @@ namespace rif {
         accumulator->checkpoint( std::cout, false );
 
 		print_header("Building RIF from resampled user hotspots");
+		// tallying hotspot stats
+// 		std::map<std::tuple<int,int,std::string>, hotspot_stats> hstats;
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
 
@@ -254,7 +256,12 @@ namespace rif {
 					}
 				}
 			}
-
+// 			for (int num_res = 1; num_res <= myresname.size(); num_res++) {
+// 				for (int res = 0; res < myresname[num_res].size(); res++) {
+// 					std::cout << "Adding: " << i_hotspot_group << " : " << num_res << " : " << myresname[num_res][res] << std::endl;
+// 					hstats.insert(std::pair<std::tuple<int, int, std::string>,hotspot_stats>(std::make_tuple(i_hotspot_group, num_res, myresname[num_res][res]),hotspot_stats(i_hotspot_group, num_res, myresname[num_res][res])));
+// 				}
+// 			}
       		std::cout << "Processing hotspots... " << std::flush; // No endl here!!!!
 			// read in pdb files # i_hotspot_group
 
@@ -436,7 +443,7 @@ namespace rif {
                                     int actual_sat1=-1, actual_sat2=-1, hbcount=0;
 									float positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( irot, x_position,
                                             actual_sat1, actual_sat2, true, hbcount, 10.0, 0 );
-                                    std::cout << positioned_rotamer_score << std::endl;
+                                    //std::cout << positioned_rotamer_score << std::endl;
 
                                     if ( opts.all_hotspots_are_bidentate && ( actual_sat1 == -1 || actual_sat2 == -1 ) ) continue;
 
@@ -464,6 +471,18 @@ namespace rif {
 
 										BBActor bbact( atom_N, atom_CA, atom_C);
 										EigenXform new_x_position = bbact.position();
+
+// 										#pragma omp critical
+// 										{
+// 											std::map<std::tuple<int,int,std::string>, hotspot_stats>::iterator it;
+// 											//it = hstats.find(std::make_tuple(0,1,std::string("PHE")));
+// 											//std::cout << "try to find this: " << i_hotspot_group << " " << i_hspot_res << " " << params -> rot_index_p -> resname(irot) << std::endl;
+// 											it = hstats.find(std::make_tuple(i_hotspot_group, i_hspot_res, params -> rot_index_p -> resname(irot)));
+// 											if (it != hstats.end()) {
+// 												it -> second.scores.push_back(positioned_rotamer_score);
+// 												it -> second.bb_pos.push_back(new_x_position);
+// 											}
+// 										}
 
                                         int sat1 = this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group;
                                         int sat2 =-1;
@@ -538,6 +557,23 @@ namespace rif {
 		if (opts.dump_hotspot_samples>=NSAMP){
 			hotspot_dump_file.close();
 		}
+// 		if (true) {
+// 			//std::ofstream hotspot_sc, rif_sc, seed_pos;
+// 			std::ofstream seed_pos;
+//   			// hotspot_sc.open ("hotspot_score.sc");
+//   			// rif_sc.open("rif_score.sc");
+//   			seed_pos.open("seeding_list");
+//   			auto rif_ptr = accumulator->rif();
+// 			for (std::map<std::tuple<int,int,std::string>, hotspot_stats>::iterator it = hstats.begin(); it!=hstats.end(); ++it) {
+// 				std::vector<std::string> bin_centers;
+// 				for (auto trans : it -> second.bb_pos) {
+// 					uint64_t const key = rif_ptr -> get_bin_key( trans );
+// 					EigenXform bin_cen = rif_ptr -> get_bin_center(key);
+// 					seed_pos << bin_cen.linear().row(0) << ' ' << bin_cen.linear().row(1) <<  ' ' << bin_cen.linear().row(2) << ' ' << bin_cen.translation()[0] << ' ' <<bin_cen.translation()[1] << ' ' << bin_cen.translation()[2] << std::endl;
+// 				}
+// 			}
+// 			seed_pos.close(); 
+// 		}
 		//utility_exit_with_message("done");
 		// let the rif builder thing know you're done
 		accumulator->checkpoint( std::cout, force_hotspot );
