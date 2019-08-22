@@ -109,6 +109,9 @@ int main(int argc, char *argv[]) {
 	register_options();
 	devel::init(argc,argv);
 
+	devel::scheme::fix_omp_max_threads();
+	std::cout << "Rifdock thinks there are " << devel::scheme::omp_max_threads() << " threads." << std::endl;
+
 
 	devel::scheme::print_header( "setup global options" );
 	RifDockOpt opt;
