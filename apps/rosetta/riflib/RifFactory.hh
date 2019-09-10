@@ -134,6 +134,8 @@ struct RifSceneObjectiveConfig
     float sasa_threshold;
     float sasa_multiplier;
     float ignore_rifres_if_worse_than;
+    std::vector<float> sat_bonus;
+    std::vector<bool> sat_bonus_override;
 
 };
 

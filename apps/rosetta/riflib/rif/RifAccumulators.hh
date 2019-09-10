@@ -47,6 +47,10 @@ struct RIFAccumulatorMapThreaded : public RifAccumulator {
 		xmap_ptr_ = make_shared<XMap>( cart_resl, ang_resl );
 	}
 
+	bool initialize_with_rif( shared_ptr<RifBase> & rif ) override {
+		return rif->get_xmap_ptr( xmap_ptr_ );
+	}
+
 	uint64_t n_motifs_found() const override { return N_motifs_found_ + total_samples(); }
 
 	shared_ptr<RifBase> rif() const override {

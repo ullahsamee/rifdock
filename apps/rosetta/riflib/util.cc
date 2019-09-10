@@ -400,8 +400,8 @@ get_rif_atype_map()
 	atypemap[ ats->atom_type_index("Nhis") ] =  8;
 	atypemap[ ats->atom_type_index("NH2O") ] =  9;
 	atypemap[ ats->atom_type_index("Nlys") ] = 10;
-	atypemap[ ats->atom_type_index("Narg") ] = 11;
-	//atypemap[ ats->atom_type_index("Narg") ] = 6; // hack hack hack hack
+	// atypemap[ ats->atom_type_index("Narg") ] = 11;
+	atypemap[ ats->atom_type_index("Narg") ] = 6; // hack hack hack hack
 	atypemap[ ats->atom_type_index("Npro") ] = 12;
 	atypemap[ ats->atom_type_index("OH"  ) ] = 13;
 	atypemap[ ats->atom_type_index("ONH2") ] = 14;

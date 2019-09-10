@@ -129,6 +129,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dump_resfile )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pikaa )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pssm )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, cache_scaffold_data )
 
@@ -264,6 +265,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
+    OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_bonus )
+    OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_override )
 
  
 
@@ -390,6 +393,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
 			NEW_OPT(  rif_dock::dump_resfile, "", false );
 			NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
+            NEW_OPT(  rif_dock::pdb_info_pssm, "Put a pssm into the pdb info", false );
 
 			NEW_OPT(  rif_dock::cache_scaffold_data, "", false );
 
@@ -525,6 +529,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
 
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
+            NEW_OPT(  rif_dock::sat_score_bonus,     "Give bonus to residues that satisfy sat. 0:-2,1:-1.5", "");
+            NEW_OPT(  rif_dock::sat_score_override,  "Override score for residues that satisfy sat. 0:-2,1:-1.5", "");
 
 
 
@@ -610,6 +616,7 @@ struct RifDockOpt
 	bool        output_full_scaffold                 ;
 	bool        outputsilent                         ;
 	bool        pdb_info_pikaa                       ;
+    bool        pdb_info_pssm                        ;
 	bool        dump_resfile                         ;
 	std::string target_res_fname                     ;
 	int         target_rf_oversample                 ;
@@ -767,6 +774,8 @@ struct RifDockOpt
     std::string buried_list                          ;
     
     std::vector<int> requirements                    ;
+    std::vector<float> sat_score_bonus               ;
+    std::vector<bool> sat_score_override             ;
 
     bool        need_to_calculate_sasa               ;
     float       sasa_cut                             ;
@@ -857,8 +866,9 @@ struct RifDockOpt
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
-		outputsilent                           = option[rif_dock::outputsilent                             ]();
+		outputsilent                           = option[rif_dock::outputsilent                          ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
+        pdb_info_pssm                          = option[rif_dock::pdb_info_pssm                         ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();
@@ -1103,6 +1113,65 @@ struct RifDockOpt
         for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 
         for( std::string s : option[rif_dock::dump_rifgen_near_pdb]() ) dump_rifgen_near_pdb.push_back(s);
+
+
+        /////////   sat_score_bonus and sat_score_override   //////////////
+
+        std::string bonus_string = option[rif_dock::sat_score_bonus]();
+        std::string override_string = option[rif_dock::sat_score_override]();
+
+        if ( bonus_string.length() > 0 || override_string.length() > 0 ) {
+
+            std::vector<bool> override;
+            std::vector<std::string> string;
+
+            if ( bonus_string.length() > 0 ) {
+                override.push_back(false);
+                string.push_back(bonus_string);
+            }
+            if ( override_string.length() > 0 ) {
+                override.push_back(true);
+                string.push_back(override_string);
+            }
+
+            std::vector<bool> used;
+
+            for ( int i = 0; i < override.size(); i++ ) {
+                try {
+                    for ( std::string const & pair : utility::string_split( string[i], ',' ) ) {
+                        utility::vector1<std::string> sat_score = utility::string_split( pair, ':' );
+                        float score = utility::from_string( sat_score[2], float(0) );
+                        int low_sat = 0;
+                        int high_sat = 0;
+                        if ( sat_score[1].find("-") == std::string::npos ) {
+                            low_sat = utility::from_string( sat_score[1], int(0) );
+                            high_sat = low_sat;
+                        } else {
+                            utility::vector1<std::string> sats = utility::string_split( sat_score[1], '-' );
+                            low_sat = utility::from_string( sats[1], int(0) );
+                            high_sat = utility::from_string( sats[2], int(0) );
+                        }
+
+                        for ( int sat = low_sat; sat <= high_sat; sat++ ) {
+                            if ( sat >= used.size() ) {
+                                used.resize(sat+1);
+                                sat_score_bonus.resize(sat+1);
+                                sat_score_override.resize(sat+1);
+                            }
+                            runtime_assert( sat >= 0 );
+                            if ( used[sat] ) {
+                                utility_exit_with_message("Error, sat repeated twice in bonus/override: " + sat_score[1] );
+                            }
+                            used[sat] = true;
+                            sat_score_bonus[sat] = score;
+                            sat_score_override[sat] = override[i];
+                        }
+                    }
+                } catch (...) {
+                    utility_exit_with_message("Can't parse bonus/override string: " + string[i]);
+                }
+            }
+        }
 	}
 
 

@@ -33,6 +33,8 @@ struct RifGeneratorUserHotspotsOpts {
     bool all_hotspots_are_bidentate = false;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;
+    bool add_to_rotamer_spec = true;
+    float hotspot_score_override = 12345;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
 };

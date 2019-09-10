@@ -31,7 +31,7 @@ FILE(GLOB L3 "../scheme/*/*/[0-9a-zA-Z_]*.cc")
 FILE(GLOB L4 "../scheme/*/*/*/[0-9a-zA-Z_]*.cc")
 FILE(GLOB L5 "../scheme/*/*/*/*/[0-9a-zA-Z_]*.cc")
 
-list(APPEND EXTRA_LIBS boost_system  )
+#list(APPEND EXTRA_LIBS boost_system  )
 
 include_directories(".")
 

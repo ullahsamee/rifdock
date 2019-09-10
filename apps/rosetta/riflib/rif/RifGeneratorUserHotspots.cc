@@ -34,6 +34,7 @@
 	#include <riflib/util.hh>
     #include <riflib/util_complex.hh>
 	#include <scheme/numeric/rand_xform.hh>
+    #include <scheme/numeric/random.hh>
 	#include <scheme/actor/Atom.hh>
 	#include <scheme/actor/BackboneActor.hh>
 
@@ -64,6 +65,8 @@ namespace rif {
 		::scheme::chemical::RotamerIndexSpec& rot_spec
 
 	){
+        if ( ! opts.add_to_rotamer_spec ) return;
+
 		for( int i_hotspot_group = 0; i_hotspot_group < this->opts.hotspot_files.size(); ++i_hotspot_group ){
 
 			std::string const & hotspot_file = this->opts.hotspot_files[i_hotspot_group];
@@ -161,11 +164,23 @@ namespace rif {
     	if (NSAMP > opts.dump_hotspot_samples && opts.dump_hotspot_samples > 0) utility_exit_with_message("too many NSAMP");
 
 
-    	std::mt19937 rng((unsigned int)time(0) + 934875);
+        // std::uniform_int_distribution<unsigned long> distr;
+        // std::vector< ::scheme::numeric::FastRandom > rng_per_thread;
+        // for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ){
+        //     rng_per_thread.emplace_back( distr(seed_rng), distr(seed_rng), distr(seed_rng) );
+        // }
+
+
     	float const radius_bound = this->opts.hotspot_sample_cart_bound;
     	float const degrees_bound = this->opts.hotspot_sample_angle_bound;
     	float const radians_bound = degrees_bound * M_PI/180.0;
 
+
+        std::mt19937 seed_rng((unsigned int)time(0) + 934875);
+        std::vector<EigenXform> perturb_xforms(NSAMP);
+        for ( int i = 0; i < NSAMP; i++ ) {
+            ::scheme::numeric::rand_xform_sphere(seed_rng,perturb_xforms[i],radius_bound,radians_bound);
+        }
 
 		std::ofstream hotspot_dump_file;
 		std::ostringstream os;
@@ -189,6 +204,7 @@ namespace rif {
 
         bool const single_thread = opts.test_hotspot_redundancy;
         bool const force_hotspot = opts.test_hotspot_redundancy | opts.label_hotspots_254;
+        bool const score_override = fabs( opts.hotspot_score_override - 12345 ) > 0.01;
 
         // We might be overriding later, so make sure everything is condensed now
         accumulator->checkpoint( std::cout, false );
@@ -260,30 +276,11 @@ namespace rif {
 
 			for( int i_hspot_res = 1; i_hspot_res <= myresname.size(); ++i_hspot_res ){
 
-			  //   std::vector<std::string> d_name(myresname.size(),"NONE");
-			  //   // try to find matching d version if use_d_aa
- 				// if (this->opts.use_d_aa) {
-	    //             // loop thorugh the d_l_map_
-	    //             for (auto it : params -> rot_index_p -> d_l_map_) {
-	    //             	// loop through the added hotspot
-	    //             	for (auto const & name_it: myresname[i_hspot_res]){
-	    //                 	//std::cout << it.second << " " << name_it << std::endl;
-	    //                 	if (it.second == name_it){//pose.residue(i_hspot_res).name3()) {
-	    //                 		d_name.push_back(it.first);
-	    //                 		//d_name.push_back(" ");
-	    //                 	}
-	    //             	}
-	    //             }
-	    //         }
-
-            	// if (this->opts.use_d_aa && d_name == " ") {
-             //   		std::cout << pose.residue(i_hspot_res).name3() << std::endl;
-             //   		utility_exit_with_message("can't find d version");
-            	// } else {
-            	// 	std::cout << d_name << std::endl;
-            	// }
 
 				std::cout << i_hspot_res << " " << std::flush; // No endl here!!!!
+
+                bool is_ser = pose.residue(i_hspot_res).name3() == "SER";
+                if ( is_ser ) continue;
 
 				// possible name still OK
 				int input_nheavy = pose.residue(i_hspot_res).nheavyatoms();
@@ -324,17 +321,13 @@ namespace rif {
 				// for each irot that is the right restype (can be had from rot_intex_p)
 				int irot_begin = 0, irot_end = params -> rot_index_p -> size();
 				for( int irot = irot_begin; irot < irot_end; ++irot ){
-					::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms matrix
-
-					// assign rif_res position by column
-					int hatoms = params -> rot_index_p -> nheavyatoms(irot);
 
 					//for (auto const & it: myresname[i_hspot_res]){
 					for (int i = 0; i < myresname[i_hspot_res].size(); i++) {
 							auto it = myresname[i_hspot_res][i];
 							auto d_it =  d_name[i_hspot_res][i];
-							std::cout << it << std::endl;
-							std::cout << d_it << std::endl;
+							// std::cout << it << std::endl;
+							// std::cout << d_it << std::endl;
 						if (params -> rot_index_p -> resname(irot) == it || params -> rot_index_p -> resname(irot) == d_it)
 						{
 							std::vector<SchemeAtom> const & rotamer_atoms( params->rot_index_p->atoms(irot) );
@@ -358,15 +351,9 @@ namespace rif {
                                 );
                             }
 
-							//std::cout << params -> rot_index_p -> resname(irot) << " : " << irot << std::endl;
-							EigenXform impose; //transform for mapping the Rot to Rif
-							::Eigen::Matrix<float,3,3> rif_res; // this is the rif residue last three atoms
-							int latoms = params -> rot_index_p -> natoms(irot);
-							rif_res << rotamer_atoms[hatoms-1].position()[0],rotamer_atoms[hatoms-2].position()[0],rotamer_atoms[hatoms-3].position()[0],rotamer_atoms[hatoms-1].position()[1],rotamer_atoms[hatoms-2].position()[1],rotamer_atoms[hatoms-3].position()[1],rotamer_atoms[hatoms-1].position()[2],rotamer_atoms[hatoms-2].position()[2],rotamer_atoms[hatoms-3].position()[2];
-		     	 			Pos rot_cen = (rif_res.col(0) + rif_res.col(1) + rif_res.col(2))/3;
 
 
-							impose = Xref * Xrotamer.inverse();
+							EigenXform impose = Xref * Xrotamer.inverse();
 							//Additional matrix definition for manipulation
 							//Default Rot starting Xform
 							EigenXform x_orig_position = EigenXform::Identity();
@@ -401,6 +388,11 @@ namespace rif {
 								passes = 2;
 							}
 
+                            Pos orig_last_atom;
+                            orig_last_atom(0,0) = pose.residue(i_hspot_res).xyz( input_nheavy )[0];
+                            orig_last_atom(1,0) = pose.residue(i_hspot_res).xyz( input_nheavy )[1];
+                            orig_last_atom(2,0) = pose.residue(i_hspot_res).xyz( input_nheavy )[2];
+
 
 							EigenXform O_2_orig_inverse = O_2_orig.inverse();
 
@@ -416,54 +408,61 @@ namespace rif {
                                     omp_set_num_threads(1);
                                 }
 
+                                EigenXform building_x_position = impose * x_orig_position;
+                                if ( pass == 1 ) {
+                                    building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
+                                }
+                                building_x_position = x_2_orig * building_x_position;
+
+
 								#ifdef USE_OPENMP
 								#pragma omp parallel for schedule(dynamic,16)
 								#endif
-
 								for(int a = 0; a < NSAMP; ++a){
-									EigenXform x_perturb;
-									::scheme::numeric::rand_xform_sphere(rng,x_perturb,radius_bound,radians_bound);
+									EigenXform const & x_perturb = perturb_xforms[a];
+                                    // auto & this_rng = rng_per_thread.at(::devel::scheme::omp_thread_num());
+									// ::scheme::numeric::rand_xform_sphere(this_rng,x_perturb,radius_bound,radians_bound);
 
-									EigenXform building_x_position = impose * x_orig_position;
-									if ( pass == 1 ) {
-										building_x_position = O_2_orig_inverse * tyr_thing * O_2_orig * building_x_position;
-									}
+									EigenXform x_position = x_2_orig_inverse * x_perturb /** x_2_orig*/ * building_x_position;
 
-									EigenXform x_position = x_2_orig_inverse * x_perturb * x_2_orig * building_x_position;
+
 									//EigenXform x_position = x_2_orig_inverse * x_2_orig * building_x_position;
 
 									// you can check their "energies" against the target like this, obviously substituting the real rot# and position
                                     int actual_sat1=-1, actual_sat2=-1, hbcount=0;
-									float positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( irot, x_position,
+									float positioned_rotamer_score;
+                                    if ( score_override ) {
+                                        positioned_rotamer_score = opts.hotspot_score_override;
+                                    } else {
+                                        positioned_rotamer_score = params->rot_tgt_scorer->score_rotamer_v_target_sat( irot, x_position,
                                             actual_sat1, actual_sat2, true, hbcount, 10.0, 0 );
-                                    std::cout << positioned_rotamer_score << std::endl;
+                                    }
+                                    // std::cout << positioned_rotamer_score << std::endl;
 
                                     if ( opts.all_hotspots_are_bidentate && ( actual_sat1 == -1 || actual_sat2 == -1 ) ) continue;
 
 
 									if( positioned_rotamer_score < opts.hotspot_score_thresh ){ // probably want this threshold to be an option or something
 
-										//num_of_hotspot_inserted += 1;
-										// EigenXform x_position = x_2_orig_inverse * x_perturb  * x_2_orig * impose * x_orig_position; //test
-									    // you can check their "energies" against the target like this, obviously substituting the real rot# and position
-										//float positioned_rotamer_score = rot_tgt_scorer->score_rotamer_v_target( irot, x_position );
 
+										// auto atom_N = x_position * rotamer_atoms[0].position();
+										// auto atom_CA = x_position * rotamer_atoms[1].position();
+										// auto atom_C = x_position * rotamer_atoms[2].position();
+										// BBActor bbact( atom_N, atom_CA, atom_C);
+										// EigenXform new_x_position = bbact.position();
 
-										//target_pose.dump_pdb(s);
-										//myfile.open (s, std::fstream::in | std::fstream::out | std::fstream::app);
-										//if( positioned_rotamer_score > 0) {positioned_rotamer_score = -1;}
+          //                               runtime_assert( xform_magnitude( x_position * new_x_position.inverse(), 2) < 0.1 );
 
-										//std::cout << positioned_rotamer_score << std::endl;
-										//accumulator->insert( x_position, positioned_rotamer_score-100, irot, i_hotspot_group, -1 );
+                                        auto last_atom = x_position * rotamer_atoms[params->rot_index_p->nheavyatoms(irot) - 1].position();
 
+                                        float distance = (( last_atom + target_vec ) - orig_last_atom).norm();
+                                        // std::cout << distance << std::endl;
+                                        if ( distance > 2 ) {
+                                            std::cout << distance << pose.residue(i_hspot_res).name3() << std::endl;
+                                        }
+                                        // runtime_assert( distance < 2 );
 
-											//std::cout << "new :                  " << std::endl;
-										auto atom_N = x_position * rotamer_atoms[0].position();
-										auto atom_CA = x_position * rotamer_atoms[1].position();
-										auto atom_C = x_position * rotamer_atoms[2].position();
-
-										BBActor bbact( atom_N, atom_CA, atom_C);
-										EigenXform new_x_position = bbact.position();
+                                        EigenXform & new_x_position = x_position;
 
                                         int sat1 = this -> opts.single_file_hotspots_insertion ? i_hspot_res : i_hotspot_group;
                                         int sat2 =-1;
@@ -501,7 +500,9 @@ namespace rif {
 											sat1 = 254;
 										}
 
-                                        accumulator->insert( new_x_position, positioned_rotamer_score + opts.hotspot_score_bonus, irot, sat1, sat2, force_hotspot, single_thread);
+                                        if ( ! score_override ) positioned_rotamer_score += opts.hotspot_score_bonus;
+
+                                        accumulator->insert( new_x_position, positioned_rotamer_score, irot, sat1, sat2, force_hotspot, single_thread);
 
 
 
@@ -521,6 +522,11 @@ namespace rif {
 
 								} // end NSAMP
 								//std::cout << "this is how many inserted: " << i_hotspot_group << " " << irot << " " << num_of_hotspot_inserted << std::endl;
+
+                                // Without this, you can build an entire rif for each thread.
+                                if( accumulator->need_to_condense() ){
+                                    accumulator->checkpoint( std::cout, force_hotspot );
+                                }
 
 							} // end brian ring flip
 

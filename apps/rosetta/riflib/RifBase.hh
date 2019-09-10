@@ -86,6 +86,7 @@ struct RifBase
 	virtual size_t mem_use() const = 0;
 	virtual size_t sizeof_value_type() const = 0;
 	virtual bool  has_sat_data_slots() const = 0;
+    virtual void  clear_sats() = 0;
 
 	template< class XMap > bool get_xmap_ptr( shared_ptr<XMap> & xmap_ptr );
 	template< class XMap > bool get_xmap_const_ptr( shared_ptr<XMap const> & xmap_ptr ) const;

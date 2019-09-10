@@ -938,7 +938,8 @@ int main(int argc, char *argv[]) {
             	rso_config.n_sat_groups = 0;
             }
 			
-
+            rso_config.sat_bonus = opt.sat_score_bonus;
+            rso_config.sat_bonus_override = opt.sat_score_override;
 				
 
 			ScenePtr scene_prototype;
