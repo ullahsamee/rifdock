@@ -126,7 +126,7 @@ create_rifine_task(
     task_list.push_back(make_shared<FilterByFracTask>( opt.hack_pack_frac, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
 
     task_list.push_back(make_shared<SetFaModeTask>( true ));
-    task_list.push_back(make_shared<FilterForHackPackTask>( 1, 0, 0 ));
+    task_list.push_back(make_shared<FilterForHackPackTask>( 1, 0, 0, opt.global_score_cut ));
     task_list.push_back(make_shared<HackPackTask>(  0, final_resl, 9e9 )); // hackpack sorts the results
 
 

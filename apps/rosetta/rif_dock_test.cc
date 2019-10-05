@@ -1223,7 +1223,7 @@ int main(int argc, char *argv[]) {
 
 						if (opt.hack_pack_during_hsearch) {
 							task_list.push_back(make_shared<SortByScoreTask>( ));
-							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
 							task_list.push_back(make_shared<HackPackTask>( i, i, opt.global_score_cut )); 
 						}
 
@@ -1247,7 +1247,7 @@ int main(int argc, char *argv[]) {
 				task_list.push_back(make_shared<SetFaModeTask>( true ));
 
 				if ( opt.hack_pack ) {
-					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
 					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.global_score_cut )); 
 				}
 
