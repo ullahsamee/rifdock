@@ -37,6 +37,7 @@ struct RifGeneratorUserHotspotsOpts {
     float hotspot_score_override = 12345;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
+    bool clear_sats_first = false;
 };
 
 struct RifGeneratorUserHotspots : public RifGenerator {

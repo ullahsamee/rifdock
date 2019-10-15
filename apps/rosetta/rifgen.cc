@@ -130,6 +130,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, label_hotspots_254 )
 	OPT_1GRP_KEY( Boolean       , rifgen, all_hotspots_are_bidentate )
     OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
+    OPT_1GRP_KEY( Boolean		, rifgen, clear_sats_before_hotspots)
     OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
     OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
 
@@ -213,6 +214,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::label_hotspots_254               , "True if hotspots to be labeled with sat 254 in log ", false );
         NEW_OPT(  rifgen::all_hotspots_are_bidentate       , "Hotpots only inserted if they make bidentate h-bonds", false );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+		NEW_OPT(  rifgen::clear_sats_before_hotspots        , "Clear all previous sats before adding hotspots", false );
         NEW_OPT(  rifgen::use_d_aa							, "" , false);
         NEW_OPT(  rifgen::use_l_aa							, "" , true);
 
@@ -459,6 +461,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
             hspot_opts.add_to_rotamer_spec = option[rifgen::hotspot_add_to_rotamer_spec]();
             hspot_opts.hotspot_score_override = option[rifgen::hotspot_score_override]();
+            hspot_opts.clear_sats_first = option[rifgen::clear_sats_before_hotspots]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];

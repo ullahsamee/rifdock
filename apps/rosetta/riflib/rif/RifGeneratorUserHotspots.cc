@@ -116,6 +116,12 @@ namespace rif {
 
         using ObjexxFCL::format::I;
 
+        if ( opts.clear_sats_first ) {
+            std::cout << "Clearing sats before hotspots..." << std::endl;
+            accumulator->condense();
+            accumulator->rif()->clear_sats();
+        }
+
         // requirements definitions
         bool const use_requirement_definition = check_requirement_definition_exists( params->tuning_file );
         std::vector< int > hotspot_requirement_labels;
