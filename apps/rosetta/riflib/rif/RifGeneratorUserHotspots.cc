@@ -294,13 +294,20 @@ namespace rif {
                     input_nheavy = 3;
                 }
 
-
-
-				EigenXform Xref = ::scheme::chemical::make_stub<EigenXform>(
-		            pose.residue(i_hspot_res).xyz( input_nheavy - 2 ) - xyz_tgt_cen,
-		            pose.residue(i_hspot_res).xyz( input_nheavy - 1 ) - xyz_tgt_cen,
-		            pose.residue(i_hspot_res).xyz( input_nheavy - 0 ) - xyz_tgt_cen
-		        );
+                EigenXform Xref;
+                if ( opts.dont_center_hotspots){
+					Xref = ::scheme::chemical::make_stub<EigenXform>(
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 2 ),
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 1 ),
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 0 )
+			        );
+			    } else {
+			    	Xref = ::scheme::chemical::make_stub<EigenXform>(
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 2 ) - xyz_tgt_cen,
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 1 ) - xyz_tgt_cen,
+			            pose.residue(i_hspot_res).xyz( input_nheavy - 0 ) - xyz_tgt_cen
+			        );
+			    }
 
 				//get last atom in hotspot residue and iterate over last 3
       			core::conformation::Atoms::const_iterator iter = pose.residue(i_hspot_res).heavyAtoms_end();
@@ -463,9 +470,6 @@ namespace rif {
 
                                         float distance = (( last_atom + target_vec ) - orig_last_atom).norm();
                                         // std::cout << distance << std::endl;
-                                        if ( distance > 2 ) {
-                                            std::cout << distance << pose.residue(i_hspot_res).name3() << std::endl;
-                                        }
                                         // runtime_assert( distance < 2 );
 
                                         EigenXform & new_x_position = x_position;

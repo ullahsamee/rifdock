@@ -22,6 +22,7 @@ namespace scheme {
 namespace rif {
 
 struct RifGeneratorUserHotspotsOpts {
+	bool dont_center_hotspots = false;
 	float hotspot_sample_cart_bound = 1.0;
 	float hotspot_sample_angle_bound = 30.0;
     float hotspot_score_thresh = -0.5;
