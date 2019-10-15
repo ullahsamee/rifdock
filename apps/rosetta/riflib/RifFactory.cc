@@ -1220,6 +1220,11 @@ std::string get_rif_type_from_file( std::string fname )
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 											packopts_.user_rotamer_bonus_constant;
 							}
+
+                            if ( hydrophobic_manager_ && !skip_scoring ) {
+                                score_rot_v_target += hydrophobic_manager_->get_individual_weighted_hyd_ddg( irot, bb.position() );
+                            }
+
 							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
 							else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
 							

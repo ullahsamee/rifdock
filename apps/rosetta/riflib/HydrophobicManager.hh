@@ -98,6 +98,7 @@ struct HydrophobicManager {
     float hydrophobic_ddg_per_atom_cut_ = 0;
     bool doing_better_than_ = false;
     bool better_than_must_hbond_ = false;
+    float hyd_ddg_weight_ = 0;
 
     int num_cation_pi_ = 0;
 
@@ -520,7 +521,37 @@ struct HydrophobicManager {
 
 
 /////////////////////////////////////////////////////////////////////////
+    float
+    get_individual_weighted_hyd_ddg(
+        int irot,
+        EigenXform const & bbpos
+    ) const {
+        if ( hyd_ddg_weight_ == 0 ) return 0;
 
+        if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) return 0;
+
+        typedef typename RotamerIndex::Atom Atom;
+
+        Hyd total_sum = 0;
+        for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
+            {
+                Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
+
+                if ( ! rif_hydrophobic_map_.at(atom.type()) ) continue;
+                typename Atom::Position pos = bbpos * atom.position();
+
+                std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
+
+                Hyd this_hyd = 0;
+                while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
+                    total_sum ++;
+            }
+            
+
+        }
+
+        return total_sum * DDG_PER_COUNT * hyd_ddg_weight_;
+    }
 
 
     int
@@ -548,6 +579,7 @@ struct HydrophobicManager {
             int irot = pair.first;
             EigenXform const & bbpos = pair.second;
 
+            if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) continue ;
 
             std::unordered_map<Hyd, int> with_whom;
 

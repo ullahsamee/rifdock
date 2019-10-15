@@ -142,6 +142,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_weight )
     OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
@@ -406,6 +407,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
             NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_weight, "Add the hydrophobic ddg to the rotamer score during hackpack with this weight.", 0 );
             NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
@@ -601,6 +603,7 @@ struct RifDockOpt
 	int         require_n_rifres                     ;
     int         require_hydrophobic_residue_contacts ;
     float       hydrophobic_ddg_cut                  ;
+    float       hydrophobic_ddg_weight               ;
     float       one_hydrophobic_better_than          ;
     float       two_hydrophobics_better_than         ;
     float       three_hydrophobics_better_than       ;
@@ -854,6 +857,7 @@ struct RifDockOpt
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
         require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
         hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
+        hydrophobic_ddg_weight                 = option[rif_dock::hydrophobic_ddg_weight                ]();
         one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
         two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
         three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();

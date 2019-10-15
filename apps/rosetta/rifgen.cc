@@ -116,6 +116,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, dump_bidentate_hbonds )
 	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
 
+	OPT_1GRP_KEY( Boolean       , rifgen, dont_center_hotspots )
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
 	OPT_1GRP_KEY( String        , rifgen, hotspot_list_file )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
@@ -198,7 +199,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::soft_rosetta_grid_energies       , "Use soft option for grid energies", false );
 		NEW_OPT(  rifgen::dump_bidentate_hbonds            , "Dump all bidentate hbonds", false );
 		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
-
+		
+		NEW_OPT(  rifgen::dont_center_hotspots             , "Nate added this flag and it may not work" , false );
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_list_file                , "" , "" );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
@@ -228,6 +230,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 
 		NEW_OPT(  rifgen::tuning_file                          , "precisely control how rifgen and rifdock work" , "" );
 		NEW_OPT(  rifgen::only_place_requirement_res           , "if it doesn't satisfy the tuning file, don't place it in the apo search", "" );
+		
 	}
 
 
@@ -446,7 +449,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             } else {
                 hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
             }
-        
+        	
+        	hspot_opts.dont_center_hotspots = option[ rifgen::dont_center_hotspots]();
 			hspot_opts.hotspot_sample_cart_bound = option[ rifgen::hotspot_sample_cart_bound ]();
             hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();

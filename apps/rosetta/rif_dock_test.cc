@@ -590,7 +590,8 @@ int main(int argc, char *argv[]) {
         	opt.one_hydrophobic_better_than < 0 ||
         	opt.two_hydrophobics_better_than < 0 ||
         	opt.three_hydrophobics_better_than < 0 ||
-        	opt.num_cation_pi > 0) {
+        	opt.num_cation_pi > 0 ||
+        	opt.hydrophobic_ddg_weight != 0) {
 
     	utility::vector1<int> use_hydrophobic_target_res;
     	if (opt.hydrophobic_target_res.size() > 0) {
@@ -606,6 +607,7 @@ int main(int argc, char *argv[]) {
     													   opt.hydrophobic_ddg_per_atom_cut,
     													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
+    	hydrophobic_manager->hyd_ddg_weight_ = opt.hydrophobic_ddg_weight;
     }
 
 
