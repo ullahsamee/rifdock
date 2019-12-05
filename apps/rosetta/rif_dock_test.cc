@@ -1250,7 +1250,7 @@ int main(int argc, char *argv[]) {
 
 				if ( opt.hack_pack ) {
 					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
-					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.global_score_cut )); 
+					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.hackpack_score_cut )); 
 				}
 
 				bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
