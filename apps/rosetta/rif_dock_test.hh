@@ -1143,7 +1143,7 @@ struct RifDockOpt
             for ( int req : req_nos ) req_nos2.push_back( req );
             
             pdbinfo_requirements.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
-
+	}
         /////////   sat_score_bonus and sat_score_override   //////////////
 
         std::string bonus_string = option[rif_dock::sat_score_bonus]();

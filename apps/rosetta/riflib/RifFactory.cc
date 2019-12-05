@@ -1961,7 +1961,6 @@ struct RifFactoryImpl :
     			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
     				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
     		}
-<<<<<<< HEAD
 				if( config.requirements.size() > 0 ){
 						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 				}
@@ -1972,15 +1971,9 @@ struct RifFactoryImpl :
                 dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
             }
             
-=======
-			if( config.requirements.size() > 0 ){
-					dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
-			}
-
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
 
->>>>>>> rifdock/master
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
                     get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
         packing_objectives.push_back( packing_objective );
@@ -2000,18 +1993,15 @@ struct RifFactoryImpl :
 			if ( config.requirements.size() > 0 ){
 			  dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 			}
-<<<<<<< HEAD
             
             if ( config.pdbinfo_req_active_positions.size() > 0 ) {
             dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().num_pdbinfo_requirements_required_ = config.num_pdbinfo_requirements_required;
                 dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_positions_ = config.pdbinfo_req_active_positions;
                 dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
             }
-=======
 
             dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
             dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
->>>>>>> rifdock/master
 		}
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
