@@ -137,6 +137,8 @@ struct RifSceneObjectiveConfig
     int num_pdbinfo_requirements_required;
     std::vector< std::vector<bool> > pdbinfo_req_active_positions;
     std::vector< std::vector<bool> > pdbinfo_req_active_requirements;
+    std::vector<float> sat_bonus;
+    std::vector<bool> sat_bonus_override;
 
 };
 

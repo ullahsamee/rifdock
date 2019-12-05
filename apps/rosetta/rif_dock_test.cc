@@ -109,6 +109,9 @@ int main(int argc, char *argv[]) {
 	register_options();
 	devel::init(argc,argv);
 
+	devel::scheme::fix_omp_max_threads();
+	std::cout << "Rifdock thinks there are " << devel::scheme::omp_max_threads() << " threads." << std::endl;
+
 
 	devel::scheme::print_header( "setup global options" );
 	RifDockOpt opt;
@@ -587,7 +590,8 @@ int main(int argc, char *argv[]) {
         	opt.one_hydrophobic_better_than < 0 ||
         	opt.two_hydrophobics_better_than < 0 ||
         	opt.three_hydrophobics_better_than < 0 ||
-        	opt.num_cation_pi > 0) {
+        	opt.num_cation_pi > 0 ||
+        	opt.hydrophobic_ddg_weight != 0) {
 
     	utility::vector1<int> use_hydrophobic_target_res;
     	if (opt.hydrophobic_target_res.size() > 0) {
@@ -603,6 +607,7 @@ int main(int argc, char *argv[]) {
     													   opt.hydrophobic_ddg_per_atom_cut,
     													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
+    	hydrophobic_manager->hyd_ddg_weight_ = opt.hydrophobic_ddg_weight;
     }
 
 
@@ -965,7 +970,8 @@ int main(int argc, char *argv[]) {
                 }
             }
 			
-
+            rso_config.sat_bonus = opt.sat_score_bonus;
+            rso_config.sat_bonus_override = opt.sat_score_override;
 				
 
 			ScenePtr scene_prototype;
@@ -1249,7 +1255,7 @@ int main(int argc, char *argv[]) {
 
 						if (opt.hack_pack_during_hsearch) {
 							task_list.push_back(make_shared<SortByScoreTask>( ));
-							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
 							task_list.push_back(make_shared<HackPackTask>( i, i, opt.global_score_cut )); 
 						}
 
@@ -1273,8 +1279,8 @@ int main(int argc, char *argv[]) {
 				task_list.push_back(make_shared<SetFaModeTask>( true ));
 
 				if ( opt.hack_pack ) {
-					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.global_score_cut )); 
+					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
+					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.hackpack_score_cut )); 
 				}
 
 				bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;
