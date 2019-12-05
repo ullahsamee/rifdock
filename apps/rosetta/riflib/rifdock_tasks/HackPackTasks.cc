@@ -55,7 +55,11 @@ FilterForHackPackTask::return_any_points(
 
     size_t n_packsamp = 0;
     for( n_packsamp; n_packsamp < any_points->size(); ++n_packsamp ){
+<<<<<<< HEAD
         if( (*any_points)[n_packsamp].score > global_score_cut_ ) break;
+=======
+        if( (*any_points)[n_packsamp].score > hack_pack_score_cut_ ) break;
+>>>>>>> rifdock/master
     }
     
     pd.npack = std::min( n_packsamp, (size_t)(pd.total_search_effort *

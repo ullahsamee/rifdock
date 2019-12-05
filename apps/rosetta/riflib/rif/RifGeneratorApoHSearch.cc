@@ -106,6 +106,31 @@ namespace rif {
 		out << "ENDMDL" << std::endl;
 
 	}
+    
+    inline float score_cationpi(Eigen::Vector3f const & cation_center, Eigen::Vector3f const & cation_nv, Eigen::Vector3f const & ring_center, Eigen::Vector3f const & ring_nv )
+    {
+        // copied from bcov's cation-pi scoring term
+        float distance = (cation_center - ring_center).norm();
+        float distance_score = 1.0;
+        if( distance < 6 && distance > 3.5 ) {
+            distance_score = std::max<float>(0.0, std::cos((distance-3.5)/1.4));
+        }else if ( distance >=6 ) {
+            return 0.0;
+        }
+        Eigen::Vector3f line_other = cation_nv + cation_center;
+        float cylinder_offset = (ring_center-cation_center).cross(ring_center-line_other).norm() / cation_nv.norm();
+        float cylinder_score = 1.0;
+        if( cylinder_offset <= 4) cylinder_score = std::max<float>(0, std::cos(cylinder_offset/2.0));
+        else return 0.0;
+        float plane_angle = std::acos( std::abs(cation_nv.dot(ring_nv) ) );
+        float plane_score = 1.0;
+        if( plane_angle > 0.1745 && plane_angle < 0.87 ){ /* 10 ~ 50 */
+            plane_score = std::max<float>(0, (std::cos(4.5*(plane_angle-0.1745))+1)/2.0);
+        } else if ( plane_angle >= 0.87 ) {
+            return 0.0;
+        }
+        return -1 * distance_score * cylinder_score * plane_score;
+    }
 
 
     template<class Requirement>
@@ -764,6 +789,7 @@ namespace rif {
                                     bool remove_if_doesnt_satisfy = opts.only_place_requirement_res;
 
                                     int req_index = -1;
+                                    float cationpi_bonus = 0.0;
                                     std::vector<int> const * requires_hbond_sats_too;
                                     if( use_apo_requirements ){
                                         Eigen::Vector3f currentCB = tscene.position(1) * child.CBcen;
@@ -794,10 +820,6 @@ namespace rif {
                                     // the cation-pi requirements, I put it after the apo requirement, so that the privillage of cation-pi is higher
                                     //
                                     if ( use_cationpi_requirements || use_pipi_requirements ) {
-                                        double const max_allowed_squared_distance  = 25.0;
-                                        double const max_allowed_angle1_radians_cos = 0.866; /* cos(30.0 / 180 * 3.1415926) */
-                                        double const max_allowed_angle2_radians_cos = 0.766; /* cos(40.0 / 180 * 3.1415926) */
-                                        bool satisfy_cationpi = false;
                                         for ( int ii = 0; ii < cationpi_req_nums.size(); ++ii ) {
                                             if ( !cationpi_allowed_res[ii][crot] ) continue;
                                             // do I really need to treat trp separatly. I think I should just use the benzene_ring_center, and that can make things much easier.
@@ -805,49 +827,25 @@ namespace rif {
                                             if ( rot_index_p->rotamers_[crot].resname_ == "TRP" ) {
                                                 Eigen::Vector3f benzene_ring_center   = tscene.position(1) * child.benzene_ring_center;
                                                 Eigen::Vector3f imidazole_ring_center = tscene.position(1) * child.imidazole_ring_center;
-                                                
-                                                if ( ( cation_genomtry_terms[ii].first - benzene_ring_center ).squaredNorm() <= max_allowed_squared_distance ) {
-                                                    Eigen::Vector3f ring_nv = ( tscene.position(1) * child.ring_norm_vector - tscene.position(1) * Eigen::Vector3f(0.0, 0.0, 0.0) ).normalized();
-                                                    Eigen::Vector3f v       = ( cation_genomtry_terms[ii].first - benzene_ring_center ).normalized();
-                                                    double vec_dot_protuct = ring_nv.dot(v);
-                                                    double nv_nv_dot_product = ring_nv.dot( cation_genomtry_terms[ii].second );
-                                                    if ( (vec_dot_protuct >= max_allowed_angle1_radians_cos || vec_dot_protuct <= -max_allowed_angle1_radians_cos) &&
-                                                        (nv_nv_dot_product >= max_allowed_angle2_radians_cos || nv_nv_dot_product<= -max_allowed_angle2_radians_cos) ) {
-                                                        satisfy_cationpi = true;
-                                                    }
-                                                } else if ( ( cation_genomtry_terms[ii].first - imidazole_ring_center ).squaredNorm() <= max_allowed_squared_distance ) {
-                                                    Eigen::Vector3f ring_nv = ( tscene.position(1) * child.ring_norm_vector - tscene.position(1) * Eigen::Vector3f(0.0, 0.0, 0.0) ).normalized();
-                                                    Eigen::Vector3f v       = ( cation_genomtry_terms[ii].first - imidazole_ring_center ).normalized();
-                                                    double vec_dot_protuct = ring_nv.dot(v);
-                                                    double nv_nv_dot_product = ring_nv.dot( cation_genomtry_terms[ii].second );
-                                                    if ( (vec_dot_protuct >= max_allowed_angle1_radians_cos || vec_dot_protuct <= -max_allowed_angle1_radians_cos) &&
-                                                        (nv_nv_dot_product >= max_allowed_angle2_radians_cos || nv_nv_dot_product<= -max_allowed_angle2_radians_cos) ) {
-                                                        satisfy_cationpi = true;
-                                                    }
-                                                } else {
-                                                    // pass
-                                                }
+                                                Eigen::Vector3f ring_nv = ( tscene.position(1) * child.ring_norm_vector - tscene.position(1) * Eigen::Vector3f(0.0, 0.0, 0.0) ).normalized();
+                                                // as I changed the code here, what should the lys norm vector be???????
+                                                float benzene_score = score_cationpi(cation_genomtry_terms[ii].first, cation_genomtry_terms[ii].second, benzene_ring_center, ring_nv);
+                                                float imidazole_score = score_cationpi(cation_genomtry_terms[ii].first, cation_genomtry_terms[ii].second, imidazole_ring_center, ring_nv);
+                                                cationpi_bonus = benzene_score < imidazole_score ? benzene_score : imidazole_score;
                                             } else {
                                                 Eigen::Vector3f benzene_ring_center   = tscene.position(1) * child.benzene_ring_center;
-                                                if (  ( cation_genomtry_terms[ii].first - benzene_ring_center ).squaredNorm() <= max_allowed_squared_distance ) {
-                                                    Eigen::Vector3f ring_nv = ( tscene.position(1) * child.ring_norm_vector - tscene.position(1) * Eigen::Vector3f(0.0, 0.0, 0.0) ).normalized();
-                                                    Eigen::Vector3f v       = ( cation_genomtry_terms[ii].first - benzene_ring_center ).normalized();
-                                                    double vec_dot_protuct = ring_nv.dot(v);
-                                                    double nv_nv_dot_product = ring_nv.dot( cation_genomtry_terms[ii].second );
-                                                    if ( (vec_dot_protuct >= max_allowed_angle1_radians_cos || vec_dot_protuct <= -max_allowed_angle1_radians_cos) &&
-                                                        (nv_nv_dot_product >= max_allowed_angle2_radians_cos || nv_nv_dot_product<= -max_allowed_angle2_radians_cos) ) {
-                                                        satisfy_cationpi = true;
-                                                    }
-                                                }
+                                                Eigen::Vector3f ring_nv = ( tscene.position(1) * child.ring_norm_vector - tscene.position(1) * Eigen::Vector3f(0.0, 0.0, 0.0) ).normalized();
+                                                float benzene_score = score_cationpi(cation_genomtry_terms[ii].first, cation_genomtry_terms[ii].second, benzene_ring_center, ring_nv);
+                                                cationpi_bonus = benzene_score;
                                             }
-                                            if ( true == satisfy_cationpi ) {
+                                            if ( cationpi_bonus <= opts.min_cationpi_score ) {
                                                 req_index = cationpi_req_nums[ii];
-                                                requires_hbond_sats_too = &(cationpi_hbond_sats[ii]);
+																								requires_hbond_sats_too = &(cationpi_hbond_sats[ii]);
                                                 break;
                                             }
                                         }
                                         // remove rotamers only for cation-pi interactions, such as his and tyr
-                                        if ( !satisfy_cationpi && rotamer_only_for_cationpi[crot] ) {
+                                        if ( cationpi_bonus > opts.min_cationpi_score && rotamer_only_for_cationpi[crot] ) {
                                             continue;   // this catches them if they passed apo for instance
                                         }
 
@@ -876,7 +874,7 @@ namespace rif {
                                     
                                     if ( remove_if_doesnt_satisfy  && req_index == -1 ) continue;
                                     
-                                    accumulator->insert( bbactor_child.position_, score_weight*score, crot, req_index );
+                                    accumulator->insert( bbactor_child.position_, std::max<float>( -9.0, score_weight*score + opts.cationpi_bonus_weights*cationpi_bonus), crot, req_index );
 
 									if( opts.dump_fraction > 0 ){
 										double const runif = uniform(rngs[omp_thread_num_1()-1]);

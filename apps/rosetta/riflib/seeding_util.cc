@@ -123,6 +123,7 @@ parse_exhausitive_searching_file(
     // utility::io::izstream in(fname);
     std::string s;
     devel::scheme::EigenXform xform;
+
     while (std::getline(in, s)) {
         if (s.empty()) continue;
             
@@ -142,7 +143,6 @@ parse_exhausitive_searching_file(
         
         searching_positions.push_back( std::pair< int64_t, devel::scheme::EigenXform >( utility::string2int(splt[2]), xform) );
     }
-        
     return true;
 }
 

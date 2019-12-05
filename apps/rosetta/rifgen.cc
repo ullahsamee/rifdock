@@ -147,6 +147,9 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
   OPT_1GRP_KEY( String        , rifgen, tuning_file )
   OPT_1GRP_KEY( Boolean       , rifgen, only_place_requirement_res )
 
+  OPT_1GRP_KEY( Real          , rifgen, min_cationpi_score     )
+  OPT_1GRP_KEY( Real          , rifgen, cationpi_bonus_weights )
+
 
 
 	void register_options() {
@@ -231,8 +234,10 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 
 
 		NEW_OPT(  rifgen::tuning_file                          , "precisely control how rifgen and rifdock work" , "" );
-		NEW_OPT(  rifgen::only_place_requirement_res           , "if it doesn't satisfy the tuning file, don't place it in the apo search", "" );
-		
+		NEW_OPT(  rifgen::only_place_requirement_res           , "if it doesn't satisfy the tuning file, don't place it in the apo search", false );
+
+		NEW_OPT(  rifgen::min_cationpi_score    	, "score used to filter bad cationpi rif residues" , -0.2);
+    NEW_OPT(  rifgen::cationpi_bonus_weights	, "final cationpi score is apo_score+weights*cationpi_score capped to -9.0" , 6.0);
 	}
 
 
@@ -415,6 +420,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			apogenopts.beam_size_M = option[rifgen::beam_size_M]();
 			apogenopts.dump_fraction = option[rifgen::rif_apo_dump_fraction]();
 			apogenopts.only_place_requirement_res = option[rifgen::only_place_requirement_res]();
+			apogenopts.min_cationpi_score  = option[rifgen::min_cationpi_score]();
+			apogenopts.cationpi_bonus_weights  = option[rifgen::cationpi_bonus_weights]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorApoHSearch>(

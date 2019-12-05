@@ -660,7 +660,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 } else {
                     j.don = donresn_customize[idon];
                 }
-                core::chemical::ResidueType const & rtype = rts.lock()->name_map(donresn_customize[idon]);
+                core::chemical::ResidueType const & rtype = rts.lock()->name_map(don_resname);
                 if( !rtype.has("N") || !rtype.has("CA") || !rtype.has("C") ){
                     std::cout << "not putting " << donresn_customize[idon] << " into rif, no N,CA,C" << std::endl;
                     continue;

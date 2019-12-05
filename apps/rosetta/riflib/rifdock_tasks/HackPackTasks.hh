@@ -28,12 +28,12 @@ struct FilterForHackPackTask : public AnyPointTask {
         float hack_pack_frac,
         int pack_n_iters,
         float pack_iter_mult,
-        float global_score_cut
+        float hack_pack_score_cut = 0
         ) :
         hack_pack_frac_( hack_pack_frac ),
         pack_n_iters_( pack_n_iters ),
         pack_iter_mult_( pack_iter_mult ),
-        global_score_cut_( global_score_cut )
+        hack_pack_score_cut_( hack_pack_score_cut )
         {}
 
     shared_ptr<std::vector<SearchPoint>> 
@@ -67,7 +67,7 @@ private:
     float hack_pack_frac_;
     int pack_n_iters_;
     float pack_iter_mult_;
-    float global_score_cut_;
+    float hack_pack_score_cut_;
 
 };
 

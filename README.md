@@ -11,11 +11,12 @@ RifDock links against Rosetta. While RifDock may be compatible with the bleeding
 
 To build RifDock:
 
-Optain a copy of gcc with version >= 4.9 (I have no idea if this is the minimum version)
+Optain a copy of gcc with version >= 5.0
 
 Build a Rosetta cxx11_omp build with:  
 ```bash
-cd rosetta/main/source  
+cd rosetta/main/source
+git checkout bcov/stable1
 CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -remake  
 ```
 
