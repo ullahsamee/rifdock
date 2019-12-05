@@ -6,6 +6,7 @@
 namespace scheme {
 namespace actor {
 
+const int N_ATYPE = 21;
 
 
 
@@ -90,7 +91,7 @@ struct Score_Voxel_vs_Atom {
 		float score = v.voxels()[c][a.type()]->at( a.position()[0], a.position()[1], a.position()[2] );
 		// std::cout << "  score " << score << std::endl;
 		if( REPL_ONLY ) return std::max(0.0f,score);
-		else return a.type() > 17 ? std::max(0.0f,score) : score;
+		else return a.type() > N_ATYPE ? std::max(0.0f,score) : score;
 	}
 	template<class Pair, class Config>
 	Result operator()(Pair const & p, Config const& c) const {
