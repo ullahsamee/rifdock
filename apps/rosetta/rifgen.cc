@@ -76,6 +76,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, fix_acceptor )
 	OPT_1GRP_KEY( File          , rifgen, target )
 	OPT_1GRP_KEY( File          , rifgen, target_res )
+	OPT_1GRP_KEY( Boolean       , rifgen, rif_append_mode )
+	OPT_1GRP_KEY( Boolean       , rifgen, append_mode_clear_sats )
 	OPT_1GRP_KEY( Real          , rifgen, rif_hbond_dump_fraction )
 	OPT_1GRP_KEY( Real          , rifgen, rif_apo_dump_fraction )
 	OPT_1GRP_KEY( StringVector  , rifgen, data_cache_dir )
@@ -114,18 +116,22 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, dump_bidentate_hbonds )
 	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
 
+	OPT_1GRP_KEY( Boolean       , rifgen, dont_center_hotspots )
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
 	OPT_1GRP_KEY( String        , rifgen, hotspot_list_file )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_cart_bound )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_sample_angle_bound )
     OPT_1GRP_KEY( Integer       , rifgen, hotspot_nsamples )
     OPT_1GRP_KEY( Real          , rifgen, hotspot_score_thresh )
+    OPT_1GRP_KEY( Boolean       , rifgen, hotspot_add_to_rotamer_spec )
+    OPT_1GRP_KEY( Real          , rifgen, hotspot_score_override )
     OPT_1GRP_KEY( Integer       , rifgen, dump_hotspot_samples )
     OPT_1GRP_KEY( Boolean       , rifgen, test_hotspot_redundancy )
 	OPT_1GRP_KEY( Real          , rifgen, hotspot_score_bonus )
 	OPT_1GRP_KEY( Boolean       , rifgen, label_hotspots_254 )
 	OPT_1GRP_KEY( Boolean       , rifgen, all_hotspots_are_bidentate )
     OPT_1GRP_KEY( Boolean		, rifgen, single_file_hotspots_insertion)
+    OPT_1GRP_KEY( Boolean		, rifgen, clear_sats_before_hotspots)
     OPT_1GRP_KEY( Boolean		, rifgen, use_d_aa)
     OPT_1GRP_KEY( Boolean		, rifgen, use_l_aa)
 
@@ -158,6 +164,8 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::fix_acceptor                     , "" ,  false );
 		NEW_OPT(  rifgen::target                           , "" , "" );
 		NEW_OPT(  rifgen::target_res                       , "" , "" );
+		NEW_OPT(  rifgen::rif_append_mode                  , "Add to an already existing rif. Modifies in place.", false );
+		NEW_OPT(  rifgen::append_mode_clear_sats           , "Clear all previous sats when adding to rif", false );
 		NEW_OPT(  rifgen::rif_hbond_dump_fraction          , "" , 0.0001 );
 		NEW_OPT(  rifgen::rif_apo_dump_fraction            , "" , 0.0001 );
 		NEW_OPT(  rifgen::data_cache_dir                   , "" , utility::vector1<std::string>(1,"./") );
@@ -195,19 +203,23 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::soft_rosetta_grid_energies       , "Use soft option for grid energies", false );
 		NEW_OPT(  rifgen::dump_bidentate_hbonds            , "Dump all bidentate hbonds", false );
 		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
-
+		
+		NEW_OPT(  rifgen::dont_center_hotspots             , "Nate added this flag and it may not work" , false );
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
 		NEW_OPT(  rifgen::hotspot_list_file                , "" , "" );
 		NEW_OPT(  rifgen::hotspot_sample_cart_bound        , "" , 0.5 );
         NEW_OPT(  rifgen::hotspot_sample_angle_bound       , "" , 15.0 );
         NEW_OPT(  rifgen::hotspot_nsamples                 , "" , 10000 );
         NEW_OPT(  rifgen::hotspot_score_thresh             , "" , 5.0 );
+        NEW_OPT(  rifgen::hotspot_add_to_rotamer_spec      , "Add hotspot input rotamers to global list of rotamers." , true );
+        NEW_OPT(  rifgen::hotspot_score_override           , "Override score for hotspots. 12345 to disable." , 12345 );
         NEW_OPT(  rifgen::dump_hotspot_samples             , "" , 1000 );
         NEW_OPT(  rifgen::test_hotspot_redundancy          , "Determine if hotspots are already in rif and if they are self-redundant. This makes an invalid RIF!!!", false );
 		NEW_OPT(  rifgen::hotspot_score_bonus              , "Amount to add to rif score (you probably want to use a negative number) ", 0. );
 		NEW_OPT(  rifgen::label_hotspots_254               , "True if hotspots to be labeled with sat 254 in log ", false );
         NEW_OPT(  rifgen::all_hotspots_are_bidentate       , "Hotpots only inserted if they make bidentate h-bonds", false );
         NEW_OPT(  rifgen::single_file_hotspots_insertion	, "" , false);
+		NEW_OPT(  rifgen::clear_sats_before_hotspots        , "Clear all previous sats before adding hotspots", false );
         NEW_OPT(  rifgen::use_d_aa							, "" , false);
         NEW_OPT(  rifgen::use_l_aa							, "" , true);
 
@@ -338,6 +350,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 
 	std::shared_ptr<RifBase> rif = rif_factory->create_rif();
 
+	bool rif_exists = false;
 	if( utility::file::file_exists( outfile) ){
 		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 		std::cout << "!!!!! RIF file already exists: " << outfile << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -349,11 +362,22 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 		cout << "RIF size: " << KMGT( rif->mem_use() ) << " load: " << rif->load_factor()
 			  << ", sizeof(value_type) " << rif->sizeof_value_type() << endl;
 
-	} else {
+		rif_exists = true;
+	}
 
+	if ( option[ rifgen::rif_append_mode ]() ) {
+		if ( ! rif_exists ) {
+			utility_exit_with_message("-rifgen::rif_mode_append used but no rif loaded!!!");
+		}
 
-		
+		if ( option[ rifgen::append_mode_clear_sats ]() ) {
+			std::cout << "Clearing sats..." << std::endl;
+			runtime_assert( rif->has_sat_data_slots() );
+			rif->clear_sats();
+		}
+	}
 
+	if ( ! rif_exists || option[ rifgen::rif_append_mode ]() ) {
 
 		//////////////////////////////////// RIF HBOND gen setup //////////////////////////////////////////
 		bool do_hbond  = option[rifgen::donres]().size() > 0;
@@ -434,7 +458,8 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
             } else {
                 hspot_opts.hotspot_files.insert( hspot_opts.hotspot_files.end(), hspot_files.begin(), hspot_files.end() );
             }
-        
+        	
+        	hspot_opts.dont_center_hotspots = option[ rifgen::dont_center_hotspots]();
 			hspot_opts.hotspot_sample_cart_bound = option[ rifgen::hotspot_sample_cart_bound ]();
             hspot_opts.hotspot_sample_angle_bound = option[ rifgen::hotspot_sample_angle_bound]();
             hspot_opts.hotspot_nsamples = option[ rifgen::hotspot_nsamples]();
@@ -445,6 +470,9 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hspot_opts.label_hotspots_254 = option[ rifgen::label_hotspots_254 ]();
             hspot_opts.all_hotspots_are_bidentate = option[ rifgen::all_hotspots_are_bidentate]();
             hspot_opts.use_d_aa = option[rifgen::use_d_aa]();
+            hspot_opts.add_to_rotamer_spec = option[rifgen::hotspot_add_to_rotamer_spec]();
+            hspot_opts.hotspot_score_override = option[rifgen::hotspot_score_override]();
+            hspot_opts.clear_sats_first = option[rifgen::clear_sats_before_hotspots]();
 			if (!option[ rifgen::dump_hotspot_samples].user()) hspot_opts.dump_hotspot_samples = 0;
 			hspot_opts.single_file_hotspots_insertion = option[rifgen::single_file_hotspots_insertion]();
 			for(int i = 0; i < 3; ++i) hspot_opts.target_center[i] = target_center[i];
@@ -467,6 +495,9 @@ int main(int argc, char *argv[]) {
 
 	register_options();
 	devel::init(argc,argv);
+
+	devel::scheme::fix_omp_max_threads();
+	std::cout << "Rifdock thinks there are " << devel::scheme::omp_max_threads() << " threads." << std::endl;
 
 	using basic::options::option;
 		using namespace basic::options::OptionKeys;
@@ -618,8 +649,19 @@ int main(int argc, char *argv[]) {
 
 	
 	::scheme::chemical::RotamerIndexSpec rot_index_spec;
-	std::cout << "Preparing rotamer index spec..." << std::endl;
-	get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa](), option[rifgen::use_l_aa]());
+	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
+
+	if ( option[rifgen::rif_append_mode]() ) {
+		std::cout << "Loading " << rot_spec_fname << "..." << std::endl;
+		utility::io::izstream infile(rot_spec_fname);
+		if ( ! infile ) {
+			utility_exit_with_message("Could not load rotamer_index_spec!");
+		}
+		rot_index_spec.load(infile);
+	} else {
+		std::cout << "Preparing rotamer index spec..." << std::endl;
+		get_rotamer_spec_default(rot_index_spec,option[rifgen::extra_rotamers](), option[rifgen::extra_rif_rotamers](), option[rifgen::use_d_aa](), option[rifgen::use_l_aa]());
+	}
 	// 	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
 	// 	utility::io::ozstream spec_out(rot_spec_fname);
 	// 	rot_index_spec.save(spec_out);
@@ -630,7 +672,6 @@ int main(int argc, char *argv[]) {
 		//cache the input 
 		generators[igen]->modify_rotamer_spec( rot_index_spec );
 	}
-	std::string rot_spec_fname = outdir +"/rotamer_index_spec.txt";
 	utility::io::ozstream spec_out(rot_spec_fname);
 	rot_index_spec.save(spec_out);
 	spec_out.close();
@@ -690,6 +731,9 @@ int main(int argc, char *argv[]) {
 		option[rifgen::rif_accum_scratch_size_M]()
 	);
 
+	if ( option[rifgen::rif_append_mode]() ) {
+		runtime_assert( rif_accum->initialize_with_rif( rif ) );
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	// make or read bounding grids

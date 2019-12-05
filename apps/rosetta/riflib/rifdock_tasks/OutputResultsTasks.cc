@@ -253,6 +253,7 @@ dump_rif_result_(
     std::ostringstream packout, allout;
     // TYU change to vector of strings instead of string
     std::map< int, std::vector<std::string> > pikaa;
+    std::map< int, std::map<std::string,float> > pssm;
     int chain_no = pose_from_rif.num_chains();   
     int res_num = pose_from_rif.size() + 1;
     const std::string chains = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -293,9 +294,29 @@ dump_rif_result_(
                         pikaa[ires+1].push_back(oneletter);
                     }
 
-
                     // Brian
                     std::pair< int, int > sat1_sat2 = rdd.rif_ptrs.back()->get_sat1_sat2(bba.position(), irot);
+
+                    // This should probably take into account more than just the sat scores
+                    //  This is supposed to capture the score from RotamerFactory.cc operator()
+                    float effective_score = p.first;
+                    if ( rdd.opt.sat_score_bonus.size() > 0 ) {
+                        if ( sat1_sat2.first != -1 ) {
+                            float bonus_or_override = rdd.opt.sat_score_bonus.at( sat1_sat2.first );
+                            if ( rdd.opt.sat_score_override.at( sat1_sat2.first ) ) {
+                                effective_score = bonus_or_override;
+                            } else {
+                                effective_score += bonus_or_override;
+                            }
+                        }
+                    }
+                    float pssm_score = effective_score;
+                    if ( pssm[ires+1].count( oneletter ) ) {
+                        pssm_score = std::min<float>( pssm[ires+1].at( oneletter ), pssm_score );
+                    }
+                    pssm[ires+1][oneletter] = pssm_score;
+
+
 
                     bool rot_was_placed = false;
                     for ( std::pair<intRot,intRot> const & placed_rot : selected_result.rotamers() ) {
@@ -429,6 +450,20 @@ dump_rif_result_(
             std::sort(needs_RIFRES.begin(), needs_RIFRES.end());
             for( int seq_pos : needs_RIFRES ){
                 pose_to_dump.pdb_info()->add_reslabel(seq_pos, "RIFRES" );
+            }
+        }
+    }
+    if ( rdd.opt.pdb_info_pssm ) {
+        // For now, only output stuff at positions where we actually placed something.
+        for ( int seq_pos : needs_RIFRES ) {
+            utility::vector1<std::string> parts;
+            for ( auto name_score : pssm[seq_pos] ) {
+                std::string this_string = boost::str(boost::format("%s:%.1f")%name_score.first%name_score.second);
+                parts.push_back( this_string );
+            }
+            if ( parts.size() > 0 ) {
+                std::string full_string = "PSSM:" + utility::join(parts, ",");
+                pose_to_dump.pdb_info()->add_reslabel(seq_pos, full_string );
             }
         }
     }

@@ -22,6 +22,7 @@ namespace scheme {
 namespace rif {
 
 struct RifGeneratorUserHotspotsOpts {
+	bool dont_center_hotspots = false;
 	float hotspot_sample_cart_bound = 1.0;
 	float hotspot_sample_angle_bound = 30.0;
     float hotspot_score_thresh = -0.5;
@@ -33,8 +34,11 @@ struct RifGeneratorUserHotspotsOpts {
     bool all_hotspots_are_bidentate = false;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;
+    bool add_to_rotamer_spec = true;
+    float hotspot_score_override = 12345;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
+    bool clear_sats_first = false;
 };
 
 struct RifGeneratorUserHotspots : public RifGenerator {

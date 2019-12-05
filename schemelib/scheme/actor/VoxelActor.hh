@@ -6,6 +6,7 @@
 namespace scheme {
 namespace actor {
 
+const int N_ATYPE = 21;
 
 
 

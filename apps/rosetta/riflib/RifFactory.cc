@@ -113,6 +113,20 @@ public:
 	}
 
 
+    void clear_sats() override {
+
+        RifBase * base = this;
+        shared_ptr<XMap> from;
+        base->get_xmap_ptr( from );
+        static int const Nrots = XMap::Value::N;
+
+        for( auto & v : from->map_ ){
+            typename XMap::Value & rotscores = v.second;
+            rotscores.clear_sats();
+        }
+    }
+
+
     //Brian
     virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
     	std::pair< int, int > sat1_sat2( -1, -1);
@@ -1006,6 +1020,9 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
+
+        std::vector<float> sat_bonus_;
+        std::vector<bool> sat_bonus_override_;
         
         // the requirements code
         std::vector< int > requirements_;
@@ -1158,9 +1175,23 @@ std::string get_rif_type_from_file( std::string fname )
 				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
-                if ( score_rot_v_target > ignore_rifres_if_worse_than ) continue;
+                bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+                float sat_bonus = 0;
+                bool skip_scoring = false;
+                if ( rotamer_satisfies && sat_bonus_.size() > 0 ) {
+                    int our_sat = rotscores.get_requirement_num( i_rs );
+                    if ( our_sat > -1 ) {
+                        sat_bonus = sat_bonus_[our_sat];
+                        if ( sat_bonus_override_[our_sat] ) {
+                            skip_scoring = true;
+                            score_rot_v_target = sat_bonus;
+                        } else {
+                            score_rot_v_target += sat_bonus;
+                        }
+                    }
+                }
 
-				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+                if ( score_rot_v_target > ignore_rifres_if_worse_than ) continue;
 
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
@@ -1169,9 +1200,9 @@ std::string get_rif_type_from_file( std::string fname )
                         // Very important!!! Do not fill in scratch.is_satisfied_ here!!!
                         //  It needs to collect the BBHbond sats which are unconditionally satisifed
 						int sat1 = -1, sat2 = -1, hbcount = 0;
-						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+						float const recalc_rot_v_tgt = (packopts_.rescore_rots_before_insertion && !skip_scoring ) ? 
 														rot_tgt_scorer_.score_rotamer_v_target_sat( 
-																irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
+																irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) + sat_bonus :
 														score_rot_v_target;
 
 						score_rot_v_target = recalc_rot_v_tgt;
@@ -1189,6 +1220,11 @@ std::string get_rif_type_from_file( std::string fname )
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 											packopts_.user_rotamer_bonus_constant;
 							}
+
+                            if ( hydrophobic_manager_ && !skip_scoring ) {
+                                score_rot_v_target += hydrophobic_manager_->get_individual_weighted_hyd_ddg( irot, bb.position() );
+                            }
+
 							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
 							else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
 							
@@ -1824,7 +1860,7 @@ struct RifFactoryImpl :
 		// objectives.push_back( objective );
 
         for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
-				if ( config.rif_ptrs[i_so] == nullptr ) continue;
+			if ( config.rif_ptrs[i_so] == nullptr ) continue;
     		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
@@ -1834,9 +1870,13 @@ struct RifFactoryImpl :
     			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
     				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
     		}
-				if( config.requirements.size() > 0 ){
-						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
-				}
+			if( config.requirements.size() > 0 ){
+					dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
+			}
+
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
+
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
                     get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
         packing_objectives.push_back( packing_objective );
@@ -1855,6 +1895,9 @@ struct RifFactoryImpl :
 			if ( config.requirements.size() > 0 ){
 			  dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 			}
+
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
 		}
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;
