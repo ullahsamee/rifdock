@@ -13,6 +13,8 @@ To build RifDock:
 
 Optain a copy of gcc with version >= 5.0
 
+Install boost version 1.65 or later.
+
 Build a Rosetta cxx11_omp build with:  
 ```bash
 cd rosetta/main/source
