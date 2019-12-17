@@ -19,7 +19,7 @@ Build a Rosetta cxx11_omp build with:
 ```bash
 cd rosetta/main/source
 git checkout bcov/stable1
-CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -remake  
+CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -t rosetta_scripts -remake  
 ```
 
 Clone this repository and perform:  
