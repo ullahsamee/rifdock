@@ -1001,6 +1001,10 @@ std::string get_rif_type_from_file( std::string fname )
         shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
+		
+        
+        std::vector<bool> pdbinfo_req_req_satisfied_; // has this pdbinfo:req been satisfied yet
+        
 	};
 
 	template< class BBActor, class RIF, class VoxelArrayPtr >
@@ -1020,7 +1024,12 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
-
+		
+        int num_pdbinfo_requirements_required_;
+        std::vector< std::vector<bool> > pdbinfo_req_active_positions_; // outer loop = which pdbinfo:req
+                                                                        // inner loop = which active position
+        std::vector< std::vector<bool> > pdbinfo_req_active_requirements_; // outer loop = which pdbinfo:req
+                                                                           // inner loop = which requirement(s)
         std::vector<float> sat_bonus_;
         std::vector<bool> sat_bonus_override_;
         
@@ -1129,6 +1138,13 @@ std::string get_rif_type_from_file( std::string fname )
 
 				scratch.is_satisfied_ = scratch.unsat_manager_->get_presatisfied();
 			}
+            
+            if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                
+                scratch.pdbinfo_req_req_satisfied_.resize( pdbinfo_req_active_positions_.size() );
+                for ( int i = 0; i < scratch.pdbinfo_req_req_satisfied_.size(); i++ ) scratch.pdbinfo_req_req_satisfied_[i] = false;
+                
+            }
 
 			if( !packing_ ) return;
 
@@ -1164,11 +1180,13 @@ std::string get_rif_type_from_file( std::string fname )
 			static int const Nrots = RIF::Value::N;
 			int const ires = bb.index_;
 			float bestsc = 0.0;
+            // loop over rotamers that we found in the rif
 			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
 				if( rotscores.empty(i_rs) ) {
 					break;
 				}
 				
+                // which irot did we get?
                 int irot = rotscores.rotamer(i_rs);
                 if ( scratch.allowed_irots_ && ! scratch.allowed_irots_->at(ires)[irot] ) continue;
 
@@ -1192,6 +1210,26 @@ std::string get_rif_type_from_file( std::string fname )
                 }
 
                 if ( score_rot_v_target > ignore_rifres_if_worse_than ) continue;
+
+
+                if ( rotamer_satisfies && pdbinfo_req_active_positions_.size() > 0 ) {
+                    
+                    std::vector<int> sats;
+                    rotscores.rotamer_sat_groups( i_rs, sats );
+                    if ( sats.size() == 0 ) continue;
+                    
+                    // loop over pdbinfo_requirements
+                    for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                        if ( ! pdbinfo_req_active_positions_[ipdbinforeq][ires] ) continue;
+                        // now we know we care about this position
+                        for ( int sat : sats ) {
+                            if ( pdbinfo_req_active_requirements_[ipdbinforeq].at(sat) ) {
+                                scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] = true;
+                            }
+                        }
+                    }
+                }
+
 
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
@@ -1380,6 +1418,41 @@ std::string get_rif_type_from_file( std::string fname )
                         }
                     }
                 }
+                
+                if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                    
+                    for( int i = 0; i < scratch.pdbinfo_req_req_satisfied_.size(); ++i ) scratch.pdbinfo_req_req_satisfied_[i] = false;
+                    
+                    
+                    for( int ii = 0; ii < result.rotamers_.size(); ++ii ){
+                        int ires = result.rotamers_[ii].first;
+                        int irot = result.rotamers_[ii].second;
+                        BBActor const & bb = scene.template get_actor<BBActor>( 1, ires );
+                        typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
+                        static int const Nrots = RIF::Value::N;
+                        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                            if( rotscores.rotamer(i_rs) == irot ){
+                                
+                                std::vector<int> sats;
+                                rotscores.rotamer_sat_groups( i_rs, sats );
+                                if ( sats.size() == 0 ) continue;
+                                
+                                // loop over pdbinfo_requirements
+                                for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                                    if ( ! pdbinfo_req_active_positions_[ipdbinforeq][ires] ) continue;
+                                    // now we know we care about this position
+                                    for ( int sat : sats ) {
+                                        if ( pdbinfo_req_active_requirements_[ipdbinforeq].at(sat) ) {
+                                            scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] = true;
+                                        }
+                                    }
+                                }
+                                
+                                break;
+                            }
+                        }
+                    }
+                }
 
 
 				if( n_sat_groups_ > 0 ) for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_[i] = false;
@@ -1409,6 +1482,23 @@ std::string get_rif_type_from_file( std::string fname )
 
 
 			}
+            
+            
+            if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                
+                int num_satisfied = 0;
+                
+                // loop over pdbinfo_requirements
+                for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                    if ( scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] ) {
+                        num_satisfied += 1;
+                    }
+                }
+                
+                if ( num_satisfied < num_pdbinfo_requirements_required_ ) {
+                    result.val_ = 9e9;
+                }
+            }
 
 
 			if( n_sat_groups_ > 0 ){
@@ -1444,6 +1534,7 @@ std::string get_rif_type_from_file( std::string fname )
 				// delete scratch.is_satisfied_;
 				// scratch.is_satisfied_.clear();
 			}
+
 
 
 			// Brian - this is closer to working during packing but still doesn't work
@@ -1870,10 +1961,16 @@ struct RifFactoryImpl :
     			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
     				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
     		}
-			if( config.requirements.size() > 0 ){
-					dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
-			}
-
+				if( config.requirements.size() > 0 ){
+						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
+				}
+            
+            if ( config.pdbinfo_req_active_positions.size() > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().num_pdbinfo_requirements_required_ = config.num_pdbinfo_requirements_required;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_positions_ = config.pdbinfo_req_active_positions;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
+            }
+            
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
 
@@ -1881,6 +1978,7 @@ struct RifFactoryImpl :
                     get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
         packing_objectives.push_back( packing_objective );
         }
+
 
 		for( auto op : objectives ){
 			// dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
@@ -1895,6 +1993,12 @@ struct RifFactoryImpl :
 			if ( config.requirements.size() > 0 ){
 			  dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 			}
+            
+            if ( config.pdbinfo_req_active_positions.size() > 0 ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().num_pdbinfo_requirements_required_ = config.num_pdbinfo_requirements_required;
+                dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_positions_ = config.pdbinfo_req_active_positions;
+                dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
+            }
 
             dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
             dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;

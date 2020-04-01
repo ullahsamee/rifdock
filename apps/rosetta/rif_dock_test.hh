@@ -4,6 +4,7 @@
 #include <basic/options/keys/corrections.OptionKeys.gen.hh>
 #include <riflib/scaffold/nineA_util.hh>
 #include <vector>
+#include <utility/string_util.hh>
 
 #ifdef GLOBAL_VARIABLES_ARE_BAD
 	#ifndef INCLUDED_rif_dock_test_hh_1
@@ -267,6 +268,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
+    OPT_1GRP_KEY(  StringVector, rif_dock, pdbinfo_requirements )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_pdbinfo_requirements_required )
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
     OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_bonus )
     OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_override )
@@ -533,7 +536,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::skip_sasa_for_res, "Comma separated list of residues to not include in sasa calculations. (like glycans)", "");
 
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
-
+            
+            NEW_OPT(  rif_dock::pdbinfo_requirements, "Pairs of pdbinfo_label:req1,req2,req3 that specify that a residue with this pdbinfo_label must satisfy these requirements/sats." , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::num_pdbinfo_requirements_required, "Minimum number of pdbinfo_requirements to satisfy. -1 for all.", -1 );
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
             NEW_OPT(  rif_dock::sat_score_bonus,     "Give bonus to residues that satisfy sat. 0:-2,1:-1.5", "");
             NEW_OPT(  rif_dock::sat_score_override,  "Override score for residues that satisfy sat. 0:-2,1:-1.5", "");
@@ -782,6 +787,8 @@ struct RifDockOpt
 
     std::string buried_list                          ;
     
+    std::vector<std::pair<std::string,std::vector<int>>> pdbinfo_requirements;
+    int         num_pdbinfo_requirements_required    ;
     std::vector<int> requirements                    ;
     std::vector<float> sat_score_bonus               ;
     std::vector<bool> sat_score_override             ;
@@ -1025,6 +1032,8 @@ struct RifDockOpt
         score_per_1000_sasa_cut                 = option[rif_dock::score_per_1000_sasa_cut              ]();
 
         buried_list                             = option[rif_dock::buried_list                          ]();
+        
+        num_pdbinfo_requirements_required       = option[rif_dock::num_pdbinfo_requirements_required    ]();
 
 
 
@@ -1129,6 +1138,20 @@ struct RifDockOpt
             scaffold_res_pdbinfo_labels = utility::string_split(option[rif_dock::scaffold_res_pdbinfo_labels](), ',');
         }
 
+        
+        for( std::string s : option[rif_dock::pdbinfo_requirements]() ) {
+            utility::vector1<std::string> pdbinfo_then_reqs = utility::string_split(s, ':');
+            
+            if ( pdbinfo_then_reqs.size() != 2 ) {
+                std::cout << "ERROR: bad pdbinfo_requirement: " << s << std::endl;
+                std::exit(-1);
+            }
+            utility::vector1<int> req_nos = utility::string_split<int>(pdbinfo_then_reqs[2], ',', int(0));
+            std::vector<int> req_nos2;
+            for ( int req : req_nos ) req_nos2.push_back( req );
+            
+            pdbinfo_requirements.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
+	}
         /////////   sat_score_bonus and sat_score_override   //////////////
 
         std::string bonus_string = option[rif_dock::sat_score_bonus]();
