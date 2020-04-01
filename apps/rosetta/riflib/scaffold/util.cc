@@ -30,6 +30,7 @@
 #include <core/pack/task/operation/ResLvlTaskOperations.hh>
 #include <basic/options/option.hh>
 #include <protocols/moves/MoverStatus.hh>
+#include <core/select/util.hh>
 
 #include <core/scoring/methods/EnergyMethodOptions.hh>
 #include <core/scoring/hbonds/HBondSet.hh>
@@ -100,6 +101,28 @@ get_info_for_iscaff(
             utility_exit_with_message("should only use -scaffold_res_use_best_guess true iff not specifying scaffold_res");
         }
         scaffold_res = devel::scheme::get_res( scaff_res_fname , scaffold );
+    } else if ( !opt.scaffold_res_pdbinfo_labels.empty() ){
+
+        utility::vector1<bool> scaffold_res_mask(scaffold.size(), false);
+
+        std::cout << "Selecting scaffold residues using res-labels:";
+
+        for ( std::string const & label : opt.scaffold_res_pdbinfo_labels ) {
+            std::cout << " " << label;
+            for ( core::Size i = 1; i <= scaffold.size(); i++ ) {
+                if ( scaffold.pdb_info()->res_haslabel(i, label) ) {
+                    scaffold_res_mask[i] = true;
+                }
+            }
+        }
+
+        scaffold_res = core::select::get_residues_from_subset( scaffold_res_mask, true );
+
+        std::cout << std::endl;
+        std::cout << "using scaffold residues: ";
+        for(auto ir:scaffold_res) std::cout << " " << ir << scaffold.residue(ir).name3();
+        std::cout << std::endl;
+
     } else if (opt.scaffold_res_use_best_guess ){
         scaffold_res = devel::scheme::get_designable_positions_best_guess( scaffold, opt.dont_use_scaffold_loops, true, 
                                                                             opt.best_guess_mutate_to_val, opt.dont_use_scaffold_helices,
