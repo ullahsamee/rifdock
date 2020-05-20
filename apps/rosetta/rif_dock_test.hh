@@ -15,6 +15,7 @@
 OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
+    OPT_1GRP_KEY(  String      , rif_dock, scaffold_res_pdbinfo_labels )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_res_use_best_guess )
     OPT_1GRP_KEY(  Boolean     , rif_dock, best_guess_mutate_to_val )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
@@ -283,7 +284,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::scaffolds, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
-			NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
+			NEW_OPT(  rif_dock::scaffold_res_pdbinfo_labels, "Use these comma-separate PDBInfo labels to select designable residues" , "" );
+            NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
             NEW_OPT(  rif_dock::best_guess_mutate_to_val, "Mutate to polyvaline before making best guess", true );
 			NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 			NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
@@ -602,6 +604,7 @@ struct RifDockOpt
 	float       hsearch_scale_factor                 ;
 	float       search_diameter                      ;
 	bool        use_scaffold_bounding_grids          ;
+    utility::vector1<std::string> scaffold_res_pdbinfo_labels;
 	bool        scaffold_res_use_best_guess          ;
     bool        best_guess_mutate_to_val             ;
 	bool        scaff2ala                            ;
@@ -1134,6 +1137,11 @@ struct RifDockOpt
         for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 
         for( std::string s : option[rif_dock::dump_rifgen_near_pdb]() ) dump_rifgen_near_pdb.push_back(s);
+
+        if ( ! option[rif_dock::scaffold_res_pdbinfo_labels]().empty() ) {
+            scaffold_res_pdbinfo_labels = utility::string_split(option[rif_dock::scaffold_res_pdbinfo_labels](), ',');
+        }
+
         
         for( std::string s : option[rif_dock::pdbinfo_requirements]() ) {
             utility::vector1<std::string> pdbinfo_then_reqs = utility::string_split(s, ':');
