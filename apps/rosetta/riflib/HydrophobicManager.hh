@@ -158,9 +158,7 @@ struct HydrophobicManager {
     bool
     is_rosetta_atom_hydrophobic( core::conformation::Residue const & res, core::Size atno ) {
         int iatype = rif_atype_map_.at(res.atom_type_index(atno));
-        // Added by Nate
         if ( count_all_contacts_as_hydrophobic_ ) {
-            std::cout << "This is also working" << std::endl;
             return true;
         }
 
@@ -177,10 +175,7 @@ struct HydrophobicManager {
     ) {
         hydrophobic_res_.clear();
 
-        // Added by Nate
-        std::cout << "This should rpint" << std::endl;
         if ( count_all_contacts_as_hydrophobic_ ){
-            std::cout << "This is working" << std::endl;
             for ( core::Size seqpos : target_res ) {
                 hydrophobic_res_.push_back(seqpos);
             }
