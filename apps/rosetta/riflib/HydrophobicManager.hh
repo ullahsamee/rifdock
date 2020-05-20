@@ -99,6 +99,7 @@ struct HydrophobicManager {
     bool doing_better_than_ = false;
     bool better_than_must_hbond_ = false;
     float hyd_ddg_weight_ = 0;
+    bool count_all_contacts_as_hydrophobic_ = false;
 
     int num_cation_pi_ = 0;
 
@@ -106,13 +107,15 @@ struct HydrophobicManager {
     HydrophobicManager(
         core::pose::Pose const & target,
         utility::vector1<core::Size> const & target_res,
-        shared_ptr< RotamerIndex > rot_index_p_in
+        shared_ptr< RotamerIndex > rot_index_p_in,
+        bool count_all_contacts_as_hydrophobic
     ) : rot_index_p( rot_index_p_in )
     {
 
         rif_atype_map_ = get_rif_atype_map();
         rif_hydrophobic_map_ = get_rif_hydrophobic_map();
         rif_pi_map_ = get_rif_hydrophobic_map();
+        count_all_contacts_as_hydrophobic_ = count_all_contacts_as_hydrophobic;
 
         identify_hydrophobic_residues( target, target_res );
         prepare_bounds( target );
@@ -138,7 +141,7 @@ struct HydrophobicManager {
         three_hydrophobics_better_than_ = three;
         hydrophobic_ddg_per_atom_cut_ = ddg_per_atom_cut;
         better_than_must_hbond_ = better_than_must_hbond;
-
+        
         doing_better_than_ = ( one < 0 || two < 0 || three < 0 );
     }
 
@@ -155,6 +158,10 @@ struct HydrophobicManager {
     bool
     is_rosetta_atom_hydrophobic( core::conformation::Residue const & res, core::Size atno ) {
         int iatype = rif_atype_map_.at(res.atom_type_index(atno));
+        if ( count_all_contacts_as_hydrophobic_ ) {
+            return true;
+        }
+
         if (iatype >= rif_hydrophobic_map_.size()) {
             return false;
         }
@@ -168,9 +175,15 @@ struct HydrophobicManager {
     ) {
         hydrophobic_res_.clear();
 
-        for ( core::Size seqpos : target_res ) {
-            if ( hydrophobic_name1s_.count( target.residue(seqpos).name1() ) != 0 ) {
+        if ( count_all_contacts_as_hydrophobic_ ){
+            for ( core::Size seqpos : target_res ) {
                 hydrophobic_res_.push_back(seqpos);
+            }
+        } else { // This is the default behavior
+            for ( core::Size seqpos : target_res ) {
+                if ( hydrophobic_name1s_.count( target.residue(seqpos).name1() ) != 0 ) {
+                    hydrophobic_res_.push_back(seqpos);
+                }
             }
         }
     }

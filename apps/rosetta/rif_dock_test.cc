@@ -600,7 +600,7 @@ int main(int argc, char *argv[]) {
     		use_hydrophobic_target_res = target_res;
     	}
 
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p );
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
