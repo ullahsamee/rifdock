@@ -149,6 +149,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
     OPT_1GRP_KEY(  Boolean     , rif_dock, better_than_must_hbond )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, count_all_contacts_as_hydrophobic )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
     OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
@@ -417,6 +418,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::better_than_must_hbond, "*_hydrophobics_better_than must make a hbond to count", 0 );
+            NEW_OPT(  rif_dock::count_all_contacts_as_hydrophobic, "This flag should only be used on very polar targets. It counts all contact types toward *_hydrophobics_better_than", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
@@ -615,6 +617,7 @@ struct RifDockOpt
     float       two_hydrophobics_better_than         ;
     float       three_hydrophobics_better_than       ;
     bool        better_than_must_hbond               ;
+    bool        count_all_contacts_as_hydrophobic    ;
     float       hydrophobic_ddg_per_atom_cut         ;
     utility::vector1<int> hydrophobic_target_res     ;
     int         num_cation_pi                        ;
@@ -872,6 +875,7 @@ struct RifDockOpt
         two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
         three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
         better_than_must_hbond                 = option[rif_dock::better_than_must_hbond                ]();
+        count_all_contacts_as_hydrophobic      = option[rif_dock::count_all_contacts_as_hydrophobic     ]();
         hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
         num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();

@@ -275,14 +275,15 @@ FilterByBiggestBlocksFracTask::return_any_points(
                                         filter_scaffolds_separately_ );
 
     if ( print_seeds_ ) {
-        std::cout << "Cluster score of each seeding pos:" << std::endl;
         int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
         for ( int i = 0; i < seeding_size; i++ ) {
             int size = 0;
             RifDockIndex rdi = RifDockIndex(0, i, ScaffoldIndex());
+
             if (map.count(rdi) > 0) size = map[rdi].size();
             std::cout << i << ":" << size << " ";
         }
+
         std::cout << std::endl << std::endl;
     }
 
@@ -294,7 +295,6 @@ FilterByBiggestBlocksFracTask::return_any_points(
         keys.push_back(pair.first);
         sizes.push_back(pair.second.size());
     }
-
     __gnu_parallel::sort( sizes.begin(), sizes.end() );
 
     size_t last_index = int( std::floor ( (1 - frac_) * sizes.size() ) );
@@ -305,10 +305,10 @@ FilterByBiggestBlocksFracTask::return_any_points(
     any_points->reserve(trial_size );
 
     int num_keys = keys.size();
+
     for ( int i = 0; i < num_keys; i++ ) {
         std::vector<AnyPoint> const & vec = map[keys[i]];
         if (vec.size() < cut_size) continue;
-
         int count = vec.size();
         for ( int j = 0; j < count; j++ ) {
             any_points->push_back( vec[j] );
