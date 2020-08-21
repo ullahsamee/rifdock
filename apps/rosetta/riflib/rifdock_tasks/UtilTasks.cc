@@ -354,15 +354,19 @@ RemoveRedundantPointsTask::return_any_points(
                                         filter_seeding_positions_separately_, 
                                         filter_scaffolds_separately_ );
 
+
+
+    SelectiveRifDockIndexHasher   hasher( false, filter_seeding_positions_separately_, filter_scaffolds_separately_ );
+    SelectiveRifDockIndexEquater equater( false, filter_seeding_positions_separately_, filter_scaffolds_separately_ );
+
+    AnyPointVectorsMap out_map (10000, hasher, equater );
+
     std::vector<RifDockIndex> keys;
     keys.reserve(map.size());
     for ( auto pair : map ) {
         keys.push_back(pair.first);
+        out_map[pair.first];    // generate these now so we don't do it during multi-thread
     }
-
-    int trial_size = any_points->size();
-    any_points->resize(0);
-    any_points->reserve(trial_size );
 
     float redundancy_filter_rg = rdd.scaffold_provider->get_data_cache_slow(ScaffoldIndex())
                                         ->get_redundancy_filter_rg( rdd.target_redundancy_filter_rg );
@@ -370,26 +374,29 @@ RemoveRedundantPointsTask::return_any_points(
     // for ( RifDockIndex const & rdi : keys ) {
 
     int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
+
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
     for ( int seed = 0; seed < seeding_size; seed++ ) {
         int size = 0;
         RifDockIndex rdi = RifDockIndex(0, seed, ScaffoldIndex());
         if (map.count(rdi) == 0) continue;
         std::vector<AnyPoint> const & vec = map[rdi];
         runtime_assert( vec.size() > 0 );
+        std::vector<AnyPoint> & out_vec = out_map[rdi];
 
-        int first_one = any_points->size();
-        any_points->push_back(vec[0]);
-        int end = any_points->size();
+        ScenePtr scene_minimal( rdd.scene_pt[omp_get_thread_num()] );
 
 
-        for ( int i = 1; i < vec.size(); i++ ) {
-            rdd.director->set_scene( vec[i].index, director_resl_, *rdd.scene_minimal );
-            EigenXform p1 = rdd.scene_minimal->position(1);
+        for ( int i = 0; i < vec.size(); i++ ) {
+            rdd.director->set_scene( vec[i].index, director_resl_, *scene_minimal );
+            EigenXform p1 = scene_minimal->position(1);
 
             bool is_redundant = false;
-            for ( int j = first_one; j < end; j++ ) {
-                rdd.director->set_scene( any_points->at(j).index, director_resl_, *rdd.scene_minimal );
-                EigenXform p2 = rdd.scene_minimal->position(1);
+            for ( int j = 0; j < out_vec.size(); j++ ) {
+                rdd.director->set_scene( out_vec.at(j).index, director_resl_, *scene_minimal );
+                EigenXform p2 = scene_minimal->position(1);
 
                 float mag = devel::scheme::xform_magnitude( p2 * p1.inverse(), redundancy_filter_rg );
                 if ( mag <= redundancy_mag_ ) {
@@ -398,8 +405,7 @@ RemoveRedundantPointsTask::return_any_points(
                 }
             }
             if ( ! is_redundant ) {
-                any_points->push_back( vec[i] );
-                end = any_points->size();
+                out_vec.push_back( vec[i] );
             }
 
         }
@@ -408,10 +414,27 @@ RemoveRedundantPointsTask::return_any_points(
     }
 
 
+    int trial_size = any_points->size();
+    any_points->resize(0);
+    any_points->reserve(trial_size );
+
+    for ( int seed = 0; seed < seeding_size; seed++ ) {
+        int size = 0;
+        RifDockIndex rdi = RifDockIndex(0, seed, ScaffoldIndex());
+        if (map.count(rdi) == 0) continue;
+        std::vector<AnyPoint> const & out_vec = out_map[rdi];
+        for ( AnyPoint const & pt : out_vec ) {
+            any_points->push_back(pt);
+        }
+    }
+
+
+
     std::cout << "Number of total searching points left: " << any_points->size() << std::endl << std::endl;
 
     return any_points;
 }
+
     
 
 shared_ptr<std::vector<SearchPoint>> 
