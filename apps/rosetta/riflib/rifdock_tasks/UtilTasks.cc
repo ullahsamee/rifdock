@@ -388,15 +388,22 @@ RemoveRedundantPointsTask::return_any_points(
 
         ScenePtr scene_minimal( rdd.scene_pt[omp_get_thread_num()] );
 
-
+        std::vector<EigenXform> xforms(vec.size());
+        std::vector<EigenXform> out_xforms;
         for ( int i = 0; i < vec.size(); i++ ) {
             rdd.director->set_scene( vec[i].index, director_resl_, *scene_minimal );
-            EigenXform p1 = scene_minimal->position(1);
+            xforms[i] = scene_minimal->position(1);
+        }
+
+
+        for ( int i = 0; i < vec.size(); i++ ) {
+            // rdd.director->set_scene( vec[i].index, director_resl_, *scene_minimal );
+            EigenXform p1 = xforms.at(i); //scene_minimal->position(1);
 
             bool is_redundant = false;
             for ( int j = 0; j < out_vec.size(); j++ ) {
-                rdd.director->set_scene( out_vec.at(j).index, director_resl_, *scene_minimal );
-                EigenXform p2 = scene_minimal->position(1);
+                // rdd.director->set_scene( out_vec.at(j).index, director_resl_, *scene_minimal );
+                EigenXform p2 = out_xforms.at(j); //scene_minimal->position(1);
 
                 float mag = devel::scheme::xform_magnitude( p2 * p1.inverse(), redundancy_filter_rg );
                 if ( mag <= redundancy_mag_ ) {
@@ -406,6 +413,7 @@ RemoveRedundantPointsTask::return_any_points(
             }
             if ( ! is_redundant ) {
                 out_vec.push_back( vec[i] );
+                out_xforms.push_back( xforms[i] );
             }
 
         }
