@@ -5,9 +5,11 @@ Ideally RifDock should be merged into Rosetta, but no one has stepped up to this
 
 ***Building***
 
-RifDock links against Rosetta. While RifDock may be compatible with the bleeding edge version of Rosetta, the last known-good build can be found on the following branch:
+RifDock links against Rosetta. As RifDock is not managed by Rosetta Commons, it has fallen behind in terms of the code. The latest version of Rosetta will not work. Instead, use one of the two following versions:
 
-<b>Last known-good Rosetta branch</b>: bcov/stable1
+<b>Academic/Commercial Version</b>: Rosetta 3.9
+
+<b>Github branch</b>: bcov/stable1
 
 To build RifDock:
 
@@ -18,7 +20,7 @@ Install boost version 1.65 or later.
 Build a Rosetta cxx11_omp build with:  
 ```bash
 cd rosetta/main/source
-git checkout bcov/stable1
+# git checkout bcov/stable1 # If you have git access, otherwise use Rosetta 3.9
 CXX=/my/g++/version CC=/my/gcc/version ./ninja_build cxx11_omp -t rosetta_scripts -remake  
 ```
 
