@@ -67,6 +67,16 @@ sort_into_blocks(
 
 }
 
+
+void dump_xform_file(
+    DirectorBase const & director,
+    ScenePtr const & scene_minimal,
+    double cart_radius,
+    double cart_resl,
+    double angle_radius,
+    double angle_resl
+);
+
 }
 }
 

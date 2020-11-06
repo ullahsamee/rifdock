@@ -249,6 +249,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
     OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_xform_file )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_cart_search_radius )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_cart_search_resl )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_angle_search_radius )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_angle_search_resl )
+
     OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_scalar )
     OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
     OPT_1GRP_KEY(  Boolean     , rif_dock, report_common_unsats )
@@ -517,6 +523,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
+            NEW_OPT(  rif_dock::dump_xform_file, "Dump a file to use for -xform_pos. See also dump_override_*", false );
+            NEW_OPT(  rif_dock::dump_override_cart_search_radius, "The maximum cartesian distance sampled for the dumped xform_pos.", false );
+            NEW_OPT(  rif_dock::dump_override_cart_search_resl, "The cartesian step size sampled for the dumped xform_pos.", false );
+            NEW_OPT(  rif_dock::dump_override_angle_search_radius, "The maximum angle sampled for the dumped xform_pos in degrees.", false );
+            NEW_OPT(  rif_dock::dump_override_angle_search_resl, "The angular step size sampled for the dumped_xform_pos in degrees.", false );
 
             NEW_OPT(  rif_dock::unsat_score_scalar, "The buried unsat weights get multiplied by this.", 0 );
             NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
@@ -775,6 +786,12 @@ struct RifDockOpt
     float       patchdock_min_sasa                   ;
     int         patchdock_top_ranks                  ;
 
+    bool        dump_xform_file                      ;
+    double      dump_override_cart_search_radius     ;
+    double      dump_override_cart_search_resl       ;
+    double      dump_override_angle_search_radius    ;
+    double      dump_override_angle_search_resl      ;
+
     float       unsat_score_scalar                   ;
     std::string unsat_helper                         ;
     bool        report_common_unsats                 ;
@@ -1018,6 +1035,12 @@ struct RifDockOpt
         rosetta_score_each_seeding_at_least     = option[rif_dock::rosetta_score_each_seeding_at_least  ]();
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
         keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
+
+        dump_xform_file                         = option[rif_dock::dump_xform_file                      ]();
+        dump_override_cart_search_radius        = option[rif_dock::dump_override_cart_search_radius     ]();
+        dump_override_cart_search_resl          = option[rif_dock::dump_override_cart_search_resl       ]();
+        dump_override_angle_search_radius       = option[rif_dock::dump_override_angle_search_radius    ]();
+        dump_override_angle_search_resl         = option[rif_dock::dump_override_angle_search_resl      ]();
 
         unsat_score_scalar                      = option[rif_dock::unsat_score_scalar                   ]();
         unsat_helper                            = option[rif_dock::unsat_helper                         ]();
