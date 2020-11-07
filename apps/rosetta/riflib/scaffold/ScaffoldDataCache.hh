@@ -42,6 +42,7 @@ struct ScaffoldDataCache {
 
 // setup during constructor
     std::string scafftag;
+    std::string scaff_fname;
 
     shared_ptr<utility::vector1<core::Size>> scaffold_res_p;                   // Seqposs of residues to design, default whole scaffold
 
@@ -116,7 +117,8 @@ struct ScaffoldDataCache {
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
-        ExtraScaffoldData const & extra_data
+        ExtraScaffoldData const & extra_data,
+	    std::string const & scaffold_name
     ) {
 
         debug_sanity = 1337;
@@ -125,6 +127,8 @@ struct ScaffoldDataCache {
         scafftag = scafftag_in;
         scaff_res_hashstr = ::devel::scheme::get_res_list_hash( *scaffold_res_p );
         scaffold_perturb = scaffold_perturb_in;
+
+	    scaff_fname = scaffold_name;
 
         typedef numeric::xyzVector<core::Real> Vec;
 

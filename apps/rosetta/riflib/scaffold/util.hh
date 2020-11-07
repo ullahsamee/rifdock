@@ -50,7 +50,8 @@ get_info_for_iscaff(
     EigenXform & scaffold_perturb,
     MorphRules & morph_rules,
     ExtraScaffoldData & extra_data,
-    shared_ptr< RotamerIndex > rot_index_p_in
+    shared_ptr< RotamerIndex > rot_index_p_in,
+    std::string & scaffold_filename
     );
 
 // historically, non_fa was used during HSearch and fa was used during hack pack

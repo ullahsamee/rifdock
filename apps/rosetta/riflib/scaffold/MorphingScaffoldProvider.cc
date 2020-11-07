@@ -49,9 +49,10 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
     EigenXform scaffold_perturb;
     MorphRules morph_rules;
     ExtraScaffoldData extra_data;
+    std::string scaff_fname;
 
 
-    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p);
+    get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p, scaff_fname);
 
     ScaffoldDataCacheOP temp_data_cache_ = make_shared<ScaffoldDataCache>(
         scaffold,
@@ -60,7 +61,8 @@ MorphingScaffoldProvider::MorphingScaffoldProvider(
         scaffold_perturb,
         rot_index_p,
         opt,
-        extra_data);
+        extra_data,
+	scaff_fname);
 
     ParametricSceneConformationCOP conformation = make_conformation_from_data_cache(temp_data_cache_, false);
 
@@ -89,9 +91,10 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
     EigenXform scaffold_perturb;
     MorphRules morph_rules;
     ExtraScaffoldData extra_data;
+    std::string scaff_fname; 
 
 
-    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p);
+    get_info_for_iscaff( 0, opt, scafftag, _scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p, scaff_fname );
 
 
 
@@ -169,7 +172,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                     scaffold_perturb,
                     rot_index_p,
                     opt,
-                    extra_data
+                    extra_data,
+		    scaff_fname
                     );
 
 
@@ -256,7 +260,8 @@ MorphingScaffoldProvider::test_make_children(TreeIndex ti) {
                 scaffold_perturb,
                 rot_index_p,
                 opt,
-                extra_data
+                extra_data,
+		scaff_fname
                 );
 
 
