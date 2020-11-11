@@ -67,10 +67,12 @@ get_info_for_iscaff(
     EigenXform & scaffold_perturb,
     MorphRules & morph_rules,
     ExtraScaffoldData & extra_data,
-    shared_ptr< RotamerIndex > rot_index_p
+    shared_ptr< RotamerIndex > rot_index_p,
+    std::string & scaffold_filename
     ) {
 
     std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
+    scaffold_filename = scaff_fname; // NRB
     scafftag = pdb_name(scaff_fname);
 
     std::cout << "!!!!!!!!!!!!!!!name:: " << scaff_fname << std::endl;

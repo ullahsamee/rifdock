@@ -53,6 +53,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, outputlite )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
     OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
@@ -327,6 +328,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold, "", false );
+            NEW_OPT(  rif_dock::outputlite, "Write the output structures as compressed silent files", false );
 			NEW_OPT(  rif_dock::outputsilent, "", false );
 			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
             NEW_OPT(  rif_dock::n_pdb_out_global, "Normally n_pdb_out applies to each seeding position, this caps the global", -1);
@@ -630,6 +632,7 @@ struct RifDockOpt
 	bool        output_scaffold_only                 ;
 	bool        output_full_scaffold_only            ;
 	bool        output_full_scaffold                 ;
+    bool        outputlite                           ;
 	bool        outputsilent                         ;
 	bool        pdb_info_pikaa                       ;
     bool        pdb_info_pssm                        ;
@@ -887,6 +890,7 @@ struct RifDockOpt
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
+        outputlite                             = option[rif_dock::outputlite                            ]();
 		outputsilent                           = option[rif_dock::outputsilent                          ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
         pdb_info_pssm                          = option[rif_dock::pdb_info_pssm                         ]();
@@ -1059,6 +1063,8 @@ struct RifDockOpt
 
 		runtime_assert_msg( min_hb_quality_for_satisfaction < 0 && min_hb_quality_for_satisfaction > -1, 
 			"-min_hb_quality_for_satisfaction must be between -1 and 0");
+
+        runtime_assert_msg( !( outputsilent && outputlite ), "-outputsilent and -outputlite cannot be chosen together");
 
         nfold_symmetry = option[rif_dock::nfold_symmetry]();
         symmetry_axis.clear();
