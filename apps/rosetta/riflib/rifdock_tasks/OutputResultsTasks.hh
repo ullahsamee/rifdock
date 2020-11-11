@@ -59,6 +59,12 @@ dump_rif_result_(
     std::vector<float> const & unsat_scores = std::vector<float>()
     );
 
+// You would think that it would be easier to get the absolute path but it's not
+// It's easy with C++17 but that requires gcc7 which I don't think works with rifdock
+// There is a boost::filesystem library but that is known to generate linker issues - NRB
+std::string
+absolute_path( std::string relative_path );
+
 void
 dump_search_point_(
     RifDockData & rdd,

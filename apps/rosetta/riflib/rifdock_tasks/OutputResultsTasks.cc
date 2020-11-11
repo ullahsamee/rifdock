@@ -28,10 +28,10 @@
 #include <core/io/silent/SilentFileOptions.hh>
 #include <core/kinematics/RT.hh>
 
+#include <sys/param.h>
 #include <algorithm>
 #include <string>
 #include <vector>
-
 
 #include <ObjexxFCL/format.hh>
 
@@ -531,11 +531,10 @@ dump_rif_result_(
         core::pose::Pose lite_pose;
         core::pose::make_pose_from_sequence( lite_pose, "A", core::chemical::FA_STANDARD, false ); // Auto-termini set to false
 
-        core::pose::PDBInfoOP pdb_info = make_shared< core::pose::PDBInfo >();
+        core::pose::PDBInfoOP pdb_info = make_shared< core::pose::PDBInfo >( lite_pose );
 
-        pdb_info->resize_residue_records(1);
-        pdb_info->add_reslabel( 1, "SCAFFOLD_PDB:" + sdc->scaff_fname );
-        pdb_info->add_reslabel( 1, "TARGET_PDB:" + rdd.opt.target_pdb );
+        pdb_info->add_reslabel( 1, "SCAFFOLD_PDB:" + absolute_path( sdc->scaff_fname ) );
+        pdb_info->add_reslabel( 1, "TARGET_PDB:" + absolute_path( rdd.opt.target_pdb ) );
 
         EigenXform binder_xform = EigenXform( xposition1 );
         binder_xform.translate( -1 * sdc->scaffold_center );
@@ -566,6 +565,38 @@ dump_rif_result_(
 
     }
 
+}
+
+std::string
+absolute_path( std::string relative_path ){
+
+    if( relative_path[0] == '/' ) return relative_path;
+
+    // You would think that it would be easier to get the cwd but it's not
+    // It's easy with C++17 but that requires gcc7 which I don't think works with rifdock - NRB
+    // https://stackoverflow.com/questions/2203159/is-there-a-c-equivalent-to-getcwd
+    char temp[MAXPATHLEN];
+    std::string cwd = getcwd(temp, sizeof(temp)) ? std::string( temp ) : std::string("");
+
+    // The plan is to count instances of "../" in the relative path
+    // Then that number of directories from the cwd will be removed
+    std::string relative_path_canonical;
+    core::Size back_dir_counter = 0;
+
+    utility::vector1< std::string > rel_path_splits = utility::string_split( relative_path, '/' );
+    for ( core::Size i = 1; i <= rel_path_splits.size(); ++i ){
+        if( rel_path_splits[i] == ".." ) ++back_dir_counter;
+        else relative_path_canonical += "/" + rel_path_splits[i];
+    }
+
+    std::string cwd_truncated;
+    utility::vector1< std::string > cwd_splits = utility::string_split( cwd, '/' );
+    for ( core::Size i = 1; i <= cwd_splits.size() - back_dir_counter; ++i ){
+        if( cwd_splits[i].size() <= 0 ) continue;
+        cwd_truncated += "/" + cwd_splits[i];
+    }
+    
+    return cwd_truncated + relative_path_canonical;
 }
 
 void
