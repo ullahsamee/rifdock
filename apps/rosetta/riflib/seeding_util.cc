@@ -252,6 +252,8 @@ void dump_xform_file(
     RifDockIndex rdi;
     uint64_t nest_size = director->size(0, RifDockIndex()).nest_index;
 
+    uint64_t dumped = 0;
+
     #ifdef USE_OPENMP
     #pragma omp parallel for schedule(dynamic,64)
     #endif
@@ -272,8 +274,10 @@ void dump_xform_file(
                       << p.linear().row(0) << " " << p.linear().row(1)<< " " << p.linear().row(2) << " "
                       << p.translation().x() << " " << p.translation().y() << " " << p.translation().z() << std::endl;
           }
+          dumped++;
         }
     }
+    std::cout << "Found " << dumped << " xforms within your search parameters."
 
     xform_pos.close();
 
