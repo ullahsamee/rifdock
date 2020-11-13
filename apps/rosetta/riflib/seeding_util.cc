@@ -277,7 +277,7 @@ void dump_xform_file(
           dumped++;
         }
     }
-    std::cout << "Found " << dumped << " xforms within your search parameters."
+    std::cout << "Found " << dumped << " xforms within your search parameters." << std::endl;
 
     xform_pos.close();
 
