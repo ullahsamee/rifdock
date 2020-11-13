@@ -235,6 +235,53 @@ parse_seeding_file(
 }
     
 
+void dump_xform_file(
+    DirectorBase const & director,
+    ScenePtr const & scene_minimal,
+    double cart_radius,
+    double cart_resl,
+    double angle_radius,
+    double angle_resl
+) {
+
+    std::string fname = boost::str(boost::format("xform_pos_cart_rad%.1f_by%.1f_angle%.2f_by%.2f.x")%cart_radius%cart_resl%angle_radius%angle_resl);
+    utility::io::ozstream xform_pos( fname );
+
+    std::cout << "Dumping xform_pos to: " << fname << std::endl;
+
+    RifDockIndex rdi;
+    uint64_t nest_size = director->size(0, RifDockIndex()).nest_index;
+
+    uint64_t dumped = 0;
+
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,64)
+    #endif
+    for (uint64_t i = 0; i < nest_size; ++i) {
+        rdi.nest_index = i;
+    
+        bool director_success = director->set_scene( rdi, 0, *scene_minimal );
+    
+        if ( director_success ) {
+            EigenXform p = scene_minimal->position(1);
+            double ang = Eigen::AngleAxisf( p.rotation() ).angle();
+            double ang_degrees = 180.0/3.1415 * ang;
+
+            if ( ang_degrees > angle_radius ) continue;
+            #pragma omp critical
+            {
+            xform_pos << "SP" << " " << i << " " << ang << " "
+                      << p.linear().row(0) << " " << p.linear().row(1)<< " " << p.linear().row(2) << " "
+                      << p.translation().x() << " " << p.translation().y() << " " << p.translation().z() << std::endl;
+          }
+          dumped++;
+        }
+    }
+    std::cout << "Found " << dumped << " xforms within your search parameters."
+
+    xform_pos.close();
+
+}
 
 
 

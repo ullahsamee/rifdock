@@ -1016,7 +1016,20 @@ int main(int argc, char *argv[]) {
 				double hackysin = std::min( 1.0, resl0*hsearch_scale_factor/2.0/ body_radius );
 
 				runtime_assert( hackysin > 0.0 );
-				double const rot_resl_deg0 = asin( hackysin ) * 180.0 / M_PI;
+				double rot_resl_deg0 = asin( hackysin ) * 180.0 / M_PI;
+
+				if ( opt.dump_xform_file ) {
+					search_diameter = opt.dump_override_cart_search_radius*2;
+					cart_grid = opt.dump_override_cart_search_resl;
+					rot_resl_deg0 = opt.dump_override_angle_search_resl;
+					target_center = F3(0, 0, 0);
+					needs_stored_nest_director = false;
+					needs_nest_director = true;
+					seeding_positions = nullptr;
+				}
+
+
+
 				int nside = std::ceil( search_diameter / cart_grid );
 				std::cout << "search dia.    : " <<  search_diameter << std::endl;
 				std::cout << "nside          : " << nside        << std::endl;
@@ -1056,6 +1069,18 @@ int main(int argc, char *argv[]) {
 				}
 
 				director = make_shared<RifDockDirector>(director_list);
+			}
+
+			if ( opt.dump_xform_file ) {
+				std::cout << "Dumping xform file ..." << std::endl;
+				dump_xform_file( director, scene_minimal,
+					opt.dump_override_cart_search_radius, 
+					opt.dump_override_cart_search_resl,
+					opt.dump_override_angle_search_radius,
+					opt.dump_override_angle_search_resl
+				);
+				std::cout << "-dump_xform_file specified. Stopping" << std::endl;
+				return 0;
 			}
 
 
