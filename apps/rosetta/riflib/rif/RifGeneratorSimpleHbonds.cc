@@ -397,6 +397,8 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 			}
 		}
         // this is to fill the allowed_rotamers_rays
+
+        int max_req_no = 0;
         {
             target_bonder_names = params->rot_tgt_scorer->target_donor_names;
             for ( auto const & x : params->rot_tgt_scorer->target_acceptor_names ) target_bonder_names.push_back( x );
@@ -467,6 +469,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                     for ( int ii = 0; ii < target_bonder_names.size(); ++ii){
                         if ( target_bonder_names[ii].first == x.res_num && target_bonder_names[ii].second == x.atom_name ) {
                             hbond_requirement_labels[ii] = x.req_num;
+                            max_req_no = std::max<int>(max_req_no, x.req_num);
                         }
                     }
                 }
@@ -474,6 +477,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                     for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
                         if ( ( x.res1_num == target_bonder_names[ii].first && x.atom1_name == target_bonder_names[ii].second ) || ( x.res2_num == target_bonder_names[ii].first && x.atom2_name == target_bonder_names[ii].second ) ) {
                             bidentate_requirement_labels[ii] = x.req_num;
+                            max_req_no = std::max<int>(max_req_no, x.req_num);
                         }
                     }
                     
@@ -507,6 +511,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
 
 		int n_sat_groups = 0;
 		if( accumulator->rif()->has_sat_data_slots() ) n_sat_groups = params->rot_tgt_scorer->target_donors_.size() + params->rot_tgt_scorer->target_acceptors_.size();
+        n_sat_groups = std::max<int>(max_req_no, n_sat_groups);
 		std::vector<utility::io::ozstream*> rif_hbond_vis_out_satgroups(n_sat_groups,nullptr);
 		std::vector<std::vector<utility::io::ozstream*>> rif_hbond_vis_out_double_satgroups(
 		                                                     n_sat_groups, std::vector<utility::io::ozstream*>(n_sat_groups,nullptr));
@@ -992,21 +997,22 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                                     sat2 = -1;
                                 }
                             } else {
-                                if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] != -1 ) {
-                                                                        //utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
-                                                                        // same as the rif table merging logic, always keep the larger requirement
-                                                                        sat1 = hbond_requirement_labels[sat1] < hbond_requirement_labels[sat2] ? hbond_requirement_labels[sat2] : hbond_requirement_labels[sat1];
-                                                                        sat2 = -1;
-                                } else if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] == -1 ) {
-                                    sat1 = hbond_requirement_labels[sat1];
+                                // Bidentate should always override individual hbond defs
+                                if ( bidentate_requirement_labels[sat1] != -1 && bidentate_requirement_labels[sat1] == bidentate_requirement_labels[sat2] ) {
+                                    sat1 = bidentate_requirement_labels[sat1];
                                     sat2 = -1;
-                                } else if ( hbond_requirement_labels[sat1] == -1 && hbond_requirement_labels[sat2] != -1 ) {
-                                    sat1 = hbond_requirement_labels[sat2];
-                                    sat2 = -1;
+
                                 } else {
-                                    // normal
-                                    if ( bidentate_requirement_labels[sat1] != -1 && bidentate_requirement_labels[sat1] == bidentate_requirement_labels[sat2] ) {
-                                        sat1 = bidentate_requirement_labels[sat1];
+                                    if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] != -1 ) {
+                                                                            //utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
+                                                                            // same as the rif table merging logic, always keep the larger requirement
+                                                                            sat1 = hbond_requirement_labels[sat1] < hbond_requirement_labels[sat2] ? hbond_requirement_labels[sat2] : hbond_requirement_labels[sat1];
+                                                                            sat2 = -1;
+                                    } else if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] == -1 ) {
+                                        sat1 = hbond_requirement_labels[sat1];
+                                        sat2 = -1;
+                                    } else if ( hbond_requirement_labels[sat1] == -1 && hbond_requirement_labels[sat2] != -1 ) {
+                                        sat1 = hbond_requirement_labels[sat2];
                                         sat2 = -1;
                                     } else {
                                         sat1 = -1;
