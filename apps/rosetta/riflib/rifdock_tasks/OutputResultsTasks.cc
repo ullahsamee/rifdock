@@ -96,7 +96,7 @@ OutputResultsTask::return_rif_dock_results(
 
     if ( rdd.opt.parallelwrite ) {
         std::vector< std::stringstream > iostreams;
-        iostreams.resize( ::devel::scheme::omp_max_threads_1() );
+        iostreams.resize( ::devel::scheme::omp_max_threads() );
 
         std::exception_ptr exception = nullptr;
 
@@ -120,13 +120,14 @@ OutputResultsTask::return_rif_dock_results(
         if( exception ) std::rethrow_exception( exception );
 
         // Write all the streams to the output file
-        for( int i  = 0; i < ::devel::scheme::omp_max_threads_1(); ++i ) out_silent_stream << iostreams[ i ].str();
+        if ( rdd.opt.outputsilent || rdd.opt.outputlite )
+            for( int i  = 0; i < ::devel::scheme::omp_max_threads(); ++i ) out_silent_stream << iostreams[ i ].str();
 
     } else {
         // Default behavior
         for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
             RifDockResult const & selected_result = selected_results.at( i_selected_result );
-            write_selected_result( selected_result, rdd.scene_pt.front(), out_silent_stream, rdd, pd, rif_resl_ );
+            write_selected_result( selected_result, rdd.scene_pt.front(), out_silent_stream, rdd, pd, i_selected_result );
         }
     }
 
