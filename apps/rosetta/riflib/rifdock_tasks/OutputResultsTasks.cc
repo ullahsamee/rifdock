@@ -240,9 +240,7 @@ OutputResultsTask::write_selected_result(
     std::cout << oss.str();
     rdd.dokout << oss.str(); rdd.dokout.flush();
 
-    std::cout << "debug Before dump, sel result is: " << i_selected_result << std::endl;
     dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, out_silent_stream, rdd.scene_pt.front(), false, resfileoutfile, allrifrotsoutfile, unsat_scores);
-    std::cout << "debug After dump, sel result is: " << i_selected_result << std::endl;
 
     std::cout << extra_output.str() << std::flush;
 }
@@ -289,9 +287,9 @@ dump_rif_result_(
     }
 
 
-    rdd.director->set_scene( selected_result.index, director_resl, *s_ptr ); // NRB
+    rdd.director->set_scene( selected_result.index, director_resl, *s_ptr );
 
-    EigenXform xposition1 = s_ptr->position(1); // NRB
+    EigenXform xposition1 = s_ptr->position(1);
     EigenXform xalignout = EigenXform::Identity();
     if( rdd.opt.align_to_scaffold ){
         xalignout = xposition1.inverse();
@@ -311,7 +309,7 @@ dump_rif_result_(
     int res_num = pose_from_rif.size() + 1;
     const std::string chains = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     for( int i_actor = 0; i_actor < s_ptr->template num_actors<BBActor>(1); ++i_actor ){
-        BBActor bba = s_ptr->template get_actor<BBActor>(1,i_actor); // NRB and above
+        BBActor bba = s_ptr->template get_actor<BBActor>(1,i_actor);
         int const ires = scaffres_l2g.at( bba.index_ );
 
 
