@@ -32,6 +32,9 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <iostream>
+
+#include <exception>
 
 #include <ObjexxFCL/format.hh>
 
@@ -77,10 +80,6 @@ OutputResultsTask::return_rif_dock_results(
     }
 
 
-
-
-
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     print_header( "output results" ); //////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,114 +88,162 @@ OutputResultsTask::return_rif_dock_results(
 
     if( rdd.opt.align_to_scaffold ) std::cout << "ALIGN TO SCAFFOLD" << std::endl;
     else                        std::cout << "ALIGN TO TARGET"   << std::endl;
-    utility::io::ozstream out_silent_stream;
+    utility::io::ozstream out_silent_stream; // Final stream to write to
     if ( rdd.opt.outputsilent || rdd.opt.outputlite ) {
         ScaffoldDataCacheOP example_data_cache = rdd.scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
         out_silent_stream.open_append( rdd.opt.outdir + "/" + example_data_cache->scafftag + ".silent" );
     }
-    for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
-        RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
-// Brian Injection
-        ScaffoldIndex si = selected_result.index.scaffold_index;
-        ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
+    if ( rdd.opt.parallelwrite ) {
+        std::vector< std::stringstream > iostreams;
+        iostreams.resize( ::devel::scheme::omp_max_threads() );
 
-        std::string seeding_tag = "";
-        if ( selected_result.index.seeding_index < pd.seeding_tags.size() ) seeding_tag = pd.seeding_tags[ selected_result.index.seeding_index ];
+        std::exception_ptr exception = nullptr;
 
-        std::string const & use_scafftag = sdc->scafftag + seeding_tag;
+        #ifdef USE_OPENMP
+        #pragma omp parallel for schedule(dynamic,1)
+        #endif
+        for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ) {
 
-/////
+            try {
 
-        rdd.director->set_scene( selected_result.index, director_resl_, *rdd.scene_minimal );
+                int const ithread = omp_get_thread_num();
+                RifDockResult const & selected_result = selected_results.at( i_selected_result );
 
-        std::vector<float> unsat_scores;
-        int unsats = -1;
-        int buried = -1;
-        if ( rdd.unsat_manager ) {
-            std::vector<EigenXform> bb_positions;
-            for ( int i_actor = 0; i_actor < rdd.scene_minimal->template num_actors<BBActor>(1); i_actor++ ) {
-                bb_positions.push_back( rdd.scene_minimal->template get_actor<BBActor>(1,i_actor).position() );
+                write_selected_result( selected_result, rdd.scene_pt[ ithread ], iostreams[ ithread ], rdd, pd, i_selected_result );
+
+            } catch(...) {
+                #pragma omp critical
+                exception = std::current_exception();
             }
-            std::vector<float> burial = rdd.burial_manager->get_burial_weights( rdd.scene_minimal->position(1), sdc->burial_grid );
-            unsat_scores =  rdd.unsat_manager->get_buried_unsats( burial, selected_result.rotamers(), bb_positions, rdd.rot_tgt_scorer );
+        } // end of OMP loop
+        if( exception ) std::rethrow_exception( exception );
 
-            buried = 0;
-            for ( float this_burial : burial ) if ( this_burial > 0 ) buried++;
-            unsats = 0;
-            for ( float this_unsat_score : unsat_scores ) if ( this_unsat_score > 0 ) unsats++;
+        // Write all the streams to the output file
+        if ( rdd.opt.outputsilent || rdd.opt.outputlite )
+            for( int i  = 0; i < ::devel::scheme::omp_max_threads(); ++i ) out_silent_stream << iostreams[ i ].str();
+
+    } else {
+        // Default behavior
+        for( int i_selected_result = 0; i_selected_result < selected_results.size(); ++i_selected_result ){
+            RifDockResult const & selected_result = selected_results.at( i_selected_result );
+            write_selected_result( selected_result, rdd.scene_pt.front(), out_silent_stream, rdd, pd, i_selected_result );
         }
-
-        std::stringstream extra_output;
-
-        int hydrophobic_residue_contacts;
-        float hydrophobic_ddg = 0;
-        if ( rdd.hydrophobic_manager ) {
-            std::vector<int> hydrophobic_counts, seqposs, per_irot_counts;
-            std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
-            selected_result.rotamers();
-            for( int i = 0; i < selected_result.rotamers_->size(); ++i ){
-                BBActor const & bb = rdd.scene_minimal->template get_actor<BBActor>( 1, selected_result.rotamers_->at(i).first );
-                int seqpos = sdc->scaffres_l2g_p->at( bb.index_ ) + 1;
-                int irot = selected_result.rotamers_->at(i).second;
-
-                irot_and_bbpos.emplace_back( irot, bb.position() );
-                seqposs.push_back( seqpos );
-            }
-            bool pass_better_than = true, pass_cation_pi = true;
-            hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg,
-                                                                            per_irot_counts, pass_better_than, pass_cation_pi, rdd.rot_tgt_scorer );
-
-            rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, irot_and_bbpos, seqposs, per_irot_counts, 
-                                                                            sdc->scaffres_g2l_p->size(), extra_output );
-        }
-
-
-        std::string pdboutfile = rdd.opt.outdir + "/" + use_scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-        if( rdd.opt.output_tag.size() ){
-            pdboutfile = rdd.opt.outdir + "/" + use_scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
-        }
-
-        std::string resfileoutfile = rdd.opt.outdir + "/" + use_scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
-        std::string allrifrotsoutfile = rdd.opt.outdir + "/" + use_scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
-
-        std::ostringstream oss;
-        oss << "rif score: " << I(4,i_selected_result)
-            << " rank "       << I(9,selected_result.isamp)
-            << " dist0:    "  << F(7,2,selected_result.dist0)
-            << " packscore: " << F(7,3,selected_result.score)
-            << " score: "     << F(7,3,selected_result.nopackscore)
-            // << " rif: "       << F(7,3,selected_result.rifscore)
-            << " steric: "    << F(7,3,selected_result.stericscore);
-        if (rdd.opt.scaff_bb_hbond_weight > 0) {
-        oss << " bb-hbond: "  << F(7,3,selected_result.scaff_bb_hbond);
-        }
-        oss << " cluster: "   << I(7,selected_result.cluster_score)
-            << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack);
-        if ( rdd.unsat_manager ) {
-        oss << " buried:" << I(4,buried);
-        oss << " unsats:" << I(4, unsats);
-        }
-        if ( rdd.opt.need_to_calculate_sasa ) {
-        oss << " sasa:" << I(5, selected_result.sasa);
-        }
-        if ( rdd.hydrophobic_manager ) {
-        oss << " hyd-cont:" << I(3, hydrophobic_residue_contacts);
-        oss << " hyd-ddg: " << F(7,3, hydrophobic_ddg);
-        }
-        oss << " " << pdboutfile
-            << std::endl;
-        std::cout << oss.str();
-        rdd.dokout << oss.str(); rdd.dokout.flush();
-
-        dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, out_silent_stream, false, resfileoutfile, allrifrotsoutfile, unsat_scores);
-
-        std::cout << extra_output.str() << std::flush;
-
     }
 
     return selected_results_p;
 
+}
+
+void
+OutputResultsTask::write_selected_result( 
+    RifDockResult const & selected_result,
+    ScenePtr s_ptr,
+    std::ostream & out_silent_stream,
+    RifDockData & rdd,
+    ProtocolData & pd,
+    int i_selected_result ) {
+
+    using std::cout;
+    using std::endl;
+    using ObjexxFCL::format::F;
+    using ObjexxFCL::format::I;
+
+// Brian Injection
+    ScaffoldIndex si = selected_result.index.scaffold_index;
+    ScaffoldDataCacheOP sdc = rdd.scaffold_provider->get_data_cache_slow( si );
+
+    std::string seeding_tag = "";
+    if ( selected_result.index.seeding_index < pd.seeding_tags.size() ) seeding_tag = pd.seeding_tags[ selected_result.index.seeding_index ];
+
+    std::string const & use_scafftag = sdc->scafftag + seeding_tag;
+
+/////
+
+    rdd.director->set_scene( selected_result.index, director_resl_, *s_ptr );
+
+    std::vector<float> unsat_scores;
+    int unsats = -1;
+    int buried = -1;
+    if ( rdd.unsat_manager ) {
+        std::vector<EigenXform> bb_positions;
+        for ( int i_actor = 0; i_actor < s_ptr->template num_actors<BBActor>(1); i_actor++ ) {
+            bb_positions.push_back( s_ptr->template get_actor<BBActor>(1,i_actor).position() );
+        }
+        std::vector<float> burial = rdd.burial_manager->get_burial_weights( s_ptr->position(1), sdc->burial_grid );
+        unsat_scores =  rdd.unsat_manager->get_buried_unsats( burial, selected_result.rotamers(), bb_positions, rdd.rot_tgt_scorer );
+
+        buried = 0;
+        for ( float this_burial : burial ) if ( this_burial > 0 ) buried++;
+        unsats = 0;
+        for ( float this_unsat_score : unsat_scores ) if ( this_unsat_score > 0 ) unsats++;
+    }
+
+    std::stringstream extra_output;
+
+    int hydrophobic_residue_contacts;
+    float hydrophobic_ddg = 0;
+    if ( rdd.hydrophobic_manager ) {
+        std::vector<int> hydrophobic_counts, seqposs, per_irot_counts;
+        std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
+        selected_result.rotamers();
+        for( int i = 0; i < selected_result.rotamers_->size(); ++i ){
+            BBActor const & bb = s_ptr->template get_actor<BBActor>( 1, selected_result.rotamers_->at(i).first );
+            int seqpos = sdc->scaffres_l2g_p->at( bb.index_ ) + 1;
+            int irot = selected_result.rotamers_->at(i).second;
+
+            irot_and_bbpos.emplace_back( irot, bb.position() );
+            seqposs.push_back( seqpos );
+        }
+        bool pass_better_than = true, pass_cation_pi = true;
+        hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg,
+                                                                        per_irot_counts, pass_better_than, pass_cation_pi, rdd.rot_tgt_scorer );
+
+        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, irot_and_bbpos, seqposs, per_irot_counts, 
+                                                                        sdc->scaffres_g2l_p->size(), extra_output );
+    }
+
+
+    std::string pdboutfile = rdd.opt.outdir + "/" + use_scafftag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+    if( rdd.opt.output_tag.size() ){
+        pdboutfile = rdd.opt.outdir + "/" + use_scafftag+"_" + rdd.opt.output_tag + "_" + devel::scheme::str(i_selected_result,9)+".pdb.gz";
+    }
+
+    std::string resfileoutfile = rdd.opt.outdir + "/" + use_scafftag+"_"+devel::scheme::str(i_selected_result,9)+".resfile";
+    std::string allrifrotsoutfile = rdd.opt.outdir + "/" + use_scafftag+"_allrifrots_"+devel::scheme::str(i_selected_result,9)+".pdb.gz";
+
+    std::ostringstream oss;
+    oss << "rif score: " << I(4,i_selected_result)
+        << " rank "       << I(9,selected_result.isamp)
+        << " dist0:    "  << F(7,2,selected_result.dist0)
+        << " packscore: " << F(7,3,selected_result.score)
+        << " score: "     << F(7,3,selected_result.nopackscore)
+        // << " rif: "       << F(7,3,selected_result.rifscore)
+        << " steric: "    << F(7,3,selected_result.stericscore);
+    if (rdd.opt.scaff_bb_hbond_weight > 0) {
+    oss << " bb-hbond: "  << F(7,3,selected_result.scaff_bb_hbond);
+    }
+    oss << " cluster: "   << I(7,selected_result.cluster_score)
+        << " rifrank: "   << I(7,selected_result.prepack_rank) << " " << F(7,5,(float)selected_result.prepack_rank/(float)pd.npack);
+    if ( rdd.unsat_manager ) {
+    oss << " buried:" << I(4,buried);
+    oss << " unsats:" << I(4, unsats);
+    }
+    if ( rdd.opt.need_to_calculate_sasa ) {
+    oss << " sasa:" << I(5, selected_result.sasa);
+    }
+    if ( rdd.hydrophobic_manager ) {
+    oss << " hyd-cont:" << I(3, hydrophobic_residue_contacts);
+    oss << " hyd-ddg: " << F(7,3, hydrophobic_ddg);
+    }
+    oss << " " << pdboutfile
+        << std::endl;
+    std::cout << oss.str();
+    rdd.dokout << oss.str(); rdd.dokout.flush();
+
+    dump_rif_result_(rdd, selected_result, pdboutfile, director_resl_, rif_resl_, out_silent_stream, rdd.scene_pt.front(), false, resfileoutfile, allrifrotsoutfile, unsat_scores);
+
+    std::cout << extra_output.str() << std::flush;
 }
 
 
@@ -207,7 +254,9 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
-    utility::io::ozstream & out_silent_stream,
+    // utility::io::ozstream & out_silent_stream, // utilit::io::ozstream inherits from std::ostream so this will work
+    std::ostream & out_silent_stream,
+    ScenePtr s_ptr, // This will just be rdd.scene_pt.front() for non-threaded version
     bool quiet /* = true */,
     std::string const & resfileoutfile /* = "" */,
     std::string const & allrifrotsoutfile, /* = "" */
@@ -239,9 +288,9 @@ dump_rif_result_(
     }
 
 
-    rdd.director->set_scene( selected_result.index, director_resl, *rdd.scene_minimal );
+    rdd.director->set_scene( selected_result.index, director_resl, *s_ptr );
 
-    EigenXform xposition1 = rdd.scene_minimal->position(1);
+    EigenXform xposition1 = s_ptr->position(1);
     EigenXform xalignout = EigenXform::Identity();
     if( rdd.opt.align_to_scaffold ){
         xalignout = xposition1.inverse();
@@ -260,8 +309,8 @@ dump_rif_result_(
     int chain_no = pose_from_rif.num_chains();   
     int res_num = pose_from_rif.size() + 1;
     const std::string chains = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    for( int i_actor = 0; i_actor < rdd.scene_minimal->template num_actors<BBActor>(1); ++i_actor ){
-        BBActor bba = rdd.scene_minimal->template get_actor<BBActor>(1,i_actor);
+    for( int i_actor = 0; i_actor < s_ptr->template num_actors<BBActor>(1); ++i_actor ){
+        BBActor bba = s_ptr->template get_actor<BBActor>(1,i_actor);
         int const ires = scaffres_l2g.at( bba.index_ );
 
 
@@ -502,6 +551,7 @@ dump_rif_result_(
         out2 << allout.str();
         out2.close();
     }
+
     // Dump silent file
     if (rdd.opt.outputsilent) {
         // silly thing to take care of multiple chains in PDBInfo for silentstruct
@@ -611,7 +661,7 @@ dump_search_point_(
     RifDockResult result;
     result = search_point;
     utility::io::ozstream trash;
-    dump_rif_result_( rdd, result, pdboutfile, director_resl, rif_resl, trash,quiet, "", "" );
+    dump_rif_result_( rdd, result, pdboutfile, director_resl, rif_resl, trash, rdd.scene_pt.front(), quiet, "", "" );
     trash.close();
 }
 
