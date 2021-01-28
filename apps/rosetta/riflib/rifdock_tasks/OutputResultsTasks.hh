@@ -43,6 +43,15 @@ private:
     int director_resl_;
     int rif_resl_;
 
+    void
+    write_selected_result( 
+        RifDockResult const & selected_result,
+        ScenePtr s_ptr,
+        std::ostream & out_silent_stream,
+        RifDockData & rdd, 
+        ProtocolData & pd,
+        int i_selected_result );
+
 };
 
 void
@@ -52,7 +61,8 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
-    utility::io::ozstream & outS,
+    std::ostream & out_silent_stream,
+    ScenePtr s_ptr,
     bool quiet = true,
     std::string const & resfileoutfile = "",
     std::string const & allrifrotsoutfile = "",
