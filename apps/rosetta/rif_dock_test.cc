@@ -697,6 +697,24 @@ int main(int argc, char *argv[]) {
 			std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 		}
 
+		if ( opt.dump_rifgen_hdf5 ) {
+			core::pose::Pose all_rots;
+			for ( int irot = 0; irot < rot_index.size(); irot++ ) {
+				all_rots.append_residue_by_jump( *rot_index_spec.get_rotamer_at_identity( irot ), 1 );
+			}
+
+			all_rots.pdb_info( std::make_shared<core::pose::PDBInfo>( all_rots ) );
+			for ( core::Size i = 1; i <= all_rots.size(); i++ ) {
+				all_rots.pdb_info()->chain( i, 'A' );
+			}
+			std::cout << "Dumping rif standard rotamers to rif_rotamers.pdb" << std::endl;
+			all_rots.dump_pdb("rif_rotamers.pdb");
+
+			rif_ptrs.back()->dump_rif_to_hdf5();
+
+		}
+
+
 		if (opt.dump_rifgen_near_pdb.size() > 0) {
 
 			for ( std::string pdb_fname : opt.dump_rifgen_near_pdb ) {

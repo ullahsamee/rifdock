@@ -34,6 +34,8 @@
 #include <scheme/objective/ObjectiveFunction.hh>
 #include <scheme/search/HackPack.hh>
 
+#include "scheme/util/SimpleArray.hh"
+
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <complex>
 
@@ -44,6 +46,9 @@
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
 #endif
 
+#if USEHDF5
+#include "H5Cpp.h"
+#endif
 
 namespace devel {
 namespace scheme {
@@ -265,6 +270,222 @@ public:
     }
 
         
+    void dump_rif_to_hdf5( ) const {
+
+#if USEHDF5
+
+        const int BUFFSIZE = 1024;
+
+        static int const Nrots = XMap::Value::N;
+
+        const RifBase * base = this;
+        shared_ptr<XMap const> from;
+        base->get_xmap_const_ptr( from );
+        uint64_t rif_size = from->map_.size();
+
+
+
+        try {
+
+
+            std::cout << "Dumping rif to rif.h5" << std::endl;
+
+            H5std_string fname = "rif.h5";
+
+            hsize_t dims[2];
+            hsize_t one_dim[1];
+
+
+            double xforms[BUFFSIZE][12];
+            int16_t irots[BUFFSIZE][Nrots];
+            float scores[BUFFSIZE][Nrots];
+
+            // float f7s[BUFFSIZE][7];
+            // float quats[BUFFSIZE][4];
+
+            H5::H5File file( fname, H5F_ACC_TRUNC );
+
+
+            one_dim[0] = 3;
+            H5::DataSpace meta_dataspace( 1, one_dim );
+            H5::FloatType meta_datatype( H5::PredType::NATIVE_FLOAT );
+            H5::DataSet meta_dataset = file.createDataSet( "cart_ori_bound", meta_datatype, meta_dataspace );
+
+            // I know, I'm sure you wish these were doubles, but they aren't
+            float cart_ori_bound[3] = {from->cart_resl_, from->ang_resl_, from->cart_bound_};
+            meta_dataset.write( cart_ori_bound, meta_datatype, meta_dataspace, meta_dataspace );
+
+
+            dims[0] = rif_size;
+            dims[1] = 12;
+            H5::DataSpace full_xform_dataspace( 2, dims );
+
+            dims[0] = rif_size;
+            dims[1] = Nrots;
+            H5::DataSpace full_irot_dataspace( 2, dims );
+            H5::DataSpace full_score_dataspace( 2, dims );
+
+
+            // dims[0] = rif_size;
+            // dims[1] = 7;
+            // H5::DataSpace full_f7_dataspace( 2, dims );
+
+            // dims[0] = rif_size;
+            // dims[1] = 4;
+            // H5::DataSpace full_quat_dataspace( 2, dims );
+
+
+            H5::FloatType xform_datatype( H5::PredType::NATIVE_DOUBLE );
+            H5::IntType irot_datatype( H5::PredType::NATIVE_INT16 );
+            H5::FloatType score_datatype( H5::PredType::NATIVE_FLOAT );
+
+            H5::DataSet xform_dataset = file.createDataSet( "bin_center", xform_datatype, full_xform_dataspace );
+            H5::DataSet irot_dataset = file.createDataSet( "irots", irot_datatype, full_irot_dataspace );
+            H5::DataSet score_dataset = file.createDataSet( "scores", score_datatype, full_score_dataspace );
+
+            // H5::DataSet f7_dataset = file.createDataSet( "f7s", score_datatype, full_f7_dataspace );
+            // H5::DataSet quat_dataset = file.createDataSet( "quats", score_datatype, full_quat_dataspace );
+
+
+            int ibuf = 0;
+            int ifile = 0;
+
+            // auto final_iter = from->map_.end();
+
+            for ( auto iter = from->map_.begin(); iter != from->map_.end(); ++iter) {
+            // for (auto const & v : from->map_ ) {
+                auto const & v = *iter;
+
+                for ( int i = 0; i < Nrots; i++ ) {
+                    irots[ibuf][i] = -1;
+                    scores[ibuf][i] = 0;
+                }
+
+                EigenXform x = from->hasher_.get_center( v.first );
+                typename XMap::Value const & rotscores = v.second;
+
+                for ( int i = 0; i < 3; i++ ) {
+                    for ( int j = 0; j < 3; j++ ) {
+                        xforms[ibuf][i*3 + j] = x.rotation()(i, j);
+                    }
+                }
+                for ( int i = 0; i < 3; i++ ) {
+                    xforms[ibuf][9 + i] = x.translation()(i);
+                }
+
+                for( int i_rs = 0; i_rs < Nrots; ++i_rs ) {
+
+                    if( rotscores.empty(i_rs) ) {
+                        break;
+                    }
+                    irots[ibuf][i_rs] = rotscores.rotamer(i_rs);
+                    scores[ibuf][i_rs] = rotscores.score(i_rs);
+
+                }
+
+
+                // Eigen::Matrix<float,3,3> rotation;
+                // ::scheme::objective::hash::get_transform_rotation( x, rotation );
+                // Eigen::Quaternion<float> q(rotation);
+
+                // quats[ibuf][0] = q.w();
+                // quats[ibuf][1] = q.x();
+                // quats[ibuf][2] = q.y();
+                // quats[ibuf][3] = q.z();
+
+
+
+                // ::scheme::util::SimpleArray<7,float> f7 = from->hasher_.get_f7( x );
+                // for ( int i = 0; i < 7; i++ ) {
+                //     f7s[ibuf][i] = f7[i];
+                // }
+
+                ibuf++;
+
+                if ( ibuf == BUFFSIZE || std::next(iter) == from->map_.end() ) {
+
+                    hsize_t size[2];
+                    hsize_t offset[2];
+
+                    offset[0] = ifile;
+                    offset[1] = 0;
+
+                    size[0] = ibuf;
+                    size[1] = 12;
+                    H5::DataSpace xform_filespace = xform_dataset.getSpace();
+                    xform_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace xform_dataspace( 2, size );
+                    xform_dataset.write( xforms, xform_datatype, xform_dataspace, xform_filespace );
+
+
+                    size[0] = ibuf;
+                    size[1] = Nrots;
+                    H5::DataSpace irot_filespace = irot_dataset.getSpace();
+                    irot_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace irot_dataspace( 2, size );
+                    irot_dataset.write( irots, irot_datatype, irot_dataspace, irot_filespace );
+
+
+                    size[0] = ibuf;
+                    size[1] = Nrots;
+                    H5::DataSpace score_filespace = score_dataset.getSpace();
+                    score_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace score_dataspace( 2, size );
+                    score_dataset.write( scores, score_datatype, score_dataspace, score_filespace );
+
+
+                    // size[0] = ibuf;
+                    // size[1] = 7;
+                    // H5::DataSpace f7_filespace = f7_dataset.getSpace();
+                    // f7_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    // H5::DataSpace f7_dataspace( 2, size );
+                    // f7_dataset.write( f7s, score_datatype, f7_dataspace, f7_filespace );
+
+                    // size[0] = ibuf;
+                    // size[1] = 4;
+                    // H5::DataSpace quat_filespace = quat_dataset.getSpace();
+                    // quat_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    // H5::DataSpace quat_dataspace( 2, size );
+                    // quat_dataset.write( quats, score_datatype, quat_dataspace, quat_filespace );
+
+
+
+                    ifile += ibuf;
+                    ibuf = 0;
+
+                }
+
+            }
+
+            file.close();
+
+            runtime_assert( ibuf == 0 );
+            runtime_assert( ifile == rif_size );
+
+
+        } catch( H5::Exception error ) {
+            error.printErrorStack();
+            return;
+        }
+
+
+#else
+
+        std::cout << "Error! Can only dump rif to hdf5 if you built with hdf5!" << std::endl;
+
+#endif
+
+
+
+    }
+
+
+
         // randomly dump rif residues defined by res_names, and "*" means all 20 amino acids.
         bool random_dump_rotamers( std::vector< std::string > res_names, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const override
         {
