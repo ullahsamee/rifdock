@@ -106,6 +106,7 @@ struct RifBase
     virtual bool random_dump_rotamers( std::vector< std::string > res_names_dump, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
 
+    virtual void dump_rif_to_hdf5( ) const = 0;
     virtual bool dump_the_best_rifres( size_t num_to_dump, float rmsd_resl, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     virtual bool dump_rotamers_for_sats( std::vector< size_t > const & sat, size_t number_to_dump, 

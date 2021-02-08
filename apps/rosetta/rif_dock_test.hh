@@ -109,6 +109,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rif_rots_as_chains )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_hdf5 )
 	OPT_1GRP_KEY(  StringVector, rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
@@ -387,6 +388,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
 
+
+            NEW_OPT(  rif_dock::dump_rifgen_hdf5, "Dump the rif to an hdf5 file.", false );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", utility::vector1<std::string>());
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1.0f );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1.0f );
@@ -597,6 +600,7 @@ struct RifDockOpt
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
 	bool        rif_rots_as_chains                   ;
+    bool        dump_rifgen_hdf5                     ;
 	std::vector<std::string> dump_rifgen_near_pdb    ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
@@ -866,6 +870,7 @@ struct RifDockOpt
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
+        dump_rifgen_hdf5                       = option[rif_dock::dump_rifgen_hdf5                   ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
         dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();

@@ -328,7 +328,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
         // the requirement definition stuff
         bool const use_requirement_definition = check_requirement_definition_exists( tuning_file ) ;
         std::vector< int > hbond_requirement_labels;
-        std::vector< int > bidentate_requirement_labels;
+        std::vector< std::set<int> > bidentate_requirement_labels;
 
 		RotamerIndex const & rot_index( *rot_index_p );
 
@@ -459,7 +459,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 bidentate_requirement_labels.resize( target_bonder_names.size() );
                 for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
                     hbond_requirement_labels[ii] = -1;
-                    bidentate_requirement_labels[ii] = -1;
+                    // bidentate_requirement_labels[ii] = -1;
                 }
                 
                 std::vector< HbondRequirement > hbond_reqs = get_hbond_requirement_definitions( tuning_file );
@@ -476,7 +476,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 for ( auto const & x : bidentate_reqs ){
                     for (int ii = 0; ii < target_bonder_names.size(); ++ii) {
                         if ( ( x.res1_num == target_bonder_names[ii].first && x.atom1_name == target_bonder_names[ii].second ) || ( x.res2_num == target_bonder_names[ii].first && x.atom2_name == target_bonder_names[ii].second ) ) {
-                            bidentate_requirement_labels[ii] = x.req_num;
+                            bidentate_requirement_labels[ii].insert( x.req_num );
                             max_req_no = std::max<int>(max_req_no, x.req_num);
                         }
                     }
@@ -998,11 +998,25 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                                 }
                             } else {
                                 // Bidentate should always override individual hbond defs
-                                if ( bidentate_requirement_labels[sat1] != -1 && bidentate_requirement_labels[sat1] == bidentate_requirement_labels[sat2] ) {
-                                    sat1 = bidentate_requirement_labels[sat1];
-                                    sat2 = -1;
 
-                                } else {
+                                bool skip_hbond = false;
+                                if ( !bidentate_requirement_labels[sat1].empty() && !bidentate_requirement_labels[sat2].empty() ) {
+
+                                    std::set<int> const & s1 = bidentate_requirement_labels[sat1];
+                                    std::set<int> const & s2 = bidentate_requirement_labels[sat2];
+
+                                    std::set<int> intersect;
+                                    std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
+                                        std::inserter(intersect, intersect.begin()));
+
+                                    if ( ! intersect.empty() ) {
+                                        skip_hbond = true;
+                                        sat1 = *intersect.begin();
+                                        sat2 = -1;
+                                    }
+                                }
+
+                                if ( ! skip_hbond ) {
                                     if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] != -1 ) {
                                                                             //utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
                                                                             // same as the rif table merging logic, always keep the larger requirement

@@ -36,6 +36,14 @@ add_subdirectory( python )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_OPENMP -fopenmp" )
 LIST( APPEND ALL_ROSETTA_LIBS gomp )
 
+if ( ${USEHDF5} )
+    FIND_PACKAGE(HDF5 REQUIRED COMPONENTS C CXX HL)
+    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+    link_directories( ${HDF5_LIBRARY_DIRS} )
+    LIST( APPEND ALL_ROSETTA_LIBS ${HDF5_LIBRARIES}) #hdf5 hdf5_hl hdf5_cpp hdf5_hl_cp )
+endif()
+
+
 add_subdirectory( riflib )
 
 set( EXES "test_librosetta" "rifgen" "rif_dock_test" "scheme_make_bounding_grids" )
