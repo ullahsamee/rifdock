@@ -322,10 +322,13 @@ dump_rif_result_(
 
 
                     bool rot_was_placed = false;
-                    for ( std::pair<intRot,intRot> const & placed_rot : selected_result.rotamers() ) {
-                        if ( placed_rot.first == bba.index_ && placed_rot.second == irot ) {
-                            rot_was_placed = true;
-                            break;
+
+                    if ( selected_result.rotamers_ ) {
+                        for ( std::pair<intRot,intRot> const & placed_rot : selected_result.rotamers() ) {
+                            if ( placed_rot.first == bba.index_ && placed_rot.second == irot ) {
+                                rot_was_placed = true;
+                                break;
+                            }
                         }
                     }
 
@@ -356,7 +359,7 @@ dump_rif_result_(
 
                     }
 
-                    if (sat1_sat2.first > -1) {
+                    if (sat1_sat2.first > -1 && rot_was_placed ) {
                         std::pair< int, std::string > brian_pair;
                         brian_pair.first = ires + 1;
                         brian_pair.second = "HOT_IN:" + str(sat1_sat2.first);

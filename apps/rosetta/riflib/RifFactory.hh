@@ -127,6 +127,7 @@ struct RifSceneObjectiveConfig
     float hydrophobic_ddg_cut;
 	float scaff_bb_hbond_weight;
     std::vector< int > requirements;
+    std::vector<std::pair<int,std::vector<int>>> requirement_groups;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
     shared_ptr<BurialVoxelArray> sasa_grid;

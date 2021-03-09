@@ -26,6 +26,8 @@ struct RotamerScore {
 	static const Data one = 1;
 	static const Data RotamerMask = (( one << RotamerBits ) - one );
 	static const bool UseSat = false;
+	static const int NSat = 0;
+	static const int sizeof_sat = 0;
 
 	Data data_;
 	RotamerScore(): data_( RotamerMask ) {}
@@ -121,6 +123,7 @@ struct RotamerScoreSat : public RotamerScore<_Data,_RotamerBits,_Divisor> {
 	static const int RotamerBits = _RotamerBits;
 	static const int Divisor = _Divisor;
 	static const int NSat = _NSat;
+	static const int sizeof_sat = sizeof(SatDatum);
 	util::SimpleArray<NSat,SatDatum> sat_data_;
 	RotamerScoreSat() : BASE() {}
 	RotamerScoreSat( Data data ) : BASE( data ) {}

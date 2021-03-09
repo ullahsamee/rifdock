@@ -919,6 +919,7 @@ int main(int argc, char *argv[]) {
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
                 rso_config.requirements = opt.requirements;
+                rso_config.requirement_groups = opt.requirement_groups;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
             	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;

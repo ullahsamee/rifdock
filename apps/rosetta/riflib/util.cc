@@ -419,6 +419,9 @@ get_rif_atype_map()
 	if(ats->has_atom("NtrR")) atypemap[ ats->atom_type_index("NtrR") ] = 11;
 	if(ats->has_atom("SH1" )) atypemap[ ats->atom_type_index("SH1" ) ] = 17;
 
+        // These are in DNA. Blame Robert Pecoraro if you don't like the typing -bcov
+	if(ats->has_atom("Oet2" )) atypemap[ ats->atom_type_index("Oet2" ) ] = 21; //OCbb
+
 	return atypemap;
 }
 

@@ -101,6 +101,8 @@ create_rifine_task(
     int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
     int final_resl = rdd.rif_ptrs.size() - 1;
 
+    ScaffoldDataCacheOP test_data_cache = rdd.scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
+
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
     if ( rdd.opt.xform_fname == "IDENTITY" ) {
         // The identity director takes care of this
@@ -111,6 +113,11 @@ create_rifine_task(
     task_list.push_back(make_shared<HSearchInit>( ));
     task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, final_resl, rdd.opt.tether_to_input_position_cut ));
     // task_list.push_back(make_shared<HSearchFinishTask>( rdd.opt.global_score_cut ));
+
+    if (rdd.opt.dump_x_frames_per_resl > 0) {
+        task_list.push_back(make_shared<DumpHSearchFramesTask>( 0, final_resl, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
+                                                                rdd.opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%final_resl) ));
+    }
 
     if ( opt.sasa_cut > 0 ) {
         task_list.push_back(make_shared<FilterBySasaTask>( opt.sasa_cut ));
