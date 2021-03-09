@@ -33,6 +33,7 @@ remove some or all modifications to residues, and/or remap res numbers? fix hbon
 	#include <core/import_pose/import_pose.hh>
 	#include <core/conformation/Residue.hh>
 	#include <core/pose/Pose.hh>
+	#include <core/pose/PDBInfo.hh>
 	#include <core/pose/motif/reference_frames.hh>
 	#include <numeric/xyz.io.hh>
 
@@ -115,6 +116,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY( Boolean       , rifgen, soft_rosetta_grid_energies )
 	OPT_1GRP_KEY( Boolean       , rifgen, dump_bidentate_hbonds )
 	OPT_1GRP_KEY( Boolean       , rifgen, report_aa_count )
+	OPT_1GRP_KEY( Boolean       , rifgen, dump_rifgen_hdf5 )
 
 	OPT_1GRP_KEY( Boolean       , rifgen, dont_center_hotspots )
 	OPT_1GRP_KEY( StringVector  , rifgen, hotspot_groups )
@@ -203,6 +205,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::soft_rosetta_grid_energies       , "Use soft option for grid energies", false );
 		NEW_OPT(  rifgen::dump_bidentate_hbonds            , "Dump all bidentate hbonds", false );
 		NEW_OPT(  rifgen::report_aa_count                  , "Really hacky thing to report aa count during rifgen", false );
+		NEW_OPT(  rifgen::dump_rifgen_hdf5                 , "Dump the rif to an hdf5 file.", false );
 		
 		NEW_OPT(  rifgen::dont_center_hotspots             , "Nate added this flag and it may not work" , false );
 		NEW_OPT(  rifgen::hotspot_groups                   , "" , utility::vector1<std::string>() );
@@ -1131,6 +1134,24 @@ int main(int argc, char *argv[]) {
 	omp_destroy_lock( & io_lock );
 	omp_destroy_lock( & pose_lock );
 	omp_destroy_lock( & hbond_geoms_cache_lock );
+
+	// This function is mirrored in rif_dock_test.cc
+	if ( option[rifgen::dump_rifgen_hdf5]() ) {
+		core::pose::Pose all_rots;
+		for ( int irot = 0; irot < rot_index.size(); irot++ ) {
+			all_rots.append_residue_by_jump( *rot_index_spec.get_rotamer_at_identity( irot ), 1 );
+		}
+
+		all_rots.pdb_info( std::make_shared<core::pose::PDBInfo>( all_rots ) );
+		for ( core::Size i = 1; i <= all_rots.size(); i++ ) {
+			all_rots.pdb_info()->chain( i, 'A' );
+		}
+		std::cout << "Dumping rif standard rotamers to rif_rotamers.pdb" << std::endl;
+		all_rots.dump_pdb("rif_rotamers.pdb");
+
+		rif->dump_rif_to_hdf5();
+
+	}
 
 
 	std::cout << "rif_hier_DONE" << std::endl;

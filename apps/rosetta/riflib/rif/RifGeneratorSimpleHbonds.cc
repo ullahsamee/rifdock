@@ -1000,7 +1000,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                                 // Bidentate should always override individual hbond defs
 
                                 bool skip_hbond = false;
-                                if ( !bidentate_requirement_labels[sat1].empty() && !bidentate_requirement_labels[sat2].empty() ) {
+                                if ( sat1 != sat2 && !bidentate_requirement_labels[sat1].empty() && !bidentate_requirement_labels[sat2].empty() ) {
 
                                     std::set<int> const & s1 = bidentate_requirement_labels[sat1];
                                     std::set<int> const & s2 = bidentate_requirement_labels[sat2];
@@ -1020,7 +1020,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                                     if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] != -1 ) {
                                                                             //utility_exit_with_message("I satisfied two polar, maybe you want to define a bidentate hydrogen bond?? I don't know how to do it, ask Longxing about this.");
                                                                             // same as the rif table merging logic, always keep the larger requirement
-                                                                            sat1 = hbond_requirement_labels[sat1] < hbond_requirement_labels[sat2] ? hbond_requirement_labels[sat2] : hbond_requirement_labels[sat1];
+                                                                            sat1 = std::max<int>( hbond_requirement_labels[sat1], hbond_requirement_labels[sat2] );
                                                                             sat2 = -1;
                                     } else if ( hbond_requirement_labels[sat1] != -1 && hbond_requirement_labels[sat2] == -1 ) {
                                         sat1 = hbond_requirement_labels[sat1];
