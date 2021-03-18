@@ -22,14 +22,11 @@ namespace scheme {
 namespace rif {
 
 struct RifGeneratorUserHotspotsOpts {
+	bool dont_center_hotspots = false;
 	float hotspot_sample_cart_bound = 1.0;
 	float hotspot_sample_angle_bound = 30.0;
     float hotspot_score_thresh = -0.5;
     int   hotspot_nsamples = 10000;
-	float hbond_weight = 2.0;
-	float upweight_multi_hbond = 0.0;
-	float min_hb_quality_for_satisfaction = -0.6;
-    float long_hbond_fudge_distance = 0.0;
     int  dump_hotspot_samples = 0;
     bool test_hotspot_redundancy = false;
 	float hotspot_score_bonus = 0.;
@@ -37,8 +34,11 @@ struct RifGeneratorUserHotspotsOpts {
     bool all_hotspots_are_bidentate = false;
     bool single_file_hotspots_insertion = false;
     bool use_d_aa = false;
+    bool add_to_rotamer_spec = true;
+    float hotspot_score_override = 12345;
 	Eigen::Vector3f target_center;
 	std::vector<std::string> hotspot_files;
+    bool clear_sats_first = false;
 };
 
 struct RifGeneratorUserHotspots : public RifGenerator {
@@ -59,6 +59,15 @@ struct RifGeneratorUserHotspots : public RifGenerator {
 
 };
 
+class hotspot_stats {
+	public:
+		hotspot_stats(int group, int res, std::string name) : i_group(group), i_res(res), res_name(name){}
+		int i_group;
+		int i_res;
+		std::string res_name;
+		std::vector<float> scores;
+		std::vector<EigenXform> bb_pos;
+};
 
 }
 }

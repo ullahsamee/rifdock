@@ -34,6 +34,8 @@
 #include <scheme/objective/ObjectiveFunction.hh>
 #include <scheme/search/HackPack.hh>
 
+#include "scheme/util/SimpleArray.hh"
+
 #include <riflib/scaffold/ScaffoldDataCache.hh>
 #include <complex>
 
@@ -44,6 +46,9 @@
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
 #endif
 
+#if USEHDF5
+#include "H5Cpp.h"
+#endif
 
 namespace devel {
 namespace scheme {
@@ -113,6 +118,20 @@ public:
 	}
 
 
+    void clear_sats() override {
+
+        RifBase * base = this;
+        shared_ptr<XMap> from;
+        base->get_xmap_ptr( from );
+        static int const Nrots = XMap::Value::N;
+
+        for( auto & v : from->map_ ){
+            typename XMap::Value & rotscores = v.second;
+            rotscores.clear_sats();
+        }
+    }
+
+
     //Brian
     virtual std::pair< int, int > get_sat1_sat2( EigenXform const & x, int roti ) const override {
     	std::pair< int, int > sat1_sat2( -1, -1);
@@ -148,6 +167,8 @@ public:
 	float ang_resl()    const override { return xmap_ptr_->ang_resl_; }
 	size_t sizeof_value_type() const override { return sizeof(typename XMap::Map::value_type); }
 	bool  has_sat_data_slots() const override { return XMap::Value::RotScore::UseSat; }
+    int  num_sat_data_slots() const override { return XMap::Value::RotScore::NSat; }
+    int  sizeof_sat_data_slot() const override { return XMap::Value::RotScore::sizeof_sat; }
 
 	// will resize to accomodate highest number rotamer
 	void get_rotamer_ids_in_use( std::vector<bool> & using_rot ) const override
@@ -251,6 +272,278 @@ public:
     }
 
         
+    void dump_rif_to_hdf5( ) const {
+
+#if USEHDF5
+
+        const int BUFFSIZE = 1024;
+
+        static int const Nrots = XMap::Value::N;
+
+        const RifBase * base = this;
+        shared_ptr<XMap const> from;
+        base->get_xmap_const_ptr( from );
+        uint64_t rif_size = from->map_.size();
+
+        const int num_sats = base->num_sat_data_slots();
+        const int sizeof_sat = base->sizeof_sat_data_slot();
+
+        H5::PredType sat_type = H5::PredType::NATIVE_INT8;
+        if ( sizeof_sat == 0 ) {
+            runtime_assert( num_sats == 0 );
+        } else if ( sizeof_sat == 1 ) {
+            sat_type = H5::PredType::NATIVE_INT8;
+        } else if ( sizeof_sat == 2 ) {
+            sat_type = H5::PredType::NATIVE_INT16;
+        } else {
+            utility_exit_with_message("How big are your sat slots? You're gonna have to fix the code.");
+        }
+
+
+        try {
+
+
+            std::cout << "Dumping rif to rif.h5" << std::endl;
+
+            H5std_string fname = "rif.h5";
+
+            hsize_t dims[2];
+            hsize_t one_dim[1];
+
+
+            double xforms[BUFFSIZE][12];
+            int16_t irots[BUFFSIZE][Nrots];
+            float scores[BUFFSIZE][Nrots];
+
+            int16_t sats[num_sats][BUFFSIZE][Nrots];
+
+            // float f7s[BUFFSIZE][7];
+            // float quats[BUFFSIZE][4];
+
+            H5::H5File file( fname, H5F_ACC_TRUNC );
+
+
+            one_dim[0] = 3;
+            H5::DataSpace meta_dataspace( 1, one_dim );
+            H5::FloatType meta_datatype( H5::PredType::NATIVE_FLOAT );
+            H5::DataSet meta_dataset = file.createDataSet( "cart_ori_bound", meta_datatype, meta_dataspace );
+
+            // I know, I'm sure you wish these were doubles, but they aren't
+            float cart_ori_bound[3] = {from->cart_resl_, from->ang_resl_, from->cart_bound_};
+            meta_dataset.write( cart_ori_bound, meta_datatype, meta_dataspace, meta_dataspace );
+
+
+            dims[0] = rif_size;
+            dims[1] = 12;
+            H5::DataSpace full_xform_dataspace( 2, dims );
+
+            dims[0] = rif_size;
+            dims[1] = Nrots;
+            H5::DataSpace full_irot_dataspace( 2, dims );
+            H5::DataSpace full_score_dataspace( 2, dims );
+            H5::DataSpace full_sat_dataspace( 2, dims );
+
+
+
+            // dims[0] = rif_size;
+            // dims[1] = 7;
+            // H5::DataSpace full_f7_dataspace( 2, dims );
+
+            // dims[0] = rif_size;
+            // dims[1] = 4;
+            // H5::DataSpace full_quat_dataspace( 2, dims );
+
+
+            H5::FloatType xform_datatype( H5::PredType::NATIVE_DOUBLE );
+            H5::IntType irot_datatype( H5::PredType::NATIVE_INT16 );
+            H5::FloatType score_datatype( H5::PredType::NATIVE_FLOAT );
+            H5::IntType sat_datatype( sat_type );
+            H5::IntType local_sat_datatype( H5::PredType::NATIVE_INT16 ); // typeof( sats )
+
+            H5::DataSet xform_dataset = file.createDataSet( "bin_center", xform_datatype, full_xform_dataspace );
+            H5::DataSet irot_dataset = file.createDataSet( "irots", irot_datatype, full_irot_dataspace );
+            H5::DataSet score_dataset = file.createDataSet( "scores", score_datatype, full_score_dataspace );
+
+            std::vector<H5::DataSet> sat_datasets;
+            for ( int i = 0; i < num_sats; i++ ) {
+                std::string name = boost::str(boost::format("sat%i")%i);
+                sat_datasets.push_back( file.createDataSet( name, sat_datatype, full_sat_dataspace ) );
+            }
+
+            // H5::DataSet f7_dataset = file.createDataSet( "f7s", score_datatype, full_f7_dataspace );
+            // H5::DataSet quat_dataset = file.createDataSet( "quats", score_datatype, full_quat_dataspace );
+
+
+            int ibuf = 0;
+            int ifile = 0;
+
+            // auto final_iter = from->map_.end();
+
+            for ( auto iter = from->map_.begin(); iter != from->map_.end(); ++iter) {
+            // for (auto const & v : from->map_ ) {
+                auto const & v = *iter;
+
+                for ( int i = 0; i < Nrots; i++ ) {
+                    irots[ibuf][i] = -1;
+                    scores[ibuf][i] = 0;
+
+                    for ( int isat = 0; isat < num_sats; isat++ ) {
+                        sats[isat][ibuf][i] = -1;
+                    }
+
+                }
+
+
+                EigenXform x = from->hasher_.get_center( v.first );
+                typename XMap::Value const & rotscores = v.second;
+
+                for ( int i = 0; i < 3; i++ ) {
+                    for ( int j = 0; j < 3; j++ ) {
+                        xforms[ibuf][i*3 + j] = x.rotation()(i, j);
+                    }
+                }
+                for ( int i = 0; i < 3; i++ ) {
+                    xforms[ibuf][9 + i] = x.translation()(i);
+                }
+
+                for( int i_rs = 0; i_rs < Nrots; ++i_rs ) {
+
+                    if( rotscores.empty(i_rs) ) {
+                        break;
+                    }
+                    irots[ibuf][i_rs] = rotscores.rotamer(i_rs);
+                    scores[ibuf][i_rs] = rotscores.score(i_rs);
+
+                    if ( num_sats > 0 ) {
+                        // Noob bcov made this a variable size return value...
+                        std::vector<int> i_rs_sats;
+                        rotscores.rotamer_sat_groups( i_rs, i_rs_sats );
+
+                        for ( int isat = 0; isat < std::min<int>( i_rs_sats.size(), num_sats ); isat++ ) {
+                            sats[isat][ibuf][i_rs] = i_rs_sats[isat];
+                        }
+                    }
+
+                }
+
+
+                // Eigen::Matrix<float,3,3> rotation;
+                // ::scheme::objective::hash::get_transform_rotation( x, rotation );
+                // Eigen::Quaternion<float> q(rotation);
+
+                // quats[ibuf][0] = q.w();
+                // quats[ibuf][1] = q.x();
+                // quats[ibuf][2] = q.y();
+                // quats[ibuf][3] = q.z();
+
+
+
+                // ::scheme::util::SimpleArray<7,float> f7 = from->hasher_.get_f7( x );
+                // for ( int i = 0; i < 7; i++ ) {
+                //     f7s[ibuf][i] = f7[i];
+                // }
+
+                ibuf++;
+
+                if ( ibuf == BUFFSIZE || std::next(iter) == from->map_.end() ) {
+
+                    hsize_t size[2];
+                    hsize_t offset[2];
+
+                    offset[0] = ifile;
+                    offset[1] = 0;
+
+                    size[0] = ibuf;
+                    size[1] = 12;
+                    H5::DataSpace xform_filespace = xform_dataset.getSpace();
+                    xform_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace xform_dataspace( 2, size );
+                    xform_dataset.write( xforms, xform_datatype, xform_dataspace, xform_filespace );
+
+
+                    size[0] = ibuf;
+                    size[1] = Nrots;
+                    H5::DataSpace irot_filespace = irot_dataset.getSpace();
+                    irot_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace irot_dataspace( 2, size );
+                    irot_dataset.write( irots, irot_datatype, irot_dataspace, irot_filespace );
+
+
+                    size[0] = ibuf;
+                    size[1] = Nrots;
+                    H5::DataSpace score_filespace = score_dataset.getSpace();
+                    score_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    H5::DataSpace score_dataspace( 2, size );
+                    score_dataset.write( scores, score_datatype, score_dataspace, score_filespace );
+
+
+                    for ( int i = 0; i < num_sats; i++ ) {
+
+                        H5::DataSet & sat_dataset = sat_datasets[i];
+
+                        size[0] = ibuf;
+                        size[1] = Nrots;
+                        H5::DataSpace sat_filespace = sat_dataset.getSpace();
+                        sat_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                        H5::DataSpace sat_dataspace( 2, size );
+                        sat_dataset.write( sats[i], local_sat_datatype, sat_dataspace, sat_filespace );
+
+                    }
+
+
+                    // size[0] = ibuf;
+                    // size[1] = 7;
+                    // H5::DataSpace f7_filespace = f7_dataset.getSpace();
+                    // f7_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    // H5::DataSpace f7_dataspace( 2, size );
+                    // f7_dataset.write( f7s, score_datatype, f7_dataspace, f7_filespace );
+
+                    // size[0] = ibuf;
+                    // size[1] = 4;
+                    // H5::DataSpace quat_filespace = quat_dataset.getSpace();
+                    // quat_filespace.selectHyperslab( H5S_SELECT_SET, size, offset );
+
+                    // H5::DataSpace quat_dataspace( 2, size );
+                    // quat_dataset.write( quats, score_datatype, quat_dataspace, quat_filespace );
+
+
+
+                    ifile += ibuf;
+                    ibuf = 0;
+
+                }
+
+            }
+
+            file.close();
+
+            runtime_assert( ibuf == 0 );
+            runtime_assert( ifile == rif_size );
+
+
+        } catch( H5::Exception error ) {
+            error.printErrorStack();
+            return;
+        }
+
+
+#else
+
+        std::cout << "Error! Can only dump rif to hdf5 if you built with hdf5!" << std::endl;
+
+#endif
+
+
+
+    }
+
+
+
         // randomly dump rif residues defined by res_names, and "*" means all 20 amino acids.
         bool random_dump_rotamers( std::vector< std::string > res_names, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const override
         {
@@ -987,6 +1280,10 @@ std::string get_rif_type_from_file( std::string fname )
         shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
+		
+        
+        std::vector<bool> pdbinfo_req_req_satisfied_; // has this pdbinfo:req been satisfied yet
+        
 	};
 
 	template< class BBActor, class RIF, class VoxelArrayPtr >
@@ -1006,9 +1303,22 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
+		
+        int num_pdbinfo_requirements_required_;
+        std::vector< std::vector<bool> > pdbinfo_req_active_positions_; // outer loop = which pdbinfo:req
+                                                                        // inner loop = which active position
+        std::vector< std::vector<bool> > pdbinfo_req_active_requirements_; // outer loop = which pdbinfo:req
+                                                                           // inner loop = which requirement(s)
+
+        std::vector< std::pair< int, std::vector<int> > > requirement_groups_;
+
+        std::vector<float> sat_bonus_;
+        std::vector<bool> sat_bonus_override_;
         
         // the requirements code
         std::vector< int > requirements_;
+        int max_req_no_ = 0;
+
 	private:
 		shared_ptr<RIF const> rif_ = nullptr;
 	public:
@@ -1094,12 +1404,10 @@ std::string get_rif_type_from_file( std::string fname )
 				//scratch.is_satisfied_score_.resize(n_sat_groups_,0.0);
 				//for( int i = 0; i < n_sat_groups_; ++i ) scratch.is_satisfied_score_[i] = 0;
 			}
-            if ( requirements_.size() > 0 )
+            if ( max_req_no_ > 0 )
             {
-                int64_t max = -9e9;
-                for( auto val : requirements_ ){ if (val > max ) max = val; }
-                scratch.requirements_satisfied_.resize(max+1);
-                for( int i = 0; i <= max; ++i ) scratch.requirements_satisfied_[i] = false;
+                scratch.requirements_satisfied_.resize(max_req_no_+1);
+                for( int i = 0; i <= max_req_no_; ++i ) scratch.requirements_satisfied_[i] = false;
             }
 			scratch.has_rifrot_.resize(scratch.rotamer_energies_1b_->size(), false);
 			for ( int i = 0; i < scratch.has_rifrot_.size(); i++ ) scratch.has_rifrot_[i] = false;
@@ -1112,6 +1420,13 @@ std::string get_rif_type_from_file( std::string fname )
 
 				scratch.is_satisfied_ = scratch.unsat_manager_->get_presatisfied();
 			}
+            
+            if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                
+                scratch.pdbinfo_req_req_satisfied_.resize( pdbinfo_req_active_positions_.size() );
+                for ( int i = 0; i < scratch.pdbinfo_req_req_satisfied_.size(); i++ ) scratch.pdbinfo_req_req_satisfied_[i] = false;
+                
+            }
 
 			if( !packing_ ) return;
 
@@ -1147,20 +1462,56 @@ std::string get_rif_type_from_file( std::string fname )
 			static int const Nrots = RIF::Value::N;
 			int const ires = bb.index_;
 			float bestsc = 0.0;
+            // loop over rotamers that we found in the rif
 			for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
 				if( rotscores.empty(i_rs) ) {
 					break;
 				}
 				
+                // which irot did we get?
                 int irot = rotscores.rotamer(i_rs);
                 if ( scratch.allowed_irots_ && ! scratch.allowed_irots_->at(ires)[irot] ) continue;
 
 				float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
 				float score_rot_v_target = rotscores.score(i_rs);
 
+                bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+                float sat_bonus = 0;
+                bool skip_scoring = false;
+                if ( rotamer_satisfies && sat_bonus_.size() > 0 ) {
+                    int our_sat = rotscores.get_requirement_num( i_rs );
+                    if ( our_sat > -1 ) {
+                        sat_bonus = sat_bonus_[our_sat];
+                        if ( sat_bonus_override_[our_sat] ) {
+                            skip_scoring = true;
+                            score_rot_v_target = sat_bonus;
+                        } else {
+                            score_rot_v_target += sat_bonus;
+                        }
+                    }
+                }
+
                 if ( score_rot_v_target > ignore_rifres_if_worse_than ) continue;
 
-				bool rotamer_satisfies = rotscores.do_i_satisfy_anything(i_rs);
+
+                if ( rotamer_satisfies && pdbinfo_req_active_positions_.size() > 0 ) {
+                    
+                    std::vector<int> sats;
+                    rotscores.rotamer_sat_groups( i_rs, sats );
+                    if ( sats.size() == 0 ) continue;
+                    
+                    // loop over pdbinfo_requirements
+                    for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                        if ( ! pdbinfo_req_active_positions_[ipdbinforeq][ires] ) continue;
+                        // now we know we care about this position
+                        for ( int sat : sats ) {
+                            if ( pdbinfo_req_active_requirements_[ipdbinforeq].at(sat) ) {
+                                scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] = true;
+                            }
+                        }
+                    }
+                }
+
 
 				if( packing_ && packopts_.packing_use_rif_rotamers ){
 
@@ -1169,9 +1520,9 @@ std::string get_rif_type_from_file( std::string fname )
                         // Very important!!! Do not fill in scratch.is_satisfied_ here!!!
                         //  It needs to collect the BBHbond sats which are unconditionally satisifed
 						int sat1 = -1, sat2 = -1, hbcount = 0;
-						float const recalc_rot_v_tgt = packopts_.rescore_rots_before_insertion ? 
+						float const recalc_rot_v_tgt = (packopts_.rescore_rots_before_insertion && !skip_scoring ) ? 
 														rot_tgt_scorer_.score_rotamer_v_target_sat( 
-																irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) :
+																irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 ) + sat_bonus :
 														score_rot_v_target;
 
 						score_rot_v_target = recalc_rot_v_tgt;
@@ -1189,6 +1540,11 @@ std::string get_rif_type_from_file( std::string fname )
 								sat_bonus = packopts_.user_rotamer_bonus_per_chi * rot_tgt_scorer_.rot_index_p_->nchi(irot) +
 											packopts_.user_rotamer_bonus_constant;
 							}
+
+                            if ( hydrophobic_manager_ && !skip_scoring ) {
+                                score_rot_v_target += hydrophobic_manager_->get_individual_weighted_hyd_ddg( irot, bb.position() );
+                            }
+
 							if ( ! scratch.burial_manager_ ) scratch.hackpack_->add_tmp_rot( ires, irot, score_rot_v_target + rot1be + sat_bonus );
 							else                    scratch.unsat_manager_->add_to_pack_rot( ires, irot, score_rot_v_target + rot1be, sat1, sat2 );
 							
@@ -1225,7 +1581,7 @@ std::string get_rif_type_from_file( std::string fname )
                     scratch.has_rifrot_[ires] = true;
                 }
 								// an arbitrary cutoff value.
-								if( requirements_.size() > 0 && score_rot_tot < 2 )
+								if( max_req_no_ > 0 && score_rot_tot < 2 )
 								{
 										rotscores.mark_sat_groups( i_rs, scratch.requirements_satisfied_ );
 								}
@@ -1309,7 +1665,7 @@ std::string get_rif_type_from_file( std::string fname )
                     float hydrophobic_ddg = 0;
                     bool pass_better_than = true, pass_cation_pi = true;
                     int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
-                                                                                    per_irot_counts, pass_better_than, pass_cation_pi );
+                                                                                    per_irot_counts, pass_better_than, pass_cation_pi, rot_tgt_scorer_ );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
                         result.val_ = 9e9;
                     }
@@ -1323,11 +1679,12 @@ std::string get_rif_type_from_file( std::string fname )
                         result.val_ = 9e9;
                     }
 
+
                 }
 
 
 
-                if ( requirements_.size() > 0 )
+                if ( max_req_no_ > 0 )
                 {
                     for( int ii = 0; ii < scratch.requirements_satisfied_.size(); ++ii ) scratch.requirements_satisfied_[ii] = false;
                     
@@ -1338,6 +1695,41 @@ std::string get_rif_type_from_file( std::string fname )
                         for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
                             if( rotscores.rotamer(i_rs) == result.rotamers_[ii].second ){
                                 rotscores.mark_sat_groups( i_rs, scratch.requirements_satisfied_ );
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                    
+                    for( int i = 0; i < scratch.pdbinfo_req_req_satisfied_.size(); ++i ) scratch.pdbinfo_req_req_satisfied_[i] = false;
+                    
+                    
+                    for( int ii = 0; ii < result.rotamers_.size(); ++ii ){
+                        int ires = result.rotamers_[ii].first;
+                        int irot = result.rotamers_[ii].second;
+                        BBActor const & bb = scene.template get_actor<BBActor>( 1, ires );
+                        typename RIF::Value const & rotscores = rif_->operator[]( bb.position() );
+                        static int const Nrots = RIF::Value::N;
+                        for( int i_rs = 0; i_rs < Nrots; ++i_rs ){
+                            if( rotscores.rotamer(i_rs) == irot ){
+                                
+                                std::vector<int> sats;
+                                rotscores.rotamer_sat_groups( i_rs, sats );
+                                if ( sats.size() == 0 ) continue;
+                                
+                                // loop over pdbinfo_requirements
+                                for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                                    if ( ! pdbinfo_req_active_positions_[ipdbinforeq][ires] ) continue;
+                                    // now we know we care about this position
+                                    for ( int sat : sats ) {
+                                        if ( pdbinfo_req_active_requirements_[ipdbinforeq].at(sat) ) {
+                                            scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] = true;
+                                        }
+                                    }
+                                }
+                                
                                 break;
                             }
                         }
@@ -1372,6 +1764,23 @@ std::string get_rif_type_from_file( std::string fname )
 
 
 			}
+            
+            
+            if ( pdbinfo_req_active_positions_.size() > 0 ) {
+                
+                int num_satisfied = 0;
+                
+                // loop over pdbinfo_requirements
+                for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_.size(); ipdbinforeq++ ) {
+                    if ( scratch.pdbinfo_req_req_satisfied_[ipdbinforeq] ) {
+                        num_satisfied += 1;
+                    }
+                }
+                
+                if ( num_satisfied < num_pdbinfo_requirements_required_ ) {
+                    result.val_ = 9e9;
+                }
+            }
 
 
 			if( n_sat_groups_ > 0 ){
@@ -1409,6 +1818,7 @@ std::string get_rif_type_from_file( std::string fname )
 			}
 
 
+
 			// Brian - this is closer to working during packing but still doesn't work
 			if ( require_n_rifres_ > 0 ) {
 				if ( packing_ ) {
@@ -1443,6 +1853,33 @@ std::string get_rif_type_from_file( std::string fname )
                 for ( auto const & x : requirements_ ) {
 										pass &= scratch.requirements_satisfied_[x];
 								}
+                if ( !pass ) result.val_ = 9e9;
+            }
+
+            if ( requirement_groups_.size() > 0 ) {
+                bool pass = true;
+                for ( auto const & num_reqs : requirement_groups_ ) {
+                    int num = num_reqs.first;
+                    std::vector<int> const & reqs = num_reqs.second;
+
+                    int count = 0;
+                    for ( int req : reqs ) {
+                        if ( req >= 0 ) {
+                            if ( scratch.requirements_satisfied_[req] ) {
+                                count++;
+                            }
+                        } else {
+                            if ( ! scratch.requirements_satisfied_[req] ) {
+                                count++;
+                            }
+                        }
+                    } 
+                    if ( num >= 0 ) {
+                        if ( count < num ) pass = false;
+                    } else {
+                        if ( count >= -num ) pass = false;
+                    }
+                }
                 if ( !pass ) result.val_ = 9e9;
             }
 
@@ -1822,8 +2259,26 @@ struct RifFactoryImpl :
 		// objective->config = config.rif_ptrs.size()-1;
 		// objectives.push_back( objective );
 
+
+        int max_req_no = 0;
+        for ( auto req : config.requirements ) {
+            max_req_no = std::max<int>( req, max_req_no );
+        }
+        for ( auto const & num_reqs : config.requirement_groups ) {
+            for ( auto req : num_reqs.second ) {
+                max_req_no = std::max<int>( std::abs<int>(req), max_req_no );
+            }
+        }
+        for ( auto const & req_mask : config.pdbinfo_req_active_requirements ) {
+            for ( int req = 0; req < req_mask.size(); req++ ) {
+                if ( req_mask[req] ) {
+                    max_req_no = std::max<int>( req, max_req_no );
+                }
+            }
+        }
+
         for( int i_so = 0; i_so < config.rif_ptrs.size(); ++i_so ){
-				if ( config.rif_ptrs[i_so] == nullptr ) continue;
+			if ( config.rif_ptrs[i_so] == nullptr ) continue;
     		shared_ptr< MySceneObjectiveRIF> packing_objective = make_shared<MySceneObjectiveRIF>();
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().set_rif( config.rif_ptrs[i_so] );
     		dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).config = i_so;
@@ -1833,13 +2288,31 @@ struct RifFactoryImpl :
     			dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
     				get_objective<MyScoreBBActorRIF>().require_satisfaction_ = config.require_satisfaction;
     		}
+
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().max_req_no_ = max_req_no;
+            
 				if( config.requirements.size() > 0 ){
 						dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 				}
+
+            if ( config.requirement_groups.size() > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().requirement_groups_ = config.requirement_groups;
+            }
+            
+            if ( config.pdbinfo_req_active_positions.size() > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().num_pdbinfo_requirements_required_ = config.num_pdbinfo_requirements_required;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_positions_ = config.pdbinfo_req_active_positions;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
+            }
+            
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
+            dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
+
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template
                     get_objective<MyScoreBBActorRIF>().ignore_rifres_if_worse_than = config.ignore_rifres_if_worse_than;
         packing_objectives.push_back( packing_objective );
         }
+
 
 		for( auto op : objectives ){
 			// dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
@@ -1851,9 +2324,24 @@ struct RifFactoryImpl :
 			if (config.require_n_rifres > 0 ) {
 				dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().require_n_rifres_ = config.require_n_rifres;
 			}
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().max_req_no_ = max_req_no;
+            
 			if ( config.requirements.size() > 0 ){
 			  dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirements_ = config.requirements;
 			}
+
+            if ( config.requirement_groups.size() > 0 ){
+              dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().requirement_groups_ = config.requirement_groups;
+            }
+            
+            if ( config.pdbinfo_req_active_positions.size() > 0 ) {
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().num_pdbinfo_requirements_required_ = config.num_pdbinfo_requirements_required;
+                dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_positions_ = config.pdbinfo_req_active_positions;
+                dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().pdbinfo_req_active_requirements_ = config.pdbinfo_req_active_requirements;
+            }
+
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_ = config.sat_bonus;
+            dynamic_cast<MySceneObjectiveRIF&>(*op).objective.template get_objective<MyScoreBBActorRIF>().sat_bonus_override_ = config.sat_bonus_override;
 		}
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().rotamer_energies_1b_ = config.local_onebody;
 		// dynamic_cast<MySceneObjectiveRIF&>(*packing_objective).objective.template get_objective<MyScoreBBActorRIF>().scaffold_rotamers_ = config.local_rotamers;

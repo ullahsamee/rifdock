@@ -284,6 +284,8 @@ struct NineAManager : public utility::pointer::ReferenceCount {
         EigenXform scaffold_perturb = EigenXform::Identity();
         ExtraScaffoldData extra_data;
 
+        std::string scaff_fname; // Faking this data for now - NRB
+
         get_default_scaffold_res(*pose_p, scaffold_res);
 
         ScaffoldDataCacheOP temp_data_cache = make_shared<ScaffoldDataCache>(
@@ -293,7 +295,9 @@ struct NineAManager : public utility::pointer::ReferenceCount {
             scaffold_perturb,
             rot_index_p,
             opt,
-            extra_data);
+            extra_data,
+            scaff_fname
+	    );
 
         nine.conformation = make_conformation_from_data_cache(temp_data_cache, false);
 

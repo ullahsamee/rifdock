@@ -13,21 +13,28 @@
 #define INCLUDED_riflib_rif_RifGenerator_hh
 
 #include <riflib/types.hh>
-#include <riflib/RotamerGenerator.hh>
+// #include <riflib/RotamerGenerator.hh>
 #include <riflib/RifBase.hh>
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
+#include <riflib/rifdock_typedefs.hh>
 #include <string>
 
 #ifdef USEGRIDSCORE
 	#include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
 #endif
 
-namespace scheme {
-namespace chemical {
-	struct RotamerIndexSpec;
-}
-}
+// namespace devel {
+// namespace scheme {
+// 	struct ScoreRotamerVsTarget;
+// }
+// }
+
+// namespace scheme {
+// namespace chemical {
+// 	struct RotamerIndexSpec;
+// }
+// }
 
 namespace devel {
 namespace scheme {
@@ -48,6 +55,7 @@ struct RifAccumulator {
 	virtual void clear() = 0; // seems to only clear temporary storage....
 	virtual uint64_t count_these_irots( int irot_low, int irot_high ) const = 0;
 	virtual std::set<size_t> get_sats_of_this_irot( devel::scheme::EigenXform const & x, int irot ) const = 0;
+	virtual bool initialize_with_rif( shared_ptr<RifBase> & rif ) = 0;
 };
 typedef shared_ptr<RifAccumulator> RifAccumulatorP;
 
@@ -65,8 +73,9 @@ struct RifGenParams {
 	HBRayOpts                      hbopt;
 #ifdef USEGRIDSCORE
 	shared_ptr<protocols::ligand_docking::ga_ligand_dock::GridScorer> grid_scorer;
-	bool                           soft_grid_energies;
 #endif
+	// the only reason this is a pointer is to avoid including a bunch of stuff this high up
+	shared_ptr<RifScoreRotamerVsTarget> rot_tgt_scorer;
 };
 typedef shared_ptr<RifGenParams> RifGenParamsP;
 

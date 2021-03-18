@@ -101,6 +101,11 @@ struct ScoreRotamerVsTarget {
     ::scheme::shared_ptr< RotamerIndex const > rot_index_p_ = nullptr;
     std::vector<VoxelArrayPtr> target_field_by_atype_;
     std::vector< HBondRay > target_donors_, target_acceptors_;
+
+    // Ok, the names shouldn't be here, but it's convenient
+    std::vector<std::pair<int, std::string> > target_donor_names;
+    std::vector<std::pair<int, std::string> > target_acceptor_names;
+
     float hbond_weight_ = 2.0;
     float upweight_iface_ = 1.0;
     float upweight_multi_hbond_ = 0.0;
@@ -136,7 +141,7 @@ struct ScoreRotamerVsTarget {
         int & sat1,
         int & sat2,
         bool want_sats, // need to do double score if we want_sats and grid scoring
-        int & hbcount, // how many hbonds? Requires (want_sat or ! grid_scorer_) and upweight_multi_hbond_
+        int & hbcount, // how many hbonds? Requires (want_sat or ! grid_scorer_)
         float bad_score_thresh = 10.0, // hbonds won't get computed if grid score is above this
         int start_atom = 0 // to score only SC, use 4... N,CA,C,CB (?)
     ) const {
@@ -285,7 +290,7 @@ struct ScoreRotamerVsTarget {
                     if(      sat1==-1 ) sat1 = best_sat;
                     else if( sat2==-1 ) sat2 = best_sat;
                 }
-                if( upweight_multi_hbond_ && best_score < min_hb_quality_for_multi_ ){
+                if( best_score < min_hb_quality_for_multi_ ){
                     if( used_tgt_donor[best_sat] >= min_hb_quality_for_multi_ ) ++hbcount;
                 }
                 // remove the double counting of hbond??? Do I need to do this, or ..........
@@ -365,7 +370,7 @@ struct ScoreRotamerVsTarget {
                     if(      sat1==-1 ) sat1 = best_sat;
                     else if( sat2==-1 ) sat2 = best_sat;
                 }
-                if( upweight_multi_hbond_ && best_score < min_hb_quality_for_multi_ ){
+                if( best_score < min_hb_quality_for_multi_ ){
                     if( used_tgt_acceptor[best_sat - target_donors_.size()] >= min_hb_quality_for_multi_ ) ++hbcount;
                 }
                 // remove the double counting of hbond??? Do I need to do this, or ..........

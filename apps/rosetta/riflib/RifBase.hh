@@ -86,6 +86,9 @@ struct RifBase
 	virtual size_t mem_use() const = 0;
 	virtual size_t sizeof_value_type() const = 0;
 	virtual bool  has_sat_data_slots() const = 0;
+    virtual int   num_sat_data_slots() const = 0;
+    virtual int   sizeof_sat_data_slot() const = 0;
+    virtual void  clear_sats() = 0;
 
 	template< class XMap > bool get_xmap_ptr( shared_ptr<XMap> & xmap_ptr );
 	template< class XMap > bool get_xmap_const_ptr( shared_ptr<XMap const> & xmap_ptr ) const;
@@ -105,6 +108,7 @@ struct RifBase
     virtual bool random_dump_rotamers( std::vector< std::string > res_names_dump, std::string const file_name, float dump_fraction, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
 
+    virtual void dump_rif_to_hdf5( ) const = 0;
     virtual bool dump_the_best_rifres( size_t num_to_dump, float rmsd_resl, shared_ptr<RotamerIndex> rot_index_p ) const = 0;
 
     virtual bool dump_rotamers_for_sats( std::vector< size_t > const & sat, size_t number_to_dump, 

@@ -37,6 +37,29 @@ namespace scheme {
 #ifdef USE_OPENMP
  #include <omp.h>
  #endif
+
+// https://stackoverflow.com/questions/11071116/i-got-omp-get-num-threads-always-return-1-in-gcc-works-in-icc
+static int rifdock_omp_thread_count() {
+
+	// int num_threads = 0;
+	// try {
+	// 	num_threads = std::stoi(std::getenv("OMP_NUM_THREADS"));
+	// 	return num_threads;
+	// } catch ( ... ) {}
+
+    int n = 0;
+    #pragma omp parallel reduction(+:n)
+    n += 1;
+    // n=18;
+    return n;
+}
+
+static void fix_omp_max_threads() {
+	#ifdef USE_OPENMP
+		// omp_set_num_threads( rifdock_omp_thread_count() );
+	#endif
+}
+
  static core::Size omp_max_threads_1(){
 	#ifdef USE_OPENMP
 		return omp_get_max_threads();
@@ -77,6 +100,8 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	, bool noloops
 	, bool nocpg = true
 	, bool mutate_to_val = true
+	, bool nohelix = false
+	, bool nostrand = false
  );
 
 

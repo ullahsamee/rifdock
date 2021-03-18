@@ -92,62 +92,6 @@ DiversifyBySeedingPositionsTask::return_any_points(
     
 
 
-shared_ptr<std::vector<SearchPoint>> 
-DiversifyByXformFileTask::return_search_points( 
-    shared_ptr<std::vector<SearchPoint>> search_points, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-    return return_any_points( search_points, rdd, pd );
-}
-shared_ptr<std::vector<SearchPointWithRots>> 
-DiversifyByXformFileTask::return_search_point_with_rotss( 
-    shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) { 
-    return return_any_points( search_point_with_rotss, rdd, pd );
-}
-shared_ptr<std::vector<RifDockResult>> 
-DiversifyByXformFileTask::return_rif_dock_results( 
-    shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) { 
-    return return_any_points( rif_dock_results, rdd, pd );
-}
-
-template<class AnyPoint>
-shared_ptr<std::vector<AnyPoint>>
-DiversifyByXformFileTask::return_any_points( 
-    shared_ptr<std::vector<AnyPoint>> any_points, 
-    RifDockData & rdd, 
-    ProtocolData & pd ) {
-
-
-    std::vector< std::pair< int64_t, EigenXform > > xform_positions;
-    {
-        runtime_assert_msg(parse_exhausitive_searching_file(file_name_, xform_positions /*, 10*/), "Faild to parse the xform file!!!");
-    }
-
-    uint64_t nest_size = xform_positions.size();
-
-    shared_ptr<std::vector<AnyPoint>> diversified = make_shared<std::vector<AnyPoint>>( nest_size * any_points->size() );
-
-    uint64_t added = 0;
-    for ( AnyPoint const & pt : *any_points ) {
-
-        for ( uint64_t i = 0; i < nest_size; i++ ) {
-            (*diversified)[added] = pt;
-            (*diversified)[added].index.nest_index = xform_positions[i].first;
-            added++;
-        }
-    }
-
-    any_points->clear();
-
-    return diversified;
-}
-
-
-
 
 void
 create_rifine_task( 
@@ -157,18 +101,23 @@ create_rifine_task(
     int seeding_size = rdd.director->size(0, RifDockIndex()).seeding_index;
     int final_resl = rdd.rif_ptrs.size() - 1;
 
+    ScaffoldDataCacheOP test_data_cache = rdd.scaffold_provider->get_data_cache_slow( ScaffoldIndex() );
+
     task_list.push_back(make_shared<DiversifyBySeedingPositionsTask>()); 
     if ( rdd.opt.xform_fname == "IDENTITY" ) {
         // The identity director takes care of this
-    } else if ( rdd.opt.xform_fname == "ALL" ) {
-        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
     } else {
-        task_list.push_back(make_shared<DiversifyByXformFileTask>( rdd.opt.xform_fname ));
+        task_list.push_back(make_shared<DiversifyByNestTask>( 0 ));
     }
     
     task_list.push_back(make_shared<HSearchInit>( ));
     task_list.push_back(make_shared<HSearchScoreAtReslTask>( 0, final_resl, rdd.opt.tether_to_input_position_cut ));
     // task_list.push_back(make_shared<HSearchFinishTask>( rdd.opt.global_score_cut ));
+
+    if (rdd.opt.dump_x_frames_per_resl > 0) {
+        task_list.push_back(make_shared<DumpHSearchFramesTask>( 0, final_resl, rdd.opt.dump_x_frames_per_resl, rdd.opt.dump_only_best_frames, rdd.opt.dump_only_best_stride, 
+                                                                rdd.opt.dump_prefix + "_" + test_data_cache->scafftag + boost::str(boost::format("_resl%i")%final_resl) ));
+    }
 
     if ( opt.sasa_cut > 0 ) {
         task_list.push_back(make_shared<FilterBySasaTask>( opt.sasa_cut ));
@@ -184,7 +133,7 @@ create_rifine_task(
     task_list.push_back(make_shared<FilterByFracTask>( opt.hack_pack_frac, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
 
     task_list.push_back(make_shared<SetFaModeTask>( true ));
-    task_list.push_back(make_shared<FilterForHackPackTask>( 1, 0, 0 ));
+    task_list.push_back(make_shared<FilterForHackPackTask>( 1, 0, 0, opt.hackpack_score_cut ));
     task_list.push_back(make_shared<HackPackTask>(  0, final_resl, 9e9 )); // hackpack sorts the results
 
 
@@ -209,6 +158,9 @@ create_rifine_task(
 
     if ( do_rosetta_score || opt.rosetta_filter_even_if_no_score ) {
                               task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
+                              // This is kind of just hacked in here to make rosetta_score_at_most work
+                              task_list.push_back(make_shared<FilterForRosettaScoreTask>( 1,  opt.rosetta_score_then_min_below_thresh, opt.rosetta_score_at_least, 
+                                                                                    opt.rosetta_score_at_most, opt.rosetta_score_select_random )); 
         if (do_rosetta_score) task_list.push_back(make_shared<RosettaScoreTask>( 0, opt.rosetta_score_cut, do_rosetta_min, true));
     }
 

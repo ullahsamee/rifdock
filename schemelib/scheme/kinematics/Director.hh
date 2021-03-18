@@ -75,7 +75,7 @@ get_nest_index(uint64_t index) {
 }
 
 template<class RifDockIndex>
-uint64_t
+typename RifDockIndex::NestIndex
 get_nest_index(RifDockIndex index) {
 	return index.nest_index;
 }
@@ -143,6 +143,61 @@ std::ostream & operator << ( std::ostream & out, NestDirector<Nest,BigIndex> con
 	return out;
 }
 
+
+
+// This class is dumb, if used in a CompositeDirector, it must be first
+template< 
+    class _Position,
+    class _RifDockIndex>
+struct StoredNestDirector
+ :  public Director<
+        _Position,
+        _RifDockIndex
+    > {
+
+    typedef Director< _Position, _RifDockIndex> Base;
+    typedef typename Base::Position Position;
+    typedef typename Base::BigIndex BigIndex;
+    typedef typename Base::Index Index;
+    typedef typename Base::Scene Scene;
+    typedef typename _RifDockIndex::NestIndex NestIndex;
+
+
+    Index ibody_;
+    std::vector< _Position > xform_positions_;
+
+    StoredNestDirector() : ibody_(0) {}
+    StoredNestDirector( Index ibody ) : ibody_(ibody) {}
+    StoredNestDirector( std::vector< _Position > const & xforms, Index ibody ) : ibody_(ibody),xform_positions_(xforms) {}
+
+    virtual
+    bool
+    set_scene(
+        BigIndex const & i,
+        int resl,
+        Scene & scene
+    ) const {
+        Position p;
+
+        NestIndex ni = get_nest_index(i);
+        debug_assert( ni < xform_positions_.size() );
+        scene.set_position( ibody_, xform_positions_[ni] );
+        return true;
+    }
+
+    virtual BigIndex size(int resl, BigIndex sizes) const {
+        set_nest_size(xform_positions_.size(), sizes);
+        return sizes;
+    }
+
+
+};
+
+template< class Position, class BigIndex >
+std::ostream & operator << ( std::ostream & out, StoredNestDirector<Position,BigIndex> const & d ){
+    out << "StoredNestDirector" << std::endl;
+    return out;
+}
 
 
 

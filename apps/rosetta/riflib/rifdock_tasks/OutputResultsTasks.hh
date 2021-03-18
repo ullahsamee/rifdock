@@ -43,6 +43,15 @@ private:
     int director_resl_;
     int rif_resl_;
 
+    void
+    write_selected_result( 
+        RifDockResult const & selected_result,
+        ScenePtr s_ptr,
+        std::ostream & out_silent_stream,
+        RifDockData & rdd, 
+        ProtocolData & pd,
+        int i_selected_result );
+
 };
 
 void
@@ -52,12 +61,19 @@ dump_rif_result_(
     std::string const & pdboutfile, 
     int director_resl,
     int rif_resl,
-    utility::io::ozstream & outS,
+    std::ostream & out_silent_stream,
+    ScenePtr s_ptr,
     bool quiet = true,
     std::string const & resfileoutfile = "",
     std::string const & allrifrotsoutfile = "",
     std::vector<float> const & unsat_scores = std::vector<float>()
     );
+
+// You would think that it would be easier to get the absolute path but it's not
+// It's easy with C++17 but that requires gcc7 which I don't think works with rifdock
+// There is a boost::filesystem library but that is known to generate linker issues - NRB
+std::string
+absolute_path( std::string relative_path );
 
 void
 dump_search_point_(

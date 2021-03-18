@@ -59,47 +59,6 @@ private:
 };
 
 
-
-struct DiversifyByXformFileTask : public AnyPointTask {
-
-    DiversifyByXformFileTask(
-        std::string file_name
-        ) :
-        file_name_( file_name )
-        {}
-
-    shared_ptr<std::vector<SearchPoint>> 
-    return_search_points( 
-        shared_ptr<std::vector<SearchPoint>> search_points, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-    shared_ptr<std::vector<SearchPointWithRots>> 
-    return_search_point_with_rotss( 
-        shared_ptr<std::vector<SearchPointWithRots>> search_point_with_rotss, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-    shared_ptr<std::vector<RifDockResult>> 
-    return_rif_dock_results( 
-        shared_ptr<std::vector<RifDockResult>> rif_dock_results, 
-        RifDockData & rdd, 
-        ProtocolData & pd ) override;
-
-private:
-    template<class AnyPoint>
-    shared_ptr<std::vector<AnyPoint>>
-    return_any_points( 
-        shared_ptr<std::vector<AnyPoint>> any_points, 
-        RifDockData & rdd, 
-        ProtocolData & pd ); // override
-
-private:
-    std::string file_name_;
-
-};
-
-
 void
 create_rifine_task( 
     std::vector<shared_ptr<Task>> & task_list, RifDockData & rdd );

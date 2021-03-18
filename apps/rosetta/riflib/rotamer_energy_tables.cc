@@ -437,11 +437,18 @@ void get_per_rotamer_rf_tables_one(
 		lb = lb.min(a.position());
 		ub = ub.max(a.position());
 	}
+
+	std::string chi_string = "";
+	for ( int i = 0; i < rot_index.nchi(irot); i++ ) {
+		if ( i > 0 ) chi_string += "_";
+		chi_string += boost::str( boost::format("%.2f")%rot_index.chi(irot, i) );
+	}
 	// cout << "rosetta_field lb " << lb << endl;
 	// cout << "rosetta_field ub " << ub << endl;
 
 	std::string cachefile = opts.data_dir
-	                 +"/__rotamer_"+str(irot,3)+resname
+	                 +"/__rotamer_"+resname
+	                 +"__chi"       +chi_string
 	                 +"__resl"      +boost::lexical_cast<std::string>(opts.field_resl)
 	                 +"__spread"    +boost::lexical_cast<std::string>(opts.field_spread)
 		             +"__oversamp"  +boost::lexical_cast<std::string>(opts.oversample);

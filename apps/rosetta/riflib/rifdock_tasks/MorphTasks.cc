@@ -120,7 +120,7 @@ create_dive_pop_hsearch_task(
 
         if (rdd.opt.hack_pack_during_hsearch) {
             task_list.push_back(make_shared<SortByScoreTask>( ));
-            task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+            task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, rdd.opt.global_score_cut ));
             task_list.push_back(make_shared<HackPackTask>( i, i, rdd.opt.global_score_cut )); }
 
         task_list.push_back(make_shared<HSearchFilterSortTask>( i, rdd.opt.beam_size / rdd.opt.DIMPOW2, rdd.opt.global_score_cut, i < rdd.opt.dive_resl-1 ));
@@ -148,7 +148,7 @@ create_dive_pop_hsearch_task(
 
         if (rdd.opt.hack_pack_during_hsearch) {
             task_list.push_back(make_shared<SortByScoreTask>( ));
-            task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+            task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, rdd.opt.global_score_cut ));
             task_list.push_back(make_shared<HackPackTask>( i, i, rdd.opt.global_score_cut )); }
 
         task_list.push_back(make_shared<HSearchFilterSortTask>( i, rdd.opt.beam_size / rdd.opt.DIMPOW2, rdd.opt.global_score_cut, i < rdd.RESLS.size()-1 ));

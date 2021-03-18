@@ -127,6 +127,7 @@ struct RifSceneObjectiveConfig
     float hydrophobic_ddg_cut;
 	float scaff_bb_hbond_weight;
     std::vector< int > requirements;
+    std::vector<std::pair<int,std::vector<int>>> requirement_groups;
     shared_ptr<BurialManager> burial_manager;
     shared_ptr<UnsatManager> unsat_manager;
     shared_ptr<BurialVoxelArray> sasa_grid;
@@ -134,6 +135,11 @@ struct RifSceneObjectiveConfig
     float sasa_threshold;
     float sasa_multiplier;
     float ignore_rifres_if_worse_than;
+    int num_pdbinfo_requirements_required;
+    std::vector< std::vector<bool> > pdbinfo_req_active_positions;
+    std::vector< std::vector<bool> > pdbinfo_req_active_requirements;
+    std::vector<float> sat_bonus;
+    std::vector<bool> sat_bonus_override;
 
 };
 

@@ -109,6 +109,9 @@ int main(int argc, char *argv[]) {
 	register_options();
 	devel::init(argc,argv);
 
+	devel::scheme::fix_omp_max_threads();
+	std::cout << "Rifdock thinks there are " << devel::scheme::omp_max_threads() << " threads." << std::endl;
+
 
 	devel::scheme::print_header( "setup global options" );
 	RifDockOpt opt;
@@ -587,7 +590,8 @@ int main(int argc, char *argv[]) {
         	opt.one_hydrophobic_better_than < 0 ||
         	opt.two_hydrophobics_better_than < 0 ||
         	opt.three_hydrophobics_better_than < 0 ||
-        	opt.num_cation_pi > 0) {
+        	opt.num_cation_pi > 0 ||
+        	opt.hydrophobic_ddg_weight != 0) {
 
     	utility::vector1<int> use_hydrophobic_target_res;
     	if (opt.hydrophobic_target_res.size() > 0) {
@@ -596,12 +600,14 @@ int main(int argc, char *argv[]) {
     		use_hydrophobic_target_res = target_res;
     	}
 
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p );
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
-    													   opt.hydrophobic_ddg_per_atom_cut );
+    													   opt.hydrophobic_ddg_per_atom_cut,
+    													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
+    	hydrophobic_manager->hyd_ddg_weight_ = opt.hydrophobic_ddg_weight;
     }
 
 
@@ -690,6 +696,24 @@ int main(int argc, char *argv[]) {
 			}
 			std::cout << "rif uses: " << Nusingrot << " rotamers " << std::endl;
 		}
+
+		if ( opt.dump_rifgen_hdf5 ) {
+			core::pose::Pose all_rots;
+			for ( int irot = 0; irot < rot_index.size(); irot++ ) {
+				all_rots.append_residue_by_jump( *rot_index_spec.get_rotamer_at_identity( irot ), 1 );
+			}
+
+			all_rots.pdb_info( std::make_shared<core::pose::PDBInfo>( all_rots ) );
+			for ( core::Size i = 1; i <= all_rots.size(); i++ ) {
+				all_rots.pdb_info()->chain( i, 'A' );
+			}
+			std::cout << "Dumping rif standard rotamers to rif_rotamers.pdb" << std::endl;
+			all_rots.dump_pdb("rif_rotamers.pdb");
+
+			rif_ptrs.back()->dump_rif_to_hdf5();
+
+		}
+
 
 		if (opt.dump_rifgen_near_pdb.size() > 0) {
 
@@ -820,6 +844,19 @@ int main(int argc, char *argv[]) {
         std::cout << "WARNING: NO SCAFFOLDS!!!!!!" << std::endl;
     }
 
+
+	bool needs_nest_director = opt.xform_fname != "IDENTITY";
+	bool needs_stored_nest_director = needs_nest_director && opt.xform_fname != "";
+
+	std::vector< EigenXform > xform_positions;
+
+	if ( needs_stored_nest_director ) {
+		std::vector< std::pair< int64_t, EigenXform > > xform_pairs;
+		runtime_assert_msg(parse_exhausitive_searching_file(opt.xform_fname, xform_pairs /*, 10*/), "Faild to parse the xform file!!!");
+		xform_positions.reserve( xform_pairs.size() );
+		for ( auto const & pair : xform_pairs ) xform_positions.push_back( pair.second );
+	}
+
 	for( int iscaff = 0; iscaff < opt.scaffold_fnames.size(); ++iscaff )
 	{
 		std::string scaff_fname = opt.scaffold_fnames.at(iscaff);
@@ -882,6 +919,7 @@ int main(int argc, char *argv[]) {
 				rso_config.require_satisfaction = opt.require_satisfaction;
 				rso_config.require_n_rifres = opt.require_n_rifres;
                 rso_config.requirements = opt.requirements;
+                rso_config.requirement_groups = opt.requirement_groups;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
             	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
@@ -920,8 +958,39 @@ int main(int argc, char *argv[]) {
             } else {
             	rso_config.n_sat_groups = 0;
             }
-			
+            
+            if ( opt.pdbinfo_requirements.size() > 0 ) {
+                
+                for ( int ipdbinforeq = 0; ipdbinforeq < opt.pdbinfo_requirements.size(); ipdbinforeq++ ) {
 
+                    std::vector<bool> active_positions( test_data_cache->scaffres_l2g_p->size(), false );
+                    std::vector<bool> active_requirements( rso_config.n_sat_groups, false );
+                    
+                    std::pair<std::string,std::vector<int>> pdbinfo_req = opt.pdbinfo_requirements[ipdbinforeq];
+                    
+                    for ( int req : pdbinfo_req.second ) {
+                        active_requirements.at(req) = true;
+                    }
+                    
+                    for ( core::Size seqpos : *(test_data_cache->scaffold_res_p) ) {
+                        if ( test_data_cache->scaffold_unmodified_p->pdb_info()->res_haslabel(seqpos, pdbinfo_req.first ) ) {
+                            int local_position = test_data_cache->scaffres_g2l_p->at( seqpos - 1 );
+                            active_positions.at(local_position) = true;
+                        }
+                    }
+                    
+                    rso_config.pdbinfo_req_active_positions.push_back( active_positions );
+                    rso_config.pdbinfo_req_active_requirements.push_back( active_requirements );
+                }
+                if ( opt.num_pdbinfo_requirements_required < 0 ) {
+                    rso_config.num_pdbinfo_requirements_required = rso_config.pdbinfo_req_active_positions.size();
+                } else {
+                    rso_config.num_pdbinfo_requirements_required = opt.num_pdbinfo_requirements_required;
+                }
+            }
+			
+            rso_config.sat_bonus = opt.sat_score_bonus;
+            rso_config.sat_bonus_override = opt.sat_score_override;
 				
 
 			ScenePtr scene_prototype;
@@ -944,7 +1013,6 @@ int main(int argc, char *argv[]) {
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			shared_ptr<RifDockNestDirector> nest_director;
 
-			bool needs_nest_director = opt.xform_fname != "IDENTITY";
 
 			DirectorBase director; {
 				F3 target_center = pose_center(target);
@@ -967,7 +1035,20 @@ int main(int argc, char *argv[]) {
 				double hackysin = std::min( 1.0, resl0*hsearch_scale_factor/2.0/ body_radius );
 
 				runtime_assert( hackysin > 0.0 );
-				double const rot_resl_deg0 = asin( hackysin ) * 180.0 / M_PI;
+				double rot_resl_deg0 = asin( hackysin ) * 180.0 / M_PI;
+
+				if ( opt.dump_xform_file ) {
+					search_diameter = opt.dump_override_cart_search_radius*2;
+					cart_grid = opt.dump_override_cart_search_resl;
+					rot_resl_deg0 = opt.dump_override_angle_search_resl;
+					target_center = F3(0, 0, 0);
+					needs_stored_nest_director = false;
+					needs_nest_director = true;
+					seeding_positions = nullptr;
+				}
+
+
+
 				int nside = std::ceil( search_diameter / cart_grid );
 				std::cout << "search dia.    : " <<  search_diameter << std::endl;
 				std::cout << "nside          : " << nside        << std::endl;
@@ -991,7 +1072,9 @@ int main(int argc, char *argv[]) {
 
 
 				std::vector<DirectorBase> director_list;
-				if ( needs_nest_director ) {
+				if ( needs_stored_nest_director ) {
+					director_list.push_back( make_shared<RifDockStoredNestDirector>( xform_positions, 1 ) );  // Nest director must come first!!!!
+				} else if ( needs_nest_director ) {
 					director_list.push_back( nest_director );  // Nest director must come first!!!!
 				} else {
 					director_list.emplace_back( make_shared<RifDockIdentityDirector>( 1 ) );
@@ -1005,6 +1088,18 @@ int main(int argc, char *argv[]) {
 				}
 
 				director = make_shared<RifDockDirector>(director_list);
+			}
+
+			if ( opt.dump_xform_file ) {
+				std::cout << "Dumping xform file ..." << std::endl;
+				dump_xform_file( director, scene_minimal,
+					opt.dump_override_cart_search_radius, 
+					opt.dump_override_cart_search_resl,
+					opt.dump_override_angle_search_radius,
+					opt.dump_override_angle_search_resl
+				);
+				std::cout << "-dump_xform_file specified. Stopping" << std::endl;
+				return 0;
 			}
 
 
@@ -1204,7 +1299,7 @@ int main(int argc, char *argv[]) {
 
 						if (opt.hack_pack_during_hsearch) {
 							task_list.push_back(make_shared<SortByScoreTask>( ));
-							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
+							task_list.push_back(make_shared<FilterForHackPackTask>( 1, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
 							task_list.push_back(make_shared<HackPackTask>( i, i, opt.global_score_cut )); 
 						}
 
@@ -1228,8 +1323,8 @@ int main(int argc, char *argv[]) {
 				task_list.push_back(make_shared<SetFaModeTask>( true ));
 
 				if ( opt.hack_pack ) {
-					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult ));
-					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.global_score_cut )); 
+					task_list.push_back(make_shared<FilterForHackPackTask>( opt.hack_pack_frac, rdd.packopts.pack_n_iters, rdd.packopts.pack_iter_mult, opt.global_score_cut ));
+					task_list.push_back(make_shared<HackPackTask>(  final_resl, final_resl, opt.hackpack_score_cut )); 
 				}
 
 				bool do_rosetta_score = opt.rosetta_score_fraction > 0 || opt.rosetta_score_then_min_below_thresh > -9e8 || opt.rosetta_score_at_least > 0;

@@ -15,6 +15,7 @@
 
 #include "scheme/util/SimpleArray.hh"
 #include <riflib/RotamerGenerator.hh>
+#include <riflib/ScoreRotamerVsTarget.hh>
 
 #include <core/pose/Pose.hh>
 
@@ -96,6 +97,9 @@ struct HydrophobicManager {
     float three_hydrophobics_better_than_ = 0;
     float hydrophobic_ddg_per_atom_cut_ = 0;
     bool doing_better_than_ = false;
+    bool better_than_must_hbond_ = false;
+    float hyd_ddg_weight_ = 0;
+    bool count_all_contacts_as_hydrophobic_ = false;
 
     int num_cation_pi_ = 0;
 
@@ -103,13 +107,15 @@ struct HydrophobicManager {
     HydrophobicManager(
         core::pose::Pose const & target,
         utility::vector1<core::Size> const & target_res,
-        shared_ptr< RotamerIndex > rot_index_p_in
+        shared_ptr< RotamerIndex > rot_index_p_in,
+        bool count_all_contacts_as_hydrophobic
     ) : rot_index_p( rot_index_p_in )
     {
 
         rif_atype_map_ = get_rif_atype_map();
         rif_hydrophobic_map_ = get_rif_hydrophobic_map();
         rif_pi_map_ = get_rif_hydrophobic_map();
+        count_all_contacts_as_hydrophobic_ = count_all_contacts_as_hydrophobic;
 
         identify_hydrophobic_residues( target, target_res );
         prepare_bounds( target );
@@ -129,12 +135,13 @@ struct HydrophobicManager {
     }
 
     void
-    set_hydrophobics_better_than( float one, float two, float three, float ddg_per_atom_cut ) {
+    set_hydrophobics_better_than( float one, float two, float three, float ddg_per_atom_cut, bool better_than_must_hbond ) {
         one_hydrophobic_better_than_ = one;
         two_hydrophobics_better_than_ = two;
         three_hydrophobics_better_than_ = three;
         hydrophobic_ddg_per_atom_cut_ = ddg_per_atom_cut;
-
+        better_than_must_hbond_ = better_than_must_hbond;
+        
         doing_better_than_ = ( one < 0 || two < 0 || three < 0 );
     }
 
@@ -151,6 +158,10 @@ struct HydrophobicManager {
     bool
     is_rosetta_atom_hydrophobic( core::conformation::Residue const & res, core::Size atno ) {
         int iatype = rif_atype_map_.at(res.atom_type_index(atno));
+        if ( count_all_contacts_as_hydrophobic_ ) {
+            return true;
+        }
+
         if (iatype >= rif_hydrophobic_map_.size()) {
             return false;
         }
@@ -164,9 +175,15 @@ struct HydrophobicManager {
     ) {
         hydrophobic_res_.clear();
 
-        for ( core::Size seqpos : target_res ) {
-            if ( hydrophobic_name1s_.count( target.residue(seqpos).name1() ) != 0 ) {
+        if ( count_all_contacts_as_hydrophobic_ ){
+            for ( core::Size seqpos : target_res ) {
                 hydrophobic_res_.push_back(seqpos);
+            }
+        } else { // This is the default behavior
+            for ( core::Size seqpos : target_res ) {
+                if ( hydrophobic_name1s_.count( target.residue(seqpos).name1() ) != 0 ) {
+                    hydrophobic_res_.push_back(seqpos);
+                }
             }
         }
     }
@@ -517,7 +534,37 @@ struct HydrophobicManager {
 
 
 /////////////////////////////////////////////////////////////////////////
+    float
+    get_individual_weighted_hyd_ddg(
+        int irot,
+        EigenXform const & bbpos
+    ) const {
+        if ( hyd_ddg_weight_ == 0 ) return 0;
 
+        if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) return 0;
+
+        typedef typename RotamerIndex::Atom Atom;
+
+        Hyd total_sum = 0;
+        for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
+            {
+                Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
+
+                if ( ! rif_hydrophobic_map_.at(atom.type()) ) continue;
+                typename Atom::Position pos = bbpos * atom.position();
+
+                std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
+
+                Hyd this_hyd = 0;
+                while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
+                    total_sum ++;
+            }
+            
+
+        }
+
+        return total_sum * DDG_PER_COUNT * hyd_ddg_weight_;
+    }
 
 
     int
@@ -527,7 +574,8 @@ struct HydrophobicManager {
         float & hydrophobic_ddg,
         std::vector<int> & per_irot_counts,
         bool & pass_better_than,
-        bool & pass_cation_pi
+        bool & pass_cation_pi,
+        RifScoreRotamerVsTarget const & rot_tgt_scorer
     ) const {
         hyd_counts.clear();
         hyd_counts.resize( hydrophobic_res_.size(), 0 );
@@ -544,6 +592,7 @@ struct HydrophobicManager {
             int irot = pair.first;
             EigenXform const & bbpos = pair.second;
 
+            if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) continue ;
 
             std::unordered_map<Hyd, int> with_whom;
 
@@ -606,6 +655,16 @@ struct HydrophobicManager {
                 float ddg_hyd = per_irot_counts[ipair] * DDG_PER_COUNT;
                 float ddg_ratio = ddg_hyd / has_ok_atoms[ipair];
                 if (ddg_ratio > hydrophobic_ddg_per_atom_cut_) continue;
+
+                if ( better_than_must_hbond_ ) {
+
+                    int sat1=-1, sat2=-1, hbcount=0;
+                    rot_tgt_scorer.score_rotamer_v_target_sat(
+                                    irot_and_bbpos[ipair].first, irot_and_bbpos[ipair].second,
+                                    sat1, sat2, true, hbcount, 10.0, 4 );
+                    if ( hbcount == 0 ) continue;
+                }
+
                 if ( ddg_hyd < one_hydrophobic_better_than_ ) one_better_than++;
                 if ( ddg_hyd < two_hydrophobics_better_than_ ) two_better_than++;
                 if ( ddg_hyd < three_hydrophobics_better_than_ ) three_better_than++;

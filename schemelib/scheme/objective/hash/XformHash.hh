@@ -39,6 +39,7 @@ struct XformHash_Quat_BCC7_Zorder {
 	static Key const CART_MASK_NO0 = BOOST_BINARY( 11111111 11111111 11111000 01110000 11100001 11000011 10000111 00001110 );
 
 	Grid grid_;
+	int ori_nside_;
 
 	bool operator==( XformHash_Quat_BCC7_Zorder<Xform> const & o) const { return grid_ == o.grid_; }
 	bool operator!=( XformHash_Quat_BCC7_Zorder<Xform> const & o) const { return grid_ != o.grid_; }
@@ -68,6 +69,7 @@ struct XformHash_Quat_BCC7_Zorder {
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 61 ) ++ori_nside; // TODO: fix this number!
 		init_nside( (int)ori_nside, cart_resl, cart_bound );
+		ori_nside_ = ori_nside;
 	}
 
 	void init_nside( int ori_nside, Float cart_resl, Float cart_bound ){
@@ -290,6 +292,8 @@ struct XformHash_Quat_BCC7 {
 	OriMap ori_map_;
 	Grid grid_;
 
+	int ori_nside_;
+
 	static std::string name(){ return "XformHash_Quat_BCC7"; }
 
 	XformHash_Quat_BCC7( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
@@ -307,6 +311,7 @@ struct XformHash_Quat_BCC7 {
 			 1.68324, 1.67009, 1.67239, 1.64719, 1.63832, 1.60963, 1.60093, 1.58911};
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.35 > ang_resl && ori_nside < 100 ) ++ori_nside;
+		ori_nside_ = ori_nside;
 
 		if( 2.0*cart_bound/cart_resl > 8192.0 ) throw std::out_of_range("too many cart cells, > 8192");
 
@@ -381,6 +386,7 @@ struct XformHash_bt24_BCC3_Zorder {
 	Float grid_spacing_;
 	OriMap ori_map_;
 	Grid cart_grid_, ori_grid_;
+	int ori_nside_;
 
 	static std::string name(){ return "XformHash_bt24_BCC3_Zorder"; }
 
@@ -396,6 +402,7 @@ struct XformHash_bt24_BCC3_Zorder {
 		     0.86141, 0.84846, 0.83677, 0.82164 };
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.01 > ang_resl && ori_nside < 62 ) ++ori_nside;
+		ori_nside_ = ori_nside;
 		init( cart_resl, ori_nside, cart_bound );
 	}
 
@@ -517,6 +524,7 @@ struct XformHash_bt24_BCC3 {
 	Float grid_spacing_;
 	OriMap ori_map_;
 	Grid cart_grid_, ori_grid_;
+	int ori_nside_;
 
 	static std::string name(){ return "XformHash_bt24_BCC3"; }
 
@@ -533,6 +541,7 @@ struct XformHash_bt24_BCC3 {
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.01 > ang_resl && ori_nside < 62 ) ++ori_nside;
 		// std::cout << "requested ang_resl: " << ang_resl << " got " << covrad[ori_nside-1] << std::endl;
+		ori_nside_ = ori_nside;
 		if( 2*(int)(cart_bound/cart_resl) > 8192 ){
 			throw std::out_of_range("can have at most 8192 cart cells!");
 		}
@@ -614,6 +623,8 @@ struct XformHash_bt24_BCC6 {
 	OriMap ori_map_;
 	Grid grid_;
 
+	int ori_nside_;
+
 	static std::string name(){ return "XformHash_bt24_BCC6"; }
 
 	XformHash_bt24_BCC6(){}
@@ -633,6 +644,7 @@ struct XformHash_bt24_BCC6 {
 		     0.86141, 0.84846, 0.83677, 0.82164 };
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.45 > ang_resl && ori_nside < 62 ) ++ori_nside; // TODO: HACK multiplier!
+		ori_nside_ = ori_nside;
 
 		// std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 		// std::cout << "ori_nside: " << ori_nside << std::endl;
@@ -655,12 +667,59 @@ struct XformHash_bt24_BCC6 {
 		I6 nside;
 		nside[0] = nside[1] = nside[2] = 2.0*cart_bound/cart_resl;
 		nside[3] = nside[4] = nside[5] = ori_nside+1;
+
+		// std::cout << "SIDES: " << nside[0] << " " << nside[3] << std::endl;
 		F6 lb,ub;
 		lb[0] = lb[1] = lb[2] = -cart_bound;
 		ub[0] = ub[1] = ub[2] =  cart_bound;
 		lb[3] = lb[4] = lb[5] = -1.0/ori_nside;
 		ub[3] = ub[4] = ub[5] =  1.0;
 		grid_.init( nside, lb, ub );
+	}
+
+	scheme::util::SimpleArray<7,Float> get_f7( Xform const & x ) const {
+		Eigen::Matrix<Float,3,3> rotation;
+		get_transform_rotation( x, rotation );
+
+		
+		F3 params;
+		uint64_t cell_index;
+		// ori_map_.value_to_params( rotation, 0, params, cell_index );
+		{ // from TetracontoctachoronMap.hh
+			Eigen::Quaternion<Float> q(rotation);
+
+			numeric::get_cell_48cell_half( q.coeffs(), cell_index );
+
+			q = nest::pmap::hbt24_cellcen<Float>( cell_index ).inverse() * q;
+			q = numeric::to_half_cell(q);
+
+			params[0] = q.x()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+			params[1] = q.y()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+			params[2] = q.z()/q.w()/nest::pmap::cell_width<Float>() + 0.5;
+
+			// assert( -0.0001 <= params[0] && params[0] <= 1.0001 );
+			// assert( -0.0001 <= params[1] && params[1] <= 1.0001 );
+			// assert( -0.0001 <= params[2] && params[2] <= 1.0001 );
+
+		}
+		assert( cell_index < 24 );
+		params[0] = fmax(0.0,params[0]);
+		params[1] = fmax(0.0,params[1]);
+		params[2] = fmax(0.0,params[2]);
+		params[0] = fmin(1.0,params[0]);
+		params[1] = fmin(1.0,params[1]);
+		params[2] = fmin(1.0,params[2]);
+
+		scheme::util::SimpleArray<7,Float> params6;
+		params6[0] = x.translation()[0];
+		params6[1] = x.translation()[1];
+		params6[2] = x.translation()[2];
+		params6[3] = params[0];
+		params6[4] = params[1];
+		params6[5] = params[2];
+		params6[6] = cell_index;
+
+		return params6;
 	}
 
 	Key get_key( Xform const & x ) const {
@@ -828,6 +887,8 @@ struct XformHash_bt24_Cubic_Zorder {
 	OriMap ori_map_;
 	Grid cart_grid_, ori_grid_;
 
+	int ori_nside_;
+
 	static std::string name(){ return "XformHash_bt24_Cubic_Zorder"; }
 
 	XformHash_bt24_Cubic_Zorder( Float cart_resl, Float ang_resl, Float cart_bound=512.0 )
@@ -843,6 +904,7 @@ struct XformHash_bt24_Cubic_Zorder {
 		uint64_t ori_nside = 1;
 		while( covrad[ori_nside-1]*1.01 > ang_resl && ori_nside < 62 ) ++ori_nside;
 		// std::cout << "requested ang_resl: " << ang_resl << " got " << covrad[ori_nside-1] << std::endl;
+		ori_nside_ = ori_nside;
 		if( 2*(int)(cart_bound/cart_resl) > 8192 ){
 			throw std::out_of_range("can have at most 8192 cart cells!");
 		}

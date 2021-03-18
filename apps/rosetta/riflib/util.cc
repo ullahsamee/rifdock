@@ -130,6 +130,8 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	, bool noloops
 	, bool nocgp
 	, bool mutate_to_val
+	, bool nohelix
+	, bool nostrand
  ){
  	core::scoring::dssp::Dssp dssp( pose );
  	dssp.insert_ss_into_pose( pose );
@@ -166,6 +168,8 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 	for( int ir = 1; ir <= allval.size(); ++ir ){
 		// std::cout << pose.secstruct(ir) << std::endl;
 		bool isloop = pose.secstruct(ir) == 'L';
+		bool ishelix = pose.secstruct(ir) == 'H';
+		bool isstrand = pose.secstruct(ir) == 'E';
 		int natoms = allval.residue(ir).nheavyatoms()-allval.residue(ir).last_backbone_atom();
 		core::Real scsasa = 0;
 		for( int ia = allval.residue(ir).first_sidechain_atom(); ia <= allval.residue(ir).natoms(); ++ia ){
@@ -194,6 +198,8 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 		bool design_res = !lowenergy && is_exposed;
 
 		if(noloops) design_res = design_res & !isloop;
+		if(nohelix) design_res = design_res & !ishelix;
+		if(nostrand) design_res = design_res & !isstrand;
 
 		if( design_res ){
 			if( nocgp )	add_res_if_not_CGP( pose, ir, res );
@@ -395,6 +401,7 @@ get_rif_atype_map()
 	atypemap[ ats->atom_type_index("NH2O") ] =  9;
 	atypemap[ ats->atom_type_index("Nlys") ] = 10;
 	atypemap[ ats->atom_type_index("Narg") ] = 11;
+	// atypemap[ ats->atom_type_index("Narg") ] = 6; // hack hack hack hack
 	atypemap[ ats->atom_type_index("Npro") ] = 12;
 	atypemap[ ats->atom_type_index("OH"  ) ] = 13;
 	atypemap[ ats->atom_type_index("ONH2") ] = 14;
@@ -411,6 +418,9 @@ get_rif_atype_map()
 	// if(ats->has_atom("HS")) atypemap[ ats->atom_type_index("HS"  ) ] = ??;
 	if(ats->has_atom("NtrR")) atypemap[ ats->atom_type_index("NtrR") ] = 11;
 	if(ats->has_atom("SH1" )) atypemap[ ats->atom_type_index("SH1" ) ] = 17;
+
+        // These are in DNA. Blame Robert Pecoraro if you don't like the typing -bcov
+	if(ats->has_atom("Oet2" )) atypemap[ ats->atom_type_index("Oet2" ) ] = 21; //OCbb
 
 	return atypemap;
 }

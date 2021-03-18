@@ -8,10 +8,10 @@
 namespace scheme { namespace numeric {
 
 // This returns a random, un-normalized vector from a spherical distribution
-template<class T>
+template<class RNG, class T>
 void
 rand_vector_sphere(
-	std::mt19937 & rng,
+	RNG & rng,
 	T & vec
 ){
 	std::normal_distribution<> rnorm;
@@ -22,10 +22,10 @@ rand_vector_sphere(
 }
 
 
-template<class T>
+template<class RNG, class T>
 void
 rand_xform(
-	std::mt19937 & rng,
+	RNG & rng,
 	Eigen::Transform<T,3,Eigen::Affine> & x,
 	T cart_bound = 512.0
 ){
@@ -44,10 +44,10 @@ rand_xform(
 	x.data()[14] = runif(rng) * cart_bound - cart_bound/2.0;
 }
 
-template<class T>
+template<class RNG, class T>
 void
 rand_xform(
-	std::mt19937 & rng,
+	RNG & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T cart_bound = 512.0
 ){
@@ -64,9 +64,9 @@ rand_xform(
 }
 
 
-template<class X>
+template<class RNG, class X>
 X rand_xform(
-	std::mt19937 & rng,
+	RNG & rng,
 	scalar<X> cart_bound = 512.0
 ){
 	X x;
@@ -74,10 +74,10 @@ X rand_xform(
 	return x;
 }
 
-template<class T>
+template<class RNG, class T>
 void
 rand_xform_cartnormal(
-	std::mt19937 & rng,
+	RNG & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T const & cart_sd
 ){
@@ -92,10 +92,10 @@ rand_xform_cartnormal(
 	x.data()[11] = rnorm(rng) * cart_sd;
 }
 
-template<class T>
+template<class RNG, class T>
 void
 rand_xform_quat(
-	std::mt19937 & rng,
+	RNG & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	double cart_bound, double quat_bound
 ){
@@ -130,10 +130,10 @@ rand_xform_quat(
 	}
 }
 
-template<class T>
+template<class RNG, class T>
 void
 rand_xform_sphere(
-	std::mt19937 & rng,
+	RNG & rng,
 	Eigen::Transform<T,3,Eigen::AffineCompact> & x,
 	T const cart_radius,
 	T const ang_radius
@@ -147,7 +147,7 @@ rand_xform_sphere(
 	Eigen::AngleAxis<T> aa( ang, axis );
 	x = Eigen::Transform<T,3,Eigen::AffineCompact> ( aa );
 
-	Eigen::AngleAxis<T> aa2( x.rotation() );
+	// Eigen::AngleAxis<T> aa2( x.rotation() );
 
 	// std::cout << ang << " " << ang_radius << " " << aa2.angle() << std::endl;
 

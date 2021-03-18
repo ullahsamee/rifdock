@@ -4,6 +4,7 @@
 #include <basic/options/keys/corrections.OptionKeys.gen.hh>
 #include <riflib/scaffold/nineA_util.hh>
 #include <vector>
+#include <utility/string_util.hh>
 
 #ifdef GLOBAL_VARIABLES_ARE_BAD
 	#ifndef INCLUDED_rif_dock_test_hh_1
@@ -14,6 +15,7 @@
 OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res )
 	OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_res_fixed )
+    OPT_1GRP_KEY(  String      , rif_dock, scaffold_res_pdbinfo_labels )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_res_use_best_guess )
     OPT_1GRP_KEY(  Boolean     , rif_dock, best_guess_mutate_to_val )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, scaffold_to_ala )
@@ -51,6 +53,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold_only )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, output_full_scaffold )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, outputlite )
+	OPT_1GRP_KEY(  Boolean     , rif_dock, parallelwrite )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, outputsilent )
 	OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out )
     OPT_1GRP_KEY(  Integer     , rif_dock, n_pdb_out_global )
@@ -76,6 +80,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Real        , rif_dock, hack_pack_frac )
 	OPT_1GRP_KEY(  Real        , rif_dock, pack_iter_mult )
 	OPT_1GRP_KEY(  Integer     , rif_dock, pack_n_iters )
+	OPT_1GRP_KEY(  Real       , rif_dock, hackpack_score_cut )
 	OPT_1GRP_KEY(  Real        , rif_dock, hbond_weight )
     OPT_1GRP_KEY(  Real        , rif_dock, scaff_bb_hbond_weight )
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_scaff_bb_hbond_rays )
@@ -104,6 +109,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rif_rots_as_chains )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_hdf5 )
 	OPT_1GRP_KEY(  StringVector, rif_dock, dump_rifgen_near_pdb )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_dist )
 	OPT_1GRP_KEY(  Real        , rif_dock, dump_rifgen_near_pdb_frac )
@@ -124,9 +130,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  String     , rif_dock, output_tag )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_loops )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_helices )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, dont_use_scaffold_strands )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, dump_resfile )
 	OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pikaa )
+    OPT_1GRP_KEY(  Boolean    , rif_dock, pdb_info_pssm )
 
 	OPT_1GRP_KEY(  Boolean    , rif_dock, cache_scaffold_data )
 
@@ -139,9 +148,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Integer     , rif_dock, require_n_rifres )
     OPT_1GRP_KEY(  Integer     , rif_dock, require_hydrophobic_residue_contacts )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_cut )
+    OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_weight )
     OPT_1GRP_KEY(  Real        , rif_dock, one_hydrophobic_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, two_hydrophobics_better_than )
     OPT_1GRP_KEY(  Real        , rif_dock, three_hydrophobics_better_than )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, better_than_must_hbond )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, count_all_contacts_as_hydrophobic )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
     OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
@@ -240,6 +252,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, cluster_score_cut )
     OPT_1GRP_KEY(  Real        , rif_dock, keep_top_clusters_frac )
 
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_xform_file )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_cart_search_radius )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_cart_search_resl )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_angle_search_radius )
+    OPT_1GRP_KEY(  Real        , rif_dock, dump_override_angle_search_resl )
+
     OPT_1GRP_KEY(  Real        , rif_dock, unsat_score_scalar )
     OPT_1GRP_KEY(  String      , rif_dock, unsat_helper )
     OPT_1GRP_KEY(  Boolean     , rif_dock, report_common_unsats )
@@ -260,7 +278,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  String      , rif_dock, buried_list )
 
+    OPT_1GRP_KEY(  StringVector, rif_dock, pdbinfo_requirements )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_pdbinfo_requirements_required )
+    OPT_1GRP_KEY(  StringVector, rif_dock, requirement_groups )
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
+    OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_bonus )
+    OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_override )
 
  
 
@@ -271,7 +294,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::scaffolds, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::scaffold_res_fixed, "" , utility::vector1<std::string>() );
-			NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
+			NEW_OPT(  rif_dock::scaffold_res_pdbinfo_labels, "Use these comma-separate PDBInfo labels to select designable residues" , "" );
+            NEW_OPT(  rif_dock::scaffold_res_use_best_guess, "" , false );
             NEW_OPT(  rif_dock::best_guess_mutate_to_val, "Mutate to polyvaline before making best guess", true );
 			NEW_OPT(  rif_dock::scaffold_to_ala, "" , false );
 			NEW_OPT(  rif_dock::scaffold_to_ala_selonly, "" , true );
@@ -313,6 +337,8 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold_only, "" , false );
 			NEW_OPT(  rif_dock::output_full_scaffold, "", false );
+            NEW_OPT(  rif_dock::outputlite, "Write the output structures as compressed silent files", false );
+	    NEW_OPT(  rif_dock::parallelwrite, "Write the output structures using all available threads", false );
 			NEW_OPT(  rif_dock::outputsilent, "", false );
 			NEW_OPT(  rif_dock::n_pdb_out, "" , 10 );
             NEW_OPT(  rif_dock::n_pdb_out_global, "Normally n_pdb_out applies to each seeding position, this caps the global", -1);
@@ -331,6 +357,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::hack_pack_frac, "" , 0.2 );
 			NEW_OPT(  rif_dock::pack_iter_mult, "" , 2.0 );
 			NEW_OPT(  rif_dock::pack_n_iters, "" , 1 );
+			NEW_OPT(  rif_dock::hackpack_score_cut, "", 0);
 			NEW_OPT(  rif_dock::hbond_weight, "" , 2.0 );
             NEW_OPT(  rif_dock::scaff_bb_hbond_weight, "" , 0.0 );
             NEW_OPT(  rif_dock::dump_scaff_bb_hbond_rays, "Dump scaffold backbone hydrogen bond rays", false );
@@ -362,13 +389,15 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
 
+
+            NEW_OPT(  rif_dock::dump_rifgen_hdf5, "Dump the rif to an hdf5 file.", false );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb, "dump rifgen rotamers with same AA type near this single residue", utility::vector1<std::string>());
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_dist, "", 1.0f );
 			NEW_OPT(  rif_dock::dump_rifgen_near_pdb_frac, "", 1.0f );
             NEW_OPT(  rif_dock::dump_rifgen_near_pdb_last_atom, "Use only the last atom to decide if rotamers are close", false );
 			NEW_OPT(  rif_dock::dump_rifgen_text, "Dump the rifgen tables within dump_rifgen_near_pdb_dist", false );
             NEW_OPT(  rif_dock::dump_rifgen_for_sat, "Dump a rotamers near a specific sat or multiple sats", utility::vector1<size_t>());
-            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 1000);
+            NEW_OPT(  rif_dock::dump_rifgen_for_sat_models, "Number of rotamers to dump for dump_rifgen_for_sat", 200);
             NEW_OPT(  rif_dock::dump_rifgen_for_sat_name3, "Only dump rotamers with this name3", "");
             NEW_OPT(  rif_dock::dump_best_rifgen_rots, "Dump the best rotamer from the rifgen. This is how many", 0 );
             NEW_OPT(  rif_dock::dump_best_rifgen_rmsd, "The rmsd of the last atom for each aa type used in clustering", 3 );
@@ -382,9 +411,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::output_tag, "", "" );
 
 			NEW_OPT(  rif_dock::dont_use_scaffold_loops, "", false );
+            NEW_OPT(  rif_dock::dont_use_scaffold_helices, "", false );
+            NEW_OPT(  rif_dock::dont_use_scaffold_strands, "", false );
 
 			NEW_OPT(  rif_dock::dump_resfile, "", false );
 			NEW_OPT(  rif_dock::pdb_info_pikaa, "", false );
+            NEW_OPT(  rif_dock::pdb_info_pssm, "Put a pssm into the pdb info", false );
 
 			NEW_OPT(  rif_dock::cache_scaffold_data, "", false );
 
@@ -397,9 +429,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::require_n_rifres, "This sort of works during HackPack", 0 );
             NEW_OPT(  rif_dock::require_hydrophobic_residue_contacts, "How many target res to have at least 0.5 fa_sol, fa_atr, fa_rep with.", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_cut, "Really crappy approximation to hydrophobic ddg", 0 );
+            NEW_OPT(  rif_dock::hydrophobic_ddg_weight, "Add the hydrophobic ddg to the rotamer score during hackpack with this weight.", 0 );
             NEW_OPT(  rif_dock::one_hydrophobic_better_than, "Require one rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::two_hydrophobics_better_than, "Require two rifres to have hydrophobic ddg better than this", 0 );
             NEW_OPT(  rif_dock::three_hydrophobics_better_than, "Require three rifres to have hydrophobic ddg better than this", 0 );
+            NEW_OPT(  rif_dock::better_than_must_hbond, "*_hydrophobics_better_than must make a hbond to count", 0 );
+            NEW_OPT(  rif_dock::count_all_contacts_as_hydrophobic, "This flag should only be used on very polar targets. It counts all contact types toward *_hydrophobics_better_than", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
@@ -496,6 +531,11 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::cluster_score_cut, "", 0);
             NEW_OPT(  rif_dock::keep_top_clusters_frac, "", 0.5);
 
+            NEW_OPT(  rif_dock::dump_xform_file, "Dump a file to use for -xform_pos. See also dump_override_*", false );
+            NEW_OPT(  rif_dock::dump_override_cart_search_radius, "The maximum cartesian distance sampled for the dumped xform_pos.", false );
+            NEW_OPT(  rif_dock::dump_override_cart_search_resl, "The cartesian step size sampled for the dumped xform_pos.", false );
+            NEW_OPT(  rif_dock::dump_override_angle_search_radius, "The maximum angle sampled for the dumped xform_pos in degrees.", false );
+            NEW_OPT(  rif_dock::dump_override_angle_search_resl, "The angular step size sampled for the dumped_xform_pos in degrees.", false );
 
             NEW_OPT(  rif_dock::unsat_score_scalar, "The buried unsat weights get multiplied by this.", 0 );
             NEW_OPT(  rif_dock::unsat_helper, "Helper file for use with unsats", "" );
@@ -517,8 +557,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::skip_sasa_for_res, "Comma separated list of residues to not include in sasa calculations. (like glycans)", "");
 
             NEW_OPT(  rif_dock::buried_list, "temp", "" );
-
+            
+            NEW_OPT(  rif_dock::pdbinfo_requirements, "Pairs of pdbinfo_label:req1,req2,req3 that specify that a residue with this pdbinfo_label must satisfy these requirements/sats." , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::num_pdbinfo_requirements_required, "Minimum number of pdbinfo_requirements to satisfy. -1 for all.", -1 );
+            NEW_OPT(  rif_dock::requirement_groups, "I want at least 3 of these requirements: 3:1,5,8,10,23. I want less than 2 of these: -2:4,6,7. Space separated. Negative requirements means not this requirement.", utility::vector1<std::string>());
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
+            NEW_OPT(  rif_dock::sat_score_bonus,     "Give bonus to residues that satisfy sat. 0:-2,1:-1.5", "");
+            NEW_OPT(  rif_dock::sat_score_override,  "Override score for residues that satisfy sat. 0:-2,1:-1.5", "");
 
 
 
@@ -557,6 +602,7 @@ struct RifDockOpt
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
 	bool        rif_rots_as_chains                   ;
+    bool        dump_rifgen_hdf5                     ;
 	std::vector<std::string> dump_rifgen_near_pdb    ;
 	float       dump_rifgen_near_pdb_dist            ;
 	float       dump_rifgen_near_pdb_frac            ;
@@ -579,6 +625,7 @@ struct RifDockOpt
 	float       hsearch_scale_factor                 ;
 	float       search_diameter                      ;
 	bool        use_scaffold_bounding_grids          ;
+    utility::vector1<std::string> scaffold_res_pdbinfo_labels;
 	bool        scaffold_res_use_best_guess          ;
     bool        best_guess_mutate_to_val             ;
 	bool        scaff2ala                            ;
@@ -589,9 +636,12 @@ struct RifDockOpt
 	int         require_n_rifres                     ;
     int         require_hydrophobic_residue_contacts ;
     float       hydrophobic_ddg_cut                  ;
+    float       hydrophobic_ddg_weight               ;
     float       one_hydrophobic_better_than          ;
     float       two_hydrophobics_better_than         ;
     float       three_hydrophobics_better_than       ;
+    bool        better_than_must_hbond               ;
+    bool        count_all_contacts_as_hydrophobic    ;
     float       hydrophobic_ddg_per_atom_cut         ;
     utility::vector1<int> hydrophobic_target_res     ;
     int         num_cation_pi                        ;
@@ -601,8 +651,11 @@ struct RifDockOpt
 	bool        output_scaffold_only                 ;
 	bool        output_full_scaffold_only            ;
 	bool        output_full_scaffold                 ;
+    bool        outputlite                           ;
+    bool 	parallelwrite				 ;	
 	bool        outputsilent                         ;
 	bool        pdb_info_pikaa                       ;
+    bool        pdb_info_pssm                        ;
 	bool        dump_resfile                         ;
 	std::string target_res_fname                     ;
 	int         target_rf_oversample                 ;
@@ -623,6 +676,8 @@ struct RifDockOpt
     bool        rotboltz_ignore_missing_rots         ;
 	bool        random_perturb_scaffold              ;
 	bool        dont_use_scaffold_loops              ;
+    bool        dont_use_scaffold_helices            ;
+    bool        dont_use_scaffold_strands            ;
 	bool        cache_scaffold_data                  ;
 	float       rf_resl                              ;
 	bool        hack_pack                            ;
@@ -637,6 +692,7 @@ struct RifDockOpt
 
 	float       pack_iter_mult                       ;
 	int         pack_n_iters                         ;
+	float       hackpack_score_cut                   ;
 	float       hbond_weight                         ;
     float       scaff_bb_hbond_weight                ;
     bool        dump_scaff_bb_hbond_rays             ;
@@ -742,6 +798,12 @@ struct RifDockOpt
     float       patchdock_min_sasa                   ;
     int         patchdock_top_ranks                  ;
 
+    bool        dump_xform_file                      ;
+    double      dump_override_cart_search_radius     ;
+    double      dump_override_cart_search_resl       ;
+    double      dump_override_angle_search_radius    ;
+    double      dump_override_angle_search_resl      ;
+
     float       unsat_score_scalar                   ;
     std::string unsat_helper                         ;
     bool        report_common_unsats                 ;
@@ -757,7 +819,12 @@ struct RifDockOpt
 
     std::string buried_list                          ;
     
+    std::vector<std::pair<std::string,std::vector<int>>> pdbinfo_requirements;
+    int         num_pdbinfo_requirements_required    ;
+    std::vector<std::pair<int,std::vector<int>>> requirement_groups;
     std::vector<int> requirements                    ;
+    std::vector<float> sat_score_bonus               ;
+    std::vector<bool> sat_score_override             ;
 
     bool        need_to_calculate_sasa               ;
     float       sasa_cut                             ;
@@ -806,6 +873,7 @@ struct RifDockOpt
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
+        dump_rifgen_hdf5                       = option[rif_dock::dump_rifgen_hdf5                   ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
         dump_rifgen_near_pdb_last_atom         = option[rif_dock::dump_rifgen_near_pdb_last_atom     ]();
@@ -836,9 +904,12 @@ struct RifDockOpt
 		require_n_rifres                       = option[rif_dock::require_n_rifres                      ]();
         require_hydrophobic_residue_contacts   = option[rif_dock::require_hydrophobic_residue_contacts  ]();
         hydrophobic_ddg_cut                    = option[rif_dock::hydrophobic_ddg_cut                   ]();
+        hydrophobic_ddg_weight                 = option[rif_dock::hydrophobic_ddg_weight                ]();
         one_hydrophobic_better_than            = option[rif_dock::one_hydrophobic_better_than           ]();
         two_hydrophobics_better_than           = option[rif_dock::two_hydrophobics_better_than          ]();
         three_hydrophobics_better_than         = option[rif_dock::three_hydrophobics_better_than        ]();
+        better_than_must_hbond                 = option[rif_dock::better_than_must_hbond                ]();
+        count_all_contacts_as_hydrophobic      = option[rif_dock::count_all_contacts_as_hydrophobic     ]();
         hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
         num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
@@ -847,8 +918,11 @@ struct RifDockOpt
 		output_scaffold_only                   = option[rif_dock::output_scaffold_only                  ]();
 		output_full_scaffold_only              = option[rif_dock::output_full_scaffold_only             ]();
 		output_full_scaffold                   = option[rif_dock::output_full_scaffold                  ]();
-		outputsilent                           = option[rif_dock::outputsilent                             ]();
+        outputlite                                     = option[rif_dock::outputlite                            ]();
+	parallelwrite                                  = option[rif_dock::parallelwrite                         ]();
+		outputsilent                           = option[rif_dock::outputsilent                          ]();
 		pdb_info_pikaa                         = option[rif_dock::pdb_info_pikaa                        ]();
+        pdb_info_pssm                          = option[rif_dock::pdb_info_pssm                         ]();
 		dump_resfile                           = option[rif_dock::dump_resfile                          ]();
 		target_res_fname                       = option[rif_dock::target_res                            ]();
 		target_rf_oversample                   = option[rif_dock::target_rf_oversample                  ]();
@@ -868,6 +942,8 @@ struct RifDockOpt
         rotboltz_ignore_missing_rots           = option[rif_dock::rotboltz_ignore_missing_rots          ]();
 		random_perturb_scaffold                = option[rif_dock::random_perturb_scaffold               ]();
 		dont_use_scaffold_loops                = option[rif_dock::dont_use_scaffold_loops               ]();
+        dont_use_scaffold_helices              = option[rif_dock::dont_use_scaffold_helices             ]();
+        dont_use_scaffold_strands              = option[rif_dock::dont_use_scaffold_strands             ]();
 		cache_scaffold_data                    = option[rif_dock::cache_scaffold_data                   ]();
 		rf_resl                                = option[rif_dock::rf_resl                               ]();
 		hack_pack                              = option[rif_dock::hack_pack                             ]();
@@ -884,6 +960,7 @@ struct RifDockOpt
 		rotrf_scale_atr                        = option[rif_dock::rotrf_scale_atr                       ]();
 		pack_iter_mult                         = option[rif_dock::pack_iter_mult                        ]();
 		pack_n_iters                           = option[rif_dock::pack_n_iters                          ]();
+		hackpack_score_cut                     = option[rif_dock::hackpack_score_cut                    ]();
 		hbond_weight                           = option[rif_dock::hbond_weight                          ]();
         scaff_bb_hbond_weight                  = option[rif_dock::scaff_bb_hbond_weight                 ]();
         dump_scaff_bb_hbond_rays               = option[rif_dock::dump_scaff_bb_hbond_rays              ]();
@@ -975,6 +1052,12 @@ struct RifDockOpt
         cluster_score_cut                       = option[rif_dock::cluster_score_cut                    ]();
         keep_top_clusters_frac                  = option[rif_dock::keep_top_clusters_frac               ]();
 
+        dump_xform_file                         = option[rif_dock::dump_xform_file                      ]();
+        dump_override_cart_search_radius        = option[rif_dock::dump_override_cart_search_radius     ]();
+        dump_override_cart_search_resl          = option[rif_dock::dump_override_cart_search_resl       ]();
+        dump_override_angle_search_radius       = option[rif_dock::dump_override_angle_search_radius    ]();
+        dump_override_angle_search_resl         = option[rif_dock::dump_override_angle_search_resl      ]();
+
         unsat_score_scalar                      = option[rif_dock::unsat_score_scalar                   ]();
         unsat_helper                            = option[rif_dock::unsat_helper                         ]();
         report_common_unsats                    = option[rif_dock::report_common_unsats                 ]();
@@ -992,6 +1075,8 @@ struct RifDockOpt
         score_per_1000_sasa_cut                 = option[rif_dock::score_per_1000_sasa_cut              ]();
 
         buried_list                             = option[rif_dock::buried_list                          ]();
+        
+        num_pdbinfo_requirements_required       = option[rif_dock::num_pdbinfo_requirements_required    ]();
 
 
 
@@ -1013,6 +1098,8 @@ struct RifDockOpt
 
 		runtime_assert_msg( min_hb_quality_for_satisfaction < 0 && min_hb_quality_for_satisfaction > -1, 
 			"-min_hb_quality_for_satisfaction must be between -1 and 0");
+
+        runtime_assert_msg( !( outputsilent && outputlite ), "-outputsilent and -outputlite cannot be chosen together");
 
         nfold_symmetry = option[rif_dock::nfold_symmetry]();
         symmetry_axis.clear();
@@ -1091,6 +1178,101 @@ struct RifDockOpt
         for( int req : option[rif_dock::requirements]() ) requirements.push_back(req);
 
         for( std::string s : option[rif_dock::dump_rifgen_near_pdb]() ) dump_rifgen_near_pdb.push_back(s);
+
+        if ( ! option[rif_dock::scaffold_res_pdbinfo_labels]().empty() ) {
+            scaffold_res_pdbinfo_labels = utility::string_split(option[rif_dock::scaffold_res_pdbinfo_labels](), ',');
+        }
+
+        
+        for( std::string s : option[rif_dock::pdbinfo_requirements]() ) {
+            utility::vector1<std::string> pdbinfo_then_reqs = utility::string_split(s, ':');
+            
+            if ( pdbinfo_then_reqs.size() != 2 ) {
+                std::cout << "ERROR: bad pdbinfo_requirement: " << s << std::endl;
+                std::exit(-1);
+            }
+            utility::vector1<int> req_nos = utility::string_split<int>(pdbinfo_then_reqs[2], ',', int(0));
+            std::vector<int> req_nos2;
+            for ( int req : req_nos ) req_nos2.push_back( req );
+            
+            pdbinfo_requirements.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
+	    }
+    
+        /////////   sat_score_bonus and sat_score_override   //////////////
+
+        std::string bonus_string = option[rif_dock::sat_score_bonus]();
+        std::string override_string = option[rif_dock::sat_score_override]();
+
+        if ( bonus_string.length() > 0 || override_string.length() > 0 ) {
+
+            std::vector<bool> override;
+            std::vector<std::string> string;
+
+            if ( bonus_string.length() > 0 ) {
+                override.push_back(false);
+                string.push_back(bonus_string);
+            }
+            if ( override_string.length() > 0 ) {
+                override.push_back(true);
+                string.push_back(override_string);
+            }
+
+            std::vector<bool> used;
+
+            for ( int i = 0; i < override.size(); i++ ) {
+                try {
+                    for ( std::string const & pair : utility::string_split( string[i], ',' ) ) {
+                        utility::vector1<std::string> sat_score = utility::string_split( pair, ':' );
+                        float score = utility::from_string( sat_score[2], float(0) );
+                        int low_sat = 0;
+                        int high_sat = 0;
+                        if ( sat_score[1].find("-") == std::string::npos ) {
+                            low_sat = utility::from_string( sat_score[1], int(0) );
+                            high_sat = low_sat;
+                        } else {
+                            utility::vector1<std::string> sats = utility::string_split( sat_score[1], '-' );
+                            low_sat = utility::from_string( sats[1], int(0) );
+                            high_sat = utility::from_string( sats[2], int(0) );
+                        }
+
+                        for ( int sat = low_sat; sat <= high_sat; sat++ ) {
+                            if ( sat >= used.size() ) {
+                                used.resize(sat+1);
+                                sat_score_bonus.resize(sat+1);
+                                sat_score_override.resize(sat+1);
+                            }
+                            runtime_assert( sat >= 0 );
+                            if ( used[sat] ) {
+                                utility_exit_with_message("Error, sat repeated twice in bonus/override: " + sat_score[1] );
+                            }
+                            used[sat] = true;
+                            sat_score_bonus[sat] = score;
+                            sat_score_override[sat] = override[i];
+                        }
+                    }
+                } catch (...) {
+                    utility_exit_with_message("Can't parse bonus/override string: " + string[i]);
+                }
+            }
+        }
+
+        /////////   requirement_groups   //////////////
+        for( std::string s : option[rif_dock::requirement_groups]() ) {
+            utility::vector1<std::string> num_then_reqs = utility::string_split(s, ':');
+            
+            if ( num_then_reqs.size() != 2 ) {
+                std::cout << "ERROR: bad requirement_group: " << s << std::endl;
+                std::exit(-1);
+            }
+            utility::vector1<int> req_nos = utility::string_split<int>(num_then_reqs[2], ',', int(0));
+            std::vector<int> req_nos2;
+            for ( int req : req_nos ) req_nos2.push_back( req );
+
+            int num = utility::from_string( num_then_reqs[1], int(0) );
+            
+            requirement_groups.push_back(std::pair<int,std::vector<int>>( num, req_nos2 ));
+        }
+    
 	}
 
 
