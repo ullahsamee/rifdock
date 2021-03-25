@@ -387,15 +387,7 @@ RotamerIndexSpec
 			core::chemical::ResidueTypeCOP rt = rts.lock() -> name_mapOP( lresname );
 			core::chemical::ResidueTypeCOP d_rt = rts.lock() -> get_d_equivalent(rt);
 			rop = get_residue_at_identity( *d_rt, get_rotspec(irot).chi_ );
-			//rop = core::conformation::ResidueFactory::create_residue( *d_rt );
 		}
-
-		//core::chemical::ResidueTypeSetCOP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-		//std::map < core::chemical::ResidueTypeCOP /*D-type*/, core::chemical::ResidueTypeCOP /*L-type*/> d_to_l_map;
-		//rts.lock() -> base_residue_types();
-		//core::chemical::ResidueType rtype();
-		//core::chemical::ResidueType rtype = rts.lock()->name_map( this->resname(irot)); 
-		//if (is_daa) { rtype = rts.lock()->name_map( this->resname(irot)); } 
 		return rop;
 	}
 
