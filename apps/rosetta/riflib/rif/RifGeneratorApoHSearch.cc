@@ -425,6 +425,17 @@ namespace rif {
         abs_score_cut_by_res["TYR"] = -2.8;
         abs_score_cut_by_res["HIS"] = -1.8;
 
+        // add the d version mirroing l version scores
+        abs_score_cut_by_res["DAL"] = -0.3;
+        abs_score_cut_by_res["DPH"] = -2.8;
+        abs_score_cut_by_res["DIL"] = -1.7;
+        abs_score_cut_by_res["DLE"] = -1.5;
+        abs_score_cut_by_res["DME"] = -1.7;
+        abs_score_cut_by_res["DVA"] = -1.0;
+        abs_score_cut_by_res["DTR"] = -3.4;
+        abs_score_cut_by_res["DLY"] = -2.6;
+        abs_score_cut_by_res["DTY"] = -2.8;
+        abs_score_cut_by_res["DHI"] = -1.8;
 
 		// #ifdef USE_OPENMP
 		// #pragma omp parallel for schedule(dynamic,1)

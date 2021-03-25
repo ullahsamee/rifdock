@@ -700,7 +700,9 @@ int main(int argc, char *argv[]) {
 		if ( opt.dump_rifgen_hdf5 ) {
 			core::pose::Pose all_rots;
 			for ( int irot = 0; irot < rot_index.size(); irot++ ) {
-				all_rots.append_residue_by_jump( *rot_index_spec.get_rotamer_at_identity( irot ), 1 );
+				std::string lresname;
+				if (rot_index.d_l_map_.find(rot_index_spec.resname(irot)) != rot_index.d_l_map_.end()) { lresname = rot_index.d_l_map_.find(rot_index_spec.resname(irot))->second; }
+				all_rots.append_residue_by_jump( *rot_index_spec.get_rotamer_at_identity( irot, lresname ), 1 );
 			}
 
 			all_rots.pdb_info( std::make_shared<core::pose::PDBInfo>( all_rots ) );

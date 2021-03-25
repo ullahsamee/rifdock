@@ -774,8 +774,6 @@ get_richardson_rot_data(
 
 }
 
-//<<<<<<< HEAD
-//foward decleration
 void
 get_rotamer_spec_default(
 	::scheme::chemical::RotamerIndexSpec & rot_index,
@@ -784,12 +782,6 @@ get_rotamer_spec_default(
 	bool use_d_aa,
 	bool use_l_aa
 );
-// std::shared_ptr<RotamerIndex>
-// get_rotamer_index(
-	
-// 	::scheme::chemical::RotamerIndexSpec const& rot_index_spec
-// =======
-// >>>>>>> master
 
 shared_ptr<RotamerIndex>
 get_rotamer_index(
