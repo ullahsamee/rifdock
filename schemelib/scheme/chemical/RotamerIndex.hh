@@ -378,9 +378,17 @@ RotamerIndexSpec
 
 	// This is not a fast function!! Used for dumping the rotamer spec
 	core::conformation::ResidueOP
-	get_rotamer_at_identity( size_t irot ) const {
+	get_rotamer_at_identity( size_t irot, std::string lresname = "" ) const {
 		core::chemical::ResidueTypeSetCAP rts = core::chemical::ChemicalManager::get_instance()->residue_type_set("fa_standard");
-		return get_residue_at_identity( rts.lock()->name_map( this->resname(irot)), get_rotspec(irot).chi_ );
+		core::conformation::ResidueOP rop;
+		if (lresname == "") {
+			rop = get_residue_at_identity( rts.lock()->name_map( this->resname(irot)), get_rotspec(irot).chi_ );
+		} else {
+			core::chemical::ResidueTypeCOP rt = rts.lock() -> name_mapOP( lresname );
+			core::chemical::ResidueTypeCOP d_rt = rts.lock() -> get_d_equivalent(rt);
+			rop = get_residue_at_identity( *d_rt, get_rotspec(irot).chi_ );
+		}
+		return rop;
 	}
 
 	void
