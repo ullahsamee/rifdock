@@ -482,8 +482,8 @@ test_donor_acceptor_caches(
 		direction.normalize();
 
 		HBondRay ray;
-		ray.horb_cen[0] = position[0]; ray.horb_cen[1] = position[1]; ray.horb_cen[1] = position[1];
-		ray.direction[0] = direction[0]; ray.direction[1] = direction[1]; ray.direction[1] = direction[1];
+		ray.horb_cen[0] = position[0]; ray.horb_cen[1] = position[1]; ray.horb_cen[2] = position[2];
+		ray.direction[0] = direction[0]; ray.direction[1] = direction[1]; ray.direction[2] = direction[2];
 
 		std::vector<HBondRay> rays { ray };
 

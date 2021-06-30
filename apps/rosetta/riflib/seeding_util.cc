@@ -171,9 +171,10 @@ parse_seeding_file(
     // utility::io::izstream in(fname);
         std::string s;
         devel::scheme::EigenXform xform;
+        bool valid_lines_exist = false;
+        bool flag = false;
         if ( seeding_by_patchdock ){
 
-                bool flag = false;
                 while ( std::getline(in, s)){
                         if (s.empty()) continue;
 
@@ -185,6 +186,8 @@ parse_seeding_file(
                         }
 
                         if(!flag) continue;
+
+                        valid_lines_exist = true;
 
 												// remove bad patchdock seeding pos based on the sasa
 												if ( utility::string2float(splt[7]) < patchdock_min_sasa ) continue;
@@ -228,7 +231,19 @@ parse_seeding_file(
         
 
     if (seeding_positions.size() == 0) {
-        utility_exit_with_message( "Error!!!!! Unable to parse seeding file: " + fname );
+        if ( ! seeding_by_patchdock ) {
+            utility_exit_with_message( "Error!!!!! No xforms parsed from -seeding_pos file: " + fname );
+        } else {
+            if ( ! flag ) {
+                utility_exit_with_message( "Error!!!!! Could not parse patchdock xforms. Corruption? (This file doesn't look right.) -seeding_pos file: " + fname );
+            }
+            if ( ! valid_lines_exist ) {
+                utility_exit_with_message( "Error!!!!! No patchdock xforms extracted from file. There don't seem to be any docks. Maybe something isn't setup correctly."
+                            " -seeding_pos file: " + fname );
+            }
+            utility_exit_with_message( "Error!!!!! No patchdock xforms extracted from file, but there were valid options. Consider decreasing -patchdock_min_sasa or"
+                        " increasing -patchdock_top_ranks. -seeding_pos file: " + fname );
+        }
     }
 
     return true;

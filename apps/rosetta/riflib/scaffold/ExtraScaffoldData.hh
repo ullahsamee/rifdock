@@ -26,13 +26,62 @@ struct ExtraScaffoldData {
     ExtraScaffoldData () :
         csts(),
         force_scaffold_center( Eigen::Vector3f {std::numeric_limits<double>::quiet_NaN(), 0, 0} ),
-        rotboltz_data_p( nullptr )
+        per_rotamer_custom_energies_p( nullptr ),
+        allowed_irot_at_ires_p( nullptr )
     {}
 
 
     std::vector<CstBaseOP> csts;
     Eigen::Vector3f force_scaffold_center;
-    std::shared_ptr< std::vector< std::vector<float> > > rotboltz_data_p;
+    std::shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p;
+    shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
+    shared_ptr<std::vector<bool>> ala_disallowed_p;
+
+
+    void accumulate_per_rotamer_custom_energies( std::shared_ptr< std::vector< std::vector<float> > > const & per_rotamer_custom_energies_p_in ) {
+        if ( ! per_rotamer_custom_energies_p_in ) return;
+
+        if ( ! per_rotamer_custom_energies_p ) per_rotamer_custom_energies_p = per_rotamer_custom_energies_p_in;
+
+        runtime_assert( per_rotamer_custom_energies_p_in->size() == per_rotamer_custom_energies_p->size() );
+
+        for ( core::Size irow = 0; irow < per_rotamer_custom_energies_p->size(); irow++ ) {
+            runtime_assert( per_rotamer_custom_energies_p_in->at(irow).size() == per_rotamer_custom_energies_p->at(irow).size() );
+            for ( core::Size icol = 0; icol < per_rotamer_custom_energies_p->at(irow).size(); icol++ ) {
+                per_rotamer_custom_energies_p->at(irow)[icol] += per_rotamer_custom_energies_p_in->at(irow)[icol];
+            }
+        }
+    }
+
+
+    void accumulate_allowed_irot_at_ires( std::shared_ptr< std::vector< std::vector<bool> > > const & allowed_irot_at_ires_p_in ) {
+        if ( ! allowed_irot_at_ires_p_in ) return;
+
+        if ( ! allowed_irot_at_ires_p ) allowed_irot_at_ires_p = allowed_irot_at_ires_p_in;
+
+        runtime_assert( allowed_irot_at_ires_p_in->size() == allowed_irot_at_ires_p->size() );
+
+        for ( core::Size irow = 0; irow < allowed_irot_at_ires_p->size(); irow++ ) {
+            runtime_assert( allowed_irot_at_ires_p_in->at(irow).size() == allowed_irot_at_ires_p->at(irow).size() );
+            for ( core::Size icol = 0; icol < allowed_irot_at_ires_p->at(irow).size(); icol++ ) {
+                allowed_irot_at_ires_p->at(irow)[icol] = allowed_irot_at_ires_p->at(irow)[icol] && allowed_irot_at_ires_p_in->at(irow)[icol];
+            }
+        }
+    }
+
+    void accumulate_ala_disallowed( shared_ptr<std::vector<bool>> const & ala_disallowed_p_in ) {
+        if ( ! ala_disallowed_p_in ) return;
+
+        if ( ! ala_disallowed_p ) ala_disallowed_p = ala_disallowed_p_in;
+
+        runtime_assert( ala_disallowed_p_in->size() == ala_disallowed_p->size() );
+
+        for ( core::Size irow = 0; irow < ala_disallowed_p->size(); irow++ ) {
+            ala_disallowed_p->at(irow) = ala_disallowed_p->at(irow) || ala_disallowed_p_in->at(irow);
+        }
+    }
+
+
 };
 
 

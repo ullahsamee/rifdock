@@ -74,7 +74,7 @@ struct SceneObjectiveParametric :
 		std::vector<float> & vec,
 		Rotamers & rots
 	) const {
-		assert( provides_rotamers() );
+		// assert( provides_rotamers() );
 		Scene const & scene = static_cast<Scene const &>( s );
 		typename Objective::Results results = objective( scene, config );
 		results.vector(vec);

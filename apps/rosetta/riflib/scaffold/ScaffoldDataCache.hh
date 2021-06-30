@@ -31,6 +31,7 @@
 #include <core/pose/Pose.hh>
 #include <utility/vector1.hh>
 #include <utility/io/ozstream.hh>
+#include <boost/format.hpp>
 
 
 
@@ -76,8 +77,9 @@ struct ScaffoldDataCache {
     uint64_t debug_sanity;
 
     shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
+    shared_ptr<std::vector<bool>> ala_disallowed_p; // More extreme than allowed_irot_at_res. Causes extra rotamers to be inserted during packing
 
-    std::shared_ptr< std::vector< std::vector<float> > > rotboltz_data_p;
+    std::shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p;
 
 
 // not setup during constructor
@@ -111,15 +113,20 @@ struct ScaffoldDataCache {
 
     ScaffoldDataCache() {}
 
+    // Don't add any more fields to this call
+    // Consider instead that you probably want to add something to ExtraScaffoldData
+    //  (you'll have to modify fewer functions if you do it this way)
     ScaffoldDataCache( core::pose::Pose & pose, 
         utility::vector1<core::Size> const & scaffold_res_in, 
         std::string const &scafftag_in,
         EigenXform const & scaffold_perturb_in,
         shared_ptr< RotamerIndex > rot_index_p,
         RifDockOpt const & opt,
-        ExtraScaffoldData const & extra_data,
+        ExtraScaffoldData const & extra_data_in,
 	    std::string const & scaffold_name
     ) {
+
+        ExtraScaffoldData extra_data = extra_data_in;
 
         debug_sanity = 1337;
 
@@ -140,9 +147,6 @@ struct ScaffoldDataCache {
         scaffuseres_p = make_shared<std::vector<bool>>(pose.size(), false);
         // scaffold_phi_psi_p = make_shared<std::vector< std::pair<core::Real,core::Real>>>();
         // scaffold_d_pos_p = make_shared<std::vector<int>>();
-        if ( opt.use_dl_mix_bb ) {
-            allowed_irot_at_ires_p = make_shared<std::vector<std::vector<bool>>>();
-        }
         
 
         // setting up the d and l maps
@@ -155,6 +159,18 @@ struct ScaffoldDataCache {
         //     std::cout << irot << " " << ( l_map[irot] ? "L" : " " ) << ( d_map[irot] ? "D" : " " ) << rot_index_p->oneletter(irot) << std::endl;
         // }
 
+        if ( opt.use_dl_mix_bb ) {
+            shared_ptr<std::vector<std::vector<bool>>> dl_allowed_irot_at_pos = make_shared<std::vector<std::vector<bool>>>();
+            for ( core::Size ir : *scaffold_res_p) {
+                if (pose.phi(ir) > 0) {
+                    dl_allowed_irot_at_pos->push_back( d_map );
+                } else {
+                    dl_allowed_irot_at_pos->push_back( l_map );
+                }
+            }
+            extra_data.accumulate_allowed_irot_at_ires( dl_allowed_irot_at_pos );
+        }
+
 
 
         for ( core::Size ir : *scaffold_res_p) {
@@ -162,14 +178,10 @@ struct ScaffoldDataCache {
             scaffres_l2g_p->push_back(ir-1);
             (*scaffuseres_p)[ir-1] = true;
 
-            if ( allowed_irot_at_ires_p ) {
-                if (pose.phi(ir) > 0) {
-                    allowed_irot_at_ires_p->push_back( d_map );
-                } else {
-                    allowed_irot_at_ires_p->push_back( l_map );
-                }
-            }
         }
+
+
+
 
         // This is setting scaff_redundancy_filter_rg and scaff_radius
         get_rg_radius( pose, scaff_redundancy_filter_rg, scaff_radius, *scaffold_res_p, false ); 
@@ -221,6 +233,8 @@ struct ScaffoldDataCache {
         for( int i = 0; i < scaffold_res_p->size(); ++i ){
             int iresglobal = scaffres_l2g_p->at(i);
             std::string name3 = scaffold_sequence_glob0_p->at(iresglobal);
+
+            // This won't add custom rot_index_spec rotamers but I don't care
             std::pair<int,int> ib = rot_index_p->index_bounds( name3 );
             // std::cout << "local_rotamers " << i << " " << iresglobal << " " << name3 << " " << ib.first << " " << ib.second << std::endl;
             local_rotamers_p->push_back( ib );
@@ -277,7 +291,111 @@ struct ScaffoldDataCache {
             csts.push_back(cst);
         }
 
-        rotboltz_data_p = extra_data.rotboltz_data_p;
+        if( opt.native_docking ){
+            std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD AND ALA!!!" << std::endl;
+            shared_ptr<std::vector<std::vector<bool>>> native_allowed_irot_at_pos = make_shared<std::vector<std::vector<bool>>>();
+            shared_ptr<std::vector<bool>> native_ala_disallowed = make_shared<std::vector<bool>>();
+            for ( core::Size ir : *scaffold_res_p) {
+                std::vector<bool> this_pos( rot_index_p->size(), true );
+                for( int irot = 0; irot < rot_index_p->size(); ++irot ){
+                    if( rot_index_p->resname(irot) != scaffold_sequence_glob0_p->at(ir-1) ){
+                        this_pos[irot] = false;
+                    }
+                }
+                native_allowed_irot_at_pos->push_back(this_pos);
+                native_ala_disallowed->push_back( scaffold_sequence_glob0_p->at(ir-1) != "ALA" );
+            }
+            extra_data.accumulate_allowed_irot_at_ires( native_allowed_irot_at_pos );
+            extra_data.accumulate_ala_disallowed( native_ala_disallowed );
+        }
+
+
+        if( opt.restrict_to_native_scaffold_res ){
+            std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD!!!" << std::endl;
+            shared_ptr<std::vector<std::vector<bool>>> native_allowed_irot_at_pos = make_shared<std::vector<std::vector<bool>>>();
+            for ( core::Size ir : *scaffold_res_p) {
+                std::vector<bool> this_pos( rot_index_p->size(), true );
+                for( int irot = 0; irot < rot_index_p->size(); ++irot ){
+                    if( rot_index_p->resname(irot) != scaffold_sequence_glob0_p->at(ir-1) && rot_index_p->resname(irot) != "ALA" ){
+                        this_pos[irot] = true;
+                    }
+                }
+                native_allowed_irot_at_pos->push_back(this_pos);
+            }
+            extra_data.accumulate_allowed_irot_at_ires( native_allowed_irot_at_pos );
+        }
+
+        if( opt.bonus_to_native_scaffold_res != 0 ){
+            std::cout << "adding to native scaffold res 1BE " << opt.bonus_to_native_scaffold_res << std::endl;
+            std::shared_ptr< std::vector< std::vector<float> > > native_bonuses_p = make_shared< std::vector< std::vector<float> > >();
+            for ( core::Size ir : *scaffold_res_p) {
+                std::vector<float> this_bonus( rot_index_p->size(), 0 );
+                for( int irot = 0; irot < rot_index_p->size(); ++irot ){
+                    if( rot_index_p->resname(irot) == scaffold_sequence_glob0_p->at(ir-1) ){
+                        this_bonus[irot] += opt.bonus_to_native_scaffold_res;
+                    }
+                }
+                native_bonuses_p->push_back(this_bonus);
+            }
+            extra_data.accumulate_per_rotamer_custom_energies( native_bonuses_p );
+        }
+
+
+
+
+        per_rotamer_custom_energies_p = extra_data.per_rotamer_custom_energies_p;
+        allowed_irot_at_ires_p = extra_data.allowed_irot_at_ires_p;
+        ala_disallowed_p = extra_data.ala_disallowed_p;
+
+        if ( per_rotamer_custom_energies_p ) runtime_assert( scaffold_res_p->size() == per_rotamer_custom_energies_p->size() );
+        if ( allowed_irot_at_ires_p ) runtime_assert( scaffold_res_p->size() == allowed_irot_at_ires_p->size() );
+        if ( ala_disallowed_p ) runtime_assert( scaffold_res_p->size() == ala_disallowed_p->size() );
+
+        if ( ala_disallowed_p ) {
+            runtime_assert( allowed_irot_at_ires_p );
+            for ( core::Size i = 0; i < ala_disallowed_p->size(); i++ ) {
+                if ( ala_disallowed_p->at(i) ) {
+                    // We assert this here because it will introduce a bug in hackpack
+                    runtime_assert( ! allowed_irot_at_ires_p->at(i)[ rot_index_p->ala_rot() ] );
+                    bool any = false;
+                    for ( core::Size irot = 0; irot < rot_index_p->size(); irot++ ) {
+                        if ( allowed_irot_at_ires_p->at(i)[irot] ) {
+                            any = true;
+                            break;
+                        }
+                    }
+                    if ( ! any ) {
+                        utility_exit_with_message("No rotamers allowed at scaffold position " + utility::to_string(scaffold_res_p->at(i))
+                                + " and the default ALA residue has been specifically disabled.");
+                    }
+                }
+            }
+        }
+
+        // if ( allowed_irot_at_ires_p ) {
+
+        //     for ( int i = 1; i <= scaffold_res_p->size(); i++) {
+
+        //         core::Size ir = scaffold_res_p->at(i);
+     
+        //         std::vector<bool> row = allowed_irot_at_ires_p->at(i-1);
+
+        //         std::set<std::string> allowed;
+        //         for ( int irot = 0; irot < rot_index_p->size(); irot++ ) {
+        //             if ( row.at(irot) ) {
+        //                 allowed.insert( rot_index_p->oneletter( irot ) );
+        //             }
+        //         }
+
+        //         std::string my_str = "";
+        //         for ( std::string const & str : allowed ) {
+        //             my_str += str;
+        //         }
+
+        //         std::cout << "Allowed: " << ir << my_str << std::endl;
+        //     }
+        // }
+
 
     }
 
@@ -357,30 +475,31 @@ struct ScaffoldDataCache {
                 opt.replace_all_with_ala_1bre,
                 opt.favorable_1body_multiplier,
                 opt.favorable_1body_multiplier_cutoff,
-                rotboltz_data_p
+                per_rotamer_custom_energies_p
             );
 
-
-        if( opt.restrict_to_native_scaffold_res ){
-            std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD!!!" << std::endl;
-            for( int ir = 0; ir < scaffold_onebody_glob0_p->size(); ++ir ){
-                for( int irot = 0; irot < rot_index_p->size(); ++irot ){
-                    if( rot_index_p->resname(irot) != scaffold_sequence_glob0_p->at(ir) && rot_index_p->resname(irot) != "ALA" ){
-                        (*scaffold_onebody_glob0_p)[ir][irot] = 9e9;
-                    }
-                }
-            }
-        }
-        if( opt.bonus_to_native_scaffold_res != 0 ){
-            std::cout << "adding to native scaffold res 1BE " << opt.bonus_to_native_scaffold_res << std::endl;
-            for( int ir = 0; ir < scaffold_onebody_glob0_p->size(); ++ir ){
-                for( int irot = 0; irot < rot_index_p->size(); ++irot ){
-                    if( rot_index_p->resname(irot) == scaffold_sequence_glob0_p->at(ir) ){
-                        (*scaffold_onebody_glob0_p)[ir][irot] += opt.bonus_to_native_scaffold_res;
-                    }
-                }
-            }
-        }
+        // Handled above to make things more streamlined
+        // if( opt.restrict_to_native_scaffold_res ){
+        //     std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD!!!" << std::endl;
+        //     for( int ir = 0; ir < scaffold_onebody_glob0_p->size(); ++ir ){
+        //         for( int irot = 0; irot < rot_index_p->size(); ++irot ){
+        //             if( rot_index_p->resname(irot) != scaffold_sequence_glob0_p->at(ir) && rot_index_p->resname(irot) != "ALA" ){
+        //                 (*scaffold_onebody_glob0_p)[ir][irot] = 9e9;
+        //             }
+        //         }
+        //     }
+        // }
+        // Handled above to make things more streamlined
+        // if( opt.bonus_to_native_scaffold_res != 0 ){
+        //     std::cout << "adding to native scaffold res 1BE " << opt.bonus_to_native_scaffold_res << std::endl;
+        //     for( int ir = 0; ir < scaffold_onebody_glob0_p->size(); ++ir ){
+        //         for( int irot = 0; irot < rot_index_p->size(); ++irot ){
+        //             if( rot_index_p->resname(irot) == scaffold_sequence_glob0_p->at(ir) ){
+        //                 (*scaffold_onebody_glob0_p)[ir][irot] += opt.bonus_to_native_scaffold_res;
+        //             }
+        //         }
+        //     }
+        // }
 
         local_onebody_p = make_shared<std::vector<std::vector<float> > >();
         for( int i = 0; i < scaffres_l2g_p->size(); ++i ){
@@ -406,8 +525,11 @@ struct ScaffoldDataCache {
 
         scaffold_twobody_p = make_shared<TBT>( scaffold_centered_p->size(), rot_index_p->size()  );
 
+        std::string energy_cut = boost::str(boost::format("_ecut_%.2f")%opt.rotamer_onebody_inclusion_threshold);
+        
+
         std::cout << "rifdock: get_twobody_tables" << std::endl;
-        std::string cachefile2b = "__2BE_" + scafftag + "_reshash" + scaff_res_hashstr + ".bin.gz";
+        std::string cachefile2b = "__2BE_" + scafftag + "_reshash" + scaff_res_hashstr + energy_cut + ".bin.gz";
         if( ! opt.cache_scaffold_data || opt.extra_rotamers ) cachefile2b = "";
         std::string dscrtmp;
         get_twobody_tables(

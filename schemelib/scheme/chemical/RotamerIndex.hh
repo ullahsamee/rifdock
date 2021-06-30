@@ -932,6 +932,8 @@ struct RotamerIndex {
 
 	int ala_rot() const { return ala_rot_; }
 
+	// This function is broken if you add extra residues to the rotamer spec (like the hotspot code does)
+	// I don't think you can ever rely on this because of that
 	std::pair<int,int>
 	index_bounds( std::string const & resname ) const {
 		BoundsMap::const_iterator i = bounds_map_.find(resname);
