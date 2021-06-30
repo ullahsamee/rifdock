@@ -31,6 +31,7 @@
 #include <basic/options/option.hh>
 #include <protocols/moves/MoverStatus.hh>
 #include <core/select/util.hh>
+#include <core/sequence/SequenceProfile.hh>
 
 #include <core/scoring/methods/EnergyMethodOptions.hh>
 #include <core/scoring/hbonds/HBondSet.hh>
@@ -173,7 +174,20 @@ get_info_for_iscaff(
         } else {
             utility_exit_with_message( "-rotamer_boltzmann_files list not same length as -scaffolds list" );
         }
-        extra_data.rotboltz_data_p = load_rotboltz_data( rotboltz_fname, scaffold.size(), rot_index_p->size(), opt.rotboltz_ignore_missing_rots );
+        extra_data.accumulate_per_rotamer_custom_energies( load_rotboltz_data( rotboltz_fname, scaffold.size(), rot_index_p->size(), opt.rotboltz_ignore_missing_rots ) );
+    }
+
+    if( opt.pssm_file_fnames.size() ){
+        std::string pssm_fname = "";
+        if( opt.pssm_file_fnames.size() == opt.pssm_file_fnames.size() ){
+            pssm_fname = opt.pssm_file_fnames.at(iscaff);
+        } else if( opt.pssm_file_fnames.size() == 1 ){
+            pssm_fname = opt.pssm_file_fnames.front();
+        } else {
+            utility_exit_with_message( "-pssm_file list not same length as -scaffolds list" );
+        }
+        load_pssm_data( extra_data, pssm_fname, scaffold_res, rot_index_p, opt.pssm_weight, opt.pssm_cutoff, opt.pssm_higher_is_better,
+                                                                                                            opt.pssm_enforce_no_ala );
     }
 
 }
@@ -910,6 +924,93 @@ load_rotboltz_data(
     return rotboltz_data_p;
     
 }
+
+
+void
+load_pssm_data(
+    ExtraScaffoldData & extra_data,
+    std::string const & pssm_fname,
+    utility::vector1<core::Size> const & scaffold_res,
+    shared_ptr< RotamerIndex > rot_index_p,
+    float pssm_weight,
+    float pssm_cutoff,
+    bool pssm_higher_is_better,
+    bool pssm_enforce_no_ala
+) {
+
+    using core::Size;
+
+    core::sequence::SequenceProfile profile_obj;
+    profile_obj.read_from_file( pssm_fname );
+
+    utility::vector1< utility::vector1< core::Real > > const & profile = profile_obj.profile();
+
+    // The PSSM code is so terribly written that the alphabet it produces is not in the right order...
+    // utility::vector1< std::string > alphabet = profile_obj.alphabet();
+    utility::vector1< std::string > name3_alphabet;
+    for ( Size i = 1; i <= 20; i++ ) {
+        name3_alphabet.push_back(core::chemical::name_from_aa( core::chemical::AA(i) ) );
+        // name3_alphabet.push_back(core::chemical::name_from_aa(core::chemical::aa_from_oneletter_code( alphabet[i][0] )).substr(0, 3) );
+    }
+
+    shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p = 
+                                                        std::make_shared<std::vector< std::vector<float> >>( scaffold_res.size() );
+    shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p = nullptr;
+    shared_ptr<std::vector<bool>> ala_disallowed_p = nullptr;
+    if ( ! std::isnan( pssm_cutoff ) ) {
+        allowed_irot_at_ires_p = std::make_shared<std::vector<std::vector<bool>>>( scaffold_res.size() );
+        if ( pssm_enforce_no_ala ) {
+            ala_disallowed_p = make_shared<std::vector<bool>>( scaffold_res.size() );
+        }
+    } else {
+        if ( pssm_enforce_no_ala ) {
+            utility_exit_with_message("If you want -pssm_enforce_no_ala to work, you must pass a value for -pssm_cutoff");
+        }
+    }
+
+    for ( Size ipos = 1; ipos <= scaffold_res.size(); ipos++ ) {
+        Size ir = scaffold_res[ipos];
+
+        if ( ir > profile.size() ) {
+            utility_exit_with_message("Error: No PSSM values specified for position " + utility::to_string( ir ) );
+        }
+
+        utility::vector1< core::Real > const & pssm_row = profile[ir];
+
+        per_rotamer_custom_energies_p->at(ipos-1).resize(rot_index_p->size());
+        if ( allowed_irot_at_ires_p ) allowed_irot_at_ires_p->at(ipos-1).resize(rot_index_p->size(), true);
+
+
+        for ( Size iletter = 1; iletter <= name3_alphabet.size(); iletter ++ ) {
+            // index_bounds is broken
+            // std::pair<int, int> index_bounds = rot_index_p->index_bounds( name3_alphabet[iletter] );
+            float pssm_raw_value = pssm_row[ iletter ];
+            float pssm_scaled_value = ( pssm_higher_is_better ? -1 : 1 ) * pssm_weight * pssm_raw_value;
+            bool is_ok = (! allowed_irot_at_ires_p) || ( pssm_higher_is_better ? pssm_raw_value >= pssm_cutoff : pssm_raw_value <= pssm_cutoff );
+
+            // std::cout << "Pos: " << ir << " " << name3_alphabet[iletter] << " " << pssm_raw_value << " " << (is_ok ? "ok" : "not") << std::endl;
+            for ( Size irot = 0; irot < rot_index_p->size(); irot++ ) {
+                if ( name3_alphabet[iletter] != rot_index_p->resname( irot ) ) continue;
+                
+                per_rotamer_custom_energies_p->at(ipos-1)[irot] = pssm_scaled_value;
+                if ( allowed_irot_at_ires_p ) allowed_irot_at_ires_p->at(ipos-1)[irot] = is_ok;
+            }
+
+            if ( ala_disallowed_p && ! is_ok && name3_alphabet[iletter] == "ALA" ) ala_disallowed_p->at( ipos-1 ) = true;
+
+
+        }
+
+
+
+    }
+
+    extra_data.accumulate_per_rotamer_custom_energies( per_rotamer_custom_energies_p );
+    if ( allowed_irot_at_ires_p ) extra_data.accumulate_allowed_irot_at_ires( allowed_irot_at_ires_p );
+    if ( ala_disallowed_p ) extra_data.accumulate_ala_disallowed( ala_disallowed_p );
+
+}
+
 
 
 

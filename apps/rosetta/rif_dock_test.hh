@@ -102,11 +102,13 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, restrict_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Real        , rif_dock, bonus_to_native_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, add_native_scaffold_rots_when_packing )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, native_docking )
     OPT_1GRP_KEY(  Real        , rif_dock, ignore_rifres_if_worse_than )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rif_rots_as_chains )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, ignore_ala_rifres )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_hdf5 )
 	OPT_1GRP_KEY(  StringVector, rif_dock, dump_rifgen_near_pdb )
@@ -284,6 +286,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_bonus )
     OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_override )
 
+    OPT_1GRP_KEY(  StringVector,  rif_dock, pssm_file )
+    OPT_1GRP_KEY(  Real        ,  rif_dock, pssm_weight )
+    OPT_1GRP_KEY(  Real        ,  rif_dock, pssm_cutoff )
+    OPT_1GRP_KEY(  Boolean     ,  rif_dock, pssm_higher_is_better )
+    OPT_1GRP_KEY(  Boolean     ,  rif_dock, pssm_enforce_no_ala )
+
  
 
 		void register_options() {
@@ -378,14 +386,16 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::search_diameter, "", 150.0 );
 			NEW_OPT(  rif_dock::hsearch_scale_factor, "global scaling of rotation/translation search grid", 1.0 );
 
-			NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT", false );
+			NEW_OPT(  rif_dock::restrict_to_native_scaffold_res, "aka structure prediction CHEAT. Depricated. Still allows ALA. Use -native_docking", false );
 			NEW_OPT(  rif_dock::bonus_to_native_scaffold_res, "aka favor native CHEAT", -0.3 );
-			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT", false );
+			NEW_OPT(  rif_dock::add_native_scaffold_rots_when_packing, "CHEAT. See -native_docking (which is separate)", false );
+            NEW_OPT(  rif_dock::native_docking, "Best way to do docking with only native AAs. Added by bcov 2021.", false );
             NEW_OPT(  rif_dock::ignore_rifres_if_worse_than, "Don't use bad rif residues", 0 );
 
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
+            NEW_OPT(  rif_dock::ignore_ala_rifres, "If ALA is the result of the rif search. Ignore it.", false );
 
 
             NEW_OPT(  rif_dock::dump_rifgen_hdf5, "Dump the rif to an hdf5 file.", false );
@@ -563,6 +573,12 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::sat_score_bonus,     "Give bonus to residues that satisfy sat. 0:-2,1:-1.5", "");
             NEW_OPT(  rif_dock::sat_score_override,  "Override score for residues that satisfy sat. 0:-2,1:-1.5", "");
 
+            NEW_OPT(  rif_dock::pssm_file,  "Standard Rosetta formatted PSSM file (21 columns). Either 1 file for all scaffolds or 1 file per scaffold.", utility::vector1<std::string>());
+            NEW_OPT(  rif_dock::pssm_weight,  "All values in the PSSM are multiplied by this before being considered scores. Don't forget -pssm_higher_is_better", 1);
+            NEW_OPT(  rif_dock::pssm_cutoff,  "If specified, any PSSM value worse than this score denotes a disallowed residue type.", std::numeric_limits<double>::quiet_NaN() );
+            NEW_OPT(  rif_dock::pssm_higher_is_better, "By default, PSSM values are interpretted as scores (lower=better). Set this to reverse that (and multiply everything by -1).", false);
+            NEW_OPT(  rif_dock::pssm_enforce_no_ala, "If using -pssm_cutoff and ALA is disallowed. Add allowed rotamers during docking. May cause significant slowdown.", false);
+
 
 
 		}
@@ -600,6 +616,7 @@ struct RifDockOpt
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
 	bool        rif_rots_as_chains                   ;
+    bool        ignore_ala_rifres                    ;
     bool        dump_rifgen_hdf5                     ;
 	std::vector<std::string> dump_rifgen_near_pdb    ;
 	float       dump_rifgen_near_pdb_dist            ;
@@ -616,6 +633,7 @@ struct RifDockOpt
     bool        test_hackpack                        ;  
     bool        only_score_input_pos                 ;
 	bool        add_native_scaffold_rots_when_packing;
+    bool        native_docking                       ;
     float       ignore_rifres_if_worse_than          ;
 	bool        restrict_to_native_scaffold_res      ;
 	float       bonus_to_native_scaffold_res         ;
@@ -827,7 +845,13 @@ struct RifDockOpt
     float       sasa_cut                             ;
     float       score_per_1000_sasa_cut              ;
     std::set<int> skip_sasa_for_res                  ;
-    
+
+
+    std::vector<std::string> pssm_file_fnames        ;
+    float       pssm_weight                          ;
+    float       pssm_cutoff                          ;
+    bool        pssm_higher_is_better                ;
+    bool        pssm_enforce_no_ala                  ;
 
 
     void init_from_cli();
@@ -870,6 +894,7 @@ struct RifDockOpt
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
+        ignore_ala_rifres                      = option[rif_dock::ignore_ala_rifres                  ]();
         dump_rifgen_hdf5                       = option[rif_dock::dump_rifgen_hdf5                   ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
 		dump_rifgen_near_pdb_frac              = option[rif_dock::dump_rifgen_near_pdb_frac          ]();
@@ -884,6 +909,7 @@ struct RifDockOpt
         test_hackpack                          = option[rif_dock::test_hackpack                      ]();  
         only_score_input_pos                   = option[rif_dock::only_score_input_pos               ]();
 		add_native_scaffold_rots_when_packing  = option[rif_dock::add_native_scaffold_rots_when_packing ]();
+        native_docking                         = option[rif_dock::native_docking                        ]();
         ignore_rifres_if_worse_than            = option[rif_dock::ignore_rifres_if_worse_than           ]();
 		restrict_to_native_scaffold_res        = option[rif_dock::restrict_to_native_scaffold_res       ]();
 		bonus_to_native_scaffold_res           = option[rif_dock::bonus_to_native_scaffold_res          ]();
@@ -1075,6 +1101,12 @@ struct RifDockOpt
         num_pdbinfo_requirements_required       = option[rif_dock::num_pdbinfo_requirements_required    ]();
 
 
+        pssm_weight                             = option[rif_dock::pssm_weight    ]();
+        pssm_cutoff                             = option[rif_dock::pssm_cutoff    ]();
+        pssm_higher_is_better                   = option[rif_dock::pssm_higher_is_better    ]();
+        pssm_enforce_no_ala                     = option[rif_dock::pssm_enforce_no_ala      ]();
+
+
 
 		for( std::string s : option[rif_dock::scaffolds     ]() )     scaffold_fnames.push_back(s);
 		for( std::string s : option[rif_dock::scaffold_res  ]() ) scaffold_res_fnames.push_back(s);
@@ -1143,6 +1175,10 @@ struct RifDockOpt
     		std::exit(-1);
         }
 
+        if ( option[rif_dock::native_docking]() || option[rif_dock::pssm_enforce_no_ala]() ) {
+            rotamer_onebody_inclusion_threshold = 9e5; // Must allow everything but can't cross 9e9
+        }
+
 
         if ( scaff_search_mode == "nineA_baseline" ) {
         	if ( scaffold_fnames.size() > 0 ) {
@@ -1167,6 +1203,8 @@ struct RifDockOpt
         for( std::string s : option[rif_dock::seeding_pos ]() ) seeding_fnames.push_back(s);
 
         for( std::string s : option[rif_dock::rotamer_boltzmann_files ]() ) rotamer_boltzmann_fnames.push_back(s);
+
+        for( std::string s : option[rif_dock::pssm_file]() )     pssm_file_fnames.push_back(s);
 
         patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();
         patchdock_top_ranks                     = option[rif_dock::patchdock_top_ranks                 ]();

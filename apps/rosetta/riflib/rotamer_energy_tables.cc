@@ -124,12 +124,20 @@ void get_onebody_rotamer_energies(
 		}
 	}
 
+	utility::vector1<int> g2l( scaffold_onebody_rotamer_energies.size(), -1 );
+	if ( extra_scores_p ) {
+		runtime_assert( extra_scores_p->size() == scaffold_res.size() );
+		for ( int i = 0; i < scaffold_res.size(); i++ ) {
+			g2l[ scaffold_res[i+1] ] = i;
+		}
+	}
+
 	#ifdef USE_OPENMP
 	#pragma omp parallel for schedule(dynamic,1)
 	#endif
 	for( int ir = 1; ir <= scaffold_onebody_rotamer_energies.size(); ++ir ){
 
-		std::vector<float> const & extra = ( extra_scores_p ? extra_scores_p->at( ir-1 ) : std::vector<float>() );
+		std::vector<float> const & extra = ( g2l[ir] > -1 ? extra_scores_p->at( g2l[ir] ) : std::vector<float>() );
 		if ( extra.size() > 0 ) {
 			runtime_assert_msg( extra.size() == scaffold_onebody_rotamer_energies[ir-1].size(), 
 				"get_onebody_rotamer_energies has wrong number of rotamers for this rifdock!! " +

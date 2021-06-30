@@ -118,6 +118,18 @@ load_rotboltz_data(
     bool ignore_missing_rots
 );
 
+void
+load_pssm_data(
+    ExtraScaffoldData & extra_data,
+    std::string const & pssm_fname,
+    utility::vector1<core::Size> const & scaffold_res,
+    shared_ptr< RotamerIndex > rot_index_p,
+    float pssm_weight,
+    float pssm_cutoff,
+    bool pssm_higher_is_better,
+    bool pssm_enforce_no_ala
+);
+
 }}
 
 #endif

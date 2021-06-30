@@ -1278,6 +1278,7 @@ std::string get_rif_type_from_file( std::string fname )
 		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
         //std::vector<std::vector<bool>> allowed_irots_;
         shared_ptr<std::vector<std::vector<bool>>> allowed_irots_;
+        shared_ptr<std::vector<bool>> ala_disallowed_;
 		// sat group vector goes here
 		//std::vector<float> is_satisfied_score_;
 		
@@ -1393,6 +1394,7 @@ std::string get_rif_type_from_file( std::string fname )
 			scratch.rotamer_energies_1b_ = data_cache->local_onebody_p.get();
             scratch.scaff_burial_grid_ = data_cache->burial_grid;
             scratch.allowed_irots_ = data_cache->allowed_irot_at_ires_p;
+            scratch.ala_disallowed_ = data_cache->ala_disallowed_p;
 
 			//////////////////////////////////////////
 
@@ -1627,6 +1629,54 @@ std::string get_rif_type_from_file( std::string fname )
 				}
 			}
 
+            // This doesn't respect packopts_.rescore_rots_before_insertion. i.e. this gives garbage at low resolution
+            //  Theoretically fixable, but correct rotamers may have been pushed out of the rif
+            if( packing_ && scratch.ala_disallowed_ ){
+                if ( scratch.hackpack_->nres_ > 0 && 
+                        scratch.hackpack_->res_rots_.at(scratch.hackpack_->nres_-1).first == ires &&
+                        scratch.hackpack_->res_rots_.at(scratch.hackpack_->nres_-1).second.size() > 1 ) {
+                    // here we have hits from the rif. All we need to do is bump alanine's energy which we do last
+                } else {
+                    // No hits from the rif, we add all allowed rotamers
+
+                    runtime_assert( scratch.allowed_irots_ );
+                    std::vector<bool> const & allowed = scratch.allowed_irots_->at( ires );
+                    std::vector<std::pair<int, float>> rots_and_scores;
+                    float best = 9e9;
+                    for ( int irot = 0; irot < allowed.size(); irot++ ) {
+                        if ( ! allowed[irot] ) continue;
+                        // If you manage to trigger this, it's because you didn't modify rotamer_onebody_inclusion_threshold in rif_dock_test.hh
+                        runtime_assert( scratch.hackpack_->using_rotamer( ires, irot ) );
+
+                        float const rot1be = (*scratch.rotamer_energies_1b_).at(ires).at(irot);
+                        int sat1 = -1, sat2 = -1, hbcount = 0;
+                        float const recalc_rot_v_tgt = rot_tgt_scorer_.score_rotamer_v_target_sat( 
+                                                            irot, bb.position(), sat1, sat2, want_sats, hbcount, 10.0, 4 );
+                        float const rot_tot_1b = recalc_rot_v_tgt + rot1be;
+
+                        rots_and_scores.emplace_back( irot, rot_tot_1b );
+                        best = std::min<float>( rot_tot_1b, best );
+                        
+                    }
+
+                    for ( std::pair<int, float> const & pair : rots_and_scores ) {
+                        if ( pair.second < best + 5 ) {
+                            scratch.hackpack_->add_tmp_rot( ires, pair.first, pair.second, true );
+                        }
+                    }
+
+                    // std::cout << sum << " " << std::endl;
+                }
+
+                // Make sure everything looks correct. Then give ALA a huge score
+                // std::cout << scratch.hackpack_->res_rots_.back().first << " " << ires << " " << scratch.hackpack_->res_rots_.back().first << " " << scratch.hackpack_->res_rots_.size() << std::endl;
+                int nres = scratch.hackpack_->nres_;
+                runtime_assert( scratch.hackpack_->res_rots_.at(nres-1).first == ires );
+                runtime_assert( scratch.hackpack_->res_rots_.at(nres-1).second.size() > 1 );
+                runtime_assert( scratch.hackpack_->res_rots_.at(nres-1).second.front().first == scratch.hackpack_->default_rot_num_ );
+                scratch.hackpack_->res_rots_.at(nres-1).second.front().second = 123460-2000; // big, but not so big it throws an error
+            }
+
 			return bestsc;
 		}
 
@@ -1636,6 +1686,7 @@ std::string get_rif_type_from_file( std::string fname )
 			if( packing_ ){
 
 				::scheme::search::HackPack & packer( *scratch.hackpack_ );
+
 
 				float unsat_zerobody = 0;
 				if ( scratch.burial_manager_ ) {

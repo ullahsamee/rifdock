@@ -360,8 +360,8 @@ rosetta_score_inner(
                 for( int ichi = 0; ichi < rot_index.nchi(irot); ++ichi ){
                     pose_to_min.set_chi( ichi+1, ires+1, rot_index.chi( irot, ichi ) );
                 }
-                if ( sdc->rotboltz_data_p ) {
-                    rotamer_penalty += sdc->rotboltz_data_p->at( ires )[irot];
+                if ( sdc->per_rotamer_custom_energies_p ) {
+                    rotamer_penalty += sdc->per_rotamer_custom_energies_p->at( ires )[irot];
                 }
             }
 

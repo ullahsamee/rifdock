@@ -332,10 +332,10 @@ dump_rif_result_(
                         }
                     }
 
-                    float rotboltz = 0;
-                    if ( sdc->rotboltz_data_p ) {
-                        if ( sdc->rotboltz_data_p->at(ires).size() > 0 ) {
-                            rotboltz = sdc->rotboltz_data_p->at(ires)[irot];
+                    float custom_bonus = 0;
+                    if ( sdc->per_rotamer_custom_energies_p ) {
+                        if ( sdc->per_rotamer_custom_energies_p->at(bba.index_).size() > 0 ) {
+                            custom_bonus = sdc->per_rotamer_custom_energies_p->at(bba.index_)[irot];
                         }
                     }
 
@@ -347,8 +347,8 @@ dump_rif_result_(
                         std::cout << " score:" << F(7, 2, sc);
                         std::cout << " irot:" << I(3, irot);
                         std::cout << " 1-body:" << F(7, 2, onebody );
-                        if ( sdc->rotboltz_data_p ) {
-                            std::cout << " rotboltz:" << F(7, 2, rotboltz );
+                        if ( sdc->per_rotamer_custom_energies_p ) {
+                            std::cout << " rot-bonus:" << F(7, 2, custom_bonus );
                         }
                         std::cout << " rif score:" << F(7, 2, p.first);
                         std::cout << " rif rescore:" << F(7, 2, rescore);
@@ -404,6 +404,8 @@ dump_rif_result_(
 
         std::string myResName = rdd.rot_index_p->resname(irot);
         auto myIt = rdd.rot_index_p -> d_l_map_.find(myResName);
+
+        if ( rdd.opt.ignore_ala_rifres && myResName == "ALA" ) continue;
 
         core::conformation::ResidueOP newrsd;
         if (myIt != rdd.rot_index_p -> d_l_map_.end()){

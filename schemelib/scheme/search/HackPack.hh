@@ -132,14 +132,14 @@ struct HackPack
 		return twob_->all2sel_[ires][irotglobal] >= 0;
 	}
 	template< class Int >
-	void add_tmp_rot( int const & ires, Int const & irotglobal, float const & onebody_e )
+	void add_tmp_rot( int const & ires, Int const & irotglobal, float const & onebody_e, bool allow_high_energy=false )
 	{
 		// #pragma omp critical
 		// {
 		// 	std::cout << "================= add_tmp_rot " << ires << " " << irotglobal << " " << onebody_e << std::endl;
 		// 	print_rot_info();
 		// }
-		if( onebody_e > 10.0 ){
+		if( onebody_e > 10.0 && ! allow_high_energy ){
 			return;
 		}
 		ALWAYS_ASSERT( 0 <= ires && ires < twob_->all2sel_.shape()[0] );

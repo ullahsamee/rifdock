@@ -221,6 +221,9 @@ utility::vector1<core::Size> get_designable_positions_best_guess(
 
 std::string
 get_res_list_hash( utility::vector1<core::Size> const & reslist ){
+	if ( reslist.size() == 0 ) {
+		utility_exit_with_message("There were no residues specified on your scaffold!");
+	}
 	assert( reslist.size() > 0 );
 	std::size_t reslist_hash = boost::hash_range( reslist.begin(), reslist.end() );
 	std::string hashstr = boost::lexical_cast<std::string>(reslist_hash);
