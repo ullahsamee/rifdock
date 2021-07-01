@@ -159,6 +159,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
     OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
+    OPT_1GrP_KEY(  Real        , rif_dock, CB_too_close_penalty )
+    OPT_1GrP_KEY(  Real        , rif_dock, CB_too_close_dist )
+    OPT_1GrP_KEY(  Real        , rif_dock, CB_too_close_resl )
+    OPT_1GrP_KEY(  Integer     , rif_dock, CB_too_close_max_target_res_atom_idx )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -448,6 +452,14 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
+            NEW_OPT(  rif_dock::CB_too_close_penalty, "Penalty for every scaffold CB closer than -CB_too_close_dist to target.", 0 );
+            NEW_OPT(  rif_dock::CB_too_close_dist, "Distance for -CB_too_close_penalty", 6 );
+            NEW_OPT(  rif_dock::CB_too_close_resl, "Resolution of CB_too_close grid.", 0.5 );
+            NEW_OPT(  rif_dock::CB_too_close_max_target_res_atom_idx, "Atom idx in Rosetta numbering of last heavyatom to use on target. CB is 5. Default is whole sidechain.", 1000 );
+
+            
+
+
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -663,6 +675,10 @@ struct RifDockOpt
     float       hydrophobic_ddg_per_atom_cut         ;
     utility::vector1<int> hydrophobic_target_res     ;
     int         num_cation_pi                        ;
+    float       CB_too_close_penalty                 ;
+    float       CB_too_close_dist                    ;
+    float       CB_too_close_resl                    ;
+    int         CB_too_close_max_target_res_atom_idx ;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -938,6 +954,10 @@ struct RifDockOpt
         count_all_contacts_as_hydrophobic      = option[rif_dock::count_all_contacts_as_hydrophobic     ]();
         hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
         num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
+        CB_too_close_penalty                   = option[rif_dock::CB_too_close_penalty                  ]();
+        CB_too_close_dist                      = option[rif_dock::CB_too_close_dist                     ]();
+        CB_too_close_resl                      = option[rif_dock::CB_too_close_resl                     ]();
+        CB_too_close_max_target_res_atom_idx   = option[rif_dock::CB_too_close_max_target_res_atom_idx  ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();

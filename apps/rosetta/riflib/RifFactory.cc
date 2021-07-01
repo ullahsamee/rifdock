@@ -1274,6 +1274,7 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
 		shared_ptr< BurialManager > burial_manager_;
 		shared_ptr< UnsatManager > unsat_manager_;
+        float cb_too_close_score_;
         shared_ptr< BurialVoxelArray > scaff_burial_grid_;
 		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
         //std::vector<std::vector<bool>> allowed_irots_;
@@ -1304,6 +1305,7 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
+        shared_ptr< CBTooCloseManager > CB_too_close_manager_;
 		
         int num_pdbinfo_requirements_required_;
         std::vector< std::vector<bool> > pdbinfo_req_active_positions_; // outer loop = which pdbinfo:req
@@ -1398,6 +1400,8 @@ std::string get_rif_type_from_file( std::string fname )
 
 			//////////////////////////////////////////
 
+            scratch.cb_too_close_score_ = 0;
+
 			runtime_assert( rif_ );
 			runtime_assert( scratch.rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 && burialperthread_.size() == 0 ){
@@ -1453,6 +1457,7 @@ std::string get_rif_type_from_file( std::string fname )
 		template<class Config>
 		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
 		{
+            if ( CB_too_close_manager_ ) scratch.cb_too_close_score_ += CB_too_close_manager_->get_CB_penalty( bb.position() );
 
 			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
 				return 0.0;
@@ -1949,6 +1954,8 @@ std::string get_rif_type_from_file( std::string fname )
 			// for( int i = 0; i < result.rotamers_.size(); ++i ){
 			//  std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
 			// }
+
+            result.val_ += scratch.cb_too_close_score_; 
 
 		}
 	};
@@ -2451,6 +2458,17 @@ struct RifFactoryImpl :
             if ( packing_objectives.size() ) {
                 dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
                                 .init_for_burial( config.burial_manager, config.unsat_manager );
+            }
+        }
+
+        if ( config.CB_too_close_manager ) {
+            if ( objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .CB_too_close_manager_ = config.CB_too_close_manager;
+            }
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .CB_too_close_manager_ = config.CB_too_close_manager;
             }
         }
 

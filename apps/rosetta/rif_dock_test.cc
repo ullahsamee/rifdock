@@ -288,6 +288,7 @@ int main(int argc, char *argv[]) {
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
 	shared_ptr<BurialManager> burial_manager;
 	shared_ptr<UnsatManager> unsat_manager;
+	shared_ptr<CBTooCloseManager> CB_too_close_manager;
 	bool donor_acceptors_from_file = false;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
@@ -393,6 +394,11 @@ int main(int argc, char *argv[]) {
 
 
 
+		}
+
+		if ( opt.CB_too_close_penalty != 0 ) {
+			CB_too_close_manager = make_shared<CBTooCloseManager>( target, opt.CB_too_close_resl, opt.CB_too_close_dist, opt.CB_too_close_penalty,
+					opt.CB_too_close_max_target_res_atom_idx );
 		}
 		// {
 		// 	{
@@ -924,6 +930,7 @@ int main(int argc, char *argv[]) {
                 rso_config.requirement_groups = opt.requirement_groups;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
+            	rso_config.CB_too_close_manager = CB_too_close_manager;
             	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
 
             	rso_config.sasa_grid = sasa_grid;

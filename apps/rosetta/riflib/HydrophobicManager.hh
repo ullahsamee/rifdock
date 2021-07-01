@@ -196,7 +196,7 @@ struct HydrophobicManager {
 
         for ( core::Size seqpos : hydrophobic_res_ ) {
             core::conformation::Residue const & res = target.residue(seqpos);
-            for ( core::Size atno = 4; atno < res.nheavyatoms(); atno++ ) {  // Don't include backbone
+            for ( core::Size atno = 4; atno <= res.nheavyatoms(); atno++ ) {  // Don't include backbone
                 if ( ! is_rosetta_atom_hydrophobic( res, atno ) ) continue;
 
                 numeric::xyzVector<core::Real> xyz = res.xyz(atno);
@@ -238,7 +238,7 @@ struct HydrophobicManager {
         for ( Hyd ihyd = 0; ihyd < hydrophobic_res_.size(); ihyd++ ) {
             core::conformation::Residue const & res = target.residue(hydrophobic_res_[ihyd]);
 
-            for ( core::Size atno = 4; atno < res.nheavyatoms(); atno++ ) {  // Don't include backbone
+            for ( core::Size atno = 4; atno <= res.nheavyatoms(); atno++ ) {  // Don't include backbone
                 if ( ! is_rosetta_atom_hydrophobic( res, atno ) ) continue;
 
                 numeric::xyzVector<core::Real> _xyz = res.xyz( atno );
