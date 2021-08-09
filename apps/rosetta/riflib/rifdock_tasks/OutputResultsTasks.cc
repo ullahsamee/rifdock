@@ -183,8 +183,9 @@ OutputResultsTask::write_selected_result(
 
     int hydrophobic_residue_contacts;
     float hydrophobic_ddg = 0;
+    int lig_hydrophobic_residue_contacts = 0;
     if ( rdd.hydrophobic_manager ) {
-        std::vector<int> hydrophobic_counts, seqposs, per_irot_counts;
+        std::vector<int> hydrophobic_counts, lig_hyd_counts, seqposs, per_irot_counts;
         std::vector<std::pair<intRot, EigenXform>> irot_and_bbpos;
         selected_result.rotamers();
         for( int i = 0; i < selected_result.rotamers_->size(); ++i ){
@@ -196,10 +197,11 @@ OutputResultsTask::write_selected_result(
             seqposs.push_back( seqpos );
         }
         bool pass_better_than = true, pass_cation_pi = true;
-        hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts, hydrophobic_ddg,
+        hydrophobic_residue_contacts = rdd.hydrophobic_manager->find_hydrophobic_residue_contacts( irot_and_bbpos, hydrophobic_counts,
+                                                                        lig_hyd_counts, lig_hydrophobic_residue_contacts, hydrophobic_ddg,
                                                                         per_irot_counts, pass_better_than, pass_cation_pi, rdd.rot_tgt_scorer );
 
-        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, irot_and_bbpos, seqposs, per_irot_counts, 
+        rdd.hydrophobic_manager->print_hydrophobic_counts( rdd.target, hydrophobic_counts, lig_hyd_counts, irot_and_bbpos, seqposs, per_irot_counts, 
                                                                         sdc->scaffres_g2l_p->size(), extra_output );
     }
 
@@ -233,7 +235,12 @@ OutputResultsTask::write_selected_result(
     oss << " sasa:" << I(5, selected_result.sasa);
     }
     if ( rdd.hydrophobic_manager ) {
+    if ( rdd.hydrophobic_manager->hydrophobic_res_.size() > 0 ) {
     oss << " hyd-cont:" << I(3, hydrophobic_residue_contacts);
+    }
+    if ( rdd.hydrophobic_manager->lig_res_.size() > 0 ) {
+    oss << " lig-cont:" << I(3, lig_hydrophobic_residue_contacts);
+    }
     oss << " hyd-ddg: " << F(7,3, hydrophobic_ddg);
     }
     oss << " " << pdboutfile
@@ -531,6 +538,14 @@ dump_rif_result_(
 
     rdd.scaffold_provider->modify_pose_for_output(si, pose_to_dump);
 
+    if ( rdd.opt.dump_simple_atoms ) {
+        utility::io::ozstream out1( pdboutfile + "_simple.pdb" );
+        for( int ia = 0; ia < s_ptr->template num_actors<SimpleAtom>(1); ++ia ){
+            SimpleAtom const & a( s_ptr->template get_actor<SimpleAtom>(1,ia) );
+            write_pdb( out1, a, rdd.rot_index_p->chem_index_ );
+        }
+        out1.close();
+    }
 
     // Dump the main output
     if ( !rdd.opt.outputsilent && !rdd.opt.outputlite ) {

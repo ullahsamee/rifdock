@@ -161,13 +161,13 @@ get_info_for_iscaff(
         }
         runtime_assert_msg(parse_morph_rules_file(morph_rules_fname, morph_rules, opt), "Faild to parse the morph_rules file!!!");
     } else {
-        std::cout << "Morph rules file not specified, using command-line options" << std::endl;
+        // std::cout << "Morph rules file not specified, using command-line options" << std::endl;
         morph_rules.push_back(morph_rule_from_options(opt));
     }
 
     if( opt.rotamer_boltzmann_fnames.size() ){
         std::string rotboltz_fname = "";
-        if( opt.rotamer_boltzmann_fnames.size() == opt.rotamer_boltzmann_fnames.size() ){
+        if( opt.rotamer_boltzmann_fnames.size() == opt.scaffold_fnames.size() ){
             rotboltz_fname = opt.rotamer_boltzmann_fnames.at(iscaff);
         } else if( opt.rotamer_boltzmann_fnames.size() == 1 ){
             rotboltz_fname = opt.rotamer_boltzmann_fnames.front();
@@ -179,7 +179,7 @@ get_info_for_iscaff(
 
     if( opt.pssm_file_fnames.size() ){
         std::string pssm_fname = "";
-        if( opt.pssm_file_fnames.size() == opt.pssm_file_fnames.size() ){
+        if( opt.pssm_file_fnames.size() == opt.scaffold_fnames.size() ){
             pssm_fname = opt.pssm_file_fnames.at(iscaff);
         } else if( opt.pssm_file_fnames.size() == 1 ){
             pssm_fname = opt.pssm_file_fnames.front();
@@ -188,6 +188,18 @@ get_info_for_iscaff(
         }
         load_pssm_data( extra_data, pssm_fname, scaffold_res, rot_index_p, opt.pssm_weight, opt.pssm_cutoff, opt.pssm_higher_is_better,
                                                                                                             opt.pssm_enforce_no_ala );
+    }
+
+    if( opt.scaffold_clash_contexts.size() ){
+        std::string clash_fname = "";
+        if( opt.scaffold_clash_contexts.size() == opt.scaffold_fnames.size() ){
+            clash_fname = opt.scaffold_clash_contexts.at(iscaff);
+        } else if( opt.scaffold_clash_contexts.size() == 1 ){
+            clash_fname = opt.scaffold_clash_contexts.front();
+        } else {
+            utility_exit_with_message( "-scaffold_clash_contexts list not same length as -scaffolds list" );
+        }
+        load_clash_context( extra_data, clash_fname, rot_index_p );
     }
 
 }
@@ -1012,6 +1024,35 @@ load_pssm_data(
 }
 
 
+void
+load_clash_context( 
+    ExtraScaffoldData & extra_data,
+    std::string const & clash_fname,
+    shared_ptr< RotamerIndex > rot_index_p
+) {
+    core::pose::Pose pose;
+    core::import_pose::pose_from_file( pose, clash_fname );
+
+    std::vector<SimpleAtom> clash_simple_atoms;
+
+    for( int ir = 1; ir <= pose.size(); ++ir ){
+        utility::vector1<core::Size> resids(1,ir); // 1-index numbering
+        {
+            std::vector<SchemeAtom> scaff_res_atoms;
+            devel::scheme::get_scheme_atoms( pose, resids, scaff_res_atoms, true ); //bb + CB
+            
+            int restype = rot_index_p->chem_index_.resname2num( pose.residue(ir).name3() ); // for UNK will be -1
+            for( int ia = 0; ia < scaff_res_atoms.size(); ++ia){
+                SchemeAtom const & a( scaff_res_atoms[ia] );
+                runtime_assert( a.type() > 0 );
+                if( a.type() >= 21 ) continue;
+                SimpleAtom sa( a.position(), a.type(), restype, ia );
+                clash_simple_atoms.push_back(sa);
+            }
+        }
+    }
+    extra_data.add_to_clash_context( clash_simple_atoms );
+}
 
 
 }}

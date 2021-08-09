@@ -16,6 +16,7 @@
 #include "scheme/util/SimpleArray.hh"
 #include <riflib/RotamerGenerator.hh>
 #include <riflib/ScoreRotamerVsTarget.hh>
+#include <scheme/objective/voxel/VoxelArray.hh>
 
 #include <core/pose/Pose.hh>
 
@@ -37,16 +38,10 @@ namespace scheme {
 
 struct CBTooCloseManager {
 
-
-    typedef ::scheme::util::SimpleArray<3,size_t> Indices;
-    typedef Eigen::Vector3f Bounds;
-    Bounds lb_,ub_,cs_;
-
     float resl_;
 
-    std::vector<float> voxel_map_;
+    shared_ptr<::scheme::objective::voxel::VoxelArray<3>> voxel_array_;
 
-    Indices shape_;
 
 
 
@@ -63,6 +58,7 @@ struct CBTooCloseManager {
         create_and_fill_voxel_map( target, too_close_dist, penalty, max_target_res_atom_idx );
     
 
+        // voxel_array_->dump_pdb("CB_too_close.pdb", 0.1, true, 0.1);
     }
 
 
@@ -92,12 +88,14 @@ struct CBTooCloseManager {
             ubs[i] += too_close_dist + resl_ * 2;
         }
 
-        lb_ = lbs;
-        ub_ = ubs;
-        cs_ = Eigen::Vector3f( resl_, resl_, resl_ );
+        // lb_ = lbs;
+        // ub_ = ubs;
+        // cs_ = Eigen::Vector3f( resl_, resl_, resl_ );
 
-        Indices extents = floats_to_index( ub_ );
-        shape_ = extents + Indices(1);
+        voxel_array_ = make_shared<::scheme::objective::voxel::VoxelArray<3>>( lbs, ubs, Eigen::Vector3f( resl_, resl_, resl_ ) );
+
+        // Indices extents = floats_to_index( ub_ );
+        // shape_ = extents + Indices(1);
 
     }
 
@@ -109,13 +107,17 @@ struct CBTooCloseManager {
         size_t max_target_res_atom_idx
         ) {
 
-        size_t elements = shape_[0] * shape_[1] * shape_[2];
+        // size_t elements = shape_[0] * shape_[1] * shape_[2];
         // std::cout << shape_ << std::endl;
         // std::cout << floats_to_index( ub_ ) << std::endl;
         // std::cout << elements << " " << index_to_map_index( floats_to_index( ub_ ) ) << std::endl;
-        runtime_assert( elements - 1 == index_to_map_index( floats_to_index( ub_ ) ) );
+        // runtime_assert( elements - 1 == index_to_map_index( floats_to_index( ub_ ) ) );
 
-        voxel_map_.resize( elements, 0 );
+        // voxel_map_.resize( elements, 0 );
+
+
+        ::scheme::util::SimpleArray<3,float> lb = voxel_array_->lb_;
+        ::scheme::util::SimpleArray<3,float> ub = voxel_array_->ub_;
 
         float const too_close_dist2 = too_close_dist * too_close_dist;
 
@@ -132,27 +134,28 @@ struct CBTooCloseManager {
                 Eigen::Vector3f lbs( xyz[0] - too_close_dist, xyz[1] - too_close_dist, xyz[2] - too_close_dist );
                 Eigen::Vector3f ubs( xyz[0] + too_close_dist, xyz[1] + too_close_dist, xyz[2] + too_close_dist );
 
-                const float step = cs_[0];
+                const float step = resl_;
 
                 Eigen::Vector3f worker;
 
                 for ( float x = lbs[0] - step/2; x < ubs[0] + step; x += step ) {
-                    if ( x < lb_[0] || x > ub_[0] ) continue;
+                    if ( x < lb[0] || x > ub[0] ) continue;
                     worker[0] = x;
 
                     for ( float y = lbs[1] - step/2; y < ubs[1] + step; y += step ) {
-                        if ( y < lb_[1] || y > ub_[1] ) continue;
+                        if ( y < lb[1] || y > ub[1] ) continue;
                         worker[1] = y;
 
                         for ( float z = lbs[2] - step/2; z < ubs[2] + step; z += step ) {
-                            if ( z < lb_[2] || z > ub_[2] ) continue;
+                            if ( z < lb[2] || z > ub[2] ) continue;
                             worker[2] = z;
 
                             const float squared_dist = ( xyz - worker ).squaredNorm();
 
                             if ( squared_dist < too_close_dist2 ) {
-                                size_t offset = index_to_map_index( floats_to_index( worker ) );
-                                voxel_map_.at(offset) = penalty;
+                                (*voxel_array_)[worker] = penalty;
+                                // size_t offset = index_to_map_index( floats_to_index( worker ) );
+                                // voxel_map_.at(offset) = penalty;
                             } 
                         }
                     }
@@ -172,56 +175,56 @@ struct CBTooCloseManager {
 
         Eigen::Matrix<float,3,1> CB = bbpos * Eigen::Matrix<float,3,1>( 1.0264273 ,  0.25245885, -0.308907 );
 
-        return this->at( CB );
+        return voxel_array_->at( CB );
 
     }
 
 
 
 
-    template<class Floats> Indices floats_to_index(Floats const & f) const {
-        Indices ind;
-        for(int i = 0; i < 3; ++i){
-            float tmp = ((f[i]-lb_[i])/cs_[i]);
-            ind[i] = tmp;
-        }
-        return ind;
-    }
+    // template<class Floats> Indices floats_to_index(Floats const & f) const {
+    //     Indices ind;
+    //     for(int i = 0; i < 3; ++i){
+    //         float tmp = ((f[i]-lb_[i])/cs_[i]);
+    //         ind[i] = tmp;
+    //     }
+    //     return ind;
+    // }
 
-    size_t index_to_map_index( Indices const & ind ) const {
+    // size_t index_to_map_index( Indices const & ind ) const {
 
-        size_t accum = ind[0];
-        accum = accum * shape_[1] + ind[1];
-        accum = accum * shape_[2] + ind[2];
+    //     size_t accum = ind[0];
+    //     accum = accum * shape_[1] + ind[1];
+    //     accum = accum * shape_[2] + ind[2];
 
-        return accum;
+    //     return accum;
 
-    }
+    // }
 
-    size_t index_to_offset( Indices const & ind ) const {
+    // size_t index_to_offset( Indices const & ind ) const {
 
-        return index_to_map_index( ind );
+    //     return index_to_map_index( ind );
 
-    }
+    // }
 
 
 
-    float const &
-    at( float f, float g, float h ) const {
-        Indices idx = floats_to_index( Bounds( f, g, h ) );
-        if( idx[0] < shape_[0] && idx[1] < shape_[1] && idx[2] < shape_[2] )
-            return voxel_map_.at( index_to_offset(idx) );
-        else return 0;
-    }
+    // float const &
+    // at( float f, float g, float h ) const {
+    //     Indices idx = floats_to_index( Bounds( f, g, h ) );
+    //     if( idx[0] < shape_[0] && idx[1] < shape_[1] && idx[2] < shape_[2] )
+    //         return voxel_map_.at( index_to_offset(idx) );
+    //     else return 0;
+    // }
 
-    template<class V>
-    float const &
-    at( V const & v ) const {
-        Indices idx = floats_to_index( Bounds( v[0], v[1], v[2] ) );
-        if( idx[0] < shape_[0] && idx[1] < shape_[1] && idx[2] < shape_[2] )
-            return voxel_map_.at( index_to_offset(idx) );
-        else return 0;
-    }
+    // template<class V>
+    // float const &
+    // at( V const & v ) const {
+    //     Indices idx = floats_to_index( Bounds( v[0], v[1], v[2] ) );
+    //     if( idx[0] < shape_[0] && idx[1] < shape_[1] && idx[2] < shape_[2] )
+    //         return voxel_map_.at( index_to_offset(idx) );
+    //     else return 0;
+    // }
 
 
 };

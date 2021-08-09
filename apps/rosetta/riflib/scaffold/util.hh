@@ -130,6 +130,13 @@ load_pssm_data(
     bool pssm_enforce_no_ala
 );
 
+void
+load_clash_context(
+    ExtraScaffoldData & extra_data,
+    std::string const & clash_fname,
+    shared_ptr< RotamerIndex > rot_index_p
+);
+
 }}
 
 #endif

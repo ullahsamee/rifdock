@@ -162,6 +162,9 @@ HackPackTask::return_search_point_with_rotss(
 
     int to_check = std::min(1000, (int)packed_results.size());
     std::cout << "Check " << to_check << " results after hackpack" << std::endl;
+    #ifdef USE_OPENMP
+    #pragma omp parallel for schedule(dynamic,1)
+    #endif
     for ( int i = 0; i < to_check; i++ ) {
         SearchPointWithRots const & packed_result = packed_results[i];
         if (packed_result.rotamers().size() == 0) continue;

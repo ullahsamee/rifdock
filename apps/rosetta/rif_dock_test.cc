@@ -597,7 +597,9 @@ int main(int argc, char *argv[]) {
         	opt.two_hydrophobics_better_than < 0 ||
         	opt.three_hydrophobics_better_than < 0 ||
         	opt.num_cation_pi > 0 ||
-        	opt.hydrophobic_ddg_weight != 0) {
+        	opt.hydrophobic_ddg_weight != 0 ||
+        	opt.ligand_require_hydrophobic_residue_contacts != 0 ||
+        	opt.ligand_hydrophobic_ddg_weight != 0 ) {
 
     	utility::vector1<int> use_hydrophobic_target_res;
     	if (opt.hydrophobic_target_res.size() > 0) {
@@ -606,7 +608,8 @@ int main(int argc, char *argv[]) {
     		use_hydrophobic_target_res = target_res;
     	}
 
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic );
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic, 
+    																														opt.ligand_hydrophobic_res_atoms, false );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
@@ -614,6 +617,8 @@ int main(int argc, char *argv[]) {
     													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
     	hydrophobic_manager->hyd_ddg_weight_ = opt.hydrophobic_ddg_weight;
+    	hydrophobic_manager->lig_hyd_ddg_weight_ = opt.ligand_hydrophobic_ddg_weight;
+    	hydrophobic_manager->lig_require_hydrophobic_residue_contacts_ = opt.ligand_require_hydrophobic_residue_contacts;
     }
 
 

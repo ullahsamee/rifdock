@@ -1717,12 +1717,17 @@ std::string get_rif_type_from_file( std::string fname )
 
                         irot_and_bbpos.emplace_back( irot, bb.position() );
                     }
-                    std::vector<int> hyd_counts, per_irot_counts;
+                    std::vector<int> hyd_counts, lig_hyd_counts, per_irot_counts;
+                    int lig_hydrophobic_residue_contacts = 0;
                     float hydrophobic_ddg = 0;
                     bool pass_better_than = true, pass_cation_pi = true;
-                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
+                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts,
+                                                                                    lig_hyd_counts, lig_hydrophobic_residue_contacts, hydrophobic_ddg,
                                                                                     per_irot_counts, pass_better_than, pass_cation_pi, rot_tgt_scorer_ );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
+                        result.val_ = 9e9;
+                    }
+                    if ( lig_hydrophobic_residue_contacts < hydrophobic_manager_->lig_require_hydrophobic_residue_contacts_ ) {
                         result.val_ = 9e9;
                     }
                     if ( hydrophobic_ddg > hydrophobic_ddg_cut_ ) {

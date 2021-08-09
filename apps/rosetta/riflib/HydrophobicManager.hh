@@ -89,6 +89,12 @@ struct HydrophobicManager {
     Indices cation_shape_;
     size_t cation_max_hyds_;
 
+    Bounds lig_lb_,lig_ub_,lig_cs_;
+    std::vector<std::vector<std::pair<core::Size, core::Size>>> lig_res_;
+    std::vector<Hyd> lig_voxel_map_;
+    Indices lig_shape_;
+    size_t lig_max_hyds_;
+
 
     shared_ptr< RotamerIndex > rot_index_p;
 
@@ -99,6 +105,8 @@ struct HydrophobicManager {
     bool doing_better_than_ = false;
     bool better_than_must_hbond_ = false;
     float hyd_ddg_weight_ = 0;
+    float lig_hyd_ddg_weight_ = 0;
+    int lig_require_hydrophobic_residue_contacts_ = 0;
     bool count_all_contacts_as_hydrophobic_ = false;
 
     int num_cation_pi_ = 0;
@@ -108,8 +116,14 @@ struct HydrophobicManager {
         core::pose::Pose const & target,
         utility::vector1<core::Size> const & target_res,
         shared_ptr< RotamerIndex > rot_index_p_in,
-        bool count_all_contacts_as_hydrophobic
-    ) : rot_index_p( rot_index_p_in )
+        bool count_all_contacts_as_hydrophobic,
+        std::vector<std::string> const & ligand_hyd_res,
+        bool dump_voxels
+    ) : 
+    rot_index_p( rot_index_p_in ),
+    shape_(Indices(0, 0, 0)),
+    cation_shape_(Indices(0, 0, 0)),
+    lig_shape_(Indices(0, 0, 0))
     {
 
         rif_atype_map_ = get_rif_atype_map();
@@ -128,6 +142,21 @@ struct HydrophobicManager {
             cation_prepare_bounds( target );
             std::vector<std::set<Hyd>> cation_early_map = cation_first_pass_fill( target );
             cation_create_and_fill_voxel_map( cation_early_map );
+        }
+
+        if ( ligand_hyd_res.size() > 0 ) {
+
+            lig_parse_hyd( target, ligand_hyd_res );
+            lig_prepare_bounds( target );
+            std::vector<std::vector<Hyd>> lig_early_map = lig_first_pass_fill( target );
+            lig_create_and_fill_voxel_map( lig_early_map );
+        }
+
+
+        if ( dump_voxels ) {
+            dump_filled_voxels("hyd_voxels.pdb", shape_, voxel_map_, max_hyds_, lb_, cs_ );
+            dump_filled_voxels("cation_voxels.pdb", cation_shape_, cation_voxel_map_, cation_max_hyds_, cat_lb_, cat_cs_ );
+            dump_filled_voxels("lig_voxels.pdb", lig_shape_, lig_voxel_map_, lig_max_hyds_, lig_lb_, lig_cs_ );
         }
 
 
@@ -533,37 +562,244 @@ struct HydrophobicManager {
     }
 
 
+
+
+///////////////////////////// LIGAND ////////////////////////////
+
+
+    void lig_parse_hyd( core::pose::Pose const & target, std::vector<std::string> const & ligand_hyd_res ) {
+        lig_res_.clear();
+
+        std::set< std::pair<core::Size, core::Size>> used_atoms;
+
+        for ( std::string const & res_str : ligand_hyd_res ) {
+
+            utility::vector1<std::string> atom_strs = utility::string_split( res_str, ',' );
+
+            std::vector<std::pair<core::Size, core::Size>> this_residue;
+
+            for ( std::string const & atom_str : atom_strs ) {
+
+                utility::vector1<std::string> res_then_atom = utility::string_split( atom_str, ':' );
+                if ( res_then_atom.size() != 2 ) {
+                    utility_exit_with_message("Problem parsing -ligand_hydrophobic_residue_atoms. This atom doesn't seem to be "
+                        "formatted correctly. \"" + atom_str + "\"" );
+                }
+                core::Size res_number = 0;
+                try {
+                    res_number = utility::from_string( res_then_atom[1], core::Size(0) );
+                } catch ( std::exception const & e ) {
+                    utility_exit_with_message("Problem parsing -ligand_hydrophobic_residue_atoms. This atom has a weird number \"" 
+                            + atom_str + "\"" );
+                }
+                if ( res_number > target.size() || res_number == 0 ) {
+                    utility_exit_with_message("Problem parsing -ligand_hydrophobic_residue_atoms. Pose doesn't have this residue number \"" 
+                            + atom_str + "\"" );
+                }
+                core::conformation::Residue const & res = target.residue(res_number);
+                if ( ! res.has( res_then_atom[2] ) ) {
+                    utility_exit_with_message("Problem parsing -ligand_hydrophobic_residue_atoms. Residue doesn't have an atom with that name \"" 
+                            + atom_str + "\"" );
+                }
+                core::Size atom_number = res.atom_index( res_then_atom[2] );
+
+                std::pair<core::Size, core::Size> this_atom( res_number, atom_number );
+                if ( used_atoms.count(this_atom) != 0 ) {
+                    utility_exit_with_message("Problem parsing -ligand_hydrophobic_residue_atoms. This atom was used twice \"" 
+                            + atom_str + "\"" );
+                }
+                used_atoms.insert( this_atom );
+                this_residue.push_back( this_atom );
+
+            }
+            lig_res_.push_back( this_residue );
+        }
+    }
+
+
+    void
+    lig_prepare_bounds( core::pose::Pose const & target ) {
+
+        Eigen::Vector3f lbs( 9e9, 9e9, 9e9 );
+        Eigen::Vector3f ubs( -9e9, -9e9, -9e9 );
+
+        for ( std::vector<std::pair<core::Size,core::Size>> const & this_res : lig_res_ ) {
+            for ( std::pair<core::Size,core::Size> const & this_atom : this_res ) {
+
+                core::conformation::Residue const & res = target.residue(this_atom.first);
+
+                numeric::xyzVector<core::Real> xyz = res.xyz(this_atom.second);
+                for ( int i = 0; i < 3; i++ ) {
+                    lbs[i] = std::min<float>( lbs[i], xyz[i] );
+                    ubs[i] = std::max<float>( ubs[i], xyz[i] );
+                }
+            }
+        }
+
+        for ( int i = 0; i < 3; i++ ) {
+            lbs[i] -= max_interaction_range_;
+            ubs[i] += max_interaction_range_;
+        }
+
+        lig_lb_ = lbs;
+        lig_ub_ = ubs;
+        lig_cs_ = Eigen::Vector3f( 0.5, 0.5, 0.5 );
+
+        Indices extents = lig_floats_to_index( lig_ub_ );
+        lig_shape_ = extents + Indices(1);
+
+    }
+
+    std::vector<std::vector<Hyd>>
+    lig_first_pass_fill( core::pose::Pose const & target ) {
+
+        std::vector<std::vector<Hyd>> early_map;
+
+        size_t elements = lig_shape_[0] * lig_shape_[1] * lig_shape_[2];
+        // std::cout << shape_ << std::endl;
+        // std::cout << floats_to_index( ub_ ) << std::endl;
+        // std::cout << elements << " " << index_to_map_index( floats_to_index( ub_ ) ) << std::endl;
+        runtime_assert( elements - 1 == lig_index_to_map_index( lig_floats_to_index( lig_ub_ ) ) );
+
+        early_map.resize(elements);
+
+        
+        for ( Hyd ihyd = 0; ihyd < lig_res_.size(); ihyd++ ) {
+
+            std::vector<std::pair<core::Size, core::Size>> const & this_res = lig_res_[ ihyd ];
+
+            for ( std::pair<core::Size, core::Size> const & this_atom : this_res ) {
+
+                core::conformation::Residue const & res = target.residue(this_atom.first);
+
+                numeric::xyzVector<core::Real> _xyz = res.xyz( this_atom.second );
+                Eigen::Vector3f xyz; xyz[0] = _xyz[0]; xyz[1] = _xyz[1]; xyz[2] = _xyz[2];
+
+                Eigen::Vector3f lbs( xyz[0] - max_interaction_range_, xyz[1] - max_interaction_range_, xyz[2] - max_interaction_range_ );
+                Eigen::Vector3f ubs( xyz[0] + max_interaction_range_, xyz[1] + max_interaction_range_, xyz[2] + max_interaction_range_ );
+
+                const float low_rad_sq = 3.0f*3.0f;
+                const float med_rad_sq = 4.5f*4.5f;
+                const float long_rad_sq = 4.8f*4.8f;
+
+                const float step = lig_cs_[0];
+
+                Eigen::Vector3f worker;
+
+                for ( float x = lbs[0] - step/2; x < ubs[0] + step; x += step ) {
+                    if ( x < lig_lb_[0] || x > lig_ub_[0] ) continue;
+                    worker[0] = x;
+
+                    for ( float y = lbs[1] - step/2; y < ubs[1] + step; y += step ) {
+                        if ( y < lig_lb_[1] || y > lig_ub_[1] ) continue;
+                        worker[1] = y;
+
+                        for ( float z = lbs[2] - step/2; z < ubs[2] + step; z += step ) {
+                            if ( z < lig_lb_[2] || z > lig_ub_[2] ) continue;
+                            worker[2] = z;
+
+                            const float squared_dist = ( xyz - worker ).squaredNorm();
+
+                            if ( squared_dist < low_rad_sq ) {
+                                // do nothing
+                            } else if ( squared_dist < med_rad_sq ) {
+                                size_t offset = lig_index_to_map_index( lig_floats_to_index( worker ) );
+                                early_map.at(offset).push_back( ihyd );
+                                // early_map.at(offset).push_back( ihyd );
+                            } else if ( squared_dist < long_rad_sq ) {
+                                size_t offset = lig_index_to_map_index( lig_floats_to_index( worker ) );
+                                early_map.at(offset).push_back( ihyd );
+                            } else {
+                                // do nothing
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return early_map;
+    }
+
+
+
+    void
+    lig_create_and_fill_voxel_map( std::vector<std::vector<Hyd>> const & early_map ) {
+
+        lig_max_hyds_ = 0;
+
+        for ( std::vector<Hyd> these_hyds : early_map ) {
+            lig_max_hyds_ = std::max<size_t>( lig_max_hyds_, these_hyds.size() );
+        }
+
+        std::cout << "Max ligand hydrophobics at one voxel: " << lig_max_hyds_ << std::endl;
+
+        // max_hyds_ is 1 too big. This means that the receiver can always loop until they hit a CACHE_MAX_HYD
+        lig_max_hyds_ += 1;
+
+        lig_voxel_map_.resize( lig_max_hyds_ * lig_shape_[0] * lig_shape_[1] * lig_shape_[2], CACHE_MAX_HYD );
+
+        // We already asserted the two maps have the same size, so just array fill
+        for ( size_t imap = 0; imap < early_map.size(); imap++ ) {
+
+            std::vector<Hyd> these_hyds = early_map[imap];
+
+            bool wrote_a_null = false;
+            for ( size_t idx = 0; idx < lig_max_hyds_; idx++ ) {
+                size_t offset = imap * lig_max_hyds_ + idx;
+                if ( idx < these_hyds.size() ) {
+                    lig_voxel_map_.at(offset) = these_hyds.at(idx);
+                } else {
+                    lig_voxel_map_.at(offset) = CACHE_MAX_HYD;
+                    wrote_a_null = true;
+                }
+            }
+            runtime_assert( wrote_a_null );     // Redundancy. Make sure each list is terminated
+        }
+    }
+
+
+
+
 /////////////////////////////////////////////////////////////////////////
     float
     get_individual_weighted_hyd_ddg(
         int irot,
         EigenXform const & bbpos
     ) const {
-        if ( hyd_ddg_weight_ == 0 ) return 0;
-
+        float total = 0;
         if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) return 0;
+
+        if ( hyd_ddg_weight_ == 0 && lig_hyd_ddg_weight_ == 0 ) return 0;
 
         typedef typename RotamerIndex::Atom Atom;
 
         Hyd total_sum = 0;
-        for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom )
-            {
-                Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
+        Hyd lig_total_sum = 0;
+        for( int iatom = 3; iatom < rot_index_p->nheavyatoms(irot); ++iatom ) {
 
-                if ( ! rif_hydrophobic_map_.at(atom.type()) ) continue;
-                typename Atom::Position pos = bbpos * atom.position();
+            Atom const & atom = rot_index_p->rotamer(irot).atoms_.at(iatom);
 
-                std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
+            if ( ! rif_hydrophobic_map_.at(atom.type()) ) continue;
+            typename Atom::Position pos = bbpos * atom.position();
 
-                Hyd this_hyd = 0;
-                while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
-                    total_sum ++;
+            std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
+
+            Hyd this_hyd = 0;
+            while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
+                total_sum ++;
             }
+
+            std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
+
+            Hyd lig_this_hyd = 0;
+            while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
+                lig_total_sum ++;
+            }
+        }
             
 
-        }
 
-        return total_sum * DDG_PER_COUNT * hyd_ddg_weight_;
+        return ( total_sum * hyd_ddg_weight_ + lig_total_sum * lig_hyd_ddg_weight_ ) * DDG_PER_COUNT;
     }
 
 
@@ -571,6 +807,8 @@ struct HydrophobicManager {
     find_hydrophobic_residue_contacts( 
         std::vector<std::pair<intRot, EigenXform>> const & irot_and_bbpos,
         std::vector<int> & hyd_counts,
+        std::vector<int> & lig_hyd_counts,
+        int & lig_hydrophobic_residue_contacts,
         float & hydrophobic_ddg,
         std::vector<int> & per_irot_counts,
         bool & pass_better_than,
@@ -579,6 +817,8 @@ struct HydrophobicManager {
     ) const {
         hyd_counts.clear();
         hyd_counts.resize( hydrophobic_res_.size(), 0 );
+        lig_hyd_counts.clear();
+        lig_hyd_counts.resize( lig_res_.size(), 0 );
 
         per_irot_counts.clear();
         per_irot_counts.resize( irot_and_bbpos.size(), 0 );
@@ -595,6 +835,7 @@ struct HydrophobicManager {
             if ( hydrophobic_name1s_.count( rot_index_p->oneletter(irot)[0] ) == 0 ) continue ;
 
             std::unordered_map<Hyd, int> with_whom;
+            std::unordered_map<Hyd, int> lig_with_whom;
 
             int ok_atoms = 0;
             int this_irot_count = 0;
@@ -606,8 +847,8 @@ struct HydrophobicManager {
                 ok_atoms ++;
                 typename Atom::Position pos = bbpos * atom.position();
 
+                // STANDARD
                 std::vector<Hyd>::const_iterator hyds_iter = this->at( pos );
-
 
                 Hyd this_hyd = 0;
                 while ( (this_hyd = *(hyds_iter++)) != CACHE_MAX_HYD ) {
@@ -619,6 +860,20 @@ struct HydrophobicManager {
                         with_whom[this_hyd] += 1;
                     }
                 }
+
+                // LIGAND
+                std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
+
+                Hyd lig_this_hyd = 0;
+                while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
+                    lig_hyd_counts[lig_this_hyd] ++;
+                    this_irot_count++;
+                    if (lig_with_whom.count(this_hyd) == 0) {
+                       lig_with_whom[this_hyd] = 1;
+                    } else {
+                        lig_with_whom[this_hyd] += 1;
+                    }
+                }
             }
             has_ok_atoms[ipair] = ok_atoms;
 
@@ -628,12 +883,17 @@ struct HydrophobicManager {
                     partners += 1;
                 }
             }
+            for ( auto pair : lig_with_whom ) {
+                if ( pair.second >= 2) {
+                    partners += 1;
+                }
+            }
 
             per_irot_counts[ipair] = ( partners >= 2 ? this_irot_count : 0 );
         }
 
-        int total_sum = 0;
         int hydrophobic_residue_contacts = 0;
+        int total_sum = 0;
         for ( int count : hyd_counts ) {
             if (count >= 2) {
                 hydrophobic_residue_contacts++;
@@ -641,8 +901,17 @@ struct HydrophobicManager {
             total_sum += count;
         }
 
+        lig_hydrophobic_residue_contacts = 0;
+        int lig_total_sum = 0;
+        for ( int count : lig_hyd_counts ) {
+            if (count >= 2) {
+                lig_hydrophobic_residue_contacts++;
+            }
+            lig_total_sum += count;
+        }
+
 // HYDROPHOBIC DDG
-        hydrophobic_ddg = DDG_PER_COUNT * total_sum; // This is how it was parameterized, but holy crap this is a hack.
+        hydrophobic_ddg = DDG_PER_COUNT * ( total_sum + lig_total_sum ); // This is how it was parameterized, but holy crap this is a hack.
 
 // HYDROPHOBICS BETTER THAN
 
@@ -669,6 +938,7 @@ struct HydrophobicManager {
                 if ( ddg_hyd < two_hydrophobics_better_than_ ) two_better_than++;
                 if ( ddg_hyd < three_hydrophobics_better_than_ ) three_better_than++;
             }
+
             if ( one_hydrophobic_better_than_ < 0 ) pass_better_than &= (one_better_than >= 1);
             if ( two_hydrophobics_better_than_ < 0 ) pass_better_than &= (two_better_than >= 2);
             if ( three_hydrophobics_better_than_ < 0 ) pass_better_than &= (three_better_than >= 3);
@@ -722,6 +992,7 @@ struct HydrophobicManager {
     print_hydrophobic_counts( 
         core::pose::Pose const & target,
         std::vector<int> const & hyd_counts,
+        std::vector<int> const & lig_hyd_counts,
         std::vector<std::pair<intRot, EigenXform>> const & irot_and_bbpos,
         std::vector<int> const & seqposs,
         std::vector<int> const & per_irot_counts,
@@ -739,6 +1010,14 @@ struct HydrophobicManager {
                 core::Size seqpos = hydrophobic_res_[i];
                 core::conformation::Residue const & res = target.residue(seqpos);
                 ostream << " " << seqpos << "/" << seqpos + scaff_size << " " << res.name3() << ": " << count << std::endl;
+            }
+        }
+
+        for ( int i = 0; i < lig_hyd_counts.size(); i++ ) {
+            int count = lig_hyd_counts[i];
+            if ( count >= 2 ) {
+                // core::Size seqpos = hydrophobic_res_[i];
+                ostream << " LigRes" << i + 1  << ": " << count << std::endl;
             }
         }
 
@@ -811,6 +1090,32 @@ struct HydrophobicManager {
         return cation_index_to_map_index( ind ) * cation_max_hyds_;
 
     }
+
+
+    template<class Floats> Indices lig_floats_to_index(Floats const & f) const {
+        Indices ind;
+        for(int i = 0; i < 3; ++i){
+            float tmp = ((f[i]-lig_lb_[i])/lig_cs_[i]);
+            ind[i] = tmp;
+        }
+        return ind;
+    }
+
+    size_t lig_index_to_map_index( Indices const & ind ) const {
+
+        size_t accum = ind[0];
+        accum = accum * lig_shape_[1] + ind[1];
+        accum = accum * lig_shape_[2] + ind[2];
+
+        return accum;
+
+    }
+
+    size_t lig_index_to_offset( Indices const & ind ) const {
+
+        return lig_index_to_map_index( ind ) * lig_max_hyds_;
+
+    }
     // template<class Floats>
     // std::vector<Hyd>::const_iterator
     // operator[](Floats const & floats) const { 
@@ -859,7 +1164,68 @@ struct HydrophobicManager {
         else return OOB_LIST.cbegin();
     }
 
+    std::vector<Hyd>::const_iterator 
+    lig_at( float f, float g, float h ) const {
+        Indices idx = lig_floats_to_index( Bounds( f, g, h ) );
+        if( idx[0] < lig_shape_[0] && idx[1] < lig_shape_[1] && idx[2] < lig_shape_[2] )
+            return lig_voxel_map_.cbegin() + lig_index_to_offset(idx);
+        else return OOB_LIST.cbegin();
+    }
 
+    template<class V>
+    std::vector<Hyd>::const_iterator
+    lig_at( V const & v ) const {
+        Indices idx = lig_floats_to_index( Bounds( v[0], v[1], v[2] ) );
+        if( idx[0] < lig_shape_[0] && idx[1] < lig_shape_[1] && idx[2] < lig_shape_[2] )
+            return lig_voxel_map_.cbegin() + lig_index_to_offset(idx);
+        else return OOB_LIST.cbegin();
+    }
+
+
+
+
+
+    void
+    dump_filled_voxels( std::string const & fname, Indices const & shape, std::vector<Hyd> const & map,
+                int max_hyds, Bounds const & lb, Bounds const & cs ) {
+
+        core::Size iatom = 1;
+
+        std::ofstream out( fname );
+
+        for ( core::Size ix = 0; ix < shape[0]; ix++ ) {
+            float x = (ix + 0.5)*cs[0] + lb[0];
+            for ( core::Size iy = 0; iy < shape[1]; iy++ ) {
+                float y = (iy + 0.5)*cs[1] + lb[1];
+                for ( core::Size iz = 0; iz < shape[2]; iz++ ) {
+                    float z = (iz + 0.5)*cs[2] + lb[2];
+
+                    size_t accum = ix;
+                    accum = accum * shape[1] + iy;
+                    accum = accum * shape[2] + iz;
+
+                    if ( map.at( accum * max_hyds) != CACHE_MAX_HYD ) {
+                        char buf[128];
+                        snprintf(buf,128,"%s%5i %4s %3s %c%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s\n",
+                            "HETATM",
+                            iatom%100000,
+                            "HYDD",
+                            "HYD",
+                            'A',
+                            iatom%10000,
+                            x,y,z,
+                            1.0,
+                            1.0,
+                            "B"
+                        );
+                        out << buf;
+
+                    }
+                }
+            }
+        }
+        out.close();
+    }
 
 
 };
