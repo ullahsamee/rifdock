@@ -289,9 +289,9 @@ dump_rif_result_(
     core::pose::Pose pose_from_rif;
 
     if ( rdd.opt.output_full_scaffold ) {        sdc->setup_both_full_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_full_pose.get_pose());
-    } else if( rdd.opt.output_scaffold_only ) {                                         pose_from_rif = *(sdc->scaffold_centered_p);
-    } else if( rdd.opt.output_full_scaffold_only ) {                                    pose_from_rif = *(sdc->scaffold_full_centered_p);
-    } else {                                        sdc->setup_both_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_pose.get_pose());
+    } else if( rdd.opt.output_scaffold_only ) {           sdc->setup_scaffold_centered(); pose_from_rif = *(sdc->mpc_scaffold_centered.get_pose());
+    } else if( rdd.opt.output_full_scaffold_only ) { sdc->setup_scaffold_full_centered(); pose_from_rif = *(sdc->mpc_scaffold_full_centered.get_pose());
+    } else {                                          sdc->setup_both_pose( rdd.target ); pose_from_rif = *(sdc->mpc_both_pose.get_pose());
     }
 
 
@@ -459,23 +459,23 @@ dump_rif_result_(
         int irot =                  selected_result.rotamers().at(ipr).second;
 
         std::string myResName = rdd.rot_index_p->resname(irot);
-        auto myIt = rdd.rot_index_p -> d_l_map_.find(myResName);
+        // auto myIt = rdd.rot_index_p -> d_l_map_.find(myResName);
 
         if ( rdd.opt.ignore_ala_rifres && myResName == "ALA" ) continue;
 
-        core::conformation::ResidueOP newrsd;
-        if (myIt != rdd.rot_index_p -> d_l_map_.end()){
-            core::chemical::ResidueType const & rtype = rts.lock()->name_map( myIt -> second );
-            newrsd = core::conformation::ResidueFactory::create_residue( rtype );
-            core::pose::Pose pose;
-            pose.append_residue_by_jump(*newrsd,1);
-            core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
-            core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, myIt -> second);
-            core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
-            newrsd = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
-        } else {
-            newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
-        }
+        core::conformation::ResidueOP newrsd = rdd.rot_index_p->get_per_thread_rotamer( omp_get_thread_num(), irot );
+        // if (myIt != rdd.rot_index_p -> d_l_map_.end()){
+        //     core::chemical::ResidueType const & rtype = rts.lock()->name_map( myIt -> second );
+        //     newrsd = core::conformation::ResidueFactory::create_residue( rtype );
+        //     core::pose::Pose pose;
+        //     pose.append_residue_by_jump(*newrsd,1);
+        //     core::chemical::ResidueTypeSetCOP pose_rts = pose.residue_type_set_for_pose();
+        //     core::chemical::ResidueTypeCOP pose_rt = get_restype_for_pose(pose, myIt -> second);
+        //     core::chemical::ResidueTypeCOP d_pose_rt = pose_rts -> get_d_equivalent(pose_rt);
+        //     newrsd = core::conformation::ResidueFactory::create_residue( *d_pose_rt );
+        // } else {
+        //     newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
+        // }
         //core::conformation::ResidueOP newrsd = core::conformation::ResidueFactory::create_residue( rts.lock()->name_map(rdd.rot_index_p->resname(irot)) );
 
         pose_from_rif.replace_residue( ires+1, *newrsd, true );

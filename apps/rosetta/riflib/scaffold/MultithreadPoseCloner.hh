@@ -124,7 +124,7 @@ struct MultithreadPoseCloner {
     }
 
     static
-    core::pose::PoseCOP
+    core::pose::PoseOP
     clone_a_pose( core::pose::PoseCOP pose ) {
         core::pose::PoseOP to_return = make_shared<core::pose::Pose>();
         to_return->detached_copy( *pose );
