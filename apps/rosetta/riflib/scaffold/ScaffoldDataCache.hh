@@ -81,6 +81,8 @@ struct ScaffoldDataCache {
 
     std::shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p;
 
+    std::shared_ptr< std::vector< std::vector<Eigen::Matrix<float,3,1>> > > atoms_close_together_atom_sets_p;
+
 
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
@@ -296,6 +298,14 @@ struct ScaffoldDataCache {
             cst->reset();   // clear previous scaffold related data
             csts.push_back(cst);
         }
+
+        if ( extra_data.atoms_close_together_managers_p ) {
+            atoms_close_together_atom_sets_p = make_shared<std::vector< std::vector<Eigen::Matrix<float,3,1>> >>();
+            for ( AtomsCloseTogetherManager const & man : *(extra_data.atoms_close_together_managers_p) ) {
+                atoms_close_together_atom_sets_p->push_back( man.prepare_scaffold_atoms( scaffold_centered ) );
+            }
+        }
+
 
         if( opt.native_docking ){
             std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD AND ALA!!!" << std::endl;

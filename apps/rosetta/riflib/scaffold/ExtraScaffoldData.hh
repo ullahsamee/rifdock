@@ -15,6 +15,7 @@
 #include <scheme/types.hh>
 
 #include <riflib/HSearchConstraints.hh>
+#include <riflib/AtomsCloseTogetherManager.hh>
 
 #include <vector>
 
@@ -37,6 +38,7 @@ struct ExtraScaffoldData {
     shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
     shared_ptr<std::vector<bool>> ala_disallowed_p;
     shared_ptr<std::vector<SimpleAtom>> clash_context_p;
+    shared_ptr<std::vector<AtomsCloseTogetherManager>> atoms_close_together_managers_p;
 
 
     void add_to_clash_context( std::vector<SimpleAtom> const & clash_context ) {

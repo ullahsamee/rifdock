@@ -1306,6 +1306,7 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
         shared_ptr< CBTooCloseManager > CB_too_close_manager_;
+        shared_ptr<std::vector<AtomsCloseTogetherManager>> atoms_close_together_managers_p_;
 		
         int num_pdbinfo_requirements_required_;
         std::vector< std::vector<bool> > pdbinfo_req_active_positions_; // outer loop = which pdbinfo:req
@@ -1944,6 +1945,17 @@ std::string get_rif_type_from_file( std::string fname )
                 if ( !pass ) result.val_ = 9e9;
             }
 
+            if ( atoms_close_together_managers_p_ ) {
+                EigenXform scaff_xform = scene.position(1);
+                ScaffoldDataCacheOP sdc = scene.conformation_ptr(1)->cache_data_;
+
+                runtime_assert( sdc->atoms_close_together_atom_sets_p );
+                runtime_assert( atoms_close_together_managers_p_->size() == sdc->atoms_close_together_atom_sets_p->size() );
+                for ( core::Size i = 0; i < atoms_close_together_managers_p_->size(); i++ ) {
+                    result.val_ += atoms_close_together_managers_p_->at(i).get_bonus( scaff_xform, sdc->atoms_close_together_atom_sets_p->at( i ) );
+                }
+            }
+
 				// #ifdef USE_OPENMP
 				// #pragma omp critical
 				// #endif
@@ -2476,6 +2488,18 @@ struct RifFactoryImpl :
                                 .CB_too_close_manager_ = config.CB_too_close_manager;
             }
         }
+
+        if ( config.atoms_close_together_managers_p ) {
+            if ( objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .atoms_close_together_managers_p_ = config.atoms_close_together_managers_p;
+            }
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .atoms_close_together_managers_p_ = config.atoms_close_together_managers_p;
+            }
+        }
+
 
         if ( config.hydrophobic_manager ) {
             // Only the packing objectives need this

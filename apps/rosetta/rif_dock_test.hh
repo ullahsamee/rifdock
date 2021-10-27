@@ -168,6 +168,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Real        , rif_dock, CB_too_close_dist )
     OPT_1GRP_KEY(  Real        , rif_dock, CB_too_close_resl )
     OPT_1GRP_KEY(  Integer     , rif_dock, CB_too_close_max_target_res_atom_idx )
+    OPT_1GRP_KEY(  StringVector, rif_dock, specific_atoms_close_bonus )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -466,6 +467,9 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::CB_too_close_dist, "Distance for -CB_too_close_penalty", 6 );
             NEW_OPT(  rif_dock::CB_too_close_resl, "Resolution of CB_too_close grid.", 0.5 );
             NEW_OPT(  rif_dock::CB_too_close_max_target_res_atom_idx, "Atom idx in Rosetta numbering of last heavyatom to use on target. CB is 5. Default is whole sidechain.", 1000 );
+            NEW_OPT(  rif_dock::specific_atoms_close_bonus, "Bonus/penalty for specific scaffold atoms near specific target atoms. Use scaffold PDBInfo Labels. LABEL:atom_name."
+                                                            " Then, format for space-separated bonuses is: LABEL,bonus,resl,close_dist,max_dist,resnum:atom_name[,resnum:atom_name,...] ."
+                                                            " Bonus is linear between max_dist and close_dist then constant closer than close_dist." , utility::vector1<std::string>() );
 
             
 
@@ -693,6 +697,7 @@ struct RifDockOpt
     float       CB_too_close_dist                    ;
     float       CB_too_close_resl                    ;
     int         CB_too_close_max_target_res_atom_idx ;
+    std::vector<std::string> specific_atoms_close_bonus;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -1250,6 +1255,8 @@ struct RifDockOpt
         for( std::string s : option[rif_dock::pssm_file]() )     pssm_file_fnames.push_back(s);
 
         for( std::string s : option[rif_dock::ligand_hydrophobic_res_atoms]() ) ligand_hydrophobic_res_atoms.push_back(s);
+
+        for( std::string s : option[rif_dock::specific_atoms_close_bonus]() ) specific_atoms_close_bonus.push_back(s);
 
 
         patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();

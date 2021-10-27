@@ -21,6 +21,7 @@
 #include <riflib/UnsatManager.hh>
 #include <riflib/CBTooCloseManager.hh>
 #include <riflib/HydrophobicManager.hh>
+#include <riflib/AtomsCloseTogetherManager.hh>
 
 #ifdef USEGRIDSCORE
 #include <protocols/ligand_docking/GALigandDock/GridScorer.hh>
@@ -134,6 +135,7 @@ struct RifSceneObjectiveConfig
     shared_ptr<BurialVoxelArray> sasa_grid;
     shared_ptr<HydrophobicManager> hydrophobic_manager;
     shared_ptr<CBTooCloseManager> CB_too_close_manager;
+    shared_ptr<std::vector<AtomsCloseTogetherManager>> atoms_close_together_managers_p;
     float sasa_threshold;
     float sasa_multiplier;
     float ignore_rifres_if_worse_than;

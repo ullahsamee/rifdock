@@ -789,11 +789,13 @@ struct HydrophobicManager {
                 total_sum ++;
             }
 
-            std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
+            if ( lig_res_.size() > 0 ) {
+                std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
 
-            Hyd lig_this_hyd = 0;
-            while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
-                lig_total_sum ++;
+                Hyd lig_this_hyd = 0;
+                while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
+                    lig_total_sum ++;
+                }
             }
         }
             
@@ -862,16 +864,18 @@ struct HydrophobicManager {
                 }
 
                 // LIGAND
-                std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
+                if ( lig_res_.size() > 0 ) {
+                    std::vector<Hyd>::const_iterator lig_hyds_iter = this->lig_at( pos );
 
-                Hyd lig_this_hyd = 0;
-                while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
-                    lig_hyd_counts[lig_this_hyd] ++;
-                    this_irot_count++;
-                    if (lig_with_whom.count(this_hyd) == 0) {
-                       lig_with_whom[this_hyd] = 1;
-                    } else {
-                        lig_with_whom[this_hyd] += 1;
+                    Hyd lig_this_hyd = 0;
+                    while ( (lig_this_hyd = *(lig_hyds_iter++)) != CACHE_MAX_HYD ) {
+                        lig_hyd_counts[lig_this_hyd] ++;
+                        this_irot_count++;
+                        if (lig_with_whom.count(this_hyd) == 0) {
+                           lig_with_whom[this_hyd] = 1;
+                        } else {
+                            lig_with_whom[this_hyd] += 1;
+                        }
                     }
                 }
             }

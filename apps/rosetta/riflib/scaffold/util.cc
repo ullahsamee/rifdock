@@ -952,6 +952,11 @@ load_pssm_data(
 
     using core::Size;
 
+    if ( pssm_fname == "NONE" ) {
+        std::cout << "PSSM Constraints: NONE specified. Not loading PSSM" << std::endl;
+        return;
+    }
+
     core::sequence::SequenceProfile profile_obj;
     profile_obj.read_from_file( pssm_fname );
 
