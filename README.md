@@ -63,3 +63,9 @@ rifdock/build/schemelib/test/test_libscheme
 
 RifDock is licenced under the Apache 2 License which can be found at rifdock/LICENSE.
 
+
+
+***Ubuntu Specific Additional Compilation Help***
+If you're on ubuntu and things aren't going your way. Try this out:
+
+https://github.com/rifdock/rifdock/blob/master/help/ubuntu_rifdock_compilation_extra.pdf
