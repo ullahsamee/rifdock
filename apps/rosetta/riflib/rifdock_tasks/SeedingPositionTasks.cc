@@ -147,14 +147,16 @@ create_rifine_task(
     // task_list.push_back(make_shared<CompileAndFilterResultsTask>( 0, final_resl, 100000000, opt.redundancy_filter_mag, 0, 0, 
     //                                                                                   opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately )); 
     
-    if ( ! opt.skip_redundancy_filter_before_rosetta ) {
+
+    bool do_rosetta_score = opt.rosetta_score_fraction > 0;
+    bool do_rosetta_min = do_rosetta_score && opt.rosetta_min_fraction > 0;
+    
+    if ( ! opt.skip_redundancy_filter_before_rosetta && do_rosetta_score ) {
         task_list.push_back(make_shared<RemoveRedundantPointsTask>( opt.redundancy_filter_mag, 0, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
     }
 
     task_list.push_back(make_shared<DumpSeedingClusterScoreTask>());
 
-    bool do_rosetta_score = opt.rosetta_score_fraction > 0;
-    bool do_rosetta_min = do_rosetta_score && opt.rosetta_min_fraction > 0;
 
     if ( do_rosetta_score || opt.rosetta_filter_even_if_no_score ) {
                               task_list.push_back(make_shared<FilterByFracTask>( opt.rosetta_score_fraction, opt.rosetta_score_each_seeding_at_least, opt.filter_seeding_positions_separately, opt.filter_scaffolds_separately ));
