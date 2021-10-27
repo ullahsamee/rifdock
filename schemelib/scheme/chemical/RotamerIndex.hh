@@ -878,6 +878,8 @@ struct RotamerIndex {
 
 	void
 	build_per_thread_rotamers( int threads ) {
+		per_thread_rotamers_.clear();
+		per_thread_lkbrinfo_.clear();
 		per_thread_rotamers_.resize(threads);
 		per_thread_lkbrinfo_.resize(threads);
 

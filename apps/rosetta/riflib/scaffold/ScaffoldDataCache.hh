@@ -98,6 +98,8 @@ struct ScaffoldDataCache {
 
     MultithreadPoseCloner mpc_both_pose;                                       // scaffold_centered_p + target
     MultithreadPoseCloner mpc_both_full_pose;                                  // scaffold_full_centered_p + target
+    MultithreadPoseCloner mpc_scaffold_centered;                                       
+    MultithreadPoseCloner mpc_scaffold_full_centered;                               
 
     std::vector<CstBaseOP> csts;
 
@@ -111,7 +113,7 @@ struct ScaffoldDataCache {
     bool make_bbhbond_actors;                                                  // needed in make_conformation_from_data_cache
     bool make_bbsasa_actors;                                                   // needed in make_conformation_from_data_cache
 
-
+    std::mutex pose_access_mutex_;
 
     ScaffoldDataCache() {}
 
@@ -612,19 +614,44 @@ struct ScaffoldDataCache {
         return std::min( target_redundancy_filter_rg, scaff_redundancy_filter_rg );
     }
 
+    void
+    setup_scaffold_centered() {
+        if ( mpc_scaffold_centered.size() > 0 ) return;
+        {
+            const std::lock_guard<std::mutex> lock( pose_access_mutex_ );
+            if ( mpc_scaffold_centered.size() > 0 ) return;
 
+            mpc_scaffold_centered.add_pose(scaffold_centered_p);
+        }
+    }
+
+    void
+    setup_scaffold_full_centered() {
+        if ( mpc_scaffold_full_centered.size() > 0 ) return;
+        {
+            const std::lock_guard<std::mutex> lock( pose_access_mutex_ );
+            if ( mpc_scaffold_full_centered.size() > 0 ) return;
+
+            mpc_scaffold_full_centered.add_pose(scaffold_full_centered_p);
+        }
+    }
 
     void
     setup_both_pose( core::pose::Pose const & target ) {
         if ( mpc_both_pose.size() > 0 ) return;
-        mpc_both_pose.add_pose(helper_setup_both_pose( target ));
+        {
+            const std::lock_guard<std::mutex> lock( pose_access_mutex_ );
+            if ( mpc_both_pose.size() > 0 ) return;
 
-        runtime_assert( mpc_both_pose.get_pose()->size() == scaffold_centered_p->size() + target.size() );
+            mpc_both_pose.add_pose(helper_setup_both_pose( target ));
+
+            runtime_assert( mpc_both_pose.get_pose()->size() == scaffold_centered_p->size() + target.size() );
+        }
     }
 
     core::pose::PoseOP
     helper_setup_both_pose( core::pose::Pose const & target ) {
-        core::pose::PoseOP __both_pose_p = make_shared<core::pose::Pose>( *scaffold_centered_p );
+        core::pose::PoseOP __both_pose_p = MultithreadPoseCloner::clone_a_pose( scaffold_centered_p );
         ::devel::scheme::append_pose_to_pose( *__both_pose_p, target );
         add_pdbinfo_if_missing( *__both_pose_p );
         return __both_pose_p;
@@ -633,14 +660,19 @@ struct ScaffoldDataCache {
     void
     setup_both_full_pose( core::pose::Pose const & target ) {
         if ( mpc_both_full_pose.size() > 0 ) return;
-        mpc_both_full_pose.add_pose(helper_setup_both_full_pose(target));
+        {
+            const std::lock_guard<std::mutex> lock( pose_access_mutex_ );
+            if ( mpc_both_full_pose.size() > 0 ) return;
 
-        runtime_assert( mpc_both_full_pose.get_pose()->size() == scaffold_full_centered_p->size() + target.size() );
+            mpc_both_full_pose.add_pose(helper_setup_both_full_pose(target));
+
+            runtime_assert( mpc_both_full_pose.get_pose()->size() == scaffold_full_centered_p->size() + target.size() );
+        }
     }
 
     core::pose::PoseOP
     helper_setup_both_full_pose( core::pose::Pose const & target ) {
-        core::pose::PoseOP __both_full_pose_p = make_shared<core::pose::Pose>( *scaffold_full_centered_p );
+        core::pose::PoseOP __both_full_pose_p = MultithreadPoseCloner::clone_a_pose( scaffold_full_centered_p );
         ::devel::scheme::append_pose_to_pose( *__both_full_pose_p, target );
         add_pdbinfo_if_missing( *__both_full_pose_p );
         return __both_full_pose_p;
