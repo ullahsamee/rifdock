@@ -15,6 +15,7 @@
 #include <scheme/types.hh>
 
 #include <riflib/HSearchConstraints.hh>
+#include <riflib/AtomsCloseTogetherManager.hh>
 
 #include <vector>
 
@@ -36,6 +37,25 @@ struct ExtraScaffoldData {
     std::shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p;
     shared_ptr<std::vector<std::vector<bool>>> allowed_irot_at_ires_p;
     shared_ptr<std::vector<bool>> ala_disallowed_p;
+    shared_ptr<std::vector<SimpleAtom>> clash_context_p;
+    shared_ptr<std::vector<AtomsCloseTogetherManager>> atoms_close_together_managers_p;
+
+
+    void add_to_clash_context( std::vector<SimpleAtom> const & clash_context ) {
+        if ( ! clash_context_p ) {
+            clash_context_p = make_shared<std::vector<SimpleAtom>>( clash_context );
+        } else {
+            clash_context_p->insert(clash_context_p->end(), clash_context.begin(), clash_context.end() );
+        }
+    }
+
+    void adjust_clash_context( Eigen::Vector3f const & to_move ) {
+        if ( ! clash_context_p ) return;
+
+        for ( SimpleAtom & atom : *clash_context_p ) {
+            atom.set_position( atom.position() + to_move );
+        }
+    }
 
 
     void accumulate_per_rotamer_custom_energies( std::shared_ptr< std::vector< std::vector<float> > > const & per_rotamer_custom_energies_p_in ) {

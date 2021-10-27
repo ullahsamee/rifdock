@@ -126,6 +126,12 @@ namespace actor {
 		 	V3 tmp = position_ * V3( 1.95280,  0.220007, -1.52486 );
 		 	ca[0] = tmp[0]; ca[1] = tmp[1]; ca[2] = tmp[2];		 			 	
 		}
+				template<class V>
+		void get_cb( V & cb ) const {
+		 	V3 tmp = position_ * V3( 1.0264273 ,  0.25245885, -0.308907 );
+		 	cb[0] = tmp[0]; cb[1] = tmp[1]; cb[2] = tmp[2];		 			 	
+		}
+
 
 		void 
 		set_position(

@@ -45,7 +45,8 @@ struct MorphingScaffoldProvider :
         shared_ptr< RotamerIndex > rot_index_p_in, 
         RifDockOpt const & opt_in,
         MakeTwobodyOpts const & make2bopts_in,
-        ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in );
+        ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in,
+        ExtraScaffoldData & extra_data );
 
 
     ParametricSceneConformationCOP get_scaffold(::scheme::scaffold::TreeIndex i) override;

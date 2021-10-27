@@ -23,6 +23,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_orig_scaffold_res )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, replace_all_with_ala_1bre )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, random_perturb_scaffold )
+    OPT_1GRP_KEY(  StringVector, rif_dock, scaffold_clash_contexts )
 
 	OPT_1GRP_KEY(  StringVector, rif_dock, target_bounding_xmaps )
 	OPT_1GRP_KEY(  String      , rif_dock, target_pdb )
@@ -109,6 +110,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, dump_all_rif_rots_into_output )
 	OPT_1GRP_KEY(  Boolean     , rif_dock, rif_rots_as_chains )
+    OPT_1GRP_KEY(  Boolean     , rif_dock, dump_simple_atoms )
     OPT_1GRP_KEY(  Boolean     , rif_dock, ignore_ala_rifres )
 
     OPT_1GRP_KEY(  Boolean     , rif_dock, dump_rifgen_hdf5 )
@@ -158,7 +160,15 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
     OPT_1GRP_KEY(  Boolean     , rif_dock, count_all_contacts_as_hydrophobic )
     OPT_1GRP_KEY(  Real        , rif_dock, hydrophobic_ddg_per_atom_cut )
     OPT_1GRP_KEY(  String      , rif_dock, hydrophobic_target_res )
+    OPT_1GRP_KEY(  StringVector, rif_dock, ligand_hydrophobic_res_atoms )
+    OPT_1GRP_KEY(  Integer     , rif_dock, ligand_require_hydrophobic_residue_contacts )
+    OPT_1GRP_KEY(  Real        , rif_dock, ligand_hydrophobic_ddg_weight )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_cation_pi )
+    OPT_1GRP_KEY(  Real        , rif_dock, CB_too_close_penalty )
+    OPT_1GRP_KEY(  Real        , rif_dock, CB_too_close_dist )
+    OPT_1GRP_KEY(  Real        , rif_dock, CB_too_close_resl )
+    OPT_1GRP_KEY(  Integer     , rif_dock, CB_too_close_max_target_res_atom_idx )
+    OPT_1GRP_KEY(  StringVector, rif_dock, specific_atoms_close_bonus )
 
 	OPT_1GRP_KEY(  Boolean     , rif_dock, use_dl_mix_bb )
 
@@ -310,6 +320,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::replace_orig_scaffold_res, "", true );
 			NEW_OPT(  rif_dock::replace_all_with_ala_1bre, "" , false );
 			NEW_OPT(  rif_dock::random_perturb_scaffold, "" , false );
+            NEW_OPT(  rif_dock::scaffold_clash_contexts, "One pdb per scaffold to be loaded as part of the scaffold only for clash checking. Imagine you have homodimers but are docking only one monomer.", utility::vector1<std::string>() );
 
 			NEW_OPT(  rif_dock::target_bounding_xmaps, "" , utility::vector1<std::string>() );
 			NEW_OPT(  rif_dock::target_pdb, "" , "" );
@@ -397,6 +408,7 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 			NEW_OPT(  rif_dock::dump_all_rif_rots, "", false );
 			NEW_OPT(  rif_dock::dump_all_rif_rots_into_output, "dump all rif rots into output", false);
 			NEW_OPT(  rif_dock::rif_rots_as_chains, "dump rif rots as chains instead of models, loses resnum if true", false );
+            NEW_OPT(  rif_dock::dump_simple_atoms, "Dump simple atom representation of scaffold for debugging.", false );
             NEW_OPT(  rif_dock::ignore_ala_rifres, "If ALA is the result of the rif search. Ignore it.", false );
 
 
@@ -447,7 +459,21 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             NEW_OPT(  rif_dock::count_all_contacts_as_hydrophobic, "This flag should only be used on very polar targets. It counts all contact types toward *_hydrophobics_better_than", 0 );
             NEW_OPT(  rif_dock::hydrophobic_ddg_per_atom_cut, "To be considered for better_than, must have ddg per atom better than this", 0 );
             NEW_OPT(  rif_dock::hydrophobic_target_res, "Comma separated list of residues to consider for hydrophobics. Default is all res", "" );
+            NEW_OPT(  rif_dock::ligand_hydrophobic_res_atoms, "Zones of your ligand to be treated like residues for hydrophobic contacts. Format is SEQPOS:ATNAME,SEQPOS:ATNAME. Space separates multiple definitions.", utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::ligand_require_hydrophobic_residue_contacts, "How many of the zones in -ligand_hydrophobic_res_atoms must an output satisfy to count?", 0 );
+            NEW_OPT(  rif_dock::ligand_hydrophobic_ddg_weight, "Add the hydrophobic ddg of your ligand zones to the score with this weight during hackpack.", 0 );
             NEW_OPT(  rif_dock::num_cation_pi, "Number of cation pi's in output", 0 );
+            NEW_OPT(  rif_dock::CB_too_close_penalty, "Penalty for every scaffold CB closer than -CB_too_close_dist to target.", 0 );
+            NEW_OPT(  rif_dock::CB_too_close_dist, "Distance for -CB_too_close_penalty", 6 );
+            NEW_OPT(  rif_dock::CB_too_close_resl, "Resolution of CB_too_close grid.", 0.5 );
+            NEW_OPT(  rif_dock::CB_too_close_max_target_res_atom_idx, "Atom idx in Rosetta numbering of last heavyatom to use on target. CB is 5. Default is whole sidechain.", 1000 );
+            NEW_OPT(  rif_dock::specific_atoms_close_bonus, "Bonus/penalty for specific scaffold atoms near specific target atoms. Use scaffold PDBInfo Labels. LABEL:atom_name."
+                                                            " Then, format for space-separated bonuses is: LABEL,bonus,resl,close_dist,max_dist,resnum:atom_name[,resnum:atom_name,...] ."
+                                                            " Bonus is linear between max_dist and close_dist then constant closer than close_dist." , utility::vector1<std::string>() );
+
+            
+
+
 
 			NEW_OPT(  rif_dock::use_dl_mix_bb, "use phi to decide where d is allow", false );
 
@@ -618,6 +644,7 @@ struct RifDockOpt
 	bool        dump_all_rif_rots                    ;
 	bool        dump_all_rif_rots_into_output        ;
 	bool        rif_rots_as_chains                   ;
+    bool        dump_simple_atoms                    ;
     bool        ignore_ala_rifres                    ;
     bool        dump_rifgen_hdf5                     ;
 	std::vector<std::string> dump_rifgen_near_pdb    ;
@@ -662,7 +689,15 @@ struct RifDockOpt
     bool        count_all_contacts_as_hydrophobic    ;
     float       hydrophobic_ddg_per_atom_cut         ;
     utility::vector1<int> hydrophobic_target_res     ;
+    std::vector<std::string> ligand_hydrophobic_res_atoms;
+    int         ligand_require_hydrophobic_residue_contacts;
+    float       ligand_hydrophobic_ddg_weight        ;
     int         num_cation_pi                        ;
+    float       CB_too_close_penalty                 ;
+    float       CB_too_close_dist                    ;
+    float       CB_too_close_resl                    ;
+    int         CB_too_close_max_target_res_atom_idx ;
+    std::vector<std::string> specific_atoms_close_bonus;
 	bool 		use_dl_mix_bb						 ;
 	float       target_rf_resl                       ;
 	bool        align_to_scaffold                    ;
@@ -693,6 +728,7 @@ struct RifDockOpt
     std::vector<std::string> rotamer_boltzmann_fnames;
     bool        rotboltz_ignore_missing_rots         ;
 	bool        random_perturb_scaffold              ;
+    std::vector<std::string> scaffold_clash_contexts ;
 	bool        dont_use_scaffold_loops              ;
     bool        dont_use_scaffold_helices            ;
     bool        dont_use_scaffold_strands            ;
@@ -897,6 +933,7 @@ struct RifDockOpt
 		dump_all_rif_rots                      = option[rif_dock::dump_all_rif_rots                  ]();
 		dump_all_rif_rots_into_output		   = option[rif_dock::dump_all_rif_rots_into_output      ]();
 		rif_rots_as_chains                     = option[rif_dock::rif_rots_as_chains                 ]();
+        dump_simple_atoms                      = option[rif_dock::dump_simple_atoms                  ]();
         ignore_ala_rifres                      = option[rif_dock::ignore_ala_rifres                  ]();
         dump_rifgen_hdf5                       = option[rif_dock::dump_rifgen_hdf5                   ]();
 		dump_rifgen_near_pdb_dist              = option[rif_dock::dump_rifgen_near_pdb_dist          ]();
@@ -937,7 +974,13 @@ struct RifDockOpt
         better_than_must_hbond                 = option[rif_dock::better_than_must_hbond                ]();
         count_all_contacts_as_hydrophobic      = option[rif_dock::count_all_contacts_as_hydrophobic     ]();
         hydrophobic_ddg_per_atom_cut           = option[rif_dock::hydrophobic_ddg_per_atom_cut          ]();
+        ligand_require_hydrophobic_residue_contacts = option[rif_dock::ligand_require_hydrophobic_residue_contacts]();
+        ligand_hydrophobic_ddg_weight          = option[rif_dock::ligand_hydrophobic_ddg_weight         ]();
         num_cation_pi                          = option[rif_dock::num_cation_pi                         ]();
+        CB_too_close_penalty                   = option[rif_dock::CB_too_close_penalty                  ]();
+        CB_too_close_dist                      = option[rif_dock::CB_too_close_dist                     ]();
+        CB_too_close_resl                      = option[rif_dock::CB_too_close_resl                     ]();
+        CB_too_close_max_target_res_atom_idx   = option[rif_dock::CB_too_close_max_target_res_atom_idx  ]();
 		use_dl_mix_bb						   = option[rif_dock::use_dl_mix_bb							]();
 		target_rf_resl                         = option[rif_dock::target_rf_resl                        ]();
 		align_to_scaffold                      = option[rif_dock::align_output_to_scaffold              ]();
@@ -1196,6 +1239,7 @@ struct RifDockOpt
         	scaffold_fnames.resize(num_scaffolds);
 
         }
+        for( std::string s : option[rif_dock::scaffold_clash_contexts]() )     scaffold_clash_contexts.push_back(s);
 
         for( std::string s : option[rif_dock::morph_rules_files ]() ) morph_rules_fnames.push_back(s);
 
@@ -1209,6 +1253,11 @@ struct RifDockOpt
         for( std::string s : option[rif_dock::rotamer_boltzmann_files ]() ) rotamer_boltzmann_fnames.push_back(s);
 
         for( std::string s : option[rif_dock::pssm_file]() )     pssm_file_fnames.push_back(s);
+
+        for( std::string s : option[rif_dock::ligand_hydrophobic_res_atoms]() ) ligand_hydrophobic_res_atoms.push_back(s);
+
+        for( std::string s : option[rif_dock::specific_atoms_close_bonus]() ) specific_atoms_close_bonus.push_back(s);
+
 
         patchdock_min_sasa                      = option[rif_dock::patchdock_min_sasa                  ]();
         patchdock_top_ranks                     = option[rif_dock::patchdock_top_ranks                 ]();

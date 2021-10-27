@@ -33,7 +33,9 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     shared_ptr< RotamerIndex > rot_index_p_in, 
     RifDockOpt const & opt_in,
     MakeTwobodyOpts const & make2bopts_in,
-    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in ) :
+    ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager_in,
+    ExtraScaffoldData & extra_data
+) :
 
     rot_index_p( rot_index_p_in), 
     opt(opt_in),
@@ -46,7 +48,6 @@ SingleFileScaffoldProvider::SingleFileScaffoldProvider(
     utility::vector1<core::Size> scaffold_res;
     EigenXform scaffold_perturb;
     MorphRules morph_rules;
-    ExtraScaffoldData extra_data;
     std::string scaff_fname;
 
     get_info_for_iscaff( iscaff, opt, scafftag, scaffold, scaffold_res, scaffold_perturb, morph_rules, extra_data, rot_index_p, scaff_fname);

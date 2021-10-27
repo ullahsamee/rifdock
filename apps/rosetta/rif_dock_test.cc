@@ -288,7 +288,9 @@ int main(int argc, char *argv[]) {
 	float rif_radius=0.0, target_redundancy_filter_rg=0.0;
 	shared_ptr<BurialManager> burial_manager;
 	shared_ptr<UnsatManager> unsat_manager;
+	shared_ptr<CBTooCloseManager> CB_too_close_manager;
 	bool donor_acceptors_from_file = false;
+	std::shared_ptr< std::vector< AtomsCloseTogetherManager > > atoms_close_together_managers_p;
 	{
 		core::import_pose::pose_from_file( target, opt.target_pdb );
 
@@ -393,6 +395,19 @@ int main(int argc, char *argv[]) {
 
 
 
+		}
+
+		if ( opt.CB_too_close_penalty != 0 ) {
+			CB_too_close_manager = make_shared<CBTooCloseManager>( target, opt.CB_too_close_resl, opt.CB_too_close_dist, opt.CB_too_close_penalty,
+					opt.CB_too_close_max_target_res_atom_idx );
+		}
+
+		
+		if ( opt.specific_atoms_close_bonus.size() > 0 ) {
+			atoms_close_together_managers_p = make_shared<std::vector< AtomsCloseTogetherManager >>();
+			for ( std::string const & spec_string : opt.specific_atoms_close_bonus ) {
+			atoms_close_together_managers_p->emplace_back( target, spec_string );
+			}
 		}
 		// {
 		// 	{
@@ -591,7 +606,9 @@ int main(int argc, char *argv[]) {
         	opt.two_hydrophobics_better_than < 0 ||
         	opt.three_hydrophobics_better_than < 0 ||
         	opt.num_cation_pi > 0 ||
-        	opt.hydrophobic_ddg_weight != 0) {
+        	opt.hydrophobic_ddg_weight != 0 ||
+        	opt.ligand_require_hydrophobic_residue_contacts != 0 ||
+        	opt.ligand_hydrophobic_ddg_weight != 0 ) {
 
     	utility::vector1<int> use_hydrophobic_target_res;
     	if (opt.hydrophobic_target_res.size() > 0) {
@@ -600,7 +617,8 @@ int main(int argc, char *argv[]) {
     		use_hydrophobic_target_res = target_res;
     	}
 
-    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic );
+    	hydrophobic_manager = make_shared<HydrophobicManager>( target, use_hydrophobic_target_res, rot_index_p, opt.count_all_contacts_as_hydrophobic, 
+    																														opt.ligand_hydrophobic_res_atoms, false );
     	hydrophobic_manager->set_hydrophobics_better_than( opt.one_hydrophobic_better_than, 
     													   opt.two_hydrophobics_better_than, 
     													   opt.three_hydrophobics_better_than,
@@ -608,6 +626,8 @@ int main(int argc, char *argv[]) {
     													   opt.better_than_must_hbond );
     	hydrophobic_manager->set_num_cation_pi( opt.num_cation_pi );
     	hydrophobic_manager->hyd_ddg_weight_ = opt.hydrophobic_ddg_weight;
+    	hydrophobic_manager->lig_hyd_ddg_weight_ = opt.ligand_hydrophobic_ddg_weight;
+    	hydrophobic_manager->lig_require_hydrophobic_residue_contacts_ = opt.ligand_require_hydrophobic_residue_contacts;
     }
 
 
@@ -880,12 +900,16 @@ int main(int argc, char *argv[]) {
 
 			bool needs_scaffold_director = false;
 
+			ExtraScaffoldData extra_data;
+			extra_data.atoms_close_together_managers_p = atoms_close_together_managers_p;
+
 			ScaffoldProviderOP scaffold_provider = get_scaffold_provider(
 				iscaff,
 				rot_index_p,
 				opt,
 				make2bopts,
 				rotrf_table_manager,
+				extra_data,
 				needs_scaffold_director);
 
 			// General info about a generic scaffold for debugging, cout, and the director
@@ -924,6 +948,8 @@ int main(int argc, char *argv[]) {
                 rso_config.requirement_groups = opt.requirement_groups;
             	rso_config.burial_manager = burial_manager;
             	rso_config.unsat_manager = unsat_manager;
+            	rso_config.CB_too_close_manager = CB_too_close_manager;
+            	rso_config.atoms_close_together_managers_p = atoms_close_together_managers_p;
             	rso_config.scaff_bb_hbond_weight = opt.scaff_bb_hbond_weight;
 
             	rso_config.sasa_grid = sasa_grid;

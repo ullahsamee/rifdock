@@ -7,6 +7,12 @@
 #include <boost/assert.hpp>
 #include <scheme/util/assert.hh>
 
+#include <boost/format.hpp>
+#include <fstream>
+
+#include <random>
+#include<boost/random/uniform_real.hpp>
+
 #ifdef CEREAL
 #include <cereal/access.hpp>
 #endif
@@ -150,6 +156,40 @@ struct VoxelArray : boost::multi_array<_Value,_DIM> {
   		ALWAYS_ASSERT( in.good() );
     }
     // BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+
+
+    void dump_pdb( std::string const & fname, Value threshold_value, bool higher_than_threshold, float fraction=1.0 ) {
+        std::ofstream f( fname );
+        if ( ! f ) {
+            std::cerr << "Couldn't open " <<  fname << std::endl;
+            ALWAYS_ASSERT( false );
+        }
+
+        std::mt19937 rng(time(0));
+        boost::uniform_real<> uniform;
+
+        size_t ires = 1;
+        size_t iatom = 1;
+        for ( size_t ix = 0; ix < this->shape()[0]; ix++ ) {
+            for ( size_t iy = 0; iy < this->shape()[1]; iy++ ) {
+                for ( size_t iz = 0; iz < this->shape()[0]; iz++ ) {
+                    Indices idx(ix, iy, iz);
+                    Value val = this->operator()(idx);
+                    if ( (higher_than_threshold && val >= threshold_value ) ||
+                        (!higher_than_threshold && val <= threshold_value ) ) {
+                        if ( fraction < 1 ) {
+                            if ( uniform(rng) > fraction ) continue;
+                        }
+                        Bounds xyz = indices_to_center( idx );
+                        f << boost::str(boost::format("HETATM%5i VOXL VOX A%4i    %8.3f%8.3f%8.3f%6.2f%6.2f %11s")
+                            %iatom%ires%xyz[0]%xyz[1]%xyz[2]%1.0%1.0%"HB") << std::endl;
+                    }
+                }
+            }
+        }
+        f.close();
+    }
 
 };
 

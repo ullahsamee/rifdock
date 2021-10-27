@@ -81,6 +81,8 @@ struct ScaffoldDataCache {
 
     std::shared_ptr< std::vector< std::vector<float> > > per_rotamer_custom_energies_p;
 
+    std::shared_ptr< std::vector< std::vector<Eigen::Matrix<float,3,1>> > > atoms_close_together_atom_sets_p;
+
 
 // not setup during constructor
     shared_ptr<std::vector<std::vector<float> > > scaffold_onebody_glob0_p;    //onebodies in global numbering
@@ -278,6 +280,12 @@ struct ScaffoldDataCache {
             }
         }
 
+        if ( extra_data.clash_context_p ) {
+            extra_data.adjust_clash_context( -scaffold_center );
+            scaffold_simple_atoms_p->insert( scaffold_simple_atoms_p->end(), extra_data.clash_context_p->begin(), extra_data.clash_context_p->end() );
+            scaffold_simple_atoms_all_p->insert( scaffold_simple_atoms_all_p->end(), extra_data.clash_context_p->begin(), extra_data.clash_context_p->end() );
+        }
+
         make_bbhbond_actors = opt.scaff_bb_hbond_weight > 0;
         make_bbsasa_actors = opt.need_to_calculate_sasa;
 
@@ -290,6 +298,14 @@ struct ScaffoldDataCache {
             cst->reset();   // clear previous scaffold related data
             csts.push_back(cst);
         }
+
+        if ( extra_data.atoms_close_together_managers_p ) {
+            atoms_close_together_atom_sets_p = make_shared<std::vector< std::vector<Eigen::Matrix<float,3,1>> >>();
+            for ( AtomsCloseTogetherManager const & man : *(extra_data.atoms_close_together_managers_p) ) {
+                atoms_close_together_atom_sets_p->push_back( man.prepare_scaffold_atoms( scaffold_centered ) );
+            }
+        }
+
 
         if( opt.native_docking ){
             std::cout << "KILLING NON-NATIVE ROTAMERS ON SCAFFOLD AND ALA!!!" << std::endl;

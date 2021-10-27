@@ -1274,6 +1274,7 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< std::pair<int,int> > const * scaffold_rotamers_ = nullptr;
 		shared_ptr< BurialManager > burial_manager_;
 		shared_ptr< UnsatManager > unsat_manager_;
+        float cb_too_close_score_;
         shared_ptr< BurialVoxelArray > scaff_burial_grid_;
 		shared_ptr<::scheme::objective::storage::TwoBodyTable<float> const> reference_twobody_;
         //std::vector<std::vector<bool>> allowed_irots_;
@@ -1304,6 +1305,8 @@ std::string get_rif_type_from_file( std::string fname )
 		std::vector< shared_ptr< BurialManager> > burialperthread_;
 		std::vector< shared_ptr< UnsatManager > > unsatperthread_;
         shared_ptr< HydrophobicManager> hydrophobic_manager_;
+        shared_ptr< CBTooCloseManager > CB_too_close_manager_;
+        shared_ptr<std::vector<AtomsCloseTogetherManager>> atoms_close_together_managers_p_;
 		
         int num_pdbinfo_requirements_required_;
         std::vector< std::vector<bool> > pdbinfo_req_active_positions_; // outer loop = which pdbinfo:req
@@ -1398,6 +1401,8 @@ std::string get_rif_type_from_file( std::string fname )
 
 			//////////////////////////////////////////
 
+            scratch.cb_too_close_score_ = 0;
+
 			runtime_assert( rif_ );
 			runtime_assert( scratch.rotamer_energies_1b_ );
 			if( n_sat_groups_ > 0 && burialperthread_.size() == 0 ){
@@ -1453,6 +1458,7 @@ std::string get_rif_type_from_file( std::string fname )
 		template<class Config>
 		Result operator()( RIFAnchor const &, BBActor const & bb, Scratch & scratch, Config const& c ) const
 		{
+            if ( CB_too_close_manager_ ) scratch.cb_too_close_score_ += CB_too_close_manager_->get_CB_penalty( bb.position() );
 
 			if( target_proximity_test_grid_ && target_proximity_test_grid_->at( bb.position().translation() ) == 0.0 ){
 				return 0.0;
@@ -1712,12 +1718,17 @@ std::string get_rif_type_from_file( std::string fname )
 
                         irot_and_bbpos.emplace_back( irot, bb.position() );
                     }
-                    std::vector<int> hyd_counts, per_irot_counts;
+                    std::vector<int> hyd_counts, lig_hyd_counts, per_irot_counts;
+                    int lig_hydrophobic_residue_contacts = 0;
                     float hydrophobic_ddg = 0;
                     bool pass_better_than = true, pass_cation_pi = true;
-                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts, hydrophobic_ddg,
+                    int hydrophobic_residue_contacts = hydrophobic_manager_->find_hydrophobic_residue_contacts( irot_and_bbpos, hyd_counts,
+                                                                                    lig_hyd_counts, lig_hydrophobic_residue_contacts, hydrophobic_ddg,
                                                                                     per_irot_counts, pass_better_than, pass_cation_pi, rot_tgt_scorer_ );
                     if ( hydrophobic_residue_contacts < require_hydrophobic_residue_contacts_) {
+                        result.val_ = 9e9;
+                    }
+                    if ( lig_hydrophobic_residue_contacts < hydrophobic_manager_->lig_require_hydrophobic_residue_contacts_ ) {
                         result.val_ = 9e9;
                     }
                     if ( hydrophobic_ddg > hydrophobic_ddg_cut_ ) {
@@ -1934,6 +1945,17 @@ std::string get_rif_type_from_file( std::string fname )
                 if ( !pass ) result.val_ = 9e9;
             }
 
+            if ( atoms_close_together_managers_p_ ) {
+                EigenXform scaff_xform = scene.position(1);
+                ScaffoldDataCacheOP sdc = scene.conformation_ptr(1)->cache_data_;
+
+                runtime_assert( sdc->atoms_close_together_atom_sets_p );
+                runtime_assert( atoms_close_together_managers_p_->size() == sdc->atoms_close_together_atom_sets_p->size() );
+                for ( core::Size i = 0; i < atoms_close_together_managers_p_->size(); i++ ) {
+                    result.val_ += atoms_close_together_managers_p_->at(i).get_bonus( scaff_xform, sdc->atoms_close_together_atom_sets_p->at( i ) );
+                }
+            }
+
 				// #ifdef USE_OPENMP
 				// #pragma omp critical
 				// #endif
@@ -1949,6 +1971,8 @@ std::string get_rif_type_from_file( std::string fname )
 			// for( int i = 0; i < result.rotamers_.size(); ++i ){
 			//  std::cout << "res: " << result.rotamers_[i].first << ", rotamer: " << result.rotamers_[i].second << std::endl;
 			// }
+
+            result.val_ += scratch.cb_too_close_score_; 
 
 		}
 	};
@@ -2453,6 +2477,29 @@ struct RifFactoryImpl :
                                 .init_for_burial( config.burial_manager, config.unsat_manager );
             }
         }
+
+        if ( config.CB_too_close_manager ) {
+            if ( objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .CB_too_close_manager_ = config.CB_too_close_manager;
+            }
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .CB_too_close_manager_ = config.CB_too_close_manager;
+            }
+        }
+
+        if ( config.atoms_close_together_managers_p ) {
+            if ( objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .atoms_close_together_managers_p_ = config.atoms_close_together_managers_p;
+            }
+            if ( packing_objectives.size() ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                .atoms_close_together_managers_p_ = config.atoms_close_together_managers_p;
+            }
+        }
+
 
         if ( config.hydrophobic_manager ) {
             // Only the packing objectives need this

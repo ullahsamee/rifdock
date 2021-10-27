@@ -15,6 +15,7 @@
 #include <riflib/scaffold/Baseline9AScaffoldProvider.hh>
 #include <riflib/scaffold/MorphingScaffoldProvider.hh>
 #include <riflib/scaffold/SingleFileScaffoldProvider.hh>
+#include <riflib/scaffold/ExtraScaffoldData.hh>
 #include <riflib/rifdock_typedefs.hh>
 
 namespace devel {
@@ -28,7 +29,9 @@ get_scaffold_provider(
         RifDockOpt const & opt,
         MakeTwobodyOpts const & make2bopts,
         ::devel::scheme::RotamerRFTablesManager & rotrf_table_manager,
-        bool & needs_scaffold_director ) {
+        ExtraScaffoldData & extra_data,
+        bool & needs_scaffold_director
+) {
 
 
     if (opt.scaff_search_mode == "default") {
@@ -39,7 +42,8 @@ get_scaffold_provider(
                 rot_index_p,
                 opt,
                 make2bopts,
-                rotrf_table_manager);
+                rotrf_table_manager,
+                extra_data);
     } else if (opt.scaff_search_mode == "morph") {
 
         needs_scaffold_director = true;
@@ -48,7 +52,8 @@ get_scaffold_provider(
                 rot_index_p,
                 opt,
                 make2bopts,
-                rotrf_table_manager);
+                rotrf_table_manager,
+                extra_data);
 
     } else if (opt.scaff_search_mode == "morph_dive_pop") {
 
@@ -58,7 +63,8 @@ get_scaffold_provider(
                 rot_index_p,
                 opt,
                 make2bopts,
-                rotrf_table_manager);
+                rotrf_table_manager,
+                extra_data);
 
     } else if (opt.scaff_search_mode == "nineA_baseline") {
 
@@ -68,7 +74,8 @@ get_scaffold_provider(
                 rot_index_p,
                 opt,
                 make2bopts,
-                rotrf_table_manager);
+                rotrf_table_manager,
+                extra_data);
     } else {
         utility_exit_with_message("Error!!!! -rif_dock:scaff_search_mode " + opt.scaff_search_mode + " does not name a ScaffoldProvider!");
     }
