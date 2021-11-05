@@ -7,7 +7,7 @@ This was originally an internal page at the Baker Lab, but we posted it here. Wi
 
 The example flags files can be found here:
 
-https://www.github.com/rifdock/rifdock/tree/master/help/example_flags/
+https://www.github.com/rifdock/rifdock/tree/master/data/example_flags/
 
 This site provides background info on RifDock and the Hierarchical
 search:
