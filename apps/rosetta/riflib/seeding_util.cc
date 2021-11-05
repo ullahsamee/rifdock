@@ -44,6 +44,13 @@ setup_seeding_positions( RifDockOpt & opt, ProtocolData & pd, ScaffoldProviderOP
                 pd.seeding_tags.push_back( tag );
             }
         }
+        
+        Eigen::Vector3f scaffold_center = scaffold_provider->get_data_cache_slow(ScaffoldIndex())->scaffold_center;
+        if ( ! opt.apply_seeding_xform_after_centering ) {
+            EigenXform x(EigenXform::Identity());
+            x.translation() = scaffold_center;
+            for( auto & t : *seeding_positions ) t = t * x;
+        }
 
         if ( seeding_positions->size() >= 4294967296 ) {
             utility_exit_with_message("Too many seeding positions!!!!");
@@ -259,7 +266,7 @@ void dump_xform_file(
     double angle_resl
 ) {
 
-    std::string fname = boost::str(boost::format("xform_pos_cart_rad%.1f_by%.1f_angle%.2f_by%.2f.x")%cart_radius%cart_resl%angle_radius%angle_resl);
+    std::string fname = boost::str(boost::format("xform_pos_cart_rad%.1f_by%.2f_angle%.2f_by%.2f.x")%cart_radius%cart_resl%angle_radius%angle_resl);
     utility::io::ozstream xform_pos( fname );
 
     std::cout << "Dumping xform_pos to: " << fname << std::endl;
