@@ -3,6 +3,9 @@ RifDock Library for Conformational Search
 
 Ideally RifDock should be merged into Rosetta, but no one has stepped up to this herculean task yet.
 
+Here's some incomplete documentation:
+https://github.com/rifdock/rifdock/blob/master/help/some_rifdock_documentation.md
+
 ***Building***
 
 RifDock links against Rosetta. As RifDock is not managed by Rosetta Commons, it has fallen behind in terms of the code. The latest version of Rosetta will not work. Instead, use one of the two following versions:
