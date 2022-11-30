@@ -115,7 +115,8 @@ load_rotboltz_data(
     std::string const & fname,
     size_t num_res,
     size_t num_rots,
-    bool ignore_missing_rots
+    bool ignore_missing_rots,
+    utility::vector1<core::Size> const & scaffold_res
 );
 
 void

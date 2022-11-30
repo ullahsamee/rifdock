@@ -1016,6 +1016,66 @@ int main(int argc, char *argv[]) {
                     rso_config.num_pdbinfo_requirements_required = opt.num_pdbinfo_requirements_required;
                 }
             }
+
+            if ( opt.pdbinfo_requirements_bbO.size() > 0 ) {
+                
+                for ( int ipdbinforeq = 0; ipdbinforeq < opt.pdbinfo_requirements_bbO.size(); ipdbinforeq++ ) {
+
+                    std::vector<bool> active_positions( test_data_cache->scaffres_l2g_p->size(), false );
+                    std::vector<bool> active_requirements( rso_config.n_sat_groups, false );
+                    
+                    std::pair<std::string,std::vector<int>> pdbinfo_req = opt.pdbinfo_requirements_bbO[ipdbinforeq];
+                    
+                    for ( int req : pdbinfo_req.second ) {
+                        active_requirements.at(req) = true;
+                    }
+                    
+                    for ( core::Size seqpos : *(test_data_cache->scaffold_res_p) ) {
+                        if ( test_data_cache->scaffold_unmodified_p->pdb_info()->res_haslabel(seqpos, pdbinfo_req.first ) ) {
+                            int local_position = test_data_cache->scaffres_g2l_p->at( seqpos - 1 );
+                            active_positions.at(local_position) = true;
+                        }
+                    }
+                    
+                    rso_config.pdbinfo_req_active_positions_bbO.push_back( active_positions );
+                    rso_config.pdbinfo_req_active_requirements_bbO.push_back( active_requirements );
+                }
+                if ( opt.num_pdbinfo_requirements_required_bbO < 0 ) {
+                    rso_config.num_pdbinfo_requirements_required_bbO = rso_config.pdbinfo_req_active_positions_bbO.size();
+                } else {
+                    rso_config.num_pdbinfo_requirements_required_bbO = opt.num_pdbinfo_requirements_required_bbO;
+                }
+            }
+
+            if ( opt.pdbinfo_requirements_bbN.size() > 0 ) {
+                
+                for ( int ipdbinforeq = 0; ipdbinforeq < opt.pdbinfo_requirements_bbN.size(); ipdbinforeq++ ) {
+
+                    std::vector<bool> active_positions( test_data_cache->scaffres_l2g_p->size(), false );
+                    std::vector<bool> active_requirements( rso_config.n_sat_groups, false );
+                    
+                    std::pair<std::string,std::vector<int>> pdbinfo_req = opt.pdbinfo_requirements_bbN[ipdbinforeq];
+                    
+                    for ( int req : pdbinfo_req.second ) {
+                        active_requirements.at(req) = true;
+                    }
+                    
+                    for ( core::Size seqpos : *(test_data_cache->scaffold_res_p) ) {
+                        if ( test_data_cache->scaffold_unmodified_p->pdb_info()->res_haslabel(seqpos, pdbinfo_req.first ) ) {
+                            int local_position = test_data_cache->scaffres_g2l_p->at( seqpos - 1 );
+                            active_positions.at(local_position) = true;
+                        }
+                    }
+                    
+                    rso_config.pdbinfo_req_active_positions_bbN.push_back( active_positions );
+                    rso_config.pdbinfo_req_active_requirements_bbN.push_back( active_requirements );
+                }
+                if ( opt.num_pdbinfo_requirements_required_bbN < 0 ) {
+                    rso_config.num_pdbinfo_requirements_required_bbN = rso_config.pdbinfo_req_active_positions_bbN.size();
+                } else {
+                    rso_config.num_pdbinfo_requirements_required_bbN = opt.num_pdbinfo_requirements_required_bbN;
+                }
+            }
 			
             rso_config.sat_bonus = opt.sat_score_bonus;
             rso_config.sat_bonus_override = opt.sat_score_override;

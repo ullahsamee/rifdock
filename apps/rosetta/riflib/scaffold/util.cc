@@ -174,7 +174,8 @@ get_info_for_iscaff(
         } else {
             utility_exit_with_message( "-rotamer_boltzmann_files list not same length as -scaffolds list" );
         }
-        extra_data.accumulate_per_rotamer_custom_energies( load_rotboltz_data( rotboltz_fname, scaffold.size(), rot_index_p->size(), opt.rotboltz_ignore_missing_rots ) );
+        extra_data.accumulate_per_rotamer_custom_energies( load_rotboltz_data( rotboltz_fname, scaffold.size(), rot_index_p->size(), opt.rotboltz_ignore_missing_rots,
+                                                                                                                                        scaffold_res ) );
     }
 
     if( opt.pssm_file_fnames.size() ){
@@ -873,7 +874,8 @@ load_rotboltz_data(
     std::string const & fname,
     size_t num_res,
     size_t num_rots,
-    bool ignore_missing_rots
+    bool ignore_missing_rots,
+    utility::vector1<core::Size> const & scaffold_res
 ) {
 
     std::cout << "Loading rotamer boltzmann data from: " << fname << std::endl;
@@ -933,7 +935,17 @@ load_rotboltz_data(
 
     }
 
-    return rotboltz_data_p;
+    if ( scaffold_res.size() == num_res ) return rotboltz_data_p;
+
+    std::shared_ptr< std::vector< std::vector<float> > > rotboltz_data_thin_p = std::make_shared< std::vector< std::vector<float> > >(scaffold_res.size());
+    std::vector< std::vector<float> > & rotboltz_data_thin = *rotboltz_data_thin_p;
+
+    for ( core::Size iseqpos = 0; iseqpos < scaffold_res.size(); iseqpos++ ) {
+        core::Size seqpos = scaffold_res.at(iseqpos+1);
+        rotboltz_data_thin.at(iseqpos) = rotboltz_data.at(seqpos-1);
+    }
+
+    return rotboltz_data_thin_p;
     
 }
 

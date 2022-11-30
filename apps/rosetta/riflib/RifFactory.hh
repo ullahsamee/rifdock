@@ -139,9 +139,15 @@ struct RifSceneObjectiveConfig
     float sasa_threshold;
     float sasa_multiplier;
     float ignore_rifres_if_worse_than;
-    int num_pdbinfo_requirements_required;
+    int num_pdbinfo_requirements_required = 0;
     std::vector< std::vector<bool> > pdbinfo_req_active_positions;
     std::vector< std::vector<bool> > pdbinfo_req_active_requirements;
+    int num_pdbinfo_requirements_required_bbO = 0;
+    std::vector< std::vector<bool> > pdbinfo_req_active_positions_bbO;
+    std::vector< std::vector<bool> > pdbinfo_req_active_requirements_bbO;
+    int num_pdbinfo_requirements_required_bbN = 0;
+    std::vector< std::vector<bool> > pdbinfo_req_active_positions_bbN;
+    std::vector< std::vector<bool> > pdbinfo_req_active_requirements_bbN;
     std::vector<float> sat_bonus;
     std::vector<bool> sat_bonus_override;
 
