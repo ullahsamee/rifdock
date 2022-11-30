@@ -1285,6 +1285,8 @@ std::string get_rif_type_from_file( std::string fname )
 		
         
         std::vector<bool> pdbinfo_req_req_satisfied_; // has this pdbinfo:req been satisfied yet
+        std::vector<bool> pdbinfo_req_req_satisfied_bbO_; // has this pdbinfo:req been satisfied yet
+        std::vector<bool> pdbinfo_req_req_satisfied_bbN_; // has this pdbinfo:req been satisfied yet
         
 	};
 
@@ -1313,6 +1315,9 @@ std::string get_rif_type_from_file( std::string fname )
                                                                         // inner loop = which active position
         std::vector< std::vector<bool> > pdbinfo_req_active_requirements_; // outer loop = which pdbinfo:req
                                                                            // inner loop = which requirement(s)
+
+        int num_pdbinfo_requirements_required_bbO_ = 0; // these are 0 in all but the final resolution since hbonds don't run till then
+        int num_pdbinfo_requirements_required_bbN_ = 0;
 
         std::vector< std::pair< int, std::vector<int> > > requirement_groups_;
 
@@ -1844,6 +1849,43 @@ std::string get_rif_type_from_file( std::string fname )
                 }
             }
 
+            if ( num_pdbinfo_requirements_required_bbO_ > 0 ) {
+
+                runtime_assert( scratch.pdbinfo_req_req_satisfied_bbO_.size() > 0 );
+                
+                int num_satisfied = 0;
+                
+                // loop over pdbinfo_requirements
+                for ( size_t ipdbinforeq = 0; ipdbinforeq < scratch.pdbinfo_req_req_satisfied_bbO_.size(); ipdbinforeq++ ) {
+                    if ( scratch.pdbinfo_req_req_satisfied_bbO_[ipdbinforeq] ) {
+                        num_satisfied += 1;
+                    }
+                }
+                
+                if ( num_satisfied < num_pdbinfo_requirements_required_bbO_ ) {
+                    result.val_ = 9e9;
+                }
+            }
+
+            if ( num_pdbinfo_requirements_required_bbN_ > 0 ) {
+
+                runtime_assert( scratch.pdbinfo_req_req_satisfied_bbN_.size() > 0 );
+                
+                int num_satisfied = 0;
+                
+                // loop over pdbinfo_requirements
+                for ( size_t ipdbinforeq = 0; ipdbinforeq < scratch.pdbinfo_req_req_satisfied_bbN_.size(); ipdbinforeq++ ) {
+                    if ( scratch.pdbinfo_req_req_satisfied_bbN_[ipdbinforeq] ) {
+                        num_satisfied += 1;
+                    }
+                }
+                
+                if ( num_satisfied < num_pdbinfo_requirements_required_bbN_ ) {
+                    result.val_ = 9e9;
+                }
+            }
+
+
 
 			if( n_sat_groups_ > 0 ){
 
@@ -1998,6 +2040,7 @@ std::string get_rif_type_from_file( std::string fname )
     template< class BBHBondActor, class VoxelArrayPtr >
     struct ScoreBBHBondActorVsRIF
     {
+        typedef boost::mpl::true_ HasPre;
 
         typedef ScoreBBActorvsRIFScratch Scratch;       // IMPORTANT!! This is the same as ScoreBBActorVsRIF
         typedef ScoreBBHBondActorvsRIFResult Result;
@@ -2007,6 +2050,16 @@ std::string get_rif_type_from_file( std::string fname )
         RifScoreRotamerVsTarget rot_tgt_scorer_;
         bool initialized_ = false;
         bool packing_ = false;
+
+        std::vector< std::vector<bool> > pdbinfo_req_active_positions_bbO_; // outer loop = which pdbinfo:req
+                                                                        // inner loop = which active position
+        std::vector< std::vector<bool> > pdbinfo_req_active_requirements_bbO_; // outer loop = which pdbinfo:req
+                                                                           // inner loop = which requirement(s)
+
+        std::vector< std::vector<bool> > pdbinfo_req_active_positions_bbN_; // outer loop = which pdbinfo:req
+                                                                        // inner loop = which active position
+        std::vector< std::vector<bool> > pdbinfo_req_active_requirements_bbN_; // outer loop = which pdbinfo:req
+                                                                           // inner loop = which requirement(s)
 
         ScoreBBHBondActorVsRIF() {}
 
@@ -2024,6 +2077,22 @@ std::string get_rif_type_from_file( std::string fname )
             rot_tgt_scorer_.hbond_weight_ = scaff_bb_hbond_weight;
             initialized_ = true;
             packing_ = packing;
+        }
+
+        template<class Scene, class Config>
+        void pre( Scene const & scene, Result & result, Scratch & scratch, Config const & config ) const
+        {
+
+            if ( pdbinfo_req_active_positions_bbO_.size() > 0 ) {
+                scratch.pdbinfo_req_req_satisfied_bbO_.resize( pdbinfo_req_active_positions_bbO_.size() );
+                for ( int i = 0; i < scratch.pdbinfo_req_req_satisfied_bbO_.size(); i++ ) scratch.pdbinfo_req_req_satisfied_bbO_[i] = false;
+            }
+
+            if ( pdbinfo_req_active_positions_bbN_.size() > 0 ) {
+                scratch.pdbinfo_req_req_satisfied_bbN_.resize( pdbinfo_req_active_positions_bbN_.size() );
+                for ( int i = 0; i < scratch.pdbinfo_req_req_satisfied_bbN_.size(); i++ ) scratch.pdbinfo_req_req_satisfied_bbN_[i] = false;
+            }
+
         }
 
         template<class Config>
@@ -2051,6 +2120,44 @@ std::string get_rif_type_from_file( std::string fname )
                     if ( sat1 > -1 ) scratch.is_satisfied_.at(sat1) = true;
                     if ( sat2 > -1 ) scratch.is_satisfied_.at(sat2) = true;
                 }
+
+
+                if ( bbh.is_donor() ) {
+                    if ( pdbinfo_req_active_positions_bbN_.size() > 0 ) {
+
+                        std::vector<int> sats {sat1, sat2};
+                        for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_bbN_.size(); ipdbinforeq++ ) {
+                            if ( ! pdbinfo_req_active_positions_bbN_[ipdbinforeq][bbh.index_] ) continue;
+                            // now we know we care about this position
+                            for ( int sat : sats ) {
+                                if ( sat <= -1 ) continue;
+                                if ( pdbinfo_req_active_requirements_bbN_[ipdbinforeq].at(sat) ) {
+                                    scratch.pdbinfo_req_req_satisfied_bbN_[ipdbinforeq] = true;
+                                }
+                            }
+                        }
+
+                    }
+                } else {
+                    if ( pdbinfo_req_active_positions_bbO_.size() > 0 ) {
+
+                        std::vector<int> sats {sat1, sat2};
+                        for ( size_t ipdbinforeq = 0; ipdbinforeq < pdbinfo_req_active_positions_bbO_.size(); ipdbinforeq++ ) {
+                            if ( ! pdbinfo_req_active_positions_bbO_[ipdbinforeq][bbh.index_] ) continue;
+                            // now we know we care about this position
+                            for ( int sat : sats ) {
+                                if ( sat <= -1 ) continue;
+                                if ( pdbinfo_req_active_requirements_bbO_[ipdbinforeq].at(sat) ) {
+                                    scratch.pdbinfo_req_req_satisfied_bbO_[ipdbinforeq] = true;
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+
+
             } else {
 
                 typedef typename DonorAcceptorCache::Sat Sat;
@@ -2447,12 +2554,52 @@ struct RifFactoryImpl :
                                     .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
             dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
                                     .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight, false );
+
+            if ( config.num_pdbinfo_requirements_required_bbO > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                    .num_pdbinfo_requirements_required_bbO_ = config.num_pdbinfo_requirements_required_bbO;
+
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_positions_bbO_ = config.pdbinfo_req_active_positions_bbO;
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_requirements_bbO_ = config.pdbinfo_req_active_requirements_bbO;
+            }
+            if ( config.num_pdbinfo_requirements_required_bbN > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                    .num_pdbinfo_requirements_required_bbN_ = config.num_pdbinfo_requirements_required_bbN;
+
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_positions_bbN_ = config.pdbinfo_req_active_positions_bbN;
+                dynamic_cast<MySceneObjectiveRIF&>(*objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_requirements_bbN_ = config.pdbinfo_req_active_requirements_bbN;
+            }
+
         }
         if ( packing_objectives.back() ) {
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
                                     .target_proximity_test_grid_ = config.target_bounding_by_atype->at(2).at(5);
             dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
                                     .init( config.rot_tgt_scorer, config.scaff_bb_hbond_weight, true );
+
+
+            if ( config.num_pdbinfo_requirements_required_bbO > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                    .num_pdbinfo_requirements_required_bbO_ = config.num_pdbinfo_requirements_required_bbO;
+
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_positions_bbO_ = config.pdbinfo_req_active_positions_bbO;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_requirements_bbO_ = config.pdbinfo_req_active_requirements_bbO;
+            }
+            if ( config.num_pdbinfo_requirements_required_bbN > 0 ) {
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBActorRIF>()
+                                    .num_pdbinfo_requirements_required_bbN_ = config.num_pdbinfo_requirements_required_bbN;
+
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_positions_bbN_ = config.pdbinfo_req_active_positions_bbN;
+                dynamic_cast<MySceneObjectiveRIF&>(*packing_objectives.back()).objective.template get_objective<MyScoreBBHBondActorRIF>()
+                                    .pdbinfo_req_active_requirements_bbN_ = config.pdbinfo_req_active_requirements_bbN;
+            }
         }
 
         // Only want to do BBSasa at highest resl otherwise they are meaningless

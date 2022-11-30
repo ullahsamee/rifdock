@@ -292,6 +292,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
 
     OPT_1GRP_KEY(  StringVector, rif_dock, pdbinfo_requirements )
     OPT_1GRP_KEY(  Integer     , rif_dock, num_pdbinfo_requirements_required )
+    OPT_1GRP_KEY(  StringVector, rif_dock, pdbinfo_requirements_bbO )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_pdbinfo_requirements_required_bbO )
+    OPT_1GRP_KEY(  StringVector, rif_dock, pdbinfo_requirements_bbN )
+    OPT_1GRP_KEY(  Integer     , rif_dock, num_pdbinfo_requirements_required_bbN )
     OPT_1GRP_KEY(  StringVector, rif_dock, requirement_groups )
     OPT_1GRP_KEY(  IntegerVector, rif_dock, requirements )
     OPT_1GRP_KEY(  String      ,  rif_dock, sat_score_bonus )
@@ -596,6 +600,10 @@ OPT_1GRP_KEY(     StringVector , rif_dock, scaffolds )
             
             NEW_OPT(  rif_dock::pdbinfo_requirements, "Pairs of pdbinfo_label:req1,req2,req3 that specify that a residue with this pdbinfo_label must satisfy these requirements/sats." , utility::vector1<std::string>() );
             NEW_OPT(  rif_dock::num_pdbinfo_requirements_required, "Minimum number of pdbinfo_requirements to satisfy. -1 for all.", -1 );
+            NEW_OPT(  rif_dock::pdbinfo_requirements_bbO, "Same as -pdbinfo_requirements but for backbone oxygens" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::num_pdbinfo_requirements_required_bbO, "Same as -pdbinfo_requirements but for backbone oxygens", -1 );
+            NEW_OPT(  rif_dock::pdbinfo_requirements_bbN, "Same as -pdbinfo_requirements but for backbone NH" , utility::vector1<std::string>() );
+            NEW_OPT(  rif_dock::num_pdbinfo_requirements_required_bbN, "Same as -pdbinfo_requirements but for backbone NH", -1 );
             NEW_OPT(  rif_dock::requirement_groups, "I want at least 3 of these requirements: 3:1,5,8,10,23. I want less than 2 of these: -2:4,6,7. Space separated. Negative requirements means not this requirement.", utility::vector1<std::string>());
             NEW_OPT(  rif_dock::requirements,        "which rif residue should be in the final output", utility::vector1< int >());
             NEW_OPT(  rif_dock::sat_score_bonus,     "Give bonus to residues that satisfy sat. 0:-2,1:-1.5", "");
@@ -875,6 +883,10 @@ struct RifDockOpt
     
     std::vector<std::pair<std::string,std::vector<int>>> pdbinfo_requirements;
     int         num_pdbinfo_requirements_required    ;
+    std::vector<std::pair<std::string,std::vector<int>>> pdbinfo_requirements_bbO;
+    int         num_pdbinfo_requirements_required_bbO    ;
+    std::vector<std::pair<std::string,std::vector<int>>> pdbinfo_requirements_bbN;
+    int         num_pdbinfo_requirements_required_bbN    ;
     std::vector<std::pair<int,std::vector<int>>> requirement_groups;
     std::vector<int> requirements                    ;
     std::vector<float> sat_score_bonus               ;
@@ -1146,6 +1158,8 @@ struct RifDockOpt
         buried_list                             = option[rif_dock::buried_list                          ]();
         
         num_pdbinfo_requirements_required       = option[rif_dock::num_pdbinfo_requirements_required    ]();
+        num_pdbinfo_requirements_required_bbO   = option[rif_dock::num_pdbinfo_requirements_required_bbO]();
+        num_pdbinfo_requirements_required_bbN   = option[rif_dock::num_pdbinfo_requirements_required_bbN]();
 
 
         pssm_weight                             = option[rif_dock::pssm_weight    ]();
@@ -1284,6 +1298,34 @@ struct RifDockOpt
             
             pdbinfo_requirements.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
 	    }
+
+        for( std::string s : option[rif_dock::pdbinfo_requirements_bbO]() ) {
+            utility::vector1<std::string> pdbinfo_then_reqs = utility::string_split(s, ':');
+            
+            if ( pdbinfo_then_reqs.size() != 2 ) {
+                std::cout << "ERROR: bad pdbinfo_requirement_bbO: " << s << std::endl;
+                std::exit(-1);
+            }
+            utility::vector1<int> req_nos = utility::string_split<int>(pdbinfo_then_reqs[2], ',', int(0));
+            std::vector<int> req_nos2;
+            for ( int req : req_nos ) req_nos2.push_back( req );
+            
+            pdbinfo_requirements_bbO.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
+        }
+
+        for( std::string s : option[rif_dock::pdbinfo_requirements_bbN]() ) {
+            utility::vector1<std::string> pdbinfo_then_reqs = utility::string_split(s, ':');
+            
+            if ( pdbinfo_then_reqs.size() != 2 ) {
+                std::cout << "ERROR: bad pdbinfo_requirement_bbN: " << s << std::endl;
+                std::exit(-1);
+            }
+            utility::vector1<int> req_nos = utility::string_split<int>(pdbinfo_then_reqs[2], ',', int(0));
+            std::vector<int> req_nos2;
+            for ( int req : req_nos ) req_nos2.push_back( req );
+            
+            pdbinfo_requirements_bbN.push_back(std::pair<std::string,std::vector<int>>( pdbinfo_then_reqs[1], req_nos2 ));
+        }
     
         /////////   sat_score_bonus and sat_score_override   //////////////
 

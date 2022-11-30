@@ -108,6 +108,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 	OPT_1GRP_KEY(  Real         , rifgen, upweight_multi_hbond )
 	OPT_1GRP_KEY( Real          , rifgen, min_hb_quality_for_satisfaction )
 	OPT_1GRP_KEY( Real          , rifgen, long_hbond_fudge_distance )
+	OPT_1GRP_KEY( Boolean       , rifgen, no_bb_hbonds )
 	OPT_1GRP_KEY( IntegerVector , rifgen, repulsive_atoms )
 	OPT_1GRP_KEY( String        , rifgen, rif_type )
 	OPT_1GRP_KEY( Boolean       , rifgen, extra_rotamers )
@@ -197,6 +198,7 @@ OPT_1GRP_KEY( StringVector, rifgen, donres )
 		NEW_OPT(  rifgen::upweight_multi_hbond             , "" , 0.0 );
 		NEW_OPT(  rifgen::min_hb_quality_for_satisfaction  , "" , -0.6 );
 		NEW_OPT(  rifgen::long_hbond_fudge_distance        , "Any hbond longer than 2A gets moved closer to 2A by this amount for scoring", 0.0 );
+		NEW_OPT(  rifgen::no_bb_hbonds                     , "Disable generation of hbonds to target backbone atoms." , false );
 		NEW_OPT(  rifgen::repulsive_atoms                  , "" , utility::vector1<int>() );
 		NEW_OPT(  rifgen::rif_type                         , "" , "RotScore" );
 		NEW_OPT(  rifgen::extra_rotamers                   , "" , true );
@@ -401,6 +403,7 @@ std::shared_ptr<::devel::scheme::RifBase> init_rif_and_generators(
 			hbgenopts.dump_bindentate_hbonds = option[ rifgen::dump_bidentate_hbonds ]();
 			hbgenopts.report_aa_count = option[ rifgen::report_aa_count ]();
 			hbgenopts.hbgeom_max_cache = option[ rifgen::hbgeom_max_cache ]();
+			hbgenopts.no_bb_hbonds = option[ rifgen::no_bb_hbonds ]();
 
 			rif_generators_out.push_back(
 				::scheme::make_shared<devel::scheme::rif::RifGeneratorSimpleHbonds>(

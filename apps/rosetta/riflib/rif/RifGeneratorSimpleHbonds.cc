@@ -650,7 +650,7 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 std::pair<size_t,size_t> b = rot_index.index_bounds(j.acc.substr(0,3));
                 j.nrots = b.second-b.first;
                 //if( target.residue(ir).is_protein() && target.residue(ir).has("H") ) hb_jobs.push_back( j );
-                if( target.residue(ir).has("H") ) hb_jobs.push_back( j );
+                if( target.residue(ir).has("H") && !opts.no_bb_hbonds ) hb_jobs.push_back( j );
                 if( std::find(donresn_std.begin(),donresn_std.end(),resn)!=donresn_std.end() ){ // is donor
                     j.don = resn;
                     hb_jobs.push_back( j );
@@ -677,13 +677,14 @@ RifGeneratorSimpleHbonds::prepare_hbgeoms(
                 std::pair<size_t,size_t> b = rot_index.index_bounds(j.don.substr(0,3));
                 j.nrots = b.second-b.first;
                 //if( target.residue(ir).is_protein() && target.residue(ir).has("O") ) hb_jobs.push_back( j );
-                if( target.residue(ir).has("O") ) hb_jobs.push_back( j );
+                if( target.residue(ir).has("O") && !opts.no_bb_hbonds ) hb_jobs.push_back( j );
                 if( std::find(accresn_std.begin(),accresn_std.end(),resn)!=accresn_std.end() ){ // is acceptor
                     j.acc = resn;
                     hb_jobs.push_back( j );
                 }
             }
         }
+        if ( opts.no_bb_hbonds && hb_jobs.size() == 0 ) return;
 		runtime_assert_msg( hb_jobs.size() , "no hbond jobs generated!" );
 		std::sort( hb_jobs.begin(), hb_jobs.end() );
 		// for( int i = 0; i < hb_jobs.size(); ++i ){

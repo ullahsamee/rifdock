@@ -32,6 +32,7 @@ struct RifGeneratorSimpleHbondsOpts {
 	bool dump_bindentate_hbonds = false;
 	bool report_aa_count = false;
 	int hbgeom_max_cache = -1;
+	bool no_bb_hbonds = false;
 };
 
 struct HBJob {
