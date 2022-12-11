@@ -544,13 +544,17 @@ Format:
 
 #### HOTSPOT
   
-There's a way to do this. But only Longxing knows how...
+The requirement/sat system in rifdock is kind of a mess. This flag allows
+you to change the stored number for a given hotspot residue. Note that this
+setting ignore -single_file_hotspots_insertion
 
-Specify that you want a certain hotspot to exist.
+Format:
 
 ```
-<REQ_NUM> HOTSPOT ???????????????????
+<REQ_NUM> HOTSPOT <HOTSPOT_NUMBER>
 ```
+
+Where <HOTSPOT_NUMBER> is the 0-indexed position of that pdb within -hotspot_groups.
 
 ### Using the Requirements
 
