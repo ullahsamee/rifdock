@@ -254,14 +254,18 @@ sanity_check_hackpack(
         std::cout << "Bad index" << std::endl;
         return;
     }
-    sanity_check_rots(rdd, i, rotamers, scene, true, director_resl, rif_resl);
+    if ( ! rdd.opt.native_docking ) {
+        sanity_check_rots(rdd, i, rotamers, scene, true, director_resl, rif_resl);
+    }
 
     rdd.director->set_scene( i, director_resl, *scene );
     SearchPointWithRots temp;
 
     rdd.packing_objectives[rif_resl]->score_with_rotamers( *scene, temp.rotamers() );
 
-    sanity_check_rots(rdd, i, temp.rotamers_, scene, false, director_resl, rif_resl);
+    if ( !rdd.opt.native_docking ) {
+        sanity_check_rots(rdd, i, temp.rotamers_, scene, false, director_resl, rif_resl);
+    }
 
 
 }
