@@ -54,6 +54,7 @@ add_res_if_not_CGP(
 	bool verbose = false
 ){
 	if( pose.residue(ir).name3() == "CYD" ){ if(verbose) std::cout << "get_res skip CYD" << std::endl; return; }
+	if( pose.residue(ir).name3() == "CYS" ){ if(verbose) std::cout << "get_res skip CYS" << std::endl; return; }
 	if( pose.residue(ir).name3() == "GLY" ){ if(verbose) std::cout << "get_res skip GLY" << std::endl; return; }
 	if( pose.residue(ir).name3() == "PRO" ){ if(verbose) std::cout << "get_res skip PRO" << std::endl; return; }
 	res.push_back( ir );
