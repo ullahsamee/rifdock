@@ -23,16 +23,29 @@ First, install the necessary build utilities and the specific GCC-5 compiler req
 sudo apt update
 sudo apt install -y cmake ninja-build
 
-# Add the Ubuntu 16.04 (Xenial) repository to access older packages
-echo "deb http://archive.ubuntu.com/ubuntu/ xenial main" | sudo tee /etc/apt/sources.list.d/xenial.list
+# Download GCC-5 packages manually from Ubuntu 18.04 repository
+cd /tmp
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/gcc-5_5.5.0-12ubuntu1_amd64.deb
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/g++-5_5.5.0-12ubuntu1_amd64.deb
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/gcc-5-base_5.5.0-12ubuntu1_amd64.deb
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/libgcc-5-dev_5.5.0-12ubuntu1_amd64.deb
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/libstdc++-5-dev_5.5.0-12ubuntu1_amd64.deb
+wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-5/cpp-5_5.5.0-12ubuntu1_amd64.deb
 
-# Update package list again and install gcc-5
-sudo apt-get update
-sudo apt install -y gcc-5 g++-5
+# Install the packages in correct order
+sudo dpkg -i gcc-5-base_5.5.0-12ubuntu1_amd64.deb
+sudo dpkg -i libgcc-5-dev_5.5.0-12ubuntu1_amd64.deb
+sudo dpkg -i cpp-5_5.5.0-12ubuntu1_amd64.deb
+sudo dpkg -i gcc-5_5.5.0-12ubuntu1_amd64.deb
+sudo dpkg -i libstdc++-5-dev_5.5.0-12ubuntu1_amd64.deb
+sudo dpkg -i g++-5_5.5.0-12ubuntu1_amd64.deb
+
+# Fix any dependency issues
+sudo apt install -f
 ```
 
 > [!NOTE]
-> RifDock was developed with older compilers. These commands add a repository from an older Ubuntu release (Xenial) specifically to allow `apt` to find and install the required `gcc-5` and `g++-5` packages on a modern system.
+> RifDock was developed with older compilers. These commands install the required `gcc-5` and `g++-5` packages on a modern system.
 
 #### 2. Install Boost Library (v1.65.0)
 
