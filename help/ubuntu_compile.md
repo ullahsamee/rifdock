@@ -1,10 +1,4 @@
-RifDock
-A tool for hierarchical, diffusion-based docking of proteins and small molecules.
-
-<h3 align="right">Compilation Guide for Ubuntu</h3># RifDock
-
-A tool for hierarchical, diffusion-based docking of proteins and small molecules.
-
+## RifDock
 ## Compilation Guide for Ubuntu
 
 ### Prerequisites
