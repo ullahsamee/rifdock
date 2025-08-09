@@ -88,7 +88,7 @@ Finally, with all dependencies in place, you can compile RifDock.
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/rifdock/rifdock
+git clone https://github.com/ullahsamee/rifdock
 cd rifdock
 mkdir build && cd build
 ```
@@ -111,7 +111,7 @@ cmake .. \
 
 ```bash
 # Adjust -j20 based on your CPU cores
-make -j20 rif_dock_test rifgen
+make -j24 rif_dock_test rifgen
 ```
 
 > [!NOTE]
